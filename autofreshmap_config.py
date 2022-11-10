@@ -73,12 +73,12 @@ whitelistedmap= alldesired
 
 singlechanneleddetection=False
 subsampleddetection=True
-subsampleddetectionrate=0.1
+subsampleddetectionrate=0.5
 
 log2file=False
 dbglog=False
 
-standardMatchThreshold=0.15
+standardMatchThreshold=0.2
 standardMapLeftTopPoint=[286,216]
 
 setonwifirecoverthresh=13

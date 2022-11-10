@@ -231,6 +231,10 @@ stateDetectorInfo={
     'LoadingMap':{
         'path':signName2Path('LoadingMap'),
         'lt':[1030,203],
+    },
+    'OK':{
+        'path':signName2Path('OK'), #有时有色差，很奇怪。可能按钮不完全是不透明的？
+        'lt':[896,553]
     }
 }
 
@@ -267,6 +271,8 @@ def freshAMap():
     
     while(True):
         def detectToBattle(scr):
+            if stateDetector['OK'].detect(scr):
+                click(stateDetector['OK'].getsigncenter())
             if stateDetector['hanger'].detect(scr):
                 click(stateDetector['hanger'].getsigncenter())
                 moveto(stateDetector['hanger'].getsignpointrd()+[10,10])
@@ -335,7 +341,7 @@ def freshAMap():
                 return True
             return False
         #sleep at least some time
-        sleep(10)
+        sleep(5)
         if not keepdetecting(detectGameCanceled):
             return
 
@@ -369,3 +375,10 @@ def testOneRaw():
     scr=cv.imread(r"C:\Program Files\WarThunder\wtequ\Opdar\asset\autofreshmap\rawmaterial\Serversk-13.png")
     ret= [d.detect(scr) for d in whitelistedmapdetector.values()]
     print()
+# loadAssetsNeeded4FreshAMap()
+# ss=screenshoter(0)
+# while(True):
+#     pic=ss.shotbgr()
+#     print(stateDetector['OK'].detect(pic))
+#     savemat(pic)
+#     sleep(1)
