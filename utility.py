@@ -100,6 +100,8 @@ def forceviewmaxmin(m):
 def regionsum(m,size,mask=None):
     if m.size<=0:
         return m
+    if mask is not None:
+        mask[mask!=0]=1
     return cv.filter2D(
         m if mask is None else m*mask,
         -1,
@@ -110,8 +112,18 @@ def regionave(m,size,mask=None):
     if m.size<=0:
         return m
     #0.01 for mask is fully black
+    #why use ones_like(m) as mask rather than regionsum(m,size)/(size[0]*size[1])?
+    #cuz the latter would be too big an area at the edge of pic, there is just no this many pixels
     mask=np.ones_like(m) if mask is None else mask
     return regionsum(m,size,mask)/(regionsum(mask,size)+0.01)
+
+def density(p,size):
+    return regionave(p.astype('float'),size)
+
+def densityfilter(p,size,thresh):
+    dence=density(p,size)
+    dence[dence<thresh]=0
+    return np.logical_and(p, dence)
 
 def getWTHwnd():
     ret= win32gui.FindWindow('DagorWClass',None)
@@ -423,3 +435,11 @@ def arrayshift(a,n):
     
 def hsv2opencv8bithsv(hsv):
     return np.array([0.5,2.55,2.55])*np.array(hsv)
+
+def digitsof(s:str):
+    return ''.join(list(filter(str.isdigit,list(s))))
+
+#wont consider negative
+def numinstr(s:str):
+    s=digitsof(s)
+    return int(s) if len(s)>0 else 0

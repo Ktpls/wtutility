@@ -2,6 +2,8 @@
 import matplotlib as mpl
 from utility import *
 from wtdistmeaspy_config import *
+import pytesseract.pytesseract as ptact
+ptact.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 yellowmarkpath=r"./asset/wtdistmeaspy/yellowmark.png"
 kernelyellowmark=cv.imread(yellowmarkpath)
 def pic2kernel(p:np.ndarray):
@@ -45,8 +47,8 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     mcolored=isrc
     dbglogsavestep(mcolored)
     
-    m=cv.cvtColor(mcolored,cv.COLOR_BGR2GRAY)
-    dbglogsavestep(m)
+    mgray=cv.cvtColor(mcolored,cv.COLOR_BGR2GRAY)
+    dbglogsavestep(mgray)
     
     #find player
     mcolorply=cv.GaussianBlur(mcolored,[5,5],1)
@@ -58,7 +60,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     mcolorply=cv.inRange(mcolorply,hsv2opencv8bithsv([25,15,55]),hsv2opencv8bithsv([65,60,256]))
     dbglogsavestep(mcolorply)
     
-    mply=cv.adaptiveThreshold(m,1,cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, -110)
+    mply=cv.adaptiveThreshold(mgray,1,cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, -110)
     dbglogsavestep(255*mply)
     
     mply=mcolorply*mply
@@ -85,30 +87,6 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
         log('p=(%3d,%3d),pe=%5.3f'%(playerpos[0],playerpos[1],playererr))
         return True,playerpos,playererr
     
-    # #using contour to anti interference
-    # contours=cv.findContours(mply, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[0]
-    # mcontour=np.zeros_like(m)
-    # cv.drawContours(mcontour,contours,-1,255)
-    # trysavestep(mcontour)
-    
-    # if dbg:
-    #     log('all contours:')
-    #     log('\n'.join([str(cv.contourArea(c)) for c in contours]))
-    # def areainrange(a):
-    #     return a>=2.5 and a<=16.5
-    # contours=[c for c in contours if areainrange(cv.contourArea(c))]
-    # mcontour=np.zeros_like(m)
-    # cv.drawContours(mcontour,contours,-1,255)
-    # trysavestep(mcontour)
-    
-    # if len(contours)!=1:
-    #     errormsg="PLY_NO_VALID_CONTOUR"
-    #     return [errormsg]
-    # playerpos=np.flip(contours[0].mean(axis=0))
-    # playererr=0
-    
-    #directly calc playerpos
-    
     afterprocessresult=playerfinder_gaussiandensity_method(mply)
     if not afterprocessresult[0]:
         errormsg="PL_NOT_FOUND"
@@ -127,7 +105,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     mcolorvalid=cv.inRange(mcolorym,hsv2opencv8bithsv([60-25,45,20]),hsv2opencv8bithsv([60+25,256,256]))/255
     dbglogsavestep(mcolorvalid*255)
     
-    mym=m.copy()
+    mym=mgray.copy()
     mym=mym*mcolorvalid
     dbglogsavestep(mym)
     
@@ -142,7 +120,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
         return [errormsg]
 
     #find grid
-    mgrd=255-m
+    mgrd=255-mgray
     dbglogsavestep(mgrd)
     
     mgrd=cv.adaptiveThreshold(mgrd,255,cv.ADAPTIVE_THRESH_MEAN_C,cv.THRESH_BINARY,5,-5)
@@ -201,8 +179,93 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     griderr=interval.var()
 
     log('g=%3f,ge=%5f.3f'%(gridave,griderr))
+    
+    
+    #find plotting scale
+    #standard: all bivalue map must be presented in [0,255] form
+    psfindrange=int(2.5*gridave)
+    #cut region and del the "ruler"
+    mps = np.copy(mcolored[-psfindrange:-3, -psfindrange:])
+    dbglogsavestep(mps)
 
-    return 'OK',playerpos,playererr,ympos,ymerr,gridave,griderr
+    #filter absolute color
+    mpshsv=cv.cvtColor(mps,cv.COLOR_BGR2HSV)
+    darkgraypoints=cv.inRange(mpshsv,hsv2opencv8bithsv([0,0,0]),hsv2opencv8bithsv([360,50,30]))
+    dbglogsavestep(darkgraypoints)
+
+    #filter adaptive value(lightness)
+    #mpsgray = cv.cvtColor(mps, cv.COLOR_BGR2GRAY)
+    mpsgray=mpshsv[:,:,2]
+    #enhance details in dark
+    mpsgray=cv.normalize(mpsgray,None,0,255,cv.NORM_MINMAX)
+    #flatten the mountain and enhance again
+    #for text will never be too bright, 
+    #but the contrast between shadow and nonshadow area around player to indicate the looking direction, 
+    #could cause normalize trouble
+    mpsgray[mpsgray>127]=127
+    mpsgray*=2
+    mpsgray = mpsgray.astype('float')
+    relblack = cv.threshold(
+        (mpsgray-(regionave(mpsgray, [5, 5])-20)), 0, 255, cv.THRESH_BINARY_INV)[1]
+    dbglogsavestep(relblack)
+    
+    # #filter adaptive saturation
+    # mpssat=mpshsv[:,:,1].astype('float')
+    # relinsat = cv.threshold(
+    #     (mpssat-(regionave(mpssat, [5, 5]))), 0, 255, cv.THRESH_BINARY_INV)[1]
+    # dbglogsavestep(relinsat)
+    
+    black=np.logical_and(darkgraypoints,relblack).astype('float')*255
+    #black=np.logical_and(black,relinsat).astype('float')*255
+    dbglogsavestep(black)
+    
+    #delete grid lines
+    gridlinekernellength=int(2*gridave)
+    onepixline=np.ones([gridlinekernellength])
+    
+    kernelrow=np.array([-1*onepixline,1*onepixline,-1*onepixline])/gridlinekernellength
+    kernels=[kernelrow,kernelrow.T]
+    ongrid=np.zeros_like(black)*255
+    for i in range(len(kernels)):
+        onthisdirectiongrid=cv.filter2D(black/255,-1,kernels[i])
+        dbglogsavestep(onthisdirectiongrid*255)
+        onthisdirectiongrid=cv.threshold(onthisdirectiongrid,0.20,255,cv.THRESH_BINARY)[1]
+        dbglogsavestep(onthisdirectiongrid)
+        ongrid=np.logical_or(ongrid,onthisdirectiongrid).astype('float')*255
+        dbglogsavestep(ongrid)
+
+    black=np.logical_and(black,np.logical_not(ongrid)).astype('float')*255
+    dbglogsavestep(black)
+    
+    #filter density to remove noise points
+    for i in range(2):
+        black=densityfilter(black/255,[5,5],3/25).astype('float')*255
+        dbglogsavestep(black)
+    
+    #set the most densed pos, as the text is, to center
+    dence=density(black/255,[11,11])
+    dbglogsavestep(dence,method='savematflt')
+    minval,maxval,minloc,maxloc=cv.minMaxLoc(dence)
+    vector=np.round(np.flip(dence.shape)*0.5)-maxloc
+    shiftmat=np.array([
+        [1,0,vector[0]],
+        [0,1,vector[1]]
+    ])
+    black=cv.warpAffine(black,shiftmat,np.flip(black.shape))
+    dbglogsavestep(black)
+    
+    #assume text is at the center vertically
+    textheight=15+4
+    toppos=int(black.shape[0]*0.5-0.5*textheight)
+    black=black[toppos:toppos+textheight,:]
+    dbglogsavestep(black)
+
+    plottingscalestr = ptact.image_to_string(black.astype('uint8'), lang='eng')
+    log('plottingscale')
+    log(plottingscalestr)
+    plottingscale=numinstr(plottingscalestr)
+
+    return 'OK',playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale
 
 def outputlines2mat(m,pos,content,lineheight=25):
     m=m.copy()

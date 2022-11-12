@@ -34,23 +34,35 @@ def main():
             
             #keep collecting
             needdbglog=False
-            ret=SolveMap_BottomRightSmallMap(scr)
+            #ret=SolveMap_BottomRightSmallMap(scr)
+            ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
+                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
+                    ))
             if didSolveMapSucceed(ret):
-                state,playerpos,playererr,ympos,ymerr,gridave,griderr=ret
-                def strictErrCheck():
-                    return playererr>4 or ymerr<0.7 or griderr>4
+                state,playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale=ret
+                
+                #calc
                 ympos=np.array(ympos)
                 playerpos=np.array(playerpos)
-                dist=np.sqrt(((ympos-playerpos)**2).sum())/gridave
-                refresult=['%3d: %5d'%(r, int(dist*r+0.5)) for r in reflist]
+                distingrid=np.sqrt(((ympos-playerpos)**2).sum())/gridave #using unit in grid
+                #something going wrong, either not found or digits lost, if less than 100
+                dist=distingrid*plottingscale  if plottingscale>100 else None
+                
+                refresult=['%3d: %5d'%(r, int(distingrid*r+0.5)) for r in reflist]
+                
                 prompt=''
                 prompt+='%s\n'%(state)
+                if dist is not None:
+                    prompt+='dist=%d\n'%(dist)
+                def strictErrCheck():
+                    return playererr>4 or ymerr<0.7 or griderr>4 or dist is None
                 if strictErrCheck():
-                    prompt+='Not recommended to use for err sake, dbglog will be done\n'
+                    prompt+='Not recommended to use for err sake, \nbetter remeas again, dbglog will be done\n'
                     needdbglog=True
-                prompt+='dist=%5f\n'%(dist)
-                prompt+='pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%(playererr,ymerr,griderr)
                 prompt+='{}'.format('\n'.join(refresult))
+                prompt+='\n'
+                prompt+='dg=%5f,pe=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
+                        (distingrid,plottingscale,playererr,ymerr,griderr)
             else:
                 #really failed
                 prompt=ret[0]
@@ -71,6 +83,10 @@ def main():
 
 
 def testground():
-    pass
+    scr=cv.imread(r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-12-01-45-04\unnamed.png")
+    ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
+        time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
+        ))
+    print(ret)
 
-main()
+testground()
