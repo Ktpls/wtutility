@@ -34,10 +34,10 @@ def main():
             
             #keep collecting
             needdbglog=False
-            #ret=SolveMap_BottomRightSmallMap(scr)
-            ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
-                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
-                    ))
+            ret=SolveMap_BottomRightSmallMap(scr)
+            # ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
+            #         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
+            #         ))
             if didSolveMapSucceed(ret):
                 state,playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale=ret
                 
@@ -45,8 +45,8 @@ def main():
                 ympos=np.array(ympos)
                 playerpos=np.array(playerpos)
                 distingrid=np.sqrt(((ympos-playerpos)**2).sum())/gridave #using unit in grid
-                #something going wrong, either not found or digits lost, if less than 100
-                dist=distingrid*plottingscale  if plottingscale>100 else None
+                #something going wrong, either not found or digits lost, if less than 140 or more than 350
+                dist=distingrid*plottingscale  if plottingscale>100 and plottingscale<400 else None
                 
                 refresult=['%3d: %5d'%(r, int(distingrid*r+0.5)) for r in reflist]
                 
@@ -89,4 +89,4 @@ def testground():
         ))
     print(ret)
 
-testground()
+main()

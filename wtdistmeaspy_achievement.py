@@ -222,14 +222,20 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     #delete grid lines
     gridlinekernellength=int(2*gridave)
     onepixline=np.ones([gridlinekernellength])
-    
-    kernelrow=np.array([-1*onepixline,1*onepixline,-1*onepixline])/gridlinekernellength
-    kernels=[kernelrow,kernelrow.T]
+    hardnessOnNeg=2.5
+    kernelrow=np.array([
+        -hardnessOnNeg*onepixline,
+        -hardnessOnNeg*onepixline,
+        1*onepixline,
+        -hardnessOnNeg*onepixline,
+        -hardnessOnNeg*onepixline])/gridlinekernellength
+    #kernels=[kernelrow,kernelrow.T]
+    kernels=[kernelrow]
     ongrid=np.zeros_like(black)*255
     for i in range(len(kernels)):
         onthisdirectiongrid=cv.filter2D(black/255,-1,kernels[i])
         dbglogsavestep(onthisdirectiongrid*255)
-        onthisdirectiongrid=cv.threshold(onthisdirectiongrid,0.20,255,cv.THRESH_BINARY)[1]
+        onthisdirectiongrid=cv.threshold(onthisdirectiongrid,0.01,255,cv.THRESH_BINARY)[1]
         dbglogsavestep(onthisdirectiongrid)
         ongrid=np.logical_or(ongrid,onthisdirectiongrid).astype('float')*255
         dbglogsavestep(ongrid)
@@ -255,7 +261,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     dbglogsavestep(black)
     
     #assume text is at the center vertically
-    textheight=15+4
+    textheight=15*2
     toppos=int(black.shape[0]*0.5-0.5*textheight)
     black=black[toppos:toppos+textheight,:]
     dbglogsavestep(black)
