@@ -205,16 +205,6 @@ def activeWindow(hwnd):  # 窗口置顶
     win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, 0, 0, 0, 0, win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
     win32gui.SetForegroundWindow(hwnd)
 
-def moveto(p):
-    ctypes.windll.user32.SetCursorPos(int(p[0]), int(p[1]))
-
-def click(p):
-    moveto(p)
-    time.sleep(0.05)
-    ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
-    time.sleep(0.01)
-    ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
-    time.sleep(0.1)
 
 def sleepuntil(con,dt=0.01):
     while(not con()):

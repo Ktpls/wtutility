@@ -7,7 +7,7 @@ MIN_LINE_INTERVAL=20
 gridthresh=0.5
 
 griderrreq=10
-ymerrreq=0.5
+ymerrreq=0.3
 plerrreq=10
 
 shadowthickness=2

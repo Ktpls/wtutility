@@ -1,6 +1,25 @@
 
 from wtdistmeaspy_achievement import *
 
+class toast:
+    messagelist=[]
+    def sendmessage(self,content, peroid):
+        self.messagelist.append({
+            'ctt':content,
+            'st':time.perf_counter(),
+            'per':peroid
+        })
+    
+    def updatemsglist(self):
+        nowtime=time.perf_counter()
+        def filterfoo(m):
+            return m['per']>m['ctt']-nowtime
+        messagelist=[m for m in messagelist if filterfoo(m)]
+        msgs=[m['ctt'] for m in messagelist]
+    
+    def getoutput(self):
+        self.updatemsglist()
+        return '\n'.join(self.messagelist)
 
 def main():
     hud=fullScrHUD()
@@ -12,7 +31,7 @@ def main():
         192
     ])
 
-    idleprompt="(=w=)"
+    idleprompt="(=v=)"
     prompt=idleprompt
     contentlefttime=time.perf_counter()
     def setcontentlefttime():
@@ -33,7 +52,7 @@ def main():
             scr=cutBottomRightMap(scr)
             
             #keep collecting
-            needdbglog=False
+            dbglogreason=None
             ret=SolveMap_BottomRightSmallMap(scr)
             # ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
             #         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
@@ -55,10 +74,18 @@ def main():
                 if dist is not None:
                     prompt+='dist=%d\n'%(dist)
                 def strictErrCheck():
-                    return playererr>4 or ymerr<0.7 or griderr>4 or dist is None
-                if strictErrCheck():
+                    if playererr>4:
+                        return 'SEC_PE'
+                    if  ymerr<0.5:
+                        return 'SEC_YE'
+                    if griderr>4:
+                        return 'SEC_GE'
+                    if dist is None:
+                        return 'SEC_DN'
+                    return None #keep dbglog unneeded
+                dbglogreason=strictErrCheck()
+                if dbglogreason is not None:
                     prompt+='Not recommended to use for err sake, \nbetter remeas again, dbglog will be done\n'
-                    needdbglog=True
                 prompt+='{}'.format('\n'.join(refresult))
                 prompt+='\n'
                 prompt+='dg=%5f,pe=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
@@ -66,10 +93,11 @@ def main():
             else:
                 #really failed
                 prompt=ret[0]
-                needdbglog=True
-            if needdbglog:
-                ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
-                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
+                dbglogreason=ret[0]
+            if dbglogreason is not None:
+                ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_On{}/'.format(
+                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
+                    dbglogreason
                     ))
             setcontentlefttime()
 
@@ -83,7 +111,8 @@ def main():
 
 
 def testground():
-    scr=cv.imread(r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-12-01-45-04\unnamed.png")
+    scr=cv.imread(
+    r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-13-23-38-05_OnSEC_DN\unnamed.png")
     ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
         ))

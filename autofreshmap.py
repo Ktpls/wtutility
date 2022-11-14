@@ -14,4 +14,9 @@ def main():
     
     #system('pause')
 
+def test():
+    activeWindow(getWTHwnd())
+    sleep(1)
+    press(keycode.key_Enter)
+
 main()

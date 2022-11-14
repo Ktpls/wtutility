@@ -4,6 +4,7 @@ from logging import exception
 
 from matplotlib import image
 from utility import*
+from gameinput import *
 from autofreshmap_config import*
 
 assetroot='./asset/autofreshmap/'
@@ -249,6 +250,10 @@ def loadAssetsNeeded4FreshAMap():
         for k,v in stateDetectorInfo.items()
     }
 
+def leaveButton():
+    sleep(1)
+    #move after click for not blocking next time detection
+    moveto([0,0])
 
 
 def freshAMap():
@@ -268,19 +273,18 @@ def freshAMap():
     
     activeWindow(getWTHwnd())
     ss=screenshoter(0)
-    
     while(True):
         def detectToBattle(scr):
             if stateDetector['OK'].detect(scr):
-                click(stateDetector['OK'].getsigncenter())
+                #click(stateDetector['OK'].getsigncenter())
+                press(keycode.key_Enter)
             if stateDetector['hanger'].detect(scr):
-                click(stateDetector['hanger'].getsigncenter())
-                moveto(stateDetector['hanger'].getsignpointrd()+[10,10])
-                #move after click for not blocking next time detection
+                #click(stateDetector['hanger'].getsigncenter())
+                press(keycode.key_Enter)
                 return True
             if stateDetector['MissionCanceled'].detect(scr):
-                click(stateDetector['MissionCanceled'].getsigncenter())
-                moveto(stateDetector['MissionCanceled'].getsignpointrd()+[10,10])
+                #click(stateDetector['MissionCanceled'].getsigncenter())
+                press(keycode.key_Enter)
                 return True
             return False
         if not keepdetecting(detectToBattle):
@@ -295,6 +299,9 @@ def freshAMap():
                 nonlocal loadingscreen
                 loadingscreen=scr
                 return True
+            if stateDetector['hanger'].detect(scr): #for click not succeed
+                #click(stateDetector['hanger'].getsigncenter())
+                press(keycode.key_Enter)
             return False
         if not keepdetecting(detectLoadingMap, 0.1):
             return
@@ -351,24 +358,6 @@ def freshAMap():
         #for not enter game too soon after wifi on
         wifonitime=time.time()
         sleepuntil(lambda :time.time()-wifonitime> setonwifirecoverthresh,1)
-
-def CutMapFromMapLoadingSence(pathmaploading,pathmap):
-    pointlt=np.array(standardMapLeftTopPoint)
-    pointrd=pointlt+[648,648]
-    mml=cv.imread(pathmaploading)
-    mm=mml[pointlt[1]:pointrd[1],pointlt[0]:pointrd[0]]
-    cv.imwrite(pathmap,mm)
-
-def addCutNewMap(name):
-    CutMapFromMapLoadingSence(
-        r".\asset\autofreshmap\rawmaterial\{}.png".format(name),
-        r".\asset\autofreshmap\map\{}.png".format(name)
-    )
-
-def outputMapSpawnPointCenter(name):
-    m=cv.imread(name)
-    center=getMapSpawnCenter(m)
-    print(center)
 
 def testOneRaw():
     loadAssetsNeeded4FreshAMap()

@@ -22,7 +22,6 @@ notliked=[
     'Kurban',
     'Mozdok#2',
     'Mozdok#1',
-    'Finland',
     'Tunisia',
 ]
 
@@ -42,19 +41,22 @@ snowemap=[
 
 notincluded=[
     'Serversk-13',
-    'BattleOfHurtgenForestDomination#1',
     'EasternEurope',
 ]
 
 desireds=[
     'AshRiver',
-    'FireArc',
     'Sinai',
-    'Jungle',
     'Poland',
-    'AralSea',
     'Carpathians',
     'FieldsOfNormandy',
+    'Jungle',
+    'FireArc',
+    'AralSea',
+    'Finland',
+    'Pradesh',
+    'BattleOfHurtgenForestDomination#1',
+    'AralSea',
 ]
 
 
@@ -73,12 +75,12 @@ whitelistedmap= alldesired
 
 singlechanneleddetection=False
 subsampleddetection=True
-subsampleddetectionrate=0.5
+subsampleddetectionrate=0.1
 
 log2file=False
 dbglog=False
 
-standardMatchThreshold=0.2
+standardMatchThreshold=0.25
 standardMapLeftTopPoint=[286,216]
 
 setonwifirecoverthresh=13
@@ -105,9 +107,9 @@ specialmapdetectors={
         "spawncenter":[316, 160],
         "allowederrrange":100,
     },
-    "Japan":{
-        "type":"mapAndSpawnDetector",
-        "path":mapname2path("Japan"),
+    "japan":{
+        "type":"mapandspawndetector",
+        "path":mapname2path("japan"),
         "spawncenter":[233, 572],
         "allowederrrange":100,
     },

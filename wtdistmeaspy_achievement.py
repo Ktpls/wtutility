@@ -185,8 +185,10 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     #standard: all bivalue map must be presented in [0,255] form
     psfindrange=int(2.5*gridave)
     #cut region and del the "ruler"
-    mps = np.copy(mcolored[-psfindrange:-3, -psfindrange:])
+    #3 is height of ruler, 14 is height of text, 1 is padding
+    mps = np.copy(mcolored[-3-14-2:-3, -psfindrange:])
     dbglogsavestep(mps)
+    #consider cut map in the last step, for using as more region info in detection as possible
 
     #filter absolute color
     mpshsv=cv.cvtColor(mps,cv.COLOR_BGR2HSV)
@@ -206,9 +208,9 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     mpsgray*=2
     mpsgray = mpsgray.astype('float')
     relblack = cv.threshold(
-        (mpsgray-(regionave(mpsgray, [5, 5])-20)), 0, 255, cv.THRESH_BINARY_INV)[1]
+        (mpsgray-(regionave(mpsgray, [5, 5])-5)), 0, 255, cv.THRESH_BINARY_INV)[1]
     dbglogsavestep(relblack)
-    
+
     # #filter adaptive saturation
     # mpssat=mpshsv[:,:,1].astype('float')
     # relinsat = cv.threshold(
@@ -255,18 +257,14 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     vector=np.round(np.flip(dence.shape)*0.5)-maxloc
     shiftmat=np.array([
         [1,0,vector[0]],
-        [0,1,vector[1]]
+        [0,1,0]
     ])
     black=cv.warpAffine(black,shiftmat,np.flip(black.shape))
-    dbglogsavestep(black)
-    
-    #assume text is at the center vertically
-    textheight=15*2
-    toppos=int(black.shape[0]*0.5-0.5*textheight)
-    black=black[toppos:toppos+textheight,:]
+    #padding for ease of recongnization by tesseract
+    black=cv.copyMakeBorder(black,3,3,3,3,cv.BORDER_CONSTANT,value=0)
     dbglogsavestep(black)
 
-    plottingscalestr = ptact.image_to_string(black.astype('uint8'), lang='eng')
+    plottingscalestr = ptact.image_to_string(black.astype('uint8'), lang='eng',config='--psm 7')
     log('plottingscale')
     log(plottingscalestr)
     plottingscale=numinstr(plottingscalestr)
