@@ -56,8 +56,10 @@ class matcher:
         return m.astype('float') #for matching
 
     def __init__(self,info:Dict):
-        m=os.path.join(assetroot,info['path'])
-        m=cv.imread(m)
+        path=os.path.join(assetroot,info['path'])
+        m=cv.imread(path)
+        if m.size==0:
+            raise BaseException('loading matcher failed in {}'.format(path))
         self.pointlt=np.array(info['lt'])
         self.pointrd=self.pointlt+np.flip(m.shape[:2])
         self.m=matcher.imagepreprocess(m)
@@ -80,7 +82,7 @@ class matcher:
         minValue, maxValue, minLoc, maxLoc = cv.minMaxLoc(result)
         return minValue
 
-    def cutmap(self,m):
+    def cutroi(self,m):
         return m[self.pointlt[1]:self.pointrd[1],self.pointlt[0]:self.pointrd[0],:]
 
     '''
@@ -88,7 +90,7 @@ class matcher:
     depressing big error in few position
     '''
     def matchSign_LOGSQDIFF_NORMED(self,mscr):
-        mscr=self.cutmap(mscr)
+        mscr=self.cutroi(mscr)
         mscr=matcher.imagepreprocess(mscr)
         return (
             (fc((self.m-mscr)**2).sum(axis=(0,1)))
@@ -127,24 +129,35 @@ class defaultdetector(detector):
 
 class signdetector(detector):
     #para: {"path":path,"lt":lt}
-    def __init__(self,para):
-        para["thresh"]=standardMatchThreshold
-        para["mask"]=None
+    def __init__(self,para:dict):
+        para=deepcopy(para)
+        para.setdefault('thresh',standardMatchThreshold)
+        para.setdefault('mask',None)
         self.mtc=matcher(para)
-    def detect(self,mscr):
+    def detect(self,mscr:np.ndarray):
         return self.mtc.detect(mscr)
     def getsigncenter(self):
         return self.mtc.getsigncenter()
     def getsignpointrd(self):
         return self.mtc.getsignpointrd()
 
+
+def mapname2path(mapname):
+    return 'map/'+mapname+'.png'
 class mapdetector(detector):
     #para: {"path":path}
-    def __init__(self,para):
-        para["mask"]=None
-        para["lt"]=standardMapLeftTopPoint
-        para["thresh"]=standardMatchThreshold
+    #the so called path is actually map name, by which mapname2path is needed
+    def __init__(self,para:dict):
+        para=deepcopy(para)
+        para.setdefault('mask',None)
+        para.setdefault('lt',standardMapLeftTopPoint)
+        para.setdefault('thresh',standardMatchThreshold)
+        para["path"]=mapname2path(para["path"])
         self.mtc=matcher(para)
+        
+        # self.detectspawn='spawncenter' in para
+        # self.spawncenter:np.ndarray=para.get('spawncenter',[0,0])
+        # self.allowederrrange:int=para.get('allowederrrange',0)
     def detect(self,mscr):
         return self.mtc.detect(mscr)
 
@@ -157,7 +170,7 @@ def getMapSpawnCenter(m):
     center=[(C*m).sum()/m.sum() for C in XY]
     return np.array(center)
 
-class mapAndSpawnDetector(detector):
+class mapAndSpawnDetector(mapdetector):
     '''
     para is like
         "path":path,
@@ -168,18 +181,13 @@ class mapAndSpawnDetector(detector):
     ]
     '''
     def __init__(self,para):
-        para["lt"]=standardMapLeftTopPoint
-        para["mask"]=None
-        para["thresh"]=standardMatchThreshold
-        self.mtc=matcher(para)
+        super().__init__(para)
         self.spawncenter:np.ndarray=para['spawncenter']
         self.allowederrrange:int=para['allowederrrange']
     def detect(self,mscr):
-        ismap=self.mtc.detect(mscr)
-        if not ismap:
+        if not super().detect(mscr):
             return False
-        
-        m=self.mtc.cutmap(mscr)
+        m=super().mtc.cutroi(mscr)
         center=getMapSpawnCenter(m)
         err=np.sqrt(((center-self.spawncenter)**2).sum())
         if dbglog:
@@ -191,6 +199,9 @@ class mapAndSpawnDetector(detector):
                 err
             ))
         return err<self.allowederrrange
+
+class ZoneDetector(mapdetector):
+    pass
 
 def getdetector(info):
     src='{}(info)'.format(info['type'])
@@ -209,7 +220,7 @@ def maplist2detectorlist(ml):
             specialmapdetectors[m] if m in specialmapdetectors else
             {
                 "type":"mapdetector",
-                "path":mapname2path(m)
+                "path":m
             }
         )
         for m in ml

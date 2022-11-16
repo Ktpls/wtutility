@@ -184,9 +184,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     #find plotting scale
     #standard: all bivalue map must be presented in [0,255] form
     psfindrange=int(2.5*gridave)
-    #cut region and del the "ruler"
-    #3 is height of ruler, 14 is height of text, 1 is padding
-    mps = np.copy(mcolored[-3-14-2:-3, -psfindrange:])
+    mps = np.copy(mcolored[-psfindrange:, -psfindrange:])
     dbglogsavestep(mps)
     #consider cut map in the last step, for using as more region info in detection as possible
 
@@ -220,7 +218,7 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     black=np.logical_and(darkgraypoints,relblack).astype('float')*255
     #black=np.logical_and(black,relinsat).astype('float')*255
     dbglogsavestep(black)
-    
+
     #delete grid lines
     gridlinekernellength=int(2*gridave)
     onepixline=np.ones([gridlinekernellength])
@@ -231,12 +229,11 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
         1*onepixline,
         -hardnessOnNeg*onepixline,
         -hardnessOnNeg*onepixline])/gridlinekernellength
-    #kernels=[kernelrow,kernelrow.T]
-    kernels=[kernelrow]
+    kernels=[kernelrow,kernelrow.T]
+    #kernels=[kernelrow]
     ongrid=np.zeros_like(black)*255
     for i in range(len(kernels)):
         onthisdirectiongrid=cv.filter2D(black/255,-1,kernels[i])
-        dbglogsavestep(onthisdirectiongrid*255)
         onthisdirectiongrid=cv.threshold(onthisdirectiongrid,0.01,255,cv.THRESH_BINARY)[1]
         dbglogsavestep(onthisdirectiongrid)
         ongrid=np.logical_or(ongrid,onthisdirectiongrid).astype('float')*255
@@ -250,6 +247,13 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
         black=densityfilter(black/255,[5,5],3/25).astype('float')*255
         dbglogsavestep(black)
     
+    
+    #cut region and del the "ruler"
+    #3 is height of ruler, 14 is height of text, 1 is gap between ruler and text
+    black = black[-3-1-14:-3-1, :]
+    #padding for ease of recongnization by tesseract
+    black=cv.copyMakeBorder(black,3,3,3,3,cv.BORDER_CONSTANT,value=0)
+    
     #set the most densed pos, as the text is, to center
     dence=density(black/255,[11,11])
     dbglogsavestep(dence,method='savematflt')
@@ -260,8 +264,6 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
         [0,1,0]
     ])
     black=cv.warpAffine(black,shiftmat,np.flip(black.shape))
-    #padding for ease of recongnization by tesseract
-    black=cv.copyMakeBorder(black,3,3,3,3,cv.BORDER_CONSTANT,value=0)
     dbglogsavestep(black)
 
     plottingscalestr = ptact.image_to_string(black.astype('uint8'), lang='eng',config='--psm 7')

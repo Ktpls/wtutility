@@ -12,7 +12,7 @@ def main():
         startpos=i.rfind('\\')+1
         endpos=i.find('.',startpos) #-1 on failure
         name=i[startpos:endpos] if endpos!=-1 else i[startpos:]
-        o=r".\asset\autofreshmap\map\{}.png".format(name)
+        o=mapname2path(name)
         
         pointlt=np.array(standardMapLeftTopPoint)
         pointrd=pointlt+[648,648]

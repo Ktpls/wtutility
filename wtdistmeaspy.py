@@ -17,26 +17,38 @@ class toast:
         messagelist=[m for m in messagelist if filterfoo(m)]
         msgs=[m['ctt'] for m in messagelist]
     
-    def getoutput(self):
+    def getallmsg(self):
         self.updatemsglist()
         return '\n'.join(self.messagelist)
+
+class bulletinBoard:
+    def __init__(self, idlecontent):
+        self.idlecontent=idlecontent
+        self.content=''
+        self.overduetime=time.perf_counter()
+    
+    def putup(self,content,peroid):
+        self.content=content
+        self.overduetime=time.perf_counter()+peroid
+    
+    def read(self):
+        if time.perf_counter()<self.overduetime:
+            return self.content
+        else:
+            return self.idlecontent
+
 
 def main():
     hud=fullScrHUD()
     hud.setcontent(np.zeros([h,w,3],np.uint8))
     hud.setup()
     screen=screenshoter(0)
-    fps=fpsmanager(10)
+    fps=fpsmanager(3)
     hotkey=hotkeymanager([
         192
     ])
 
-    idleprompt="(=v=)"
-    prompt=idleprompt
-    contentlefttime=time.perf_counter()
-    def setcontentlefttime():
-        nonlocal contentlefttime
-        contentlefttime=time.perf_counter()+10
+    bulletin=bulletinBoard('(=v=)\n')
     while(True):
         fps.next()
         keys=hotkey.getkeys()
@@ -88,7 +100,7 @@ def main():
                     prompt+='Not recommended to use for err sake, \nbetter remeas again, dbglog will be done\n'
                 prompt+='{}'.format('\n'.join(refresult))
                 prompt+='\n'
-                prompt+='dg=%5f,pe=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
+                prompt+='dg=%5f,ps=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
                         (distingrid,plottingscale,playererr,ymerr,griderr)
             else:
                 #really failed
@@ -99,12 +111,9 @@ def main():
                     time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
                     dbglogreason
                     ))
-            setcontentlefttime()
-
-        if time.perf_counter()>contentlefttime:
-            prompt=idleprompt
+            bulletin.putup(prompt,10)
         m=np.zeros([h,w,3],np.uint8)
-        m=outputlines2mat(m,np.array(outputpos),prompt)
+        m=outputlines2mat(m,np.array(outputpos),bulletin.read())
         m=addShadow2HUD(m)
         hud.setcontent(m)
         hud.update()
@@ -112,7 +121,7 @@ def main():
 
 def testground():
     scr=cv.imread(
-    r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-13-23-38-05_OnSEC_DN\unnamed.png")
+    r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-15-18-40-09_OnSEC_DN\unnamed.png")
     ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
         ))

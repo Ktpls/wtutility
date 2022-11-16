@@ -339,7 +339,7 @@ class fpsmanager:
         self.frametime=1/fps
     
     def next(self):
-        sleepuntil(lambda :time.perf_counter()-self.lt>self.frametime, dt=0.25*self.frametime)
+        sleepuntil(lambda :time.perf_counter()-self.lt>self.frametime, dt=0.5*self.frametime)
         self.lt=time.perf_counter()
 
 class hotkeymanager:
@@ -349,8 +349,7 @@ class hotkeymanager:
     def getkeys(self):
         return {k:isKBDown(k) for k in self.kc}
 
-def hsv2rgb(hsv):
-    mats=np.array([
+rgb2hsvmat=np.array([
         [
             [np.cos(0),np.cos(2/3*np.pi),np.cos(4/3*np.pi)],
             [np.sin(0),np.sin(2/3*np.pi),np.sin(4/3*np.pi)],
@@ -367,13 +366,15 @@ def hsv2rgb(hsv):
             [0,0,1]
         ],
     ])
+hsv2rgbmat=[np.linalg.inv(m) for m in rgb2hsvmat]
+def hsv2rgb(hsv):
     h,s,v=hsv
     h=h*np.pi/180
     xyv=np.array([s*np.cos(h),s*np.sin(h),v])
 
     #find the corresponding case
-    for c,m in enumerate(mats):
-        rgb=np.linalg.inv(m)@xyv
+    for c,m in enumerate(hsv2rgbmat):
+        rgb=m@xyv
         if np.argmax(rgb) == c:
             return rgb
     
@@ -387,24 +388,7 @@ def hsv2rgb(hsv):
     # return rgbs
 
 def rgb2hsv(rgb):
-    mats=np.array([
-        [
-            [np.cos(0),np.cos(2/3*np.pi),np.cos(4/3*np.pi)],
-            [np.sin(0),np.sin(2/3*np.pi),np.sin(4/3*np.pi)],
-            [1,0,0]
-        ],
-        [
-            [np.cos(0),np.cos(2/3*np.pi),np.cos(4/3*np.pi)],
-            [np.sin(0),np.sin(2/3*np.pi),np.sin(4/3*np.pi)],
-            [0,1,0]
-        ],
-        [
-            [np.cos(0),np.cos(2/3*np.pi),np.cos(4/3*np.pi)],
-            [np.sin(0),np.sin(2/3*np.pi),np.sin(4/3*np.pi)],
-            [0,0,1]
-        ],
-    ])
-    xyv=mats[np.argmax(rgb)]@rgb
+    xyv=rgb2hsvmat[np.argmax(rgb)]@rgb
     x,y,v=xyv
     hsv=np.array([180/np.pi*np.arctan2(y,x),np.sqrt(x**2+y**2),v])
     return hsv

@@ -10,9 +10,12 @@ def main():
     try:
         i=sys.argv[1]
         m=cv.imread(i)
+        if m.size==0:
+            raise BaseException('load img failed in {}'.format(i))
         center=getMapSpawnCenter(m)
         print(center)
     except BaseException as err:
         print(err)
-    os.system('pause')
+    finally:
+        os.system('pause')
 main()

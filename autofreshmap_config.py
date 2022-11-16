@@ -56,6 +56,7 @@ desireds=[
     'Finland',
     'Pradesh',
     'BattleOfHurtgenForestDomination#1',
+    'BattleOfHurtgenForestConquest#1',
     'AralSea',
 ]
 
@@ -85,44 +86,47 @@ standardMapLeftTopPoint=[286,216]
 
 setonwifirecoverthresh=13
 
-def mapname2path(mapname):
-    return 'map/'+mapname+'.png'
-
 specialmapdetectors={
     "FrozenPass":{
         "type":"mapAndSpawnDetector",
-        "path":mapname2path("FrozenPass"),
+        "path":"FrozenPass",
         "spawncenter":[474,477],
         "allowederrrange":100,
     },
     "EasternEurope":{
         "type":"mapAndSpawnDetector",
-        "path":mapname2path("EasternEurope"),
+        "path":"EasternEurope",
         "spawncenter":[109,456],
         "allowederrrange":100,
     },
     "Karelia":{
         "type":"mapAndSpawnDetector",
-        "path":mapname2path("Karelia"),
+        "path":"Karelia",
         "spawncenter":[316, 160],
         "allowederrrange":100,
     },
-    "japan":{
-        "type":"mapandspawndetector",
-        "path":mapname2path("japan"),
-        "spawncenter":[233, 572],
-        "allowederrrange":100,
-    },
+    # "Japan":{
+    #     "type":"mapandspawndetector",
+    #     "path":"Japan",
+    #     "spawncenter":[233, 572],
+    #     "allowederrrange":100,
+    # },
     "Normandy":{
         "type":"mapAndSpawnDetector",
-        "path":mapname2path("Normandy"),
+        "path":"Normandy",
         "spawncenter":[536, 164],
         "allowederrrange":100,
     },
     "Poland":{
         "type":"mapAndSpawnDetector",
-        "path":mapname2path("Poland"),
+        "path":"Poland",
         "spawncenter":[86, 312],
         "allowederrrange":100,
     },
+    "Jungle":{
+        "type":"mapAndSpawnDetector",
+        "path":"Jungle",
+        "spawncenter":[130, 352],
+        "allowederrrange":100,
+    }
 }
