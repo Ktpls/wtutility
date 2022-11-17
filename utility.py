@@ -3,6 +3,7 @@ import os
 import ctypes
 import time
 from time import sleep
+import random
 import threading
 from typing import Dict,List,Callable
 
@@ -417,3 +418,44 @@ def digitsof(s:str):
 def numinstr(s:str):
     s=digitsof(s)
     return int(s) if len(s)>0 else 0
+
+#convert prob density(f) to prob func(F)
+#section n: ret[n-1]~ret[n]
+#for n=0: 0~ret[n]
+def integralProb(prob):
+    sum=0
+    ret=np.zeros_like(prob)
+    for i in range(len(prob)):
+        sum+=prob[i]
+        ret[i]=sum
+    return ret
+
+#summon from card pool, but using integrated prob
+def summonCard(inteprob):
+    pos=random.random()*inteprob[-1]
+    for n in range(len(inteprob)):
+        if inteprob[n]>pos:
+            return n
+
+#faster summon using division
+def quickSummonCard(inteprob):
+    pos=random.random()*inteprob[-1]
+    section=[0,len(inteprob)]
+    def compare(n):
+        #compare pos with section[n]
+        if pos>inteprob[n]:
+            return 1
+        else:#pos<=section[n]
+            if pos>(inteprob[n-1] if n>=1 else 0):
+                return 0
+            else:
+                return -1
+    while(True):
+        mid=int((section[1]+section[0])*0.5)
+        compresult=compare(mid)
+        if compresult==1:
+            section[0]=mid+1
+        elif compresult==-1:
+            section[1]=mid
+        else: #compresult==0
+            return mid

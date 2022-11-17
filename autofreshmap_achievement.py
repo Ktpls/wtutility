@@ -141,6 +141,14 @@ class signdetector(detector):
     def getsignpointrd(self):
         return self.mtc.getsignpointrd()
 
+def getMapSpawnCenter(m):
+    m=cv.cvtColor(m,cv.COLOR_BGR2HSV)
+    m=cv.inRange(m,hsv2opencv8bithsv([220,60,65]),hsv2opencv8bithsv([230,90,100]))
+    X=np.arange(m.shape[1])
+    Y=np.arange(m.shape[0])
+    XY=np.meshgrid(X,Y)
+    center=[(C*m).sum()/m.sum() for C in XY]
+    return np.array(center)
 
 def mapname2path(mapname):
     return 'map/'+mapname+'.png'
@@ -155,53 +163,20 @@ class mapdetector(detector):
         para["path"]=mapname2path(para["path"])
         self.mtc=matcher(para)
         
-        # self.detectspawn='spawncenter' in para
-        # self.spawncenter:np.ndarray=para.get('spawncenter',[0,0])
-        # self.allowederrrange:int=para.get('allowederrrange',0)
+        self.detectspawn='spawncenter' in para
+        self.spawncenter:np.ndarray=para.get('spawncenter',[0,0])
+        self.allowederrrange:int=para.get('allowederrrange',0)
+        
     def detect(self,mscr):
-        return self.mtc.detect(mscr)
-
-def getMapSpawnCenter(m):
-    m=cv.cvtColor(m,cv.COLOR_BGR2HSV)
-    m=cv.inRange(m,hsv2opencv8bithsv([220,60,65]),hsv2opencv8bithsv([230,90,100]))
-    X=np.arange(m.shape[1])
-    Y=np.arange(m.shape[0])
-    XY=np.meshgrid(X,Y)
-    center=[(C*m).sum()/m.sum() for C in XY]
-    return np.array(center)
-
-class mapAndSpawnDetector(mapdetector):
-    '''
-    para is like
-        "path":path,
-        "mask":mask or None,
-        "thresh":thresh,
-        "spawncenter":[],
-        "allowederrrange":allowederrrange,
-    ]
-    '''
-    def __init__(self,para):
-        super().__init__(para)
-        self.spawncenter:np.ndarray=para['spawncenter']
-        self.allowederrrange:int=para['allowederrrange']
-    def detect(self,mscr):
-        if not super().detect(mscr):
-            return False
-        m=super().mtc.cutroi(mscr)
-        center=getMapSpawnCenter(m)
-        err=np.sqrt(((center-self.spawncenter)**2).sum())
-        if dbglog:
-            allchanneloutput(
-                'in mapAndSpawnDetector, and finally got in spawn center detection')
-            allchanneloutput(
-                'center is {}, err is {}'.format(
-                center,
-                err
-            ))
-        return err<self.allowederrrange
-
-class ZoneDetector(mapdetector):
-    pass
+        ismapright=self.mtc.detect(mscr)
+        if self.detectspawn:
+            m=self.mtc.cutroi(mscr)
+            center=getMapSpawnCenter(m)
+            err=np.sqrt(((center-self.spawncenter)**2).sum())
+            isspawnright=err<self.allowederrrange
+        else:
+            isspawnright=True
+        return ismapright and isspawnright
 
 def getdetector(info):
     src='{}(info)'.format(info['type'])
@@ -246,7 +221,8 @@ stateDetectorInfo={
     },
     'OK':{
         'path':signName2Path('OK'), #有时有色差，很奇怪。可能按钮不完全是不透明的？
-        'lt':[896,553]
+        'lt':[896,553],
+        'thresh':0.3
     }
 }
 
@@ -375,10 +351,3 @@ def testOneRaw():
     scr=cv.imread(r"C:\Program Files\WarThunder\wtequ\Opdar\asset\autofreshmap\rawmaterial\Serversk-13.png")
     ret= [d.detect(scr) for d in whitelistedmapdetector.values()]
     print()
-# loadAssetsNeeded4FreshAMap()
-# ss=screenshoter(0)
-# while(True):
-#     pic=ss.shotbgr()
-#     print(stateDetector['OK'].detect(pic))
-#     savemat(pic)
-#     sleep(1)

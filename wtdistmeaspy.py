@@ -1,6 +1,5 @@
 
 from wtdistmeaspy_achievement import *
-
 class toast:
     messagelist=[]
     def sendmessage(self,content, peroid):
@@ -21,6 +20,7 @@ class toast:
         self.updatemsglist()
         return '\n'.join(self.messagelist)
 
+#new msg covers the lasts
 class bulletinBoard:
     def __init__(self, idlecontent):
         self.idlecontent=idlecontent
@@ -48,7 +48,20 @@ def main():
         192
     ])
 
-    bulletin=bulletinBoard('(=v=)\n')
+    idlebulletincontents=[
+        ['(=v=)',70],
+        ['(-.-)',29],
+        ['(>^<)',1],
+    ]
+    bulletin=bulletinBoard(
+        idlebulletincontents[
+            summonCard(
+                integralProb(
+                    [c[1] for c in idlebulletincontents]
+                )
+            )
+        ][0]
+    )
     while(True):
         fps.next()
         keys=hotkey.getkeys()
@@ -66,9 +79,7 @@ def main():
             #keep collecting
             dbglogreason=None
             ret=SolveMap_BottomRightSmallMap(scr)
-            # ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
-            #         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
-            #         ))
+
             if didSolveMapSucceed(ret):
                 state,playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale=ret
                 

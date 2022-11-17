@@ -9,6 +9,8 @@ def main():
         freshAMap()
     except:
         traceback.print_exc()
+        win32api.Beep(1000,1000)
+        win32api.Beep(500,1000)
         system('pause')
         
     #testOneRaw()

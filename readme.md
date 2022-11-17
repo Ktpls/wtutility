@@ -76,14 +76,14 @@
 例子：
 ```Json
 "FrozenPass":{
-    "type":"mapAndSpawnDetector",
+    "type":"mapdetector",
     "path":"FrozenPass",
     "spawncenter":[474,477],
     "allowederrrange":100,
 },
 ```
 其中，
-type保持为mapAndSpawnDetector
+type保持为mapdetector
 path为地图名
 spawncenter需填入通过autofreshmap_calcmapspawncenter工具计算出的此地图重生点位置
 allowederrrange为允许重生点偏移的范围
@@ -97,7 +97,7 @@ allowederrrange为允许重生点偏移的范围
 ##wtdistmeaspy
 本文为用于WT的黄标测距功能的使用说明
 ###界面与使用
-成功安装后，应在屏幕上，默认为左边中间处出现一个`(=v=)`样表情
+成功安装后，应在屏幕上，默认为左边中间处，出现一个表情
 按下测距按键，若一切顺利稍等片刻即可在同一位置处出现测距信息
 其中第二行dist值即为距离
 若测距失败，会只出现一行错误提示

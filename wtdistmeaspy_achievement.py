@@ -307,3 +307,5 @@ def addShadow2HUD(m,thickness=shadowthickness):
     edge=cv.threshold(edge,0,1,cv.THRESH_BINARY)[1]
     edge=edge.reshape(edge.shape+(1,))
     return m+edge*shadowcolor
+
+
