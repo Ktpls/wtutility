@@ -87,15 +87,13 @@ def main():
                 ympos=np.array(ympos)
                 playerpos=np.array(playerpos)
                 distingrid=np.sqrt(((ympos-playerpos)**2).sum())/gridave #using unit in grid
-                #something going wrong, either not found or digits lost, if less than 140 or more than 350
-                dist=distingrid*plottingscale  if plottingscale>100 and plottingscale<400 else None
+                dist=distingrid*plottingscale
                 
                 refresult=['%3d: %5d'%(r, int(distingrid*r+0.5)) for r in reflist]
                 
                 prompt=''
                 prompt+='%s\n'%(state)
-                if dist is not None:
-                    prompt+='dist=%d\n'%(dist)
+                prompt+='dist=%d\n'%(dist)
                 def strictErrCheck():
                     if playererr>4:
                         return 'SEC_PE'
@@ -103,12 +101,15 @@ def main():
                         return 'SEC_YE'
                     if griderr>4:
                         return 'SEC_GE'
-                    if dist is None:
+                    #something going wrong, either not found or digits lost,
+                    # if less than 140 or more than 350
+                    if plottingscale<100 or plottingscale>500:
                         return 'SEC_DN'
                     return None #keep dbglog unneeded
                 dbglogreason=strictErrCheck()
                 if dbglogreason is not None:
-                    prompt+='Not recommended to use for err sake, \nbetter remeas again, dbglog will be done\n'
+                    prompt+='but {}. \n'.format(dbglogreason)
+                    prompt+='Not recommended to use, better try again\n'
                 prompt+='{}'.format('\n'.join(refresult))
                 prompt+='\n'
                 prompt+='dg=%5f,ps=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
