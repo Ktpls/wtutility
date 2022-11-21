@@ -1,8 +1,8 @@
 
 from turtle import goto
 from typing import Callable
-from wtdistmeaspy_achievement import *
-from autofreshmap_achievement import *
+from wtdistmeaspy_implementation import *
+from autofreshmap_implementation import *
 class activity:
     def __init__(self):
         pass

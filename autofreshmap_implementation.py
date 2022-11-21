@@ -21,6 +21,59 @@ else:
     def allchanneloutput(s):
         print(s)
 
+class networkOperationImplementationSuite:
+    @staticmethod
+    def setoffwifi():
+        pass
+    @staticmethod
+    def setonwifi():
+        pass
+
+class networkOperationImplementation_ipconfigrelease(networkOperationImplementationSuite):
+    @staticmethod
+    def setoffwifi():
+        os.system('ipconfig /release "WLAN"')
+    @staticmethod
+    def setonwifi():
+        os.system('ipconfig /renew "WLAN"')
+
+class networkOperationImplementation_netshinterfacesetinterfacedisable(networkOperationImplementationSuite):
+    @staticmethod
+    def setoffwifi():
+        os.system('netsh interface set interface name="WLAN" admin=disable')
+    @staticmethod
+    def setonwifi():
+        os.system('netsh interface set interface name="WLAN" admin=enable')
+
+networkOperationImplementationAvailableList=[
+    'ipconfigrelease',
+    'netshinterfacesetinterfacedisable',
+]
+
+networkOperationImplementationName=networkOperationImplementationAvailableList[1]
+
+def setoffwifi():
+    exec('networkOperationImplementation_{}.setoffwifi()'.format(networkOperationImplementationName))
+
+def setonwifi():
+    exec('networkOperationImplementation_{}.setonwifi()'.format(networkOperationImplementationName))
+
+#pass in __file__
+def setadmin(file):
+    import sys
+    def is_admin():
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            return False
+    if not is_admin():
+        quotedpy='"'+file+'"'
+        if sys.version_info[0] == 3:
+            ret=ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, quotedpy, None, 1)
+        else:#in python2.x
+            ret=ctypes.windll.shell32.ShellExecuteW(None, u"runas", unicode(sys.executable), unicode(quotedpy), None, 1)
+        exit()
+
 
 #singleChanneled
 def picNorm(m):
@@ -290,7 +343,7 @@ def freshAMap():
                 #click(stateDetector['hanger'].getsigncenter())
                 press(keycode.key_Enter)
             return False
-        if not keepdetecting(detectLoadingMap, 0.1):
+        if not keepdetecting(detectLoadingMap):
             return
         
         win32api.Beep(500,100)
@@ -326,6 +379,7 @@ def freshAMap():
         def detectGameCanceled(scr):
             if not stateDetector['LoadingMap'].detect(scr):
                 return True
+            #setoffwifi()
             return False
         #detect able to enter again
         def detectGameRematchable(scr):

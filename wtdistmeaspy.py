@@ -1,5 +1,5 @@
 
-from wtdistmeaspy_achievement import *
+from wtdistmeaspy_implementation import *
 class toast:
     messagelist=[]
     def sendmessage(self,content, peroid):
@@ -50,8 +50,8 @@ def main():
 
     idlebulletincontents=[
         ['(=v=)',70],
-        ['(-.-)',29],
-        ['(>^<)',1],
+        ['(>^<)',29],
+        ['(0v0)',1],
     ]
     bulletin=bulletinBoard(
         idlebulletincontents[

@@ -1,7 +1,7 @@
 
 import os
 import sys
-from autofreshmap_achievement import *
+from autofreshmap_implementation import *
 
 
 def main():

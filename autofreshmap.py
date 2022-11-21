@@ -1,6 +1,6 @@
 
 from os import system
-from autofreshmap_achievement import *
+from autofreshmap_implementation import *
 import traceback
 
 def main():

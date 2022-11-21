@@ -40,28 +40,6 @@ class logger:
     def __call__(self, content):
         self.log(content)
 
-def setoffwifi():
-    os.system('netsh interface set interface name="WLAN" admin=disable')
-
-def setonwifi():
-    os.system('netsh interface set interface name="WLAN" admin=enable')
-
-#pass in __file__
-def setadmin(file):
-    import sys
-    def is_admin():
-        try:
-            return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
-            return False
-    if not is_admin():
-        quotedpy='"'+file+'"'
-        if sys.version_info[0] == 3:
-            ret=ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, quotedpy, None, 1)
-        else:#in python2.x
-            ret=ctypes.windll.shell32.ShellExecuteW(None, u"runas", unicode(sys.executable), unicode(quotedpy), None, 1)
-        exit()
-
 DEFAULT_OUTPUT_ROOT=r'./output/'
 def savemat(m,name=None,path=None):
     if path is None:
