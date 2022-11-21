@@ -270,6 +270,15 @@ def SolveMap_BottomRightSmallMap(isrc,dbg:bool=False,dbglogpath:str=''):
     log('plottingscale')
     log(plottingscalestr)
     plottingscale=numinstr(plottingscalestr)
+    plottingscalestr=str(plottingscale)
+    if len(plottingscalestr)>3:
+        #got extra characters
+        #trim and do it again
+        #this is for the arrow indicating some planes outside the map
+        # blocks the 'm' in 'xxx m' and made it tough for ocr
+        #but if arrow, or any tank icon blocking the digit chars this would have no way to fix
+        plottingscalestr=plottingscalestr[:3]
+        plottingscale=numinstr(plottingscalestr)
 
     return 'OK',playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale
 
