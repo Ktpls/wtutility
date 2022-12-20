@@ -1,46 +1,76 @@
 
 from wtdistmeaspy_implementation import *
-class toast:
-    messagelist=[]
-    def sendmessage(self,content, peroid):
-        self.messagelist.append({
-            'ctt':content,
-            'st':time.perf_counter(),
-            'per':peroid
-        })
-    
-    def updatemsglist(self):
-        nowtime=time.perf_counter()
-        def filterfoo(m):
-            return m['per']>m['ctt']-nowtime
-        messagelist=[m for m in messagelist if filterfoo(m)]
-        msgs=[m['ctt'] for m in messagelist]
-    
-    def getallmsg(self):
-        self.updatemsglist()
-        return '\n'.join(self.messagelist)
 
-#new msg covers the lasts
-class bulletinBoard:
-    def __init__(self, idlecontent):
-        self.idlecontent=idlecontent
-        self.content=''
-        self.overduetime=time.perf_counter()
-    
-    def putup(self,content,peroid):
-        self.content=content
-        self.overduetime=time.perf_counter()+peroid
-    
-    def read(self):
-        if time.perf_counter()<self.overduetime:
-            return self.content
+
+def mainlogic():
+    sleep(measdelay) #for network delay
+            
+    # solve as successfully as possible
+    for i in range(retryOnFailure):
+        scr=screenshoter().shotbgr()
+        scr=cutBottomRightMap(scr)
+                
+                #keep collecting
+        if keepEveryMeasInRecord:
+            ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_NormalTrace/'.format(
+                        time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
+                        ))
         else:
-            return self.idlecontent
+            ret=SolveMap_BottomRightSmallMap(scr)
+
+        if didSolveMapSucceed(ret):
+            break
+        sleep(retryDelay)
+            
+    if not didSolveMapSucceed(ret):
+                #still failed
+        prompt=ret[0]
+        dbglogreason=ret[0]
+    else:
+        state,playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale=ret
+                
+                #calc
+        ympos=np.array(ympos)
+        playerpos=np.array(playerpos)
+        distingrid=np.sqrt(((ympos-playerpos)**2).sum())/gridave #using unit in grid
+        dist=distingrid*plottingscale
+                
+        refresult=['%3d: %5d'%(r, int(distingrid*r+0.5)) for r in reflist]
+                
+        prompt=''
+        prompt+='%s\n'%(state)
+        prompt+='dist=%d\n'%(dist)
+        def strictErrCheck():
+            if playererr>plerrreqstrict:
+                return 'SEC_PE'
+            if  ymerr<ymerrreqstrict:
+                return 'SEC_YE'
+            if griderr>griderrreqstrict:
+                return 'SEC_GE'
+                    #something going wrong, either not found or digits lost,
+                    # if less than 140 or more than 350
+            if plottingscale<plottingscalestrictlower or plottingscale>plottingscalestrictupper:
+                return 'SEC_DN'
+            return None #keep dbglog unneeded
+        dbglogreason=strictErrCheck()
+        if dbglogreason is not None:
+            prompt+='but {}. \n'.format(dbglogreason)
+            prompt+='Not recommended to use, better try again\n'
+        prompt+='{}'.format('\n'.join(refresult))
+        prompt+='\n'
+        prompt+='dg=%5f,ps=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
+                        (distingrid,plottingscale,playererr,ymerr,griderr)
+    if dbglogreason is not None:
+        ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_On{}/'.format(
+                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
+                    dbglogreason
+                    ))
+
+    return prompt
 
 
 def main():
     hud=fullScrHUD()
-    hud.setcontent(np.zeros([h,w,3],np.uint8))
     hud.setup()
     screen=screenshoter(0)
     fps=fpsmanager(3)
@@ -49,10 +79,12 @@ def main():
     ])
 
     idlebulletincontents=[
-        ['(=v=)',70],
-        ['(>^<)',29],
+        ['(=w=)',69],
+        ['(>^<)',30],
         ['(0v0)',1],
     ]
+    #每天固定一种
+    initPyRandom(time.strftime('%Y-%m-%d',time.localtime()))
     bulletin=bulletinBoard(
         idlebulletincontents[
             summonCard(
@@ -65,78 +97,16 @@ def main():
     while(True):
         fps.next()
         keys=hotkey.getkeys()
-        if keys[192]: 
+        if keys[192]:
             '''
             VK_OEM_3=0xC0
             Used for miscellaneous characters; it can vary by keyboard.
             For the US standard keyboard, the '`~' key
             '''
-            sleep(0.5) #for network delay
-            scr=screen.shotbgr()
-            #scr=cv.imread(r'./asset/wtdistmeaspy/shot.png')
-            scr=cutBottomRightMap(scr)
-            
-            #keep collecting
-            dbglogreason=None
-            ret=SolveMap_BottomRightSmallMap(scr)
-
-            if didSolveMapSucceed(ret):
-                state,playerpos,playererr,ympos,ymerr,gridave,griderr,plottingscale=ret
-                
-                #calc
-                ympos=np.array(ympos)
-                playerpos=np.array(playerpos)
-                distingrid=np.sqrt(((ympos-playerpos)**2).sum())/gridave #using unit in grid
-                dist=distingrid*plottingscale
-                
-                refresult=['%3d: %5d'%(r, int(distingrid*r+0.5)) for r in reflist]
-                
-                prompt=''
-                prompt+='%s\n'%(state)
-                prompt+='dist=%d\n'%(dist)
-                def strictErrCheck():
-                    if playererr>4:
-                        return 'SEC_PE'
-                    if  ymerr<0.5:
-                        return 'SEC_YE'
-                    if griderr>4:
-                        return 'SEC_GE'
-                    #something going wrong, either not found or digits lost,
-                    # if less than 140 or more than 350
-                    if plottingscale<100 or plottingscale>500:
-                        return 'SEC_DN'
-                    return None #keep dbglog unneeded
-                dbglogreason=strictErrCheck()
-                if dbglogreason is not None:
-                    prompt+='but {}. \n'.format(dbglogreason)
-                    prompt+='Not recommended to use, better try again\n'
-                prompt+='{}'.format('\n'.join(refresult))
-                prompt+='\n'
-                prompt+='dg=%5f,ps=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
-                        (distingrid,plottingscale,playererr,ymerr,griderr)
-            else:
-                #really failed
-                prompt=ret[0]
-                dbglogreason=ret[0]
-            if dbglogreason is not None:
-                ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_On{}/'.format(
-                    time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
-                    dbglogreason
-                    ))
+            prompt = mainlogic()
             bulletin.putup(prompt,10)
         m=np.zeros([h,w,3],np.uint8)
-        m=outputlines2mat(m,np.array(outputpos),bulletin.read())
-        m=addShadow2HUD(m)
+        m=outputlines2mat(m,np.array(outputpos),bulletin.read(),textcolor=textcolor)
+        m=addShadow2HUD(m,thickness=shadowthickness,color=shadowcolor)
         hud.setcontent(m)
         hud.update()
-
-
-def testground():
-    scr=cv.imread(
-    r"C:\Program Files\WarThunder\wtequ\Opdar\asset\wtdistmeaspy\log\2022-11-15-18-40-09_OnSEC_DN\unnamed.png")
-    ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
-        time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
-        ))
-    print(ret)
-
-main()

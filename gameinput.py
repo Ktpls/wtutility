@@ -79,10 +79,40 @@ def wtpress(k):
 def moveto(p):
     windll.user32.SetCursorPos(int(p[0]), int(p[1]))
 
+import win32con
+class mouse:
+    __downk2f={
+        0:win32con.MOUSEEVENTF_LEFTDOWN,
+        1:win32con.MOUSEEVENTF_RIGHTDOWN,
+        2:win32con.MOUSEEVENTF_MIDDLEDOWN 
+    }
+    __upk2f={
+        0:win32con.MOUSEEVENTF_LEFTUP,
+        1:win32con.MOUSEEVENTF_RIGHTUP,
+        2:win32con.MOUSEEVENTF_MIDDLEUP 
+    }
+    @staticmethod
+    def __callevent(dwflags):
+        windll.user32.mouse_event(dwflags, 0, 0, 0, 0)
+
+    @staticmethod
+    def down(key):
+        mouse.__callevent(mouse.__downk2f[key])
+
+    @staticmethod
+    def up(key):
+        mouse.__callevent(mouse.__upk2f[key])
+
+def mouseup():
+    windll.user32.mouse_event(4, 0, 0, 0, 0)
+
+def mousedown():
+    windll.user32.mouse_event(2, 0, 0, 0, 0)
+
 def click(p):
     moveto(p)
     time.sleep(0.05)
-    windll.user32.mouse_event(2, 0, 0, 0, 0)
+    mousedown()
     time.sleep(0.01)
-    windll.user32.mouse_event(4, 0, 0, 0, 0)
+    mouseup()
     time.sleep(0.1)

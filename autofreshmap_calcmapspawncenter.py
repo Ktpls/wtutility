@@ -12,10 +12,11 @@ def main():
         m=cv.imread(i)
         if m.size==0:
             raise BaseException('load img failed in {}'.format(i))
-        center=getMapSpawnCenter(m)
-        print(center)
+        print(f'blue at {getMapSpawnCenter(m,"blue")}')
+        print(f'red at {getMapSpawnCenter(m,"red")}')
     except BaseException as err:
         print(err)
     finally:
         os.system('pause')
+
 main()

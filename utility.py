@@ -14,12 +14,9 @@ import win32gui
 import win32ui
 import win32con
 import win32api
+
 def deduplicate(l:List):
-    ret=[]
-    for i in l:
-        if i not in ret:
-            ret.append(i)
-    return ret
+    yield from dict.fromkeys(l)
 
 class logger:
     def __init__(self,path):
@@ -40,26 +37,21 @@ class logger:
     def __call__(self, content):
         self.log(content)
 
-DEFAULT_OUTPUT_ROOT=r'./output/'
-def savemat(m,name=None,path=None):
-    if path is None:
-        path=DEFAULT_OUTPUT_ROOT
+def savemat(m,name='unnamed',path=r'./output/',suffix='.png',autorename=True):
     if not os.path.exists(path):
         os.makedirs(path)
-    if name is None:
-        name='unnamed'
-    totalpath=os.path.join(path,name+'.png')
+    totalpath=os.path.join(path,name+suffix)
     #find suitable name
-    if os.path.exists(totalpath):
+    if os.path.exists(totalpath) and autorename:
         suffix_idx=0
         while(True):
             suffix_idx+=1
             newname='{}-{}'.format(name,suffix_idx)
-            totalpath=os.path.join(path,newname+'.png')
+            totalpath=os.path.join(path,newname+suffix)
             if not os.path.exists(totalpath):
                 break
     
-    cv.imwrite(totalpath,m)
+    return cv.imwrite(totalpath,m)
 
 def savematn(m:np.ndarray,name=None,path=None):
     mtmp=m.copy()
@@ -87,14 +79,21 @@ def regionsum(m,size,mask=None):
         np.ones(size,np.float32)
         )
 
-def regionave(m,size,mask=None):
+
+# if denominatorConstrainedByBoundaryAndMask==True:
+# denominator will be #pix nearby on mask
+# else:
+# denominator will not consider mask and boundary and be size[0]*size[1]
+# u may ask mask==None does the same as denominatorConstrainedByBoundaryAndMask==True
+# but if u want to use mask and dont want to be constrained by boundary. unimplemented though
+def regionave(m,size,mask=None,denominatorConstrainedByBoundaryAndMask=True):
     if m.size<=0:
         return m
-    #0.01 for mask is fully black
-    #why use ones_like(m) as mask rather than regionsum(m,size)/(size[0]*size[1])?
-    #cuz the latter would be too big an area at the edge of pic, there is just no this many pixels
-    mask=np.ones_like(m) if mask is None else mask
-    return regionsum(m,size,mask)/(regionsum(mask,size)+0.01)
+    if mask is None or denominatorConstrainedByBoundaryAndMask:
+        denominator=size[0]*size[1]
+    else:
+        denominator=(regionsum(mask,size)+0.01)
+    return regionsum(m,size,mask)/denominator
 
 def density(p,size):
     return regionave(p.astype('float'),size)
@@ -116,29 +115,30 @@ def getWTHwnd():
 from ctypes import windll, byref, c_ubyte
 from ctypes.wintypes import RECT, HWND
 class screenshoter:
-    def __init__(self,hwnd):
-        self.hwnd=hwnd
+    def __init__(self,hwnd=0):
+        self.wthwnd=hwnd
         # r = RECT()
         # windll.user32.GetClientRect(self.hwnd, byref(r))
         # self.res=[r.right,r.bottom]
         self.res=[1920,1080]
-        self.dc = windll.user32.GetDC(self.hwnd)
-        self.cdc = windll.gdi32.CreateCompatibleDC(self.dc)
-        self.bitmap = windll.gdi32.CreateCompatibleBitmap(self.dc, self.res[0], self.res[1])
-        windll.gdi32.SelectObject(self.cdc, self.bitmap)
+        self.wtdc = windll.user32.GetDC(self.wthwnd)
+        self.mydc = windll.gdi32.CreateCompatibleDC(self.wtdc)
+        self.mybitmap = windll.gdi32.CreateCompatibleBitmap(self.wtdc, self.res[0], self.res[1])
+        windll.gdi32.SelectObject(self.mydc, self.mybitmap)
 
     def __del__(self):
-        windll.gdi32.DeleteObject(self.bitmap)
-        windll.gdi32.DeleteObject(self.cdc)
-        windll.user32.ReleaseDC(self.hwnd, self.dc)
+        windll.gdi32.DeleteObject(self.mybitmap)
+        windll.gdi32.DeleteObject(self.mydc)
+        windll.user32.ReleaseDC(self.wthwnd, self.wtdc)
 
     def shot(self):
-        windll.gdi32.BitBlt(self.cdc, 0, 0, self.res[0], self.res[1], self.dc, 0, 0, win32con.SRCCOPY)
+        if windll.gdi32.BitBlt(self.mydc, 0, 0, self.res[0], self.res[1], self.wtdc, 0, 0, win32con.SRCCOPY)==0:
+            raise BaseException('bad shot, {}'.format(windll.kernel32.GetLastError()))
         # 截图是BGRA排列，因此总元素个数需要乘以4
         total_bytes = self.res[0]*self.res[1]*4
         buffer = bytearray(total_bytes)
         byte_array = c_ubyte*total_bytes
-        windll.gdi32.GetBitmapBits(self.bitmap, total_bytes, byte_array.from_buffer(buffer))
+        windll.gdi32.GetBitmapBits(self.mybitmap, total_bytes, byte_array.from_buffer(buffer))
         return np.frombuffer(buffer, dtype=np.uint8).reshape(self.res[1], self.res[0], 4)
 
     def shotbgr(self):
@@ -150,33 +150,37 @@ class screenshoter:
 
 
 # class screenshoter:
-#   def __init__(self,hwnd):
-#       self.res=[1920,1080]
-#       self.hwnd=hwnd
-#       self.hwndDC = win32gui.GetWindowDC(self.hwnd)
-#       if self.hwndDC==win32con.NULL:
-#           raise Exception('GetWindowDC() failed')
-#       self.mfcDC=win32ui.CreateDCFromHandle(self.hwndDC)
-#       self.saveDC=self.mfcDC.CreateCompatibleDC()
-#       self.saveBitMap = win32ui.CreateBitmap()
-#       self.saveBitMap.CreateCompatibleBitmap(self.mfcDC, self.res[0], self.res[1])
-#       self.saveDC.SelectObject(self.saveBitMap)
+#     def __init__(self,hwnd):
+#         self.res=[1920,1080]
+#         self.wthwnd=hwnd
+#         self.wtDC = win32gui.GetWindowDC(self.wthwnd)
+#         if self.wtDC==win32con.NULL:
+#             raise Exception('GetWindowDC() failed')
+#         self.wtmfcDC=win32ui.CreateDCFromHandle(self.wtDC)
+        
+#         self.myDC=self.wtmfcDC.CreateCompatibleDC()
+#         self.myBitMap = win32ui.CreateBitmap()
+#         self.myBitMap.CreateCompatibleBitmap(self.wtmfcDC, self.res[0], self.res[1])
+#         self.myDC.SelectObject(self.myBitMap)
 
-#   def __del__(self):
-#       win32gui.DeleteObject(self.saveBitMap.GetHandle())
-#       self.saveDC.DeleteDC()
-#       self.mfcDC=None
-#       win32gui.ReleaseDC(self.hwnd,self.hwndDC)
+#     def __del__(self):
+#         win32gui.DeleteObject(self.myBitMap.GetHandle())
+#         self.myDC.DeleteDC()
+#         self.wtmfcDC=None
+#         win32gui.ReleaseDC(self.wthwnd,self.wtDC)
 
-#   def shot(self):
-#       self.saveDC.BitBlt((0,0),(self.res[0], self.res[1]) , self.mfcDC, (0,0), win32con.SRCCOPY)
-#       m=self.saveBitMap.GetBitmapBits(self.res[0]* self.res[1] * 4);
-#       m=np.frombuffer(m,np.uint8)
-#       m=m.reshape([self.res[1], self.res[0],4])
-#       return m
+#     def shot(self):
+#         self.myDC.BitBlt((0,0),(self.res[0], self.res[1]) , self.wtmfcDC, (0,0), win32con.SRCCOPY)
+#         m=self.myBitMap.GetBitmapBits(self.res[0]* self.res[1] * 4);
+#         m=np.frombuffer(m,np.uint8)
+#         m=m.reshape([self.res[1], self.res[0],4])
+#         return m
 
-#   def shotgray(self):
-#       return cv.cvtColor(self.shot(),cv.COLOR_BGRA2GRAY)
+#     def shotgray(self):
+#         return cv.cvtColor(self.shot(),cv.COLOR_BGRA2GRAY)
+
+#     def shotbgr(self):
+#         return self.shot()[:,:,:3]
 
 
 def activeWindow(hwnd):  # 窗口置顶
@@ -189,16 +193,36 @@ def sleepuntil(con,dt=0.01):
     while(not con()):
         time.sleep(dt)
 
-
+'''
+#init
+hud=fullScrHUD()
+hud.setup()
+...
+#main loop
+#preparing to show
+hud.clear
+#init m1
+m1=hud.getblankscreen()
+#draw sth on m1
+#then add m1 to hud
+hud.addcontent(m1)
+...
+#ask hud to show
+hud.update()
+...
+#on exit
+hud.stop()
+'''
 class fullScrHUD:
     def __init__(self) -> None:
         self.resolution=[1080,1920]
-        self.m2show=np.zeros(np.concatenate((self.resolution,[4])),np.uint8)
         self.terminate=False
         self.hwnd=0
+        self.m2show=self.getblankscreenwithalfa()
+        #set m2draw
+        self.clear()
 
     def setup(self):
-        
         def WndProc(hwnd,msg,wParam,lParam):
             if msg == win32con.WM_PAINT:
                 rect = win32gui.GetClientRect(hwnd)
@@ -216,8 +240,9 @@ class fullScrHUD:
                 BitMap.CreateCompatibleBitmap(mfcDC, w, h)
                 ctypes.WinDLL('gdi32.dll').SetBitmapBits(BitMap.GetHandle(), w*h*4, self.m2show.tobytes())
                 hcdc.SelectObject(BitMap)
+                # myblendfunc=(win32con.AC_SRC_OVER,0,255,win32con.AC_SRC_ALPHA)
+                # win32gui.AlphaBlend(hdc,0,0,w, h , hcdc.GetHandleAttrib(), 0,0,w, h,myblendfunc)
                 win32gui.BitBlt(hdc,0,0,w, h , hcdc.GetHandleAttrib(), 0,0, win32con.SRCCOPY)
-                #win32gui.DrawText(hdc,'GUI Python',len('GUI Python'),rect,win32con.DT_SINGLELINE|win32con.DT_CENTER|win32con.DT_VCENTER)
                 win32gui.DeleteObject(BitMap.GetHandle())
                 hcdc.DeleteDC()
                 win32gui.EndPaint(hwnd,ps)
@@ -268,12 +293,25 @@ class fullScrHUD:
         t1 = threading.Thread(target=mainloop, args=())
         t1.start()
         time.sleep(1)
+    
+    def clear(self):
+        self.m2draw=self.getblankscreenwithalfa()
+    
+    def getblankscreen(self):
+        return np.zeros(self.resolution+[3,],np.uint8)
+    
+    def getblankscreenwithalfa(self):
+        return np.zeros(self.resolution+[4,],np.uint8)
+    
+    def addcontentwithalfa(self,m):
+        self.m2draw+=m
 
-    def setcontent(self,m):
+    def addcontent(self,m):
         alp=255*np.ones_like(m[:,:,0:1])
-        self.m2show=np.concatenate((m,alp),2)
+        self.m2draw+=np.concatenate((m,alp),2)
 
     def update(self):
+        self.m2show=self.m2draw
         win32gui.InvalidateRect(self.hwnd,None,False) #needless to clear cuz entire screen will be set
 
     def stop(self):
@@ -283,9 +321,6 @@ class fullScrHUD:
     @staticmethod
     def reverseMat2FitWindowsCoor(m):
         return np.flip(m,axis=0)
-    
-    def setcontentwithalfa(self,m):
-        self.m2show=m
 
 def isKBDown(k):
     return win32api.GetAsyncKeyState(k) and 0x1
@@ -408,6 +443,9 @@ def integralProb(prob):
         ret[i]=sum
     return ret
 
+def initPyRandom(seed):
+    random.seed(seed)
+
 #summon from card pool, but using integrated prob
 def summonCard(inteprob):
     pos=random.random()*inteprob[-1]
@@ -437,3 +475,73 @@ def quickSummonCard(inteprob):
             section[1]=mid
         else: #compresult==0
             return mid
+
+
+
+
+class toast:
+    messagelist=[]
+    def sendmessage(self,content, peroid):
+        self.messagelist.append({
+            'ctt':content,
+            'st':time.perf_counter(),
+            'per':peroid
+        })
+    
+    def updatemsglist(self):
+        nowtime=time.perf_counter()
+        def filterfoo(m):
+            return m['per']>m['ctt']-nowtime
+        messagelist=[m for m in messagelist if filterfoo(m)]
+        msgs=[m['ctt'] for m in messagelist]
+    
+    def getallmsg(self):
+        self.updatemsglist()
+        return '\n'.join(self.messagelist)
+
+#new msg covers the lasts
+class bulletinBoard:
+    def __init__(self, idlecontent):
+        self.idlecontent=idlecontent
+        self.content=''
+        self.overduetime=time.perf_counter()
+    
+    def putup(self,content,timeout):
+        self.content=content
+        self.overduetime=time.perf_counter()+timeout
+    
+    def read(self):
+        if time.perf_counter()<self.overduetime:
+            return self.content
+        else:
+            return self.idlecontent
+
+def outputlines2mat(m,pos,content,lineheight=25,textcolor=[255,255,255]):
+    m=m.copy()
+    line=content.split('\n')
+    for i,l in enumerate(line):
+        cv.putText(
+            m,
+            l,
+            pos.astype('int32')
+            +[0,i*lineheight],
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            textcolor)
+    return m
+
+
+def addShadow2HUD(m,thickness=2,color=50):
+    gray=cv.cvtColor(m,cv.COLOR_BGR2GRAY)
+    kernelshape=2*thickness+1
+    edgekernel=np.ones([kernelshape,kernelshape])
+    edgekernel[thickness,thickness]=-100#anchor pix must be black
+    # edgekernel=np.array([
+    #     [1,1,1],
+    #     [1,-80,1],
+    #     [1,1,1],
+    # ])
+    edge=cv.filter2D(gray,-1,edgekernel)
+    edge=cv.threshold(edge,0,1,cv.THRESH_BINARY)[1]
+    edge=edge.reshape(edge.shape+(1,))
+    return m+edge*color

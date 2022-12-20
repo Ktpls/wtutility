@@ -92,6 +92,9 @@ info like:{
 }
 '''
 
+def assetpath2realpath(ap):
+    return os.path.join(assetroot,ap)
+
 class matcher:
     @staticmethod
     def imagepreprocess(m,mask=None):
@@ -109,7 +112,7 @@ class matcher:
         return m.astype('float') #for matching
 
     def __init__(self,info:Dict):
-        path=os.path.join(assetroot,info['path'])
+        path=assetpath2realpath(info['path'])
         m=cv.imread(path)
         if m.size==0:
             raise BaseException('loading matcher failed in {}'.format(path))
@@ -194,26 +197,35 @@ class signdetector(detector):
     def getsignpointrd(self):
         return self.mtc.getsignpointrd()
 
-def getMapSpawnCenter(m):
+def getMapSpawnCenter(m,spawntype='blue'):
+    def spawnfilter_red(m):
+        return cv.inRange(m,hsv2opencv8bithsv([0,70,40]),hsv2opencv8bithsv([10,100,100]))
+    def spawnfilter_blue(m):
+        return cv.inRange(m,hsv2opencv8bithsv([220,70,40]),hsv2opencv8bithsv([230,100,100]))
+    spawnfilter={
+        'red':spawnfilter_red,
+        'blue':spawnfilter_blue
+    }
     m=cv.cvtColor(m,cv.COLOR_BGR2HSV)
-    m=cv.inRange(m,hsv2opencv8bithsv([220,60,65]),hsv2opencv8bithsv([230,90,100]))
+    m=spawnfilter[spawntype](m)
     X=np.arange(m.shape[1])
     Y=np.arange(m.shape[0])
     XY=np.meshgrid(X,Y)
     center=[(C*m).sum()/m.sum() for C in XY]
     return np.array(center)
 
-def mapname2path(mapname):
+def mapname2assetpath(mapname):
     return 'map/'+mapname+'.png'
 class mapdetector(detector):
     #para: {"path":path}
-    #the so called path is actually map name, by which mapname2path is needed
+    #the so called path is actually map name, by which mapname2assetpath is needed
+    #after that assetpath2realpath will be done in matcher
     def __init__(self,para:dict):
         para=deepcopy(para)
         para.setdefault('mask',None)
         para.setdefault('lt',standardMapLeftTopPoint)
         para.setdefault('thresh',standardMatchThreshold)
-        para["path"]=mapname2path(para["path"])
+        para["path"]=mapname2assetpath(para["path"])
         self.mtc=matcher(para)
         
         self.detectspawn='spawncenter' in para

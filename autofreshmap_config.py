@@ -18,11 +18,42 @@ citymap=[
     'Normandy',
 ]
 
+city_and_plain_combined=[
+    'AralSea',
+    'BattleOfHurtgenForestConquest#1',
+    'BattleOfHurtgenForestDomination#1',
+    'Finland',
+    'FrozenPass',
+    'Poland',
+    'Serversk-13',
+    'Tunisia',
+    'EasternEurope',
+]
+
+other_aaliked_except_city=[
+    'AralSea',
+    'BattleOfHurtgenForestConquest#1',
+    'BattleOfHurtgenForestDomination#1',
+    'Poland',
+    'Tunisia',
+]
+
+allaaliked=citymap+other_aaliked_except_city
+
 notliked=[
     'Kurban',
-    'Mozdok#2',
-    'Mozdok#1',
+    'Carpathians',
     'Tunisia',
+    "ArcticPier",
+    "VietnamDomination#2",
+    "VietnamDomination#1",
+    "Spaceport",
+    "FuldaDomination#2",
+    "FuldaDomination#1",
+    "ArdennesDomination#2",
+    "ArdennesDomination#1",
+    "38thParallel",
+    "ArcticPolarBase",
 ]
 
 flatplain=[
@@ -42,22 +73,31 @@ snowemap=[
 notincluded=[
     'Serversk-13',
     'EasternEurope',
-    'Carpathians',
 ]
 
 desireds=[
+    '38thParallel',
+    'AralSea',
     'AshRiver',
-    'Sinai',
-    'Poland',
-    'FieldsOfNormandy',
-    'Jungle',
-    'FireArc',
-    'AralSea',
-    'Finland',
-    'Pradesh',
-    'BattleOfHurtgenForestDomination#1',
     'BattleOfHurtgenForestConquest#1',
-    'AralSea',
+    'BattleOfHurtgenForestDomination#1',
+    'EuropeanProvince',
+    'FieldsOfPoland',
+    'Finland',
+    'FireArc',
+    'Jungle',
+    'MaginotLineDomination#1',
+    'MaginotLineDomination#2',
+    'Mozdok#1',
+    'Mozdok#2',
+    'Poland',
+    'Pradesh',
+    'RedDesert',
+    'SandsOfSinai',
+    'SandsOfTunisia',
+    'SecondBattleOfElAlameinDomination#1',
+    'SecondBattleOfElAlameinDomination#2',
+    'Sinai',
 ]
 
 
@@ -65,6 +105,7 @@ halfdesired=[
     'FrozenPass',
     'Karelia',
     'Japan',
+    'FieldsOfNormandy',
 ]
 
 alldesired=desireds+halfdesired
@@ -72,7 +113,7 @@ alldesired=desireds+halfdesired
 secondary=[
 ]
 
-whitelistedmap= alldesired
+whitelistedmap=alldesired
 
 singlechanneleddetection=False
 subsampleddetection=True
@@ -121,12 +162,18 @@ specialmapdetectors={
         "type":"mapdetector",
         "path":"Poland",
         "spawncenter":[86, 312],
-        "allowederrrange":100,
+        "allowederrrange":200,
     },
     "Jungle":{
         "type":"mapdetector",
         "path":"Jungle",
         "spawncenter":[130, 352],
+        "allowederrrange":100,
+    },
+    "FieldsOfNormandy":{
+        "type":"mapdetector",
+        "path":"FieldsOfNormandy",
+        "spawncenter":[ 88, 294],
         "allowederrrange":100,
     },
 }
