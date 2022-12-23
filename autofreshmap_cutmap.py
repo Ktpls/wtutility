@@ -16,10 +16,10 @@ def doOne(i):
         pointrd=pointlt+[648,648]
         mml=cv.imread(i)
         mm=mml[pointlt[1]:pointrd[1],pointlt[0]:pointrd[0]]
-        ret=cv.imwrite(o,mm)
-        
-        print(f'done into {o}')
-        print(f'result is {ret}')
+        if cv.imwrite(o,mm):
+            print(f'done into {o}')
+        else:
+            print(f'failed {o}')
     except BaseException as err:
         print(err)
 

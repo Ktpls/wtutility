@@ -35,6 +35,18 @@ def transformation_FishEye(scopefar):
     return scopenear
 transformation['fisheye']=transformation_FishEye
 
+def filter_DetailEnh(view):
+    view=view.astype('float')
+    def modval(x):
+        #return np.arctan(x)*15*2/np.pi
+        return x*5
+    regave=regionave(view,[10,10])
+    view+=modval(view-regave)
+    view[view>255]=255
+    view[view<0]=0
+    view=view.astype('uint8')
+    return view
+
 def gettelescopeview():
     scr = screenshoter(0).shot()
     sizescr = np.array(scr.shape[:2])
@@ -42,4 +54,6 @@ def gettelescopeview():
     rd = (sizescr*0.5+sizescopefar*0.5).astype('int')
     scopefar = scr[lt[0]:rd[0], lt[1]:rd[1], :]
     
-    return transformation[transformationtype](scopefar)
+    view= transformation[transformationtype](scopefar)
+    view=filter_DetailEnh(view)
+    return view

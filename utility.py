@@ -51,7 +51,8 @@ def savemat(m,name='unnamed',path=r'./output/',suffix='.png',autorename=True):
             if not os.path.exists(totalpath):
                 break
     
-    return cv.imwrite(totalpath,m)
+    if not cv.imwrite(totalpath,m):
+        raise IOError(f'Bad write {totalpath}')
 
 def savematn(m:np.ndarray,name=None,path=None):
     mtmp=m.copy()

@@ -19,6 +19,6 @@ shadowcolor=50
 measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
-keepEveryMeasInRecord=False
+keepEveryMeasInRecord=True
 
 tesseractpath=r'C:\Program Files\Tesseract-OCR\tesseract.exe'

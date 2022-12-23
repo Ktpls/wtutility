@@ -54,6 +54,8 @@ notliked=[
     "ArdennesDomination#1",
     "38thParallel",
     "ArcticPolarBase",
+    'BattleOfHurtgenForestConquest#1',
+    'BattleOfHurtgenForestDomination#1',
 ]
 
 flatplain=[
@@ -73,24 +75,20 @@ snowemap=[
 notincluded=[
     'Serversk-13',
     'EasternEurope',
+    '38thParallel',
 ]
 
 desireds=[
-    '38thParallel',
     'AralSea',
     'AshRiver',
-    'BattleOfHurtgenForestConquest#1',
-    'BattleOfHurtgenForestDomination#1',
     'EuropeanProvince',
     'FieldsOfPoland',
     'Finland',
     'FireArc',
-    'Jungle',
     'MaginotLineDomination#1',
     'MaginotLineDomination#2',
     'Mozdok#1',
     'Mozdok#2',
-    'Poland',
     'Pradesh',
     'RedDesert',
     'SandsOfSinai',
@@ -106,6 +104,9 @@ halfdesired=[
     'Karelia',
     'Japan',
     'FieldsOfNormandy',
+    'Poland',
+    'Poland(winter)',
+    'Jungle',
 ]
 
 alldesired=desireds+halfdesired
@@ -161,7 +162,13 @@ specialmapdetectors={
     "Poland":{
         "type":"mapdetector",
         "path":"Poland",
-        "spawncenter":[86, 312],
+        "spawncenter":[86, 313],
+        "allowederrrange":200,
+    },
+    "Poland(winter)":{
+        "type":"mapdetector",
+        "path":"Poland(winter)",
+        "spawncenter":[86, 313],
         "allowederrrange":200,
     },
     "Jungle":{
