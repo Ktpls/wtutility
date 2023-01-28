@@ -1,4 +1,8 @@
 
-sizescopefar = [75,150]
-sizescopenear=[200,400]
-transformationtype='zoom'
+sizelen = [75,150]
+sizezoom=[200,400]
+detailenh_coef=2
+transformationapplied=[
+    'detail',
+    'zoom',
+]

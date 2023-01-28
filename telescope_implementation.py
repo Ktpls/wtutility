@@ -1,59 +1,71 @@
-
-from utility import *
+from utilitypack import *
 from telescope_config import *
 
-sizescopefar = np.array(sizescopefar)
-sizescopenear=np.array(sizescopenear)
-transformation={}
+sizelen = np.array(sizelen)
+availtransformation = {}
 
-def transformation_SimpleZoom(scopefar):
-    zoomrate=sizescopenear.astype('float')/sizescopefar
-    zoommat = np.array([
-        [zoomrate[1], 0, 0],
-        [0, zoomrate[0], 0]
-    ])
-    scopenear = cv.warpAffine(
-        scopefar,
-        zoommat,
-        np.flip(sizescopenear),
-        flags=cv.INTER_NEAREST)
-    return scopenear
-transformation['zoom']=transformation_SimpleZoom
+sizezoom = np.array(sizezoom)
 
-def transformation_FishEye(scopefar):
-    
-    COOR=[np.linspace(-1,1,sizescopenear[i]) for i in range(2)]
-    COOR=np.meshgrid(COOR[1],COOR[0])
-    COOR=np.flip(np.array(COOR),axis=0)
-    COOR=np.sign(COOR)*(1-np.sqrt(1-COOR**2))
-    COOR+=1
-    COOR*=0.5
-    COOR*=(sizescopefar-1).reshape([2,1,1])
-    COOR=np.round(COOR).astype('int')
-    scopenear=scopefar[COOR[0],COOR[1]]
-    
-    return scopenear
-transformation['fisheye']=transformation_FishEye
 
-def filter_DetailEnh(view):
-    view=view.astype('float')
-    def modval(x):
-        #return np.arctan(x)*15*2/np.pi
-        return x*5
-    regave=regionave(view,[10,10])
-    view+=modval(view-regave)
-    view[view>255]=255
-    view[view<0]=0
-    view=view.astype('uint8')
+def transformation_zoom(view):
+    zoomrate = sizezoom.astype('float') / view.shape[:2]
+    zoommat = np.array([[zoomrate[1], 0, 0], [0, zoomrate[0], 0]])
+    view = cv.warpAffine(view,
+                         zoommat,
+                         np.flip(sizezoom),
+                         flags=cv.INTER_NEAREST)
     return view
 
+
+availtransformation['zoom'] = transformation_zoom
+
+
+def transformation_fisheye(view):
+
+    COOR = [np.linspace(-1, 1, view.shape[i]) for i in range(2)]
+    COOR = np.meshgrid(COOR[1], COOR[0])
+    COOR = np.flip(np.array(COOR), axis=0)
+    COOR = np.sign(COOR) * (1 - np.sqrt(1 - COOR**2))
+    COOR += 1
+    COOR *= 0.5
+    COOR *= (np.array(view.shape[:2]) - 1).reshape([2, 1, 1])
+    COOR = np.round(COOR).astype('int')
+    view = view[COOR[0], COOR[1]]
+
+    return view
+
+
+availtransformation['fisheye'] = transformation_fisheye
+
+
+def transformation_detailenh(view):
+
+    def modval(x):
+        #return np.arctan(x)*15*2/np.pi
+        return x * detailenh_coef
+
+    regave = regionave(view, [11, 11])
+    view += modval(view - regave)
+    view[view > 255] = 255
+    view[view < 0] = 0
+    return view
+
+
+availtransformation['detail'] = transformation_detailenh
+
+
 def gettelescopeview():
-    scr = screenshoter(0).shot()
+    #view of len
+    scr = screenshoter(0).shotbgr().astype('float')
     sizescr = np.array(scr.shape[:2])
-    lt = (sizescr*0.5-sizescopefar*0.5).astype('int')
-    rd = (sizescr*0.5+sizescopefar*0.5).astype('int')
-    scopefar = scr[lt[0]:rd[0], lt[1]:rd[1], :]
-    
-    view= transformation[transformationtype](scopefar)
-    view=filter_DetailEnh(view)
+    lt = (sizescr * 0.5 - sizelen * 0.5).astype('int')
+    rd = (sizescr * 0.5 + sizelen * 0.5).astype('int')
+    view = scr[lt[0]:rd[0], lt[1]:rd[1], :]
+
+    for t in transformationapplied:
+        view = availtransformation[t](view)
+    view = view.astype('int')
+    #in case of totally black place in view
+    #although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
+    view[view < 1] = 1
     return view

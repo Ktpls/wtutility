@@ -6,12 +6,18 @@ import traceback
 def main():
     setadmin(__file__)
     try:
+        
+        activeWindow(getWTHwnd())
+        mouse.mov(*(0,0))
         freshAMap()
-    except:
+    except BaseException as err:
         traceback.print_exc()
         win32api.Beep(1000,1000)
         win32api.Beep(500,1000)
-        system('pause')
+        if throwerrinmain:
+            raise err
+        else:
+            system('pause')
         
     #testOneRaw()
     #addCutNewMap('Normandy')
@@ -26,3 +32,14 @@ def test():
     press(keycode.key_Enter)
 
 main()
+
+
+
+
+
+
+
+
+
+
+

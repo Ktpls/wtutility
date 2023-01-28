@@ -1,6 +1,6 @@
 
 import matplotlib as mpl
-from utility import *
+from utilitypack.utility import *
 from wtdistmeaspy_config import *
 import pytesseract.pytesseract as ptact
 ptact.tesseract_cmd = tesseractpath

@@ -4,6 +4,7 @@ import sys
 from autofreshmap_implementation import *
 
 
+
 def doOne(i):
     try:
         print(f'doing {i}')
@@ -12,10 +13,8 @@ def doOne(i):
         name=i[startpos:endpos] if endpos!=-1 else i[startpos:]
         o=assetpath2realpath(mapname2assetpath(name))
         
-        pointlt=np.array(standardMapLeftTopPoint)
-        pointrd=pointlt+[648,648]
         mml=cv.imread(i)
-        mm=mml[pointlt[1]:pointrd[1],pointlt[0]:pointrd[0]]
+        mm = cutmap(mml)
         if cv.imwrite(o,mm):
             print(f'done into {o}')
         else:

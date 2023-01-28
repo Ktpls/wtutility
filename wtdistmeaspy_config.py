@@ -1,5 +1,5 @@
 
-from utility import rgb2bgr, hsv2rgb
+from utilitypack.utility import rgb2bgr, hsv2rgb
 reflist=[140,150,180,200,225,275,350]
 textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
@@ -19,6 +19,6 @@ shadowcolor=50
 measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
-keepEveryMeasInRecord=True
+keepEveryMeasInRecord=False
 
 tesseractpath=r'C:\Program Files\Tesseract-OCR\tesseract.exe'
