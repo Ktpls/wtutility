@@ -14,16 +14,17 @@ def pic2kernel(p: np.ndarray):
     maque[maque[:, :, 0] != maque[:, :, 1]] = [1, 1, 1]
     maque = maque[:, :, 0]
     maque[maque[:, :] != 1] = 0
-    mask = 1-maque
+    mask = 1 - maque
 
-    p = (mask*cv.cvtColor(p, cv.COLOR_BGR2GRAY)).astype('float')
-    ave = p.sum()/mask.sum()
-    norm2 = (p**2).sum() - mask.sum()*ave**2
-    p = (p-ave)*mask  # -ave will lower masked pos, which is 0, to minus
-    return p/norm2
-
+    p = (mask * cv.cvtColor(p, cv.COLOR_BGR2GRAY)).astype('float')
+    ave = p.sum() / mask.sum()
+    norm2 = (p**2).sum() - mask.sum() * ave**2
+    p = (p - ave) * mask  # -ave will lower masked pos, which is 0, to minus
+    return p / norm2
 
     # return p
+
+
 kernelyellowmark = pic2kernel(kernelyellowmark)
 # screen
 w = 1920
@@ -117,7 +118,7 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     dbglogsavestep(mcolorvalid*255)
 
     mym = mcolored.copy()
-    mym=mym[:,:,1:]
+    mym = mym[:, :, 1:]
     mym = np.average(mym, axis=2)  # yellow channel
     mym = mym*mcolorvalid
     dbglogsavestep(mym)
@@ -232,17 +233,18 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     for i in range(2):
         black = densityfilter(black/255, [5, 5], 3/25).astype('float')*255
         dbglogsavestep(black)
-    
-    charw,charh=10,20
-    #filter density in single char region
-    #padding left and right for full convolve
-    black = cv.copyMakeBorder(black, 0, 0, charw, charw, cv.BORDER_CONSTANT, value=0)
-    density=black.astype('float').sum(axis=0)/255
-    density=np.correlate(density,np.ones(10))
-    density/=(charw*charh)
+
+    charw, charh = 10, 20
+    # filter density in single char region
+    # padding left and right for full convolve
+    black = cv.copyMakeBorder(
+        black, 0, 0, charw, charw, cv.BORDER_CONSTANT, value=0)
+    density = black.astype('float').sum(axis=0)/255
+    density = np.correlate(density, np.ones(10))
+    density /= (charw*charh)
     for x in range(len(density)):
-        if density[x]<0.05:
-            black[:,int(x+0.5*charw+0.5)]=0
+        if density[x] < 0.05:
+            black[:, int(x+0.5*charw+0.5)] = 0
     dbglogsavestep(black)
 
     # padding for ease of recongnization by tesseract

@@ -9,6 +9,6 @@ def gridmap():
     return Z
 
 def throughFishEye_test():
-    savemat(transformation_Zoom (gridmap()))
+    savemat(transformation_zoom (gridmap()))
 
 throughFishEye_test()

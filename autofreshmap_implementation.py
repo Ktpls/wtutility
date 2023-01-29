@@ -35,7 +35,7 @@ def signName2Path(name):
 # }
 # standardMapLeftTopPoint = [286, 216]
 
-#1366x768,75%
+# 1366x768,75%
 stateDetectorInfo = {
     'hanger': {
         'path': signName2Path('hanger'),
@@ -50,9 +50,9 @@ stateDetectorInfo = {
         'lt': [1030, 203],
     },
     'OK': {
-        'path': signName2Path('OK'),  #有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
+        'path': signName2Path('OK'),  # 有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
         'lt': [896, 553],
-        #'thresh': 0.5
+        # 'thresh': 0.5
     }
 }
 standardMapLeftTopPoint = [294, 221]
@@ -128,7 +128,7 @@ def setonwifi():
         networkOperationImplementationName))
 
 
-#singleChanneled
+# singleChanneled
 def picNorm(m):
     return (np.sqrt((m.astype('float')**2).sum()) + 0.01)
 
@@ -151,23 +151,23 @@ class matcher:
 
     @staticmethod
     def imagepreprocess(m, mask=None):
-        #all preprocess defined in config done here
+        # all preprocess defined in config done here
         if mask is not None:
             m = m * mask
         if subsampleddetection:
-            #this would set [x,y,1] back to [x,y], so do it first
+            # this would set [x,y,1] back to [x,y], so do it first
             m = cv.resize(m,
                           None,
                           fx=subsampleddetectionrate,
                           fy=subsampleddetectionrate,
                           interpolation=cv.INTER_AREA)
         if singlechanneleddetection:
-            #cvtColor cant process float output by subsampling
+            # cvtColor cant process float output by subsampling
             m = m.astype('uint8')
             m = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
             m = m.reshape(m.shape +
-                          tuple([1]))  #in accordance to multi channeled
-        return m.astype('float')  #for matching
+                          tuple([1]))  # in accordance to multi channeled
+        return m.astype('float')  # for matching
 
     def __init__(self, info: Dict):
         path = assetpath2realpath(info['path'])
@@ -179,7 +179,7 @@ class matcher:
         self.m = matcher.imagepreprocess(m)
         self.thresh = info['thresh']
 
-        #for dbg output
+        # for dbg output
         self.path = info['path']
 
         if info['mask'] is not None:
@@ -209,7 +209,7 @@ class matcher:
     #not using
     def matchSign_LOG_SQDIFF_NORMED(self, mscr):
 
-        def fc(x):  #foo contribution
+        def fc(x):  # foo contribution
             return np.log(1 + x)
 
         mscr = self.cutroi(mscr)
@@ -220,7 +220,7 @@ class matcher:
 
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
 
-        def fcerr(x):  #foo contribution
+        def fcerr(x):  # foo contribution
             l = 3 * (10**2)
             u = 3 * (20**2)
             x[x < l] = l
@@ -233,7 +233,7 @@ class matcher:
         mscr = matcher.imagepreprocess(mscr)
 
         numerator = fcerr(np.square(self.m - mscr).sum(axis=(2, )))\
-            .sum(axis=(0,1))
+            .sum(axis=(0, 1))
         denominator = np.prod(self.m.shape)
         return numerator / denominator
 
@@ -316,7 +316,7 @@ def mapname2assetpath(mapname):
 def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = cv.matchTemplate(src, temp, cv.TM_SQDIFF_NORMED, mask=mask)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
-    #print(minval)
+    # print(minval)
     if dbglog:
         allchanneloutput(
             f'threshedmatchtemplate(): minval={minval}, simuthresh={simu}')
@@ -332,8 +332,8 @@ def cutmap(m):
 
 class mapdetector(detector):
     #para: {"path":path}
-    #the so called path is actually map name, by which mapname2assetpath is needed
-    #after that assetpath2realpath will be done in matcher
+    # the so called path is actually map name, by which mapname2assetpath is needed
+    # after that assetpath2realpath will be done in matcher
     def __init__(self, para: dict):
         para = deepcopy(para)
         para.setdefault('mask', None)
@@ -402,21 +402,23 @@ class mapdetector(detector):
                                            detectpointsimilarity)
                 for typ, temp in self.pointtemplatelist.items()
             }
-            for pp in self.para['point']:
-                if 'type' in pp:
-                    state = pointinfo[pp['type']]
-                    if state is None:
-                        return False  #undetected
-                    if 'pos' in pp:
-                        err = np.sqrt((state - pp['pos'])**2)
-                        if err >= pp['allowederr']:
-                            return False  # too far
-                elif 'pos' in pp:  # given only pos but no type
-                    if not any([
-                            np.sqrt((pi - pp['pos'])**2) <= pp['allowederr']
-                            for pi in pointinfo if pi is not None
-                    ]):
-                        return False  # no any point near pos
+
+            def applypointselectoronpointinfo(pi, ps):
+                # pi:(key,value), dict item
+                # which is (pointtype, pointpos)
+                if 'type' in ps:
+                    if pi[0] != ps['type']:
+                        return False
+                if 'pos' in ps:
+                    if np.sqrt((pi[1] - ps['pos'])**2) <= ps['allowederr']:
+                        return False
+
+            # all point selector
+            result4eachselector = [any([applypointselectoronpointinfo(
+                pi, ps) for pi in pointinfo.items()]) for ps in self.para['point']]
+            resulttotal = all(result4eachselector)
+            if not resulttotal:
+                return False
 
         return True
 
@@ -457,7 +459,7 @@ def loadAssetsNeeded4FreshAMap():
 
 def leaveButton():
     sleep(1)
-    #move after click for not blocking next time detection
+    # move after click for not blocking next time detection
     moveto([0, 0])
 
 
@@ -466,8 +468,8 @@ def freshAMap():
     def shot():
         return ss.shotbgr()
 
-    #foo: bool(*foo)(Mat& screen), with return of if detected
-    #ret: if resume freshmap process
+    # foo: bool(*foo)(Mat& screen), with return of if detected
+    # ret: if resume freshmap process
     def keepdetecting(foo: Callable[[np.ndarray], bool],
                       sleeptime=0.5) -> bool:
         while (True):
@@ -476,7 +478,7 @@ def freshAMap():
                 return True
             sleep(sleeptime)
 
-    #init
+    # init
     loadAssetsNeeded4FreshAMap()
 
     ss = screenshoter(0)
@@ -485,14 +487,14 @@ def freshAMap():
         def detectToBattle(scr):
 
             if stateDetector['OK'].detect(scr):
-                #click(stateDetector['OK'].getsigncenter())
+                # click(stateDetector['OK'].getsigncenter())
                 press(keycode.key_Enter)
             if stateDetector['hanger'].detect(scr):
-                #click(stateDetector['hanger'].getsigncenter())
+                # click(stateDetector['hanger'].getsigncenter())
                 press(keycode.key_Enter)
                 return True
             if stateDetector['MissionCanceled'].detect(scr):
-                #click(stateDetector['MissionCanceled'].getsigncenter())
+                # click(stateDetector['MissionCanceled'].getsigncenter())
                 press(keycode.key_Enter)
                 return True
             return False
@@ -502,7 +504,7 @@ def freshAMap():
         win32api.Beep(500, 100)
         allchanneloutput('matching')
 
-        #detect loading map
+        # detect loading map
         loadingscreen = None
 
         def detectLoadingMap(scr):
@@ -510,8 +512,8 @@ def freshAMap():
                 nonlocal loadingscreen
                 loadingscreen = scr
                 return True
-            if stateDetector['hanger'].detect(scr):  #for click not succeed
-                #click(stateDetector['hanger'].getsigncenter())
+            if stateDetector['hanger'].detect(scr):  # for click not succeed
+                # click(stateDetector['hanger'].getsigncenter())
                 press(keycode.key_Enter)
             return False
 
@@ -521,14 +523,14 @@ def freshAMap():
         win32api.Beep(500, 100)
         allchanneloutput('loading map')
 
-        #determine if map desired
-        #ret=[ismapdesired, match details]
+        # determine if map desired
+        # ret=[ismapdesired, match details]
 
         #ret= np.array([d.detect(loadingscreen) for d in whitelistedmapdetector.values()]).any()
         ret = False
-        #name,detector
-        for n,d in whitelistedmapdetector.items():
-            #done this by hand to get 2 times faster
+        # name,detector
+        for n, d in whitelistedmapdetector.items():
+            # done this by hand to get 2 times faster
             if d.detect(loadingscreen):
                 allchanneloutput(f'{n}')
                 ret = True
@@ -536,26 +538,26 @@ def freshAMap():
 
         allchanneloutput(str(ret))
         if ret:
-            #enter game
+            # enter game
             win32api.Beep(1000, 100)
             win32api.Beep(500, 100)
             win32api.Beep(1000, 100)
             allchanneloutput('good map')
             break
 
-        #detected banned map
+        # detected banned map
         setoffwifi()
         win32api.Beep(500, 100)
         allchanneloutput('bad map')
 
-        #detect game canceled, which is not in loading map scence
+        # detect game canceled, which is not in loading map scence
         def detectGameCanceled(scr):
             if not stateDetector['LoadingMap'].detect(scr):
                 return True
-            #setoffwifi()
+            # setoffwifi()
             return False
 
-        #detect able to enter again
+        # detect able to enter again
         def detectGameRematchable(scr):
             if stateDetector['hanger'].detect(scr):
                 return True
@@ -563,7 +565,7 @@ def freshAMap():
                 return True
             return False
 
-        #sleep at least some time
+        # sleep at least some time
         sleep(5)
         if not keepdetecting(detectGameCanceled):
             return
@@ -571,7 +573,7 @@ def freshAMap():
         setonwifi()
         win32api.Beep(500, 100)
         allchanneloutput('canceled')
-        #for not enter game too soon after wifi on
+        # for not enter game too soon after wifi on
         wifonitime = time.time()
         sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh,
                    1)

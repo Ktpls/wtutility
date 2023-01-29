@@ -318,6 +318,9 @@ class fullScrHUD:
         t1.start()
         time.sleep(1)
 
+    def writesubscenceoncontent(self,lt,subscence):
+        self.m2draw[lt[0]:lt[0]+subscence.shape[0],lt[1]:lt[1]+subscence.shape[1],:subscence.shape[2]]=subscence
+
     def clear(self):
         self.m2draw = self.getblankscreenwithalfa()
 
@@ -624,6 +627,14 @@ def outputlines2mat2(m,pos,content,textcolor=[255,255,255], lineinterval=10):
     return m,box
 
 
+def aPicWithText(content,maxsize=[1080,1920],textcolor=[255,255,255], lineinterval=10):
+    m = np.zeros(maxsize+[3,],np.uint8)
+    m,bbox = outputlines2mat2(m, np.array([0,0]), content,textcolor,lineinterval)
+    mshape=np.array(bbox[1])+[0,8] #ret wrong for unknown reason
+    m=m[:mshape[1],:mshape[0]]
+    m = addShadow2HUD(m)
+    return m
+
 def addShadow2HUD(m, thickness=2, color=50):
     gray = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
     kernelshape = 2*thickness+1
@@ -656,3 +667,14 @@ def setadmin(file):
     if not is_admin():
         bootAsAdmin(file)
         exit()
+
+def zfunc(xl,yl,xr,yr):
+    slope=(yr-yl)/(xr-xl)
+    def foo(x):
+        if x < xl:
+            return yl
+        elif x>xr:
+            return yr
+        else:
+            return (x-xl)*slope+yl
+    return foo

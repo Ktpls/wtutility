@@ -7,6 +7,7 @@ import navalKeyHolding
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
+
 def main():
     hud = fullScrHUD()
     hud.setup()
@@ -34,10 +35,8 @@ def main():
     business = []
     hotkeyaction = []
 
-
-
-
     # wtdistmeas
+
     def hkcallWTDistMeas():
         bulletin.putup(wtdistmeaspy.mainlogic(), 10)
     '''
@@ -46,62 +45,57 @@ def main():
     For the US standard keyboard, the '`~' key
     '''
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key= 0xc0,
-        foo= hkcallWTDistMeas
+        key=0xc0,
+        foo=hkcallWTDistMeas
     ))
 
-    #telescope
+    # telescope
     tele = telescope.telescope()
+
     def telemain():
         scope = tele.mainlooplogic()
         if scope is None:
             return
-        m = hud.getblankscreenwithalfa()
-        m[telescopepos[0]:telescopepos[0]+scope.shape[0],
-          telescopepos[1]:telescopepos[1]+scope.shape[1], :] = scope
-        m[:,:,3]=100
-        hud.addcontentwithalfa(m)
+        hud.writesubscenceoncontent(np.flip(telescopepos), scope)
     business.append(telemain)
 
     def switchtele():
         tele.enabled = not tele.enabled
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key= win32con.VK_F12,
-        foo= switchtele
+        key=win32con.VK_F12,
+        foo=switchtele
     ))
 
-
-    #naval left holding
+    # naval left holding
 
     def holdAndTell():
         navalKeyHolding.holdMouseLeft()
-        bulletin.putup('LeftHolding',1)
+        bulletin.putup('LeftHolding', 1)
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key= win32con.VK_F10,
-        foo= holdAndTell
+        key=win32con.VK_F10,
+        foo=holdAndTell
     ))
 
     def holdCAndTell():
         navalKeyHolding.holdC()
-        bulletin.putup('CHolding',1)
+        bulletin.putup('CHolding', 1)
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key= win32con.VK_F11,
-        foo= holdCAndTell
+        key=win32con.VK_F11,
+        foo=holdCAndTell
     ))
 
-
     # reboot, not working on exit
+
     def reboot():
         bootAsAdmin(__file__)
-        win32api.Beep(1000,1000)
+        win32api.Beep(1000, 1000)
         exit(0)
     # hotkeyaction.append(hotkeymanager.hotkeytask(
         # key= [win32con.VK_CONTROL,win32con.VK_F11,win32con.VK_F11],
         # foo= reboot
     # ))
 
-
-    #main loop
+    # main loop
     hkm = hotkeymanager(hotkeyaction)
 
     while (True):
@@ -109,7 +103,8 @@ def main():
         keystate = hkm.getkeys()
         hud.clear()
         try:
-            [hkf.foo() for hkf in hotkeyaction if hotkeymanager.iskeycalling(hkf.key, keystate)]
+            [hkf.foo() for hkf in hotkeyaction if hotkeymanager.iskeycalling(
+                hkf.key, keystate)]
         except SystemExit as e:
             raise e
         except BaseException as e:
@@ -120,10 +115,8 @@ def main():
             traceback.print_exc()
 
         # show bulletin
-        m = hud.getblankscreen()
-        m = outputlines2mat(m, np.array(bulletinoutputpos), bulletin.read())
-        m = addShadow2HUD(m)
-        hud.addcontent(m)
+        hud.writesubscenceoncontent(
+            np.flip(bulletinoutputpos), aPicWithText(bulletin.read()))
 
         hud.update()
 

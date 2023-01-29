@@ -4,11 +4,10 @@ reflist=[140,150,180,200,225,275,350]
 textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
 
-plerrreq=10
-ymerrreq=0.6
+ymerrreq=0.5
 griderrreq=10
 plerrreqstrict=4
-ymerrreqstrict=0.7
+ymerrreqstrict=0.55
 griderrreqstrict=4
 plottingscalestrictlower=100
 plottingscalestrictupper=500
