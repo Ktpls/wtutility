@@ -1,0 +1,12 @@
+/.git/
+/__pycache__/
+/.vscode/
+/.vscode/
+/exp/
+/deprecated/
+/output/
+*.7z
+/asset/autofreshmap/log/
+/asset/autofreshmap/rawmaterial/
+/asset/wtdistmeaspy/log/
+*/__pycache__/
