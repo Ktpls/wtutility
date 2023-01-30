@@ -44,7 +44,12 @@ class logger:
         self.log(content)
 
 
-def savemat(m, name='unnamed', path=r'./output/', suffix='.png', autorename=True):
+def savemat(m, name=None, path=None, suffix='.png', autorename=True):
+    if name is None:
+        name='unnamed'
+    if path is None:
+        path=r'./output/'
+    
     if not os.path.exists(path):
         os.makedirs(path)
     totalpath = os.path.join(path, name+suffix)
@@ -68,8 +73,8 @@ def savematn(m: np.ndarray, name=None, path=None):
     savemat(mtmp, name, path)
 
 
-def savematflt(m, multiplier=255, name=None, path=None):
-    savemat(multiplier*m, name, path)
+def savematflt(m, multiplier=255, name=None, path=None):        
+    savemat(multiplier*m, name,path)
 
 
 def forceviewmaxmin(m):
@@ -696,11 +701,22 @@ def setadmin(file):
 def zfunc(xl, yl, xr, yr):
     slope = (yr-yl)/(xr-xl)
 
-    def foo(x):
+    def foo_single(x):
         if x < xl:
             return yl
         elif x > xr:
             return yr
         else:
             return (x-xl)*slope+yl
-    return foo
+    def foo_ndarray(x):
+        x=np.copy(x)
+        x[x<xl]=yl
+        x[x>xr]=yr
+        x=(x-xl)*slope+yl
+        return x
+    def foo_universal(x):
+        if type(x) is np.ndarray:
+            return foo_ndarray(x)
+        else:
+            return foo_single(x)
+    return foo_universal
