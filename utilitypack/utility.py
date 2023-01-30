@@ -239,8 +239,8 @@ class fullScrHUD:
         self.terminate = False
         self.hwnd = 0
         self.m2show = self.getblankscreenwithalfa()
+        self.m2draw = self.getblankscreenwithalfa()
         # set m2draw
-        self.clear()
 
     def setup(self):
         def WndProc(hwnd, msg, wParam, lParam):
@@ -311,6 +311,8 @@ class fullScrHUD:
                 hwnd, 0, 0, win32con.LWA_COLORKEY)
             win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
                                   win32con.SWP_SHOWWINDOW+win32con.SWP_NOSIZE+win32con.SWP_NOMOVE)
+            windll.user32.SetWindowDisplayAffinity(
+                hwnd, 0x00000001)  # WDA_MONITOR
 
             self.hwnd = hwnd
             win32gui.PumpMessages()
@@ -318,11 +320,12 @@ class fullScrHUD:
         t1.start()
         time.sleep(1)
 
-    def writesubscenceoncontent(self,lt,subscence):
-        self.m2draw[lt[0]:lt[0]+subscence.shape[0],lt[1]:lt[1]+subscence.shape[1],:subscence.shape[2]]=subscence
+    def writesubscenceoncontent(self, lt, subscence):
+        self.m2draw[lt[0]:lt[0]+subscence.shape[0], lt[1]:lt[1] +
+                    subscence.shape[1], :subscence.shape[2]] = subscence
 
     def clear(self):
-        self.m2draw = self.getblankscreenwithalfa()
+        self.m2draw[:, :, :] = 0
 
     def getblankscreen(self):
         return np.zeros(self.resolution+[3, ], np.uint8)
@@ -338,7 +341,11 @@ class fullScrHUD:
         self.m2draw += np.concatenate((m, alp), 2)
 
     def update(self):
+        # swap
+        tmp = self.m2show
         self.m2show = self.m2draw
+        self.m2draw = tmp
+
         # needless to clear cuz entire screen will be set
         win32gui.InvalidateRect(self.hwnd, None, False)
 
@@ -602,38 +609,42 @@ def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
     return m
 
 # different impl., ret with content bounding box
-def outputlines2mat2(m,pos,content,textcolor=[255,255,255], lineinterval=10):
-    pos=np.array(pos).astype('int')
-    line=content.split('\n')
-    yoffset=0
-    xmax=0
-    fontFace=cv.FONT_HERSHEY_DUPLEX
-    fontScale=1
-    thickness=1
-    for i,l in enumerate(line):
-        size=np.array(cv.getTextSize(l, fontFace, fontScale, thickness)[0])
-        yoffset+=size[1]+lineinterval if i!=0 else size[1]
-        if xmax< size[0]:
-            xmax=size[0]
-        m=cv.putText(
+
+
+def outputlines2mat2(m, pos, content, textcolor=[255, 255, 255], lineinterval=10):
+    pos = np.array(pos).astype('int')
+    line = content.split('\n')
+    yoffset = 0
+    xmax = 0
+    fontFace = cv.FONT_HERSHEY_DUPLEX
+    fontScale = 1
+    thickness = 1
+    for i, l in enumerate(line):
+        size = np.array(cv.getTextSize(l, fontFace, fontScale, thickness)[0])
+        yoffset += size[1]+lineinterval if i != 0 else size[1]
+        if xmax < size[0]:
+            xmax = size[0]
+        m = cv.putText(
             m,
             l,
-            pos+[0,yoffset],
+            pos+[0, yoffset],
             fontFace,
             fontScale,
             textcolor,
             thickness=thickness)
-    box=[pos,pos + [xmax,yoffset]]
-    return m,box
+    box = [pos, pos + [xmax, yoffset]]
+    return m, box
 
 
-def aPicWithText(content,maxsize=[1080,1920],textcolor=[255,255,255], lineinterval=10):
-    m = np.zeros(maxsize+[3,],np.uint8)
-    m,bbox = outputlines2mat2(m, np.array([0,0]), content,textcolor,lineinterval)
-    mshape=np.array(bbox[1])+[0,8] #ret wrong for unknown reason
-    m=m[:mshape[1],:mshape[0]]
+def aPicWithText(content, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10):
+    m = np.zeros(maxsize+[3, ], np.uint8)
+    m, bbox = outputlines2mat2(m, np.array(
+        [0, 0]), content, textcolor, lineinterval)
+    mshape = np.array(bbox[1])+[0, 8]  # ret wrong for unknown reason
+    m = m[:mshape[1], :mshape[0]]
     m = addShadow2HUD(m)
     return m
+
 
 def addShadow2HUD(m, thickness=2, color=50):
     gray = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
@@ -668,12 +679,14 @@ def setadmin(file):
         bootAsAdmin(file)
         exit()
 
-def zfunc(xl,yl,xr,yr):
-    slope=(yr-yl)/(xr-xl)
+
+def zfunc(xl, yl, xr, yr):
+    slope = (yr-yl)/(xr-xl)
+
     def foo(x):
         if x < xl:
             return yl
-        elif x>xr:
+        elif x > xr:
             return yr
         else:
             return (x-xl)*slope+yl

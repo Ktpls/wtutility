@@ -4,6 +4,7 @@ reflist=[140,150,180,200,225,275,350]
 textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
 
+plerrreq=10
 ymerrreq=0.5
 griderrreq=10
 plerrreqstrict=4
