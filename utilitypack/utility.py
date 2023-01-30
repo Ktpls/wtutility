@@ -17,6 +17,7 @@ from typing import Dict, List, Callable
 
 import cv2 as cv
 import numpy as np
+
 np.seterr(all='raise')
 
 
@@ -25,6 +26,7 @@ def deduplicate(l: List):
 
 
 class logger:
+
     def __init__(self, path):
         self.path = path
         # wont fail
@@ -34,7 +36,7 @@ class logger:
         self.f = open(path, 'wb+')
 
     def log(self, content):
-        self.f.write((content+'\n').encode('utf8'))
+        self.f.write((content + '\n').encode('utf8'))
         self.f.flush()
 
     def __del__(self):
@@ -46,20 +48,20 @@ class logger:
 
 def savemat(m, name=None, path=None, suffix='.png', autorename=True):
     if name is None:
-        name='unnamed'
+        name = 'unnamed'
     if path is None:
-        path=r'./output/'
-    
+        path = r'./output/'
+
     if not os.path.exists(path):
         os.makedirs(path)
-    totalpath = os.path.join(path, name+suffix)
+    totalpath = os.path.join(path, name + suffix)
     # find suitable name
     if os.path.exists(totalpath) and autorename:
         suffix_idx = 0
         while (True):
             suffix_idx += 1
             newname = '{}-{}'.format(name, suffix_idx)
-            totalpath = os.path.join(path, newname+suffix)
+            totalpath = os.path.join(path, newname + suffix)
             if not os.path.exists(totalpath):
                 break
 
@@ -73,8 +75,8 @@ def savematn(m: np.ndarray, name=None, path=None):
     savemat(mtmp, name, path)
 
 
-def savematflt(m, multiplier=255, name=None, path=None):        
-    savemat(multiplier*m, name,path)
+def savematflt(m, multiplier=255, name=None, path=None):
+    savemat(multiplier * m, name, path)
 
 
 def forceviewmaxmin(m):
@@ -90,11 +92,8 @@ def regionsum(m, size, mask=None):
         return m
     if mask is not None:
         mask[mask != 0] = 1
-    return cv.filter2D(
-        m if mask is None else m*mask,
-        -1,
-        np.ones(size, np.float32)
-    )
+    return cv.filter2D(m if mask is None else m * mask, -1,
+                       np.ones(size, np.float32))
 
 
 # if denominatorConstrainedByBoundaryAndMask==True:
@@ -103,14 +102,17 @@ def regionsum(m, size, mask=None):
 # denominator will not consider mask and boundary and be size[0]*size[1]
 # u may ask mask==None does the same as denominatorConstrainedByBoundaryAndMask==True
 # but if u want to use mask and dont want to be constrained by boundary. unimplemented though
-def regionave(m, size, mask=None, denominatorConstrainedByBoundaryAndMask=True):
+def regionave(m,
+              size,
+              mask=None,
+              denominatorConstrainedByBoundaryAndMask=True):
     if m.size <= 0:
         return m
     if mask is None or denominatorConstrainedByBoundaryAndMask:
-        denominator = size[0]*size[1]
+        denominator = size[0] * size[1]
     else:
-        denominator = (regionsum(mask, size)+0.01)
-    return regionsum(m, size, mask)/denominator
+        denominator = (regionsum(mask, size) + 0.01)
+    return regionsum(m, size, mask) / denominator
 
 
 def density(p, size):
@@ -134,6 +136,7 @@ def getWTHwnd():
 
 
 class screenshoter:
+
     def __init__(self, hwnd=0):
         self.wthwnd = hwnd
         # r = RECT()
@@ -152,16 +155,19 @@ class screenshoter:
         windll.user32.ReleaseDC(self.wthwnd, self.wtdc)
 
     def shot(self):
-        if windll.gdi32.BitBlt(self.mydc, 0, 0, self.res[0], self.res[1], self.wtdc, 0, 0, win32con.SRCCOPY) == 0:
+        if windll.gdi32.BitBlt(self.mydc, 0, 0, self.res[0], self.res[1],
+                               self.wtdc, 0, 0, win32con.SRCCOPY) == 0:
             raise BaseException('bad shot, {}'.format(
                 windll.kernel32.GetLastError()))
         # 截图是BGRA排列，因此总元素个数需要乘以4
-        total_bytes = self.res[0]*self.res[1]*4
+        total_bytes = self.res[0] * self.res[1] * 4
         buffer = bytearray(total_bytes)
-        byte_array = c_ubyte*total_bytes
-        windll.gdi32.GetBitmapBits(
-            self.mybitmap, total_bytes, byte_array.from_buffer(buffer))
-        return np.frombuffer(buffer, dtype=np.uint8).reshape(self.res[1], self.res[0], 4)
+        byte_array = c_ubyte * total_bytes
+        windll.gdi32.GetBitmapBits(self.mybitmap, total_bytes,
+                                   byte_array.from_buffer(buffer))
+        return np.frombuffer(buffer,
+                             dtype=np.uint8).reshape(self.res[1], self.res[0],
+                                                     4)
 
     def shotbgr(self):
         return self.shot()[:, :, :3]
@@ -206,8 +212,8 @@ class screenshoter:
 
 def activeWindow(hwnd):  # 窗口置顶
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, 0, 0,
-                          0, 0, win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+    win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
+                          win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
     win32gui.SetForegroundWindow(hwnd)
 
 
@@ -239,6 +245,7 @@ hud.stop()
 
 
 class fullScrHUD:
+
     def __init__(self) -> None:
         self.resolution = [1080, 1920]
         self.terminate = False
@@ -248,6 +255,7 @@ class fullScrHUD:
         # set m2draw
 
     def setup(self):
+
         def WndProc(hwnd, msg, wParam, lParam):
             if msg == win32con.WM_PAINT:
                 rect = win32gui.GetClientRect(hwnd)
@@ -264,12 +272,12 @@ class fullScrHUD:
                 BitMap = win32ui.CreateBitmap()
                 BitMap.CreateCompatibleBitmap(mfcDC, w, h)
                 ctypes.WinDLL('gdi32.dll').SetBitmapBits(
-                    BitMap.GetHandle(), w*h*4, self.m2show.tobytes())
+                    BitMap.GetHandle(), w * h * 4, self.m2show.tobytes())
                 hcdc.SelectObject(BitMap)
                 # myblendfunc=(win32con.AC_SRC_OVER,0,255,win32con.AC_SRC_ALPHA)
                 # win32gui.AlphaBlend(hdc,0,0,w, h , hcdc.GetHandleAttrib(), 0,0,w, h,myblendfunc)
-                win32gui.BitBlt(hdc, 0, 0, w, h,
-                                hcdc.GetHandleAttrib(), 0, 0, win32con.SRCCOPY)
+                win32gui.BitBlt(hdc, 0, 0, w, h, hcdc.GetHandleAttrib(), 0, 0,
+                                win32con.SRCCOPY)
                 win32gui.DeleteObject(BitMap.GetHandle())
                 hcdc.DeleteDC()
                 win32gui.EndPaint(hwnd, ps)
@@ -289,60 +297,55 @@ class fullScrHUD:
             wc.lpfnWndProc = WndProc
             reg = win32gui.RegisterClass(wc)
 
-            hwnd = win32gui.CreateWindow(
-                reg,
-                'Python',
-                win32con.WS_POPUP,
-                0,
-                0,
-                self.resolution[1],
-                self.resolution[0],
-                0,
-                0,
-                0,
-                None)
+            hwnd = win32gui.CreateWindow(reg, 'Python', win32con.WS_POPUP, 0,
+                                         0, self.resolution[1],
+                                         self.resolution[0], 0, 0, 0, None)
             win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
             win32gui.UpdateWindow(hwnd)
 
             win32gui.SetWindowLong(
-                hwnd,
-                win32con.GWL_EXSTYLE,
-                win32gui.GetWindowLong(
-                    hwnd,
-                    win32con.GWL_EXSTYLE) +
-                win32con.WS_EX_LAYERED +
-                win32con.WS_EX_NOACTIVATE)
-            win32gui.SetLayeredWindowAttributes(
-                hwnd, 0, 0, win32con.LWA_COLORKEY)
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                                  win32con.SWP_SHOWWINDOW+win32con.SWP_NOSIZE+win32con.SWP_NOMOVE)
+                hwnd, win32con.GWL_EXSTYLE,
+                win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) +
+                win32con.WS_EX_LAYERED + win32con.WS_EX_NOACTIVATE)
+            win32gui.SetLayeredWindowAttributes(hwnd, 0, 0,
+                                                win32con.LWA_COLORKEY)
+            win32gui.SetWindowPos(
+                hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
+                win32con.SWP_SHOWWINDOW + win32con.SWP_NOSIZE +
+                win32con.SWP_NOMOVE)
             windll.user32.SetWindowDisplayAffinity(
-                hwnd, 0x00000001)  # WDA_MONITOR
+                hwnd, 0x11)  #WDA_EXCLUDEDFROMCAPUTURE
+            # can not use WDA_MONITOR, or get totally black screen
 
             self.hwnd = hwnd
             win32gui.PumpMessages()
+
         t1 = threading.Thread(target=mainloop, args=())
         t1.start()
         time.sleep(1)
 
     def writesubscenceoncontent(self, lt, subscence):
-        self.m2draw[lt[0]:lt[0]+subscence.shape[0], lt[1]:lt[1] +
+        self.m2draw[lt[0]:lt[0] + subscence.shape[0], lt[1]:lt[1] +
                     subscence.shape[1], :subscence.shape[2]] = subscence
 
     def clear(self):
         self.m2draw[:, :, :] = 0
 
     def getblankscreen(self):
-        return np.zeros(self.resolution+[3, ], np.uint8)
+        return np.zeros(self.resolution + [
+            3,
+        ], np.uint8)
 
     def getblankscreenwithalfa(self):
-        return np.zeros(self.resolution+[4, ], np.uint8)
+        return np.zeros(self.resolution + [
+            4,
+        ], np.uint8)
 
     def addcontentwithalfa(self, m):
         self.m2draw += m
 
     def addcontent(self, m):
-        alp = 255*np.ones_like(m[:, :, 0:1])
+        alp = 255 * np.ones_like(m[:, :, 0:1])
         self.m2draw += np.concatenate((m, alp), 2)
 
     def update(self):
@@ -368,6 +371,7 @@ def isKBDown(k):
 
 
 class perf_statistic:
+
     def __init__(self, startnow=False):
         self.clear()
         if startnow:
@@ -387,11 +391,11 @@ class perf_statistic:
     def stop(self):
         if self._starttime is None:
             return
-        self._totaltime += time.perf_counter()-self._starttime
+        self._totaltime += time.perf_counter() - self._starttime
         self._starttime = None
 
     def read_ave_t(self):
-        return self._totaltime/self._cycle if self._cycle > 0 else 0
+        return self._totaltime / self._cycle if self._cycle > 0 else 0
 
     def read_total_t(self):
         return self._totaltime
@@ -401,21 +405,23 @@ def convolve_norm(m, k):
     summer = np.ones_like(k)
     mag = np.sqrt(cv.filter2D(m**2, -1, summer))
     ret = cv.filter2D(m, -1, k)
-    return ret/mag
+    return ret / mag
 
 
 class fpsmanager:
+
     def __init__(self, fps=60):
         self.lt = time.perf_counter()
-        self.frametime = 1/fps
+        self.frametime = 1 / fps
 
     def next(self):
-        sleepuntil(lambda: time.perf_counter()-self.lt >
-                   self.frametime, dt=0.5*self.frametime)
+        sleepuntil(lambda: time.perf_counter() - self.lt > self.frametime,
+                   dt=0.5 * self.frametime)
         self.lt = time.perf_counter()
 
 
 class hotkeymanager:
+
     def __init__(self, hotkeytasklist):
         keys = [hka.key for hka in hotkeytasklist]
         keys = list(itertools.chain.from_iterable(keys))
@@ -430,39 +436,37 @@ class hotkeymanager:
         return all([keystate[k] for k in key])
 
     class hotkeytask:
+
         def __init__(self, key, foo) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
 
 
 rgb2hsvmat = np.array([
-    [
-        [np.cos(0), np.cos(2/3*np.pi), np.cos(4/3*np.pi)],
-        [np.sin(0), np.sin(2/3*np.pi), np.sin(4/3*np.pi)],
-        [1, 0, 0]
-    ],
-    [
-        [np.cos(0), np.cos(2/3*np.pi), np.cos(4/3*np.pi)],
-        [np.sin(0), np.sin(2/3*np.pi), np.sin(4/3*np.pi)],
-        [0, 1, 0]
-    ],
-    [
-        [np.cos(0), np.cos(2/3*np.pi), np.cos(4/3*np.pi)],
-        [np.sin(0), np.sin(2/3*np.pi), np.sin(4/3*np.pi)],
-        [0, 0, 1]
-    ],
+    [[np.cos(0), np.cos(2 / 3 * np.pi),
+      np.cos(4 / 3 * np.pi)],
+     [np.sin(0), np.sin(2 / 3 * np.pi),
+      np.sin(4 / 3 * np.pi)], [1, 0, 0]],
+    [[np.cos(0), np.cos(2 / 3 * np.pi),
+      np.cos(4 / 3 * np.pi)],
+     [np.sin(0), np.sin(2 / 3 * np.pi),
+      np.sin(4 / 3 * np.pi)], [0, 1, 0]],
+    [[np.cos(0), np.cos(2 / 3 * np.pi),
+      np.cos(4 / 3 * np.pi)],
+     [np.sin(0), np.sin(2 / 3 * np.pi),
+      np.sin(4 / 3 * np.pi)], [0, 0, 1]],
 ])
 hsv2rgbmat = [np.linalg.inv(m) for m in rgb2hsvmat]
 
 
 def hsv2rgb(hsv):
     h, s, v = hsv
-    h = h*np.pi/180
-    xyv = np.array([s*np.cos(h), s*np.sin(h), v])
+    h = h * np.pi / 180
+    xyv = np.array([s * np.cos(h), s * np.sin(h), v])
 
     # find the corresponding case
     for c, m in enumerate(hsv2rgbmat):
-        rgb = m@xyv
+        rgb = m @ xyv
         if np.argmax(rgb) == c:
             return rgb
 
@@ -477,19 +481,15 @@ def hsv2rgb(hsv):
 
 
 def rgb2hsv(rgb):
-    xyv = rgb2hsvmat[np.argmax(rgb)]@rgb
+    xyv = rgb2hsvmat[np.argmax(rgb)] @ rgb
     x, y, v = xyv
-    hsv = np.array([180/np.pi*np.arctan2(y, x), np.sqrt(x**2+y**2), v])
+    hsv = np.array([180 / np.pi * np.arctan2(y, x), np.sqrt(x**2 + y**2), v])
     return hsv
 
 
 def rgb2bgr(rgb):
-    m = np.array([
-        [0, 0, 1],
-        [0, 1, 0],
-        [1, 0, 0]
-    ])
-    return m@rgb
+    m = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+    return m @ rgb
 
 
 # positive as right
@@ -504,11 +504,12 @@ def arrayshift(a, n, fill=np.nan):
 
 
 def hsv2opencv8bithsv(hsv):
-    return np.array([0.5, 2.55, 2.55])*np.array(hsv)
+    return np.array([0.5, 2.55, 2.55]) * np.array(hsv)
 
 
 def digitsof(s: str):
     return ''.join(list(filter(str.isdigit, list(s))))
+
 
 # wont consider negative
 
@@ -516,6 +517,7 @@ def digitsof(s: str):
 def numinstr(s: str):
     s = digitsof(s)
     return int(s) if len(s) > 0 else 0
+
 
 # convert prob density(f) to prob func(F)
 # section n: ret[n-1]~ret[n]
@@ -534,20 +536,22 @@ def integralProb(prob):
 def initPyRandom(seed):
     random.seed(seed)
 
+
 # summon from card pool, but using integrated prob
 
 
 def summonCard(inteprob):
-    pos = random.random()*inteprob[-1]
+    pos = random.random() * inteprob[-1]
     for n in range(len(inteprob)):
         if inteprob[n] > pos:
             return n
+
 
 # faster summon using division
 
 
 def quickSummonCard(inteprob):
-    pos = random.random()*inteprob[-1]
+    pos = random.random() * inteprob[-1]
     section = [0, len(inteprob)]
 
     def compare(n):
@@ -555,15 +559,16 @@ def quickSummonCard(inteprob):
         if pos > inteprob[n]:
             return 1
         else:  # pos<=section[n]
-            if pos > (inteprob[n-1] if n >= 1 else 0):
+            if pos > (inteprob[n - 1] if n >= 1 else 0):
                 return 0
             else:
                 return -1
+
     while (True):
-        mid = int((section[1]+section[0])*0.5)
+        mid = int((section[1] + section[0]) * 0.5)
         compresult = compare(mid)
         if compresult == 1:
-            section[0] = mid+1
+            section[0] = mid + 1
         elif compresult == -1:
             section[1] = mid
         else:  # compresult==0
@@ -584,7 +589,8 @@ class toast:
         nowtime = time.perf_counter()
 
         def filterfoo(m):
-            return m['per'] > m['ctt']-nowtime
+            return m['per'] > m['ctt'] - nowtime
+
         messagelist = [m for m in messagelist if filterfoo(m)]
         msgs = [m['ctt'] for m in messagelist]
 
@@ -592,10 +598,12 @@ class toast:
         self.updatemsglist()
         return '\n'.join(self.messagelist)
 
+
 # new msg covers the lasts
 
 
 class bulletinBoard:
+
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
         self.content = ''
@@ -603,7 +611,7 @@ class bulletinBoard:
 
     def putup(self, content, timeout):
         self.content = content
-        self.overduetime = time.perf_counter()+timeout
+        self.overduetime = time.perf_counter() + timeout
 
     def read(self):
         if time.perf_counter() < self.overduetime:
@@ -616,20 +624,20 @@ def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
     m = m.copy()
     line = content.split('\n')
     for i, l in enumerate(line):
-        cv.putText(
-            m,
-            l,
-            pos.astype('int32')
-            + [0, i*lineheight],
-            cv.FONT_HERSHEY_SIMPLEX,
-            1,
-            textcolor)
+        cv.putText(m, l,
+                   pos.astype('int32') + [0, i * lineheight],
+                   cv.FONT_HERSHEY_SIMPLEX, 1, textcolor)
     return m
+
 
 # different impl., ret with content bounding box
 
 
-def outputlines2mat2(m, pos, content, textcolor=[255, 255, 255], lineinterval=10):
+def outputlines2mat2(m,
+                     pos,
+                     content,
+                     textcolor=[255, 255, 255],
+                     lineinterval=10):
     pos = np.array(pos).astype('int')
     line = content.split('\n')
     yoffset = 0
@@ -639,26 +647,30 @@ def outputlines2mat2(m, pos, content, textcolor=[255, 255, 255], lineinterval=10
     thickness = 1
     for i, l in enumerate(line):
         size = np.array(cv.getTextSize(l, fontFace, fontScale, thickness)[0])
-        yoffset += size[1]+lineinterval if i != 0 else size[1]
+        yoffset += size[1] + lineinterval if i != 0 else size[1]
         if xmax < size[0]:
             xmax = size[0]
-        m = cv.putText(
-            m,
-            l,
-            pos+[0, yoffset],
-            fontFace,
-            fontScale,
-            textcolor,
-            thickness=thickness)
+        m = cv.putText(m,
+                       l,
+                       pos + [0, yoffset],
+                       fontFace,
+                       fontScale,
+                       textcolor,
+                       thickness=thickness)
     box = [pos, pos + [xmax, yoffset]]
     return m, box
 
 
-def aPicWithText(content, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10):
-    m = np.zeros(maxsize+[3, ], np.uint8)
-    m, bbox = outputlines2mat2(m, np.array(
-        [0, 0]), content, textcolor, lineinterval)
-    mshape = np.array(bbox[1])+[0, 8]  # ret wrong for unknown reason
+def aPicWithText(content,
+                 maxsize=[1080, 1920],
+                 textcolor=[255, 255, 255],
+                 lineinterval=10):
+    m = np.zeros(maxsize + [
+        3,
+    ], np.uint8)
+    m, bbox = outputlines2mat2(m, np.array([0, 0]), content, textcolor,
+                               lineinterval)
+    mshape = np.array(bbox[1]) + [0, 8]  # ret wrong for unknown reason
     m = m[:mshape[1], :mshape[0]]
     m = addShadow2HUD(m)
     return m
@@ -666,7 +678,7 @@ def aPicWithText(content, maxsize=[1080, 1920], textcolor=[255, 255, 255], linei
 
 def addShadow2HUD(m, thickness=2, color=50):
     gray = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
-    kernelshape = 2*thickness+1
+    kernelshape = 2 * thickness + 1
     edgekernel = np.ones([kernelshape, kernelshape])
     edgekernel[thickness, thickness] = -100  # anchor pix must be black
     # edgekernel=np.array([
@@ -676,30 +688,32 @@ def addShadow2HUD(m, thickness=2, color=50):
     # ])
     edge = cv.filter2D(gray, -1, edgekernel)
     edge = cv.threshold(edge, 0, 1, cv.THRESH_BINARY)[1]
-    edge = edge.reshape(edge.shape+(1,))
-    return m+edge*color
+    edge = edge.reshape(edge.shape + (1, ))
+    return m + edge * color
 
 
 # pass in __file__
 def bootAsAdmin(file):
-    quotedpy = '"'+file+'"'
-    ret = ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, quotedpy, None, 1)
+    quotedpy = '"' + file + '"'
+    ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable,
+                                              quotedpy, None, 1)
 
 
 def setadmin(file):
+
     def is_admin():
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
         except:
             return False
+
     if not is_admin():
         bootAsAdmin(file)
         exit()
 
 
 def zfunc(xl, yl, xr, yr):
-    slope = (yr-yl)/(xr-xl)
+    slope = (yr - yl) / (xr - xl)
 
     def foo_single(x):
         if x < xl:
@@ -707,16 +721,19 @@ def zfunc(xl, yl, xr, yr):
         elif x > xr:
             return yr
         else:
-            return (x-xl)*slope+yl
+            return (x - xl) * slope + yl
+
     def foo_ndarray(x):
-        x=np.copy(x)
-        x[x<xl]=yl
-        x[x>xr]=yr
-        x=(x-xl)*slope+yl
+        x = np.copy(x)
+        x[x < xl] = yl
+        x[x > xr] = yr
+        x = (x - xl) * slope + yl
         return x
+
     def foo_universal(x):
         if type(x) is np.ndarray:
             return foo_ndarray(x)
         else:
             return foo_single(x)
+
     return foo_universal

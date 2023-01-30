@@ -291,7 +291,8 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
                                       minDistance=3,
                                       blockSize=3,
                                       mask=masksmall)
-
+    if prev_pts is None:
+        raise Exception('No point to track')
     # sky=m0small[:int(0.5*m0small.shape[0]),:]
     # sky_pts = cv.goodFeaturesToTrack(sky,
     #                                   maxCorners=200,

@@ -134,7 +134,6 @@ def main():
             return output
 
         if tracking:
-            print('tracking')
 
             # track
             ponshot, pomega, plastinthisframe, wingspanpx, cm, trackingpoints, planemap, pul, maxscore = tr.track(
