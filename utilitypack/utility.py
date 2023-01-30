@@ -363,20 +363,33 @@ def isKBDown(k):
 
 
 class perf_statistic:
-    def __init__(self):
-        self.starttime = 0
-        self.totaltime = 0
-        self.cycle = 0
+    def __init__(self, startnow=False):
+        self.clear()
+        if startnow:
+            self.start()
+
+    def clear(self):
+        self._starttime = None
+        self._totaltime = 0
+        self._cycle = 0
 
     def start(self):
-        self.starttime = time.perf_counter()
+        self._starttime = time.perf_counter()
+
+    def countcycle(self):
+        self._cycle += 1
 
     def stop(self):
-        self.totaltime += time.perf_counter()-self.starttime
-        self.cycle += 1
+        if self._starttime is None:
+            return
+        self._totaltime += time.perf_counter()-self._starttime
+        self._starttime = None
 
     def read_ave_t(self):
-        return self.totaltime/self.cycle if self.cycle > 0 else 0
+        return self._totaltime/self._cycle if self._cycle > 0 else 0
+
+    def read_total_t(self):
+        return self._totaltime
 
 
 def convolve_norm(m, k):

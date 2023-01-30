@@ -2,7 +2,7 @@ from utilitypack.utility import *
 import traceback
 import wtdistmeaspy
 import telescope
-import navalKeyHolding
+import keyshortcut
 
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
@@ -66,18 +66,17 @@ def main():
         foo=switchtele
     ))
 
-    # naval left holding
-
-    def holdAndTell():
-        navalKeyHolding.holdMouseLeft()
+    # key shortcuts
+    def holdLeftAndTell():
+        keyshortcut.holdMouseLeft()
         bulletin.putup('LeftHolding', 1)
     hotkeyaction.append(hotkeymanager.hotkeytask(
         key=win32con.VK_F10,
-        foo=holdAndTell
+        foo=holdLeftAndTell
     ))
 
     def holdCAndTell():
-        navalKeyHolding.holdC()
+        keyshortcut.holdC()
         bulletin.putup('CHolding', 1)
     hotkeyaction.append(hotkeymanager.hotkeytask(
         key=win32con.VK_F11,
@@ -86,13 +85,13 @@ def main():
 
     # reboot, not working on exit
 
-    def reboot():
+    def rebootfoo():
         bootAsAdmin(__file__)
         win32api.Beep(1000, 1000)
-        exit(0)
+        sys.exit()
     # hotkeyaction.append(hotkeymanager.hotkeytask(
-        # key= [win32con.VK_CONTROL,win32con.VK_F11,win32con.VK_F11],
-        # foo= reboot
+    #     key=[win32con.VK_CONTROL, win32con.VK_F9],
+    #     foo=rebootfoo
     # ))
 
     # main loop
@@ -105,18 +104,16 @@ def main():
         try:
             [hkf.foo() for hkf in hotkeyaction if hotkeymanager.iskeycalling(
                 hkf.key, keystate)]
-        except SystemExit as e:
-            raise e
-        except BaseException as e:
+        except Exception as e:
             traceback.print_exc()
         try:
             [bus() for bus in business]
-        except BaseException as e:
+        except Exception as e:
             traceback.print_exc()
 
         # show bulletin
         hud.writesubscenceoncontent(
-            np.flip(bulletinoutputpos), aPicWithText(bulletin.read()))
+            np.flip(bulletinoutputpos), aPicWithText(bulletin.read(), maxsize=[300, 300]))
 
         hud.update()
 
