@@ -13,49 +13,49 @@ def signName2Path(name):
     return r'statesign/{}.png'.format(name)
 
 
-# # res1920x1080,uiscale75%
-# stateDetectorInfo = {
-#     'hanger': {
-#         'path': signName2Path('hanger'),
-#         'lt': [863, 15],
-#     },
-#     'MissionCanceled': {
-#         'path': signName2Path('MissionCanceled'),
-#         'lt': [877, 952],
-#     },
-#     'LoadingMap': {
-#         'path': signName2Path('LoadingMap'),
-#         'lt': [1030, 203],
-#     },
-#     'OK': {
-#         'path': signName2Path('OK'),  #有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
-#         'lt': [896, 553],
-#         'thresh': 0.5
-#     }
-# }
-# standardMapLeftTopPoint = [286, 216]
-
-# 1366x768,75%
-stateDetectorInfo = {
-    'hanger': {
-        'path': signName2Path('hanger'),
-        'lt': [863, 21],
-    },
-    'MissionCanceled': {
-        'path': signName2Path('MissionCanceled'),
-        'lt': [877, 943],
-    },
-    'LoadingMap': {
-        'path': signName2Path('LoadingMap'),
-        'lt': [1030, 203],
-    },
-    'OK': {
-        'path': signName2Path('OK'),  # 有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
-        'lt': [896, 553],
-        # 'thresh': 0.5
+if resolution=='m1920x1080r1920x1080':
+    # res1920x1080,uiscale75%
+    stateDetectorInfo = {
+        'hanger': {
+            'path': signName2Path('hanger'),
+            'lt': [863, 15],
+        },
+        'MissionCanceled': {
+            'path': signName2Path('MissionCanceled'),
+            'lt': [877, 952],
+        },
+        'LoadingMap': {
+            'path': signName2Path('LoadingMap'),
+            'lt': [1030, 203],
+        },
+        'OK': {
+            'path': signName2Path('OK'),  #有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
+            'lt': [896, 553], #不过使用z函数处理后色差不再是问题了
+        }
     }
-}
-standardMapLeftTopPoint = [294, 221]
+    standardMapLeftTopPoint = [286, 216]
+
+elif resolution=='m1920x1080r1366x768':
+    # 1366x768,75%
+    stateDetectorInfo = {
+        'hanger': {
+            'path': signName2Path('hanger'),
+            'lt': [863, 21],
+        },
+        'MissionCanceled': {
+            'path': signName2Path('MissionCanceled'),
+            'lt': [877, 943],
+        },
+        'LoadingMap': {
+            'path': signName2Path('LoadingMap'),
+            'lt': [1030, 203],
+        },
+        'OK': {
+            'path': signName2Path('OK'),
+            'lt': [896, 553],
+        }
+    }
+    standardMapLeftTopPoint = [294, 221]
 
 if log2file:
     logg = logger(

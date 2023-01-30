@@ -17,3 +17,5 @@ pointtemplatezoomrate=1.4 #1920/1366
 
 throwerringetdetector=True
 throwerrinmain=True
+
+resolution='m1920x1080r1366x768'
