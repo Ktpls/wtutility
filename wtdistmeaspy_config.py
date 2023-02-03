@@ -20,5 +20,3 @@ measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
 keepEveryMeasInRecord=False
-
-tesseractpath=r'C:\Program Files\Tesseract-OCR\tesseract.exe'

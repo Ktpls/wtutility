@@ -2,11 +2,12 @@
 import matplotlib as mpl
 from utilitypack.utility import *
 from wtdistmeaspy_config import *
-import pytesseract.pytesseract as ptact
-ptact.tesseract_cmd = tesseractpath
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmark.png"
 kernelyellowmark = cv.imread(yellowmarkpath)
 
+from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
+
+ocrimpl.init()
 
 def pic2kernel(p: np.ndarray):
     maque = p.copy()
@@ -247,30 +248,12 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
             black[:, int(x+0.5*charw+0.5)] = 0
     dbglogsavestep(black)
 
-    # padding for ease of recongnization by tesseract
-    black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
-    dbglogsavestep(black, method='savematflt')
-
-    plottingscalestr = ptact.image_to_string(
-        black.astype('uint8'), lang='eng', config='--psm 7')
-
-    log('plottingscale')
-    log(plottingscalestr)
-    plottingscale = numinstr(plottingscalestr)
+    plottingscale = ocrimpl.ocr(black)
 
     # im collecting samples on dl prac
     savemat(black, f'black4CNN_{plottingscale}',
             path='./output/wtdmp_noised_scale_collection_project/')
 
-    plottingscalestr = str(plottingscale)
-    if len(plottingscalestr) > 3:
-        # got extra characters
-        # trim and do it again
-        # this is for the arrow indicating some planes outside the map
-        # blocks the 'm' in 'xxx m' and made it tough for ocr
-        # but if arrow, or any tank icon blocking the digit chars this would have no way to fix
-        plottingscalestr = plottingscalestr[:3]
-        plottingscale = numinstr(plottingscalestr)
 
     return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale
 

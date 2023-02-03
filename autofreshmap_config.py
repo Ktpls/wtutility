@@ -1,5 +1,5 @@
 
-from autofreshmap_configmap_plains import whitelistedmap,specialmapdetectors
+from autofreshmap_configmap_plain import whitelistedmap,specialmapdetectors
 
 singlechanneleddetection=False
 subsampleddetection=True
@@ -18,4 +18,5 @@ pointtemplatezoomrate=1.4 #1920/1366
 throwerringetdetector=True
 throwerrinmain=True
 
-resolution='m1920x1080r1366x768'
+#resolution='m1920x1080r1366x768'
+resolution='m1920x1080r1920x1080'
