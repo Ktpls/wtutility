@@ -20,3 +20,4 @@ measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
 keepEveryMeasInRecord=False
+ocrimpltype='tes'

@@ -4,8 +4,15 @@ from utilitypack import *
 
 tesseractpath = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
+class implocr:
+    @staticmethod
+    def init():
+        ...
+    @staticmethod
+    def ocr(ps):
+        ...
 
-class implTesseract:
+class implTesseract(implocr):
     @staticmethod
     def init():
         ptact.tesseract_cmd = tesseractpath
@@ -23,7 +30,7 @@ class implTesseract:
         if len(plottingscalestr) > 3:
             # got extra characters
             # trim and do it again
-            # this is for the arrow indicating some planes outside the map
+            # this is for the arrow indicating some players outside the map
             # blocks the 'm' in 'xxx m' and made it tough for ocr
             # but if arrow, or any tank icon blocking the digit chars this would have no way to fix
             plottingscalestr = plottingscalestr[:3]
@@ -35,7 +42,7 @@ modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
 model = None
 
 
-class implCNN:
+class implCNN(implocr):
     @staticmethod
     def init():
         global model

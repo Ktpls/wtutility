@@ -5,9 +5,13 @@ from wtdistmeaspy_config import *
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmark.png"
 kernelyellowmark = cv.imread(yellowmarkpath)
 
-from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
+if ocrimpltype == 'tes':
+    from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
+elif ocrimpltype == 'cnn':
+    from wtdistmeaspy_ocrimpl import implCNN as ocrimpl
 
 ocrimpl.init()
+
 
 def pic2kernel(p: np.ndarray):
     maque = p.copy()
@@ -253,7 +257,6 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     # im collecting samples on dl prac
     savemat(black, f'black4CNN_{plottingscale}',
             path='./output/wtdmp_noised_scale_collection_project/')
-
 
     return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale
 
