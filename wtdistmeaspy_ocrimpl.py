@@ -51,4 +51,4 @@ class implCNN(implocr):
     @staticmethod
     def ocr(ps):
         assert(model is not None)
-        return wtdmpsocr(ps, model)
+        return numinstr(wtdmpsocr(ps, model))

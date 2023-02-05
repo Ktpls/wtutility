@@ -1,27 +1,29 @@
 # warthunder distance measurement plotting scale optical character reconginization
 
 # %%
+from utilref import *
+from wtdmpsocr import getmodel, tsize, tsizep1, typeElse
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 from torch.utils.data import Dataset
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from utilref import *
 from defs import *
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
-devmode = True
-# load only nn on false
-# load dataset, train, views, and execute them on true
 
 # %%
 # nn def
-from wtdmpsocr import getmodel,tsize,tsizep1,typeElse
 
 modelpath = 'wtdmpsocr.pth'
 model = getmodel(modelpath)
+try:
+    os.rmdir('runs')
+except FileNotFoundError:
+    pass
+writer = SummaryWriter("runs")  # 存放log文件的目录
 
 # %%
 # dataset
@@ -44,10 +46,19 @@ class labeldataset(Dataset):
     def __len__(self):
         return self.endpos[-1]
 
-    standardshape = [50, 50]
+    standardshape = [50, 40]
 
     @staticmethod
-    def dataenhancement(m, t, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
+    def dataenhancement(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
+
+    #def dataenhancement(m, t, enh_hairing=False, enh_blocking=False, enh_randmov=False, enh_noisedot=False, enh_noiseline=False, enh_lineblocking=False):
+
+        if enh_hairing:
+            # grow some hair
+            regsum = regionsum(m, [3, 3])
+            addups = np.logical_and((m<0.1), (regsum == 3))
+            addups = np.logical_and(addups, (np.random.random(m.shape) < 0.3))
+            m += addups
 
         if enh_blocking:
             # blocking
@@ -86,12 +97,12 @@ class labeldataset(Dataset):
             X, Y = np.meshgrid(
                 np.arange(labeldataset.standardshape[1])-totalmov[1],
                 np.arange(labeldataset.standardshape[0])-totalmov[0])
-            
-            #directly set answerchannel = np.exp(-(X**2+Y**2)/(sigma)**2) will lead to underflow
-            dist2=(X**2+Y**2)/(2)**2
-            dist2[dist2>3]=3.1
+
+            # directly set answerchannel = np.exp(-(X**2+Y**2)/(sigma)**2) will lead to underflow
+            dist2 = (X**2+Y**2)/(2)**2
+            dist2[dist2 > 3] = 3.1
             answerchannel = np.exp(-dist2)
-            answerchannel[dist2>3]=0
+            answerchannel[dist2 > 3] = 0
 
             # pointly answer
             # answerchannel = np.zeros_like(m)
@@ -118,7 +129,7 @@ class labeldataset(Dataset):
 
         if enh_lineblocking:
             # black line
-            for i in range(int(np.random.uniform(1, 5))):
+            for i in range(int(np.random.uniform(-2, 5))):
                 p = (np.random.rand(2, 2) *
                      np.flip([labeldataset.standardshape])).astype('int')
                 m = cv.line(m, p[0], p[1], color=0, thickness=1)
@@ -134,7 +145,7 @@ class labeldataset(Dataset):
         return ToTensor()(img), ToTensor()(tmat), t
 
     def __getitem__(self, idx):
-        return self.drawbyflattenedidx(np.random.randint(0,len(self)))
+        return self.drawbyflattenedidx(np.random.randint(0, len(self)))
 
     def drawbyflattenedidx(self, idx):
         # get the type where idx laies
@@ -155,12 +166,11 @@ class labeldataset(Dataset):
             raise IndexError(f'no img under {t}')
         idx = int(idxfrac*len(self.piclist[t]))
         return self.readsample(t, idx)
-    
 
 
 training_data = labeldataset(rf'.\charDataset\labeled')
 test_data = training_data
-batch_size = 10
+batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -174,7 +184,6 @@ def trainAnEpoch():
         model.parameters(),
         lr=1e-4)
     epochs = 100*2
-    writer = SummaryWriter("runs/logs_fina")  # 存放log文件的目录
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
@@ -208,8 +217,9 @@ def trainAnEpoch():
             print(f"Avg loss: {test_loss:>8f}")
 
             writer.add_scalar('train/loss', test_loss, ep)  # 画loss，横坐标为epoch
-    writer.close()
+
     print("Done!")
+
 
 trainAnEpoch()
 
@@ -304,7 +314,6 @@ def viewmodel():
 viewmodel()
 
 
-
 # %%
 # save
 
@@ -316,3 +325,4 @@ def savemodel(path):
 savemodel(modelpath)
 
 # %%
+writer.close()

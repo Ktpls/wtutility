@@ -1,0 +1,3 @@
+usingwtdistmeaspy=True
+usingtelescope=True
+usingkeyshortcut=True

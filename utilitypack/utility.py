@@ -217,7 +217,7 @@ def activeWindow(hwnd):  # 窗口置顶
     win32gui.SetForegroundWindow(hwnd)
 
 
-def sleepuntil(con, dt=0.01):
+def sleepuntil(con:Callable, dt=0.01):
     while (not con()):
         time.sleep(dt)
 
@@ -235,6 +235,9 @@ m1=hud.getblankscreen()
 #draw sth on m1
 #then add m1 to hud
 hud.addcontent(m1)
+#or overwrite directly
+hud.writecontent(m1)
+#do the same for m2...
 ...
 #ask hud to show
 hud.update()
@@ -324,9 +327,9 @@ class fullScrHUD:
         t1.start()
         time.sleep(1)
 
-    def writesubscenceoncontent(self, lt, subscence):
-        self.m2draw[lt[0]:lt[0] + subscence.shape[0], lt[1]:lt[1] +
-                    subscence.shape[1], :subscence.shape[2]] = subscence
+    def writecontent(self, lt, content):
+        self.m2draw[lt[0]:lt[0] + content.shape[0], lt[1]:lt[1] +
+                    content.shape[1], :content.shape[2]] = content
 
     def clear(self):
         self.m2draw[:, :, :] = 0

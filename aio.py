@@ -1,8 +1,6 @@
 from utilitypack.utility import *
+from aio_config import *
 import traceback
-import wtdistmeaspy
-import telescope
-import keyshortcut
 
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
@@ -35,53 +33,61 @@ def main():
     business = []
     hotkeyaction = []
 
-    # wtdistmeas
 
-    def hkcallWTDistMeas():
-        bulletin.putup(wtdistmeaspy.mainlogic(), 10)
-    '''
-    VK_OEM_3=0xC0
-    Used for miscellaneous characters; it can vary by keyboard.
-    For the US standard keyboard, the '`~' key
-    '''
-    hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=0xc0,
-        foo=hkcallWTDistMeas
-    ))
+    # wtdistmeas
+    if usingwtdistmeaspy:
+
+        import wtdistmeaspy
+        def hkcallWTDistMeas():
+            bulletin.putup(wtdistmeaspy.mainlogic(), 10)
+        '''
+        VK_OEM_3=0xC0
+        Used for miscellaneous characters; it can vary by keyboard.
+        For the US standard keyboard, the '`~' key
+        '''
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=0xc0,
+            foo=hkcallWTDistMeas
+        ))
 
     # telescope
-    tele = telescope.telescope()
+    if usingtelescope:
+        import telescope
+        tele = telescope.telescope()
 
-    def telemain():
-        scope = tele.mainlooplogic()
-        if scope is None:
-            return
-        hud.writesubscenceoncontent(np.flip(telescopepos), scope)
-    business.append(telemain)
+        def telemain():
+            scope = tele.mainlooplogic()
+            if scope is None:
+                return
+            hud.writecontent(np.flip(telescopepos), scope)
+        business.append(telemain)
 
-    def switchtele():
-        tele.enabled = not tele.enabled
-    hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=win32con.VK_F12,
-        foo=switchtele
-    ))
+        def switchtele():
+            tele.enabled = not tele.enabled
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_F12,
+            foo=switchtele
+        ))
 
     # key shortcuts
-    def holdLeftAndTell():
-        keyshortcut.holdMouseLeft()
-        bulletin.putup('LeftHolding', 1)
-    hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=win32con.VK_F10,
-        foo=holdLeftAndTell
-    ))
+    if usingkeyshortcut:
 
-    def holdCAndTell():
-        keyshortcut.holdC()
-        bulletin.putup('CHolding', 1)
-    hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=win32con.VK_F11,
-        foo=holdCAndTell
-    ))
+        import keyshortcut
+        def holdLeftAndTell():
+            keyshortcut.holdMouseLeft()
+            bulletin.putup('LeftHolding', 1)
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_F10,
+            foo=holdLeftAndTell
+        ))
+
+        def holdCAndTell():
+            keyshortcut.holdC()
+            bulletin.putup('CHolding', 1)
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_F11,
+            foo=holdCAndTell
+        ))
 
     # reboot, not working on exit
 
@@ -112,8 +118,8 @@ def main():
             traceback.print_exc()
 
         # show bulletin
-        hud.writesubscenceoncontent(
-            np.flip(bulletinoutputpos), aPicWithText(bulletin.read(), maxsize=[300, 300]))
+        hud.writecontent(
+            np.flip(bulletinoutputpos), aPicWithText(bulletin.read(), maxsize=[400, 700]))
 
         hud.update()
 

@@ -1,6 +1,6 @@
 
 from utilitypack.utility import rgb2bgr, hsv2rgb
-reflist=[140,150,180,200,225,275,350]
+reflist=[140,180,200,225,275,350,450]
 textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
 
@@ -20,4 +20,4 @@ measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
 keepEveryMeasInRecord=False
-ocrimpltype='tes'
+ocrimpltype='cnn'

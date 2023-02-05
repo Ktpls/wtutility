@@ -55,5 +55,5 @@ def classifyall(path):
         classify(m)
         if i%100==0:
             print(f'{i} of {len(flist)}')
-classifyall(r"C:\file\code\wtutility\exp\DLOnPlottingScale\wtdmpsocr\output\charcuts")
+classifyall(r"C:\file\code\wtutility\exp\DLOnPlottingScale\wtdmpsocr\output")
 # %%

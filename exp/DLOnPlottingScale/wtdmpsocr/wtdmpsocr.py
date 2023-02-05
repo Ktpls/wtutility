@@ -1,8 +1,12 @@
 # warthunder distance measurement plotting scale optical character reconginization
 
 # %%
-from utilref import setModel,torch,batchsizeof,cv,np
-from defs import *
+if __package__ == '':
+    from utilref import setModel,torch,batchsizeof,cv,np
+    from defs import *
+else:
+    from .utilref import setModel,torch,batchsizeof,cv,np
+    from .defs import *
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
@@ -41,6 +45,7 @@ class chardetector(torch.nn.Module):
             torch.nn.LeakyReLU(),
             torch.nn.Conv2d(16, tsize, [charh-1, charw-1], padding='same'),
             torch.nn.LeakyReLU(),
+            
         )
 
     def forward(self, m):
@@ -98,7 +103,7 @@ class CharStateChangeDetector:
 
 
 def wtdmpsocr(ps,model):
-    ps = cv.imread(ps)[:, :, 0]
+    assert(type(ps) is np.ndarray and len(ps.shape)==2)
     ps = ps.astype(np.float32).reshape((1, 1)+ps.shape)/255
     # [batch,channel,h,w]
     ps = torch.tensor(ps)
@@ -116,6 +121,6 @@ def wtdmpsocr(ps,model):
     cscd = CharStateChangeDetector()
     result = ''
     for x in range(len(targmax)):  # range(w)
-        if cscd.input(targmax[x] if tmax[x] > 0.5 else typeElse):
+        if cscd.input(targmax[x] if tmax[x] > 0.2 else typeElse):
             result += f'{targmax[x]}'
     return result

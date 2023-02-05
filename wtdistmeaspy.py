@@ -58,7 +58,7 @@ def mainlogic():
             prompt+='Not recommended to use, better try again\n'
         prompt+='{}'.format('\n'.join(refresult))
         prompt+='\n'
-        prompt+='dg=%5f,ps=%4d,pe=%5.3f,ye=%5.3f,ge=%5.3f\n'%\
+        prompt+='dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n'%\
                         (distingrid,plottingscale,playererr,ymerr,griderr)
     if dbglogreason is not None:
         ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_On{}/'.format(
