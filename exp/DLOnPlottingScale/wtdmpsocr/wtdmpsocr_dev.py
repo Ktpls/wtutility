@@ -19,10 +19,7 @@ print(f"Using {device} device")
 
 modelpath = 'wtdmpsocr.pth'
 model = getmodel(modelpath)
-try:
-    os.rmdir('runs')
-except FileNotFoundError:
-    pass
+[os.remove(f) for f in AllFileIn('runs')]
 writer = SummaryWriter("runs")  # 存放log文件的目录
 
 # %%
@@ -57,7 +54,7 @@ class labeldataset(Dataset):
             # grow some hair
             regsum = regionsum(m, [3, 3])
             addups = np.logical_and((m<0.1), (regsum == 3))
-            addups = np.logical_and(addups, (np.random.random(m.shape) < 0.3))
+            addups = np.logical_and(addups, (np.random.random(m.shape) < 0.4))
             m += addups
 
         if enh_blocking:
@@ -170,7 +167,7 @@ class labeldataset(Dataset):
 
 training_data = labeldataset(rf'.\charDataset\labeled')
 test_data = training_data
-batch_size = 64
+batch_size = 16
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -200,7 +197,7 @@ def trainAnEpoch():
             lose.backward()
             optimizer.step()
 
-            if batch % 15 == 0:
+            if batch % 10 == 0:
                 current = batch * batchsizeof(m)
                 print(f" [{current:>5d}/{size:>5d}]")
 
@@ -217,7 +214,7 @@ def trainAnEpoch():
             print(f"Avg loss: {test_loss:>8f}")
 
             writer.add_scalar('train/loss', test_loss, ep)  # 画loss，横坐标为epoch
-
+    win32api.Beep(1000,1000)
     print("Done!")
 
 
@@ -326,3 +323,5 @@ savemodel(modelpath)
 
 # %%
 writer.close()
+
+# %%

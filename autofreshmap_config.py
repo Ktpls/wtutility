@@ -6,7 +6,7 @@ subsampleddetection=True
 subsampleddetectionrate=0.25
 
 log2file=False
-dbglog=True
+dbglog=False
 
 standardMatchThreshold=0.10
 

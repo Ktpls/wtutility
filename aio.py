@@ -7,9 +7,6 @@ telescopepos = (100, 100)
 
 
 def main():
-    hud = fullScrHUD()
-    hud.setup()
-    fps = fpsmanager(10)
 
     # 告示板
     idlebulletincontents = [
@@ -33,11 +30,11 @@ def main():
     business = []
     hotkeyaction = []
 
-
     # wtdistmeas
     if usingwtdistmeaspy:
 
         import wtdistmeaspy
+
         def hkcallWTDistMeas():
             bulletin.putup(wtdistmeaspy.mainlogic(), 10)
         '''
@@ -73,6 +70,7 @@ def main():
     if usingkeyshortcut:
 
         import keyshortcut
+
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
             bulletin.putup('LeftHolding', 1)
@@ -92,15 +90,21 @@ def main():
     # reboot, not working on exit
 
     def rebootfoo():
+        hud.stop()
         bootAsAdmin(__file__)
-        win32api.Beep(1000, 1000)
+        dur=100
+        freqseq=[500,750,400]
+        [win32api.Beep(f,dur) for f in freqseq]
         sys.exit()
-    # hotkeyaction.append(hotkeymanager.hotkeytask(
-    #     key=[win32con.VK_CONTROL, win32con.VK_F9],
-    #     foo=rebootfoo
-    # ))
+    hotkeyaction.append(hotkeymanager.hotkeytask(
+        key=[win32con.VK_CONTROL, win32con.VK_F9],
+        foo=rebootfoo
+    ))
 
     # main loop
+    hud = fullScrHUD()
+    hud.setup()
+    fps = fpsmanager(10)
     hkm = hotkeymanager(hotkeyaction)
 
     while (True):
@@ -110,8 +114,11 @@ def main():
         try:
             [hkf.foo() for hkf in hotkeyaction if hotkeymanager.iskeycalling(
                 hkf.key, keystate)]
+        except SystemExit as e:
+            raise e
         except Exception as e:
             traceback.print_exc()
+
         try:
             [bus() for bus in business]
         except Exception as e:

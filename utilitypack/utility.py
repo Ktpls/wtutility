@@ -443,7 +443,7 @@ class hotkeymanager:
         def __init__(self, key, foo) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
-
+    
 
 rgb2hsvmat = np.array([
     [[np.cos(0), np.cos(2 / 3 * np.pi),

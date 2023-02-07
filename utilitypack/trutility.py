@@ -34,7 +34,7 @@ class nestedPyPlot:
         return ax
 
 
-def setModel(model,path=None):
+def setModel(model, path=None):
     import os
 
     if path is None:
@@ -53,13 +53,13 @@ def AllFileIn(path, includeFileInSubDir=True):
     import os
     ret = []
     for dirpath, dir, file in os.walk(path):
-        if not includeFileInSubDir:
-            if dirpath != path:
-                continue
+        if not includeFileInSubDir and dirpath != path:
+            continue
         ret.extend([os.path.join(dirpath, f)for f in file])
     return ret
 
+
 def tensorimg2ndarray(m):
-    m=np.array(m)
-    m=np.moveaxis(m,-3,-1)
+    m = np.array(m)
+    m = np.moveaxis(m, -3, -1)
     return m

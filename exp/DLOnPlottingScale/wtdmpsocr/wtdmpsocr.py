@@ -39,9 +39,7 @@ class chardetector(torch.nn.Module):
         self.matchtempl = torch.nn.Sequential(
             torch.nn.Conv2d(1, 32, 5, padding='same'),
             torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(32, 64, 7, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(64, 16, 9, padding='same'),
+            torch.nn.Conv2d(32, 16, 9, padding='same'),
             torch.nn.LeakyReLU(),
             torch.nn.Conv2d(16, tsize, [charh-1, charw-1], padding='same'),
             torch.nn.LeakyReLU(),
