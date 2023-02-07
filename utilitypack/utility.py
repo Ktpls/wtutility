@@ -217,7 +217,7 @@ def activeWindow(hwnd):  # 窗口置顶
     win32gui.SetForegroundWindow(hwnd)
 
 
-def sleepuntil(con:Callable, dt=0.01):
+def sleepuntil(con: Callable, dt=0.01):
     while (not con()):
         time.sleep(dt)
 
@@ -317,7 +317,7 @@ class fullScrHUD:
                 win32con.SWP_SHOWWINDOW + win32con.SWP_NOSIZE +
                 win32con.SWP_NOMOVE)
             windll.user32.SetWindowDisplayAffinity(
-                hwnd, 0x11)  #WDA_EXCLUDEDFROMCAPUTURE
+                hwnd, 0x11)  # WDA_EXCLUDEDFROMCAPUTURE
             # can not use WDA_MONITOR, or get totally black screen
 
             self.hwnd = hwnd
@@ -422,28 +422,90 @@ class fpsmanager:
                    dt=0.5 * self.frametime)
         self.lt = time.perf_counter()
 
+import traceback
 
 class hotkeymanager:
-
-    def __init__(self, hotkeytasklist):
-        keys = [hka.key for hka in hotkeytasklist]
-        keys = list(itertools.chain.from_iterable(keys))
-        keys = list(deduplicate(keys))
-        self.kc = deepcopy(keys)
-
-    def getkeys(self):
-        return {k: isKBDown(k) for k in self.kc}
-
-    @staticmethod
-    def iskeycalling(key, keystate):
-        return all([keystate[k] for k in key])
+    # to piorer ctrl+c than c
+    # responde no c after doing ctrl+c
 
     class hotkeytask:
 
         def __init__(self, key, foo) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
+
+    def __init__(self, hotkeytasklist: List[hotkeytask]):
+        keyconcerned = [hka.key for hka in hotkeytasklist]
+        keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
+        keyconcerned = list(deduplicate(keyconcerned))
+        self.kc = keyconcerned
+
+        self.hktl = deepcopy(hotkeytasklist)
+
+        def piorered(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
+            def include(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
+                for k in b.key:
+                    if k not in a.key:
+                        return False
+                return True
+            # a>b and b<a, not equal
+            return include(a, b) and not include(b, a)
+        self.piorinfo = [
+            [aidx
+             for aidx, a in enumerate(hotkeytasklist)
+             if aidx != bidx and piorered(a, b)
+             ]
+            for bidx, b in enumerate(hotkeytasklist)
+        ]
+
+    def decideAllHotKey(self)->List[bool]:
+        keysts = {k: isKBDown(k) for k in self.kc}
+        from enum import Enum
+
+        class respondstate(Enum):
+            false = 0
+            true = 1
+            unknown = 2
+        respondtable = [respondstate.unknown for hk in self.hktl]
+
+        def decideRespondState(i):
+            # checked
+            if respondtable[i] != respondstate.unknown:
+                return
+
+            # all key pressed
+            if all([keysts[k] for k in self.hktl[i].key]):
+
+                # didnt check piored, check it
+                [decideRespondState(p) for p in self.piorinfo[i]
+                 if respondtable[p] == respondstate.unknown]
+
+                # no piored responded
+                if all([respondtable[p] == respondstate.false for p in self.piorinfo[i]]):
+                    respondtable[i] = respondstate.true
+                else:
+                    respondtable[i] = respondstate.false
+            else:
+                # not respond this
+                respondtable[i] = respondstate.false
+        for hkidx, hk in enumerate(self.hktl):
+            decideRespondState(hkidx)
+
+        assert (all([rt != respondstate.unknown for rt in respondtable]))
+
+        return [respondtable[hkidx] == respondstate.true for hkidx, hk in enumerate(self.hktl)]
     
+    def doAllDecidedKey(self,decideresult,throwonerr=False):
+        for i in range(len(decideresult)):
+            if decideresult[i]:
+                try:
+                    self.hktl[i].foo()
+                except Exception as e:
+                    if throwonerr:
+                        raise e
+                    else:
+                        traceback.print_exc()
+
 
 rgb2hsvmat = np.array([
     [[np.cos(0), np.cos(2 / 3 * np.pi),

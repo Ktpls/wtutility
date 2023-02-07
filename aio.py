@@ -109,20 +109,24 @@ def main():
 
     while (True):
         fps.next()
-        keystate = hkm.getkeys()
         hud.clear()
-        try:
-            [hkf.foo() for hkf in hotkeyaction if hotkeymanager.iskeycalling(
-                hkf.key, keystate)]
-        except SystemExit as e:
-            raise e
-        except Exception as e:
-            traceback.print_exc()
-
-        try:
-            [bus() for bus in business]
-        except Exception as e:
-            traceback.print_exc()
+        
+        decideresult=hkm.decideAllHotKey()
+        for i in range(len(decideresult)):
+            if decideresult[i]:
+                try:
+                    hkm.hktl[i].foo()
+                except SystemExit as e:
+                    raise e
+                except Exception as e:
+                    traceback.print_exc()
+                    
+        for bus in business:
+            
+            try:
+                bus()
+            except Exception as e:
+                traceback.print_exc()
 
         # show bulletin
         hud.writecontent(
