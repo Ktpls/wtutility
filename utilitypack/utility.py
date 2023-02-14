@@ -1,3 +1,4 @@
+import traceback
 import itertools
 import sys
 from ctypes.wintypes import RECT, HWND
@@ -96,19 +97,19 @@ def regionsum(m, size, mask=None):
                        np.ones(size, np.float32))
 
 
-# if denominatorConstrainedByBoundaryAndMask==True:
-# denominator will be #pix nearby on mask
-# else:
+# if notConsiderMaskInDenominator:
 # denominator will not consider mask and boundary and be size[0]*size[1]
-# u may ask mask==None does the same as denominatorConstrainedByBoundaryAndMask==True
+# else:
+# denominator will be #pix nearby on mask
+# u may ask mask==None does the same as notConsiderMaskInDenominator==True
 # but if u want to use mask and dont want to be constrained by boundary. unimplemented though
 def regionave(m,
               size,
               mask=None,
-              denominatorConstrainedByBoundaryAndMask=True):
+              notConsiderMaskInDenominator=True):
     if m.size <= 0:
         return m
-    if mask is None or denominatorConstrainedByBoundaryAndMask:
+    if mask is None or notConsiderMaskInDenominator:
         denominator = size[0] * size[1]
     else:
         denominator = (regionsum(mask, size) + 0.01)
@@ -174,40 +175,6 @@ class screenshoter:
 
     def shotgray(self):
         return cv.cvtColor(self.shot(), cv.COLOR_BGRA2GRAY)
-
-
-# class screenshoter:
-#     def __init__(self,hwnd):
-#         self.res=[1920,1080]
-#         self.wthwnd=hwnd
-#         self.wtDC = win32gui.GetWindowDC(self.wthwnd)
-#         if self.wtDC==win32con.NULL:
-#             raise Exception('GetWindowDC() failed')
-#         self.wtmfcDC=win32ui.CreateDCFromHandle(self.wtDC)
-
-#         self.myDC=self.wtmfcDC.CreateCompatibleDC()
-#         self.myBitMap = win32ui.CreateBitmap()
-#         self.myBitMap.CreateCompatibleBitmap(self.wtmfcDC, self.res[0], self.res[1])
-#         self.myDC.SelectObject(self.myBitMap)
-
-#     def __del__(self):
-#         win32gui.DeleteObject(self.myBitMap.GetHandle())
-#         self.myDC.DeleteDC()
-#         self.wtmfcDC=None
-#         win32gui.ReleaseDC(self.wthwnd,self.wtDC)
-
-#     def shot(self):
-#         self.myDC.BitBlt((0,0),(self.res[0], self.res[1]) , self.wtmfcDC, (0,0), win32con.SRCCOPY)
-#         m=self.myBitMap.GetBitmapBits(self.res[0]* self.res[1] * 4);
-#         m=np.frombuffer(m,np.uint8)
-#         m=m.reshape([self.res[1], self.res[0],4])
-#         return m
-
-#     def shotgray(self):
-#         return cv.cvtColor(self.shot(),cv.COLOR_BGRA2GRAY)
-
-#     def shotbgr(self):
-#         return self.shot()[:,:,:3]
 
 
 def activeWindow(hwnd):  # 窗口置顶
@@ -422,7 +389,6 @@ class fpsmanager:
                    dt=0.5 * self.frametime)
         self.lt = time.perf_counter()
 
-import traceback
 
 class hotkeymanager:
     # to piorer ctrl+c than c
@@ -458,7 +424,7 @@ class hotkeymanager:
             for bidx, b in enumerate(hotkeytasklist)
         ]
 
-    def decideAllHotKey(self)->List[bool]:
+    def decideAllHotKey(self) -> List[bool]:
         keysts = {k: isKBDown(k) for k in self.kc}
         from enum import Enum
 
@@ -494,8 +460,8 @@ class hotkeymanager:
         assert (all([rt != respondstate.unknown for rt in respondtable]))
 
         return [respondtable[hkidx] == respondstate.true for hkidx, hk in enumerate(self.hktl)]
-    
-    def doAllDecidedKey(self,decideresult,throwonerr=False):
+
+    def doAllDecidedKey(self, decideresult, throwonerr=False):
         for i in range(len(decideresult)):
             if decideresult[i]:
                 try:
@@ -583,33 +549,19 @@ def numinstr(s: str):
     s = digitsof(s)
     return int(s) if len(s) > 0 else 0
 
+# summon from card pool
 
-# convert prob density(f) to prob func(F)
-# section n: ret[n-1]~ret[n]
-# for n=0: 0~ret[n]
-
-
-def integralProb(prob):
-    sum = 0
-    ret = np.zeros_like(prob)
-    for i in range(len(prob)):
-        sum += prob[i]
-        ret[i] = sum
-    return ret
+# impl using np
 
 
-def initPyRandom(seed):
-    random.seed(seed)
-
-
-# summon from card pool, but using integrated prob
-
-
-def summonCard(inteprob):
-    pos = random.random() * inteprob[-1]
-    for n in range(len(inteprob)):
-        if inteprob[n] > pos:
-            return n
+def summonCard(inteprob, generator=None):
+    # norm
+    prob = np.array(inteprob, dtype=np.float32)
+    prob /= prob.sum()
+    if generator is None:
+        return np.random.choice(np.arange(len(prob)), p=prob)
+    else:
+        return generator.choice(np.arange(len(prob)), p=prob)
 
 
 # faster summon using division

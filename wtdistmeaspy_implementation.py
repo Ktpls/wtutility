@@ -65,10 +65,8 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     dbglogsavestep(mgray)
 
     # find player
-    mcolorply = cv.GaussianBlur(mcolored, [5, 5], 1)
-    dbglogsavestep(mcolorply)
 
-    mcolorply = cv.cvtColor(mcolorply, cv.COLOR_BGR2HSV)
+    mcolorply = cv.cvtColor(mcolored, cv.COLOR_BGR2HSV)
     dbglogsavestep(mcolorply)
 
     mcolorply = cv.inRange(mcolorply, hsv2opencv8bithsv(
@@ -83,10 +81,10 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     dbglogsavestep(mply)
 
     def playerfinder_gaussiandensity_method(m):
-        b = cv.GaussianBlur(m, [3, 3], None)
+        b = cv.GaussianBlur(m, [5, 5], None)
         dbglogsavestep(b)
 
-        mply = (m*(b > 200)).astype('int')
+        mply = (m*(b > 255*5/25)).astype('int')
         dbglogsavestep(mply)
 
         X = np.arange(mply.shape[1])
@@ -201,7 +199,7 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
 
     log('used intervals\n%s' % ('\n'.join(['%4d' % i for i in interval])))
 
-    gridave = interval.sum()/len(interval)
+    gridave = interval.mean()
     griderr = interval.var()
 
     log('g=%3f,ge=%5f.3f' % (gridave, griderr))
@@ -209,13 +207,14 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     # find plotting scale
     # standard: all bivalue map must be presented in [0,255] form
     psfindrange = int(2.5*gridave)
-    mps = np.copy(mcolored[-psfindrange:, -psfindrange:])
+    # cut region and del the "scale"
+    # 3 is height of scale, 14 is height of text, 1 is gap between scale and text
+    # text is a little bit out of range between two vertical lines,
+    # so 2x interval is with slight possibility losing char pixel
+    # but 2.5x interval is quite enough
+    mps = np.copy(mcolored[-3-1-14:-3-1, -psfindrange:, :])
     dbglogsavestep(mps)
     # consider cut map in the last step, for using as more region info in detection as possible
-
-    # cut region and del the "ruler"
-    # 3 is height of ruler, 14 is height of text, 1 is gap between ruler and text
-    mps = mps[-3-1-14:-3-1, :, :]
 
     # filter absolute color
     mpshsv = cv.cvtColor(mps, cv.COLOR_BGR2HSV)
@@ -230,29 +229,22 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
         (mpsgray-(regionave(mpsgray, [3, 3])-5)), 0, 255, cv.THRESH_BINARY_INV)[1]
     dbglogsavestep(relblack)
 
+    # be both really black and relatively black
     black = np.logical_and(darkgraypoints, relblack).astype('float')*255
     # black=np.logical_and(black,relinsat).astype('float')*255
     dbglogsavestep(black)
 
-    # filter density to remove noise points
-    for i in range(2):
-        black = densityfilter(black/255, [5, 5], 3/25).astype('float')*255
-        dbglogsavestep(black)
-
     charw, charh = 10, 20
-    # filter density in single char region
-    # padding left and right for full convolve
-    black = cv.copyMakeBorder(
-        black, 0, 0, charw, charw, cv.BORDER_CONSTANT, value=0)
-    density = black.astype('float').sum(axis=0)/255
-    density = np.correlate(density, np.ones(10))
-    density /= (charw*charh)
-    for x in range(len(density)):
-        if density[x] < 0.05:
-            black[:, int(x+0.5*charw+0.5)] = 0
-    dbglogsavestep(black)
 
+    # padding for ease of recongnization by tesseract, at least in the past
+    # but our cnn using data collected from tesseract daily using uses the standard 20x10 char pic
+    black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
+    dbglogsavestep(black)
     plottingscale = ocrimpl.ocr(black)
+    
+    # cnn works fine even with dirty relblack pic
+    # relblack = cv.copyMakeBorder(relblack, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
+    # plottingscale = ocrimpl.ocr(black)
 
     # im collecting samples on dl prac
     savemat(black, f'black4CNN_{plottingscale}',

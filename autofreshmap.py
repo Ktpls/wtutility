@@ -10,14 +10,13 @@ def main():
         activeWindow(getWTHwnd())
         mouse.mov(*(0,0))
         freshAMap()
-    except BaseException as err:
+    except Exception as err:
         traceback.print_exc()
         win32api.Beep(1000,1000)
         win32api.Beep(500,1000)
         if throwerrinmain:
             raise err
-        else:
-            system('pause')
+        system('pause')
         
     #testOneRaw()
     #addCutNewMap('Normandy')

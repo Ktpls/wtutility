@@ -28,10 +28,11 @@ we got classification along x axis
 use rising edge trigger to tell where should type be output
 '''
 
-# 0123456789
+# 0123456789E
 tsize = 10
 tsizep1 = tsize+1
 typeElse = tsizep1-1
+
 
 class chardetector(torch.nn.Module):
     def __init__(self) -> None:
@@ -42,6 +43,7 @@ class chardetector(torch.nn.Module):
             torch.nn.Conv2d(32, 64, 9, padding='same'),
             torch.nn.LeakyReLU(),
             torch.nn.Conv2d(64, 16, 9, padding='same'),
+            #torch.nn.BatchNorm2d(16),
             torch.nn.LeakyReLU(),
             torch.nn.Conv2d(16, tsize, [charh-1, charw-1], padding='same'),
             torch.nn.LeakyReLU(),
@@ -73,7 +75,7 @@ class chardetector(torch.nn.Module):
 
 def getmodel(modelpath):
     model = setModel(chardetector(), path=modelpath).to(device)
-    print(model)
+    #print(model)
     return model
 
 
@@ -88,20 +90,6 @@ class RisingEdgeTrigger:
         return not oldstate and state
 
 
-class CharStateChangeDetector:
-    def __init__(self, state0=typeElse) -> None:
-        self.state = state0
-
-    def input(self, state):
-        oldstate = self.state
-        self.state = state
-        # ret true when detect new char
-        # that is, ret true when lastCharType!=charType, and charType!=typeElse
-        if state != typeElse and oldstate != state:
-            return True
-        return False
-
-
 def wtdmpsocr(ps,model):
     assert(type(ps) is np.ndarray and len(ps.shape)==2)
     ps = ps.astype(np.float32).reshape((1, 1)+ps.shape)/255
@@ -113,11 +101,26 @@ def wtdmpsocr(ps,model):
     # [channel,h,w]
     t = np.max(tmathat, axis=-2)
     # [channel,w]
-    # set t=argmax of type on this point, if matchness of this type>thresh, else set type as else (tsizep1-1)
+    # set t=argmax of type on this point,
+    # if matchness of this type>thresh, else set type as else (tsizep1-1)
 
     tmax = np.max(t, axis=-2)
     targmax = np.argmax(t, axis=-2)
 
+
+
+    class CharStateChangeDetector:
+        def __init__(self, state0=typeElse) -> None:
+            self.state = state0
+
+        def input(self, state):
+            oldstate = self.state
+            self.state = state
+            # ret true when detect new char
+            # that is, ret true when lastCharType!=charType, and charType!=typeElse
+            if state != typeElse and oldstate != state:
+                return True
+            return False
     cscd = CharStateChangeDetector()
     result = ''
     for x in range(len(targmax)):  # range(w)

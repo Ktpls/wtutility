@@ -23,7 +23,7 @@ halfdesired=[
     'Japan',
     'Poland',
     'Poland(winter)',
-    'Jungle',
+    'Finland',
 ]
 
 whitelistedmap=desireds+halfdesired
@@ -52,6 +52,12 @@ specialmapdetectors={
         "path":"Japan",
         "spawncenter":[233, 572],
         "allowederrrange":100,
+        "point":[
+            {
+                "pos":[325, 310], # B point
+                "allowederr":20,
+            },
+        ],
     },
     "Normandy":{
         "type":"mapdetector",
@@ -94,5 +100,29 @@ specialmapdetectors={
         "path":"Finland",
         "spawncenter":[355,526],
         "allowederrrange":100,
+        "point":[
+            {
+                "pos":[492, 289], # C
+                "allowederr":20,
+            },
+        ],
     },
+    "SandsOfSinai":{
+        "type":"mapdetector",
+        "path":"SandsOfSinai",
+        "spawncenter":[334, 61],
+        "allowederrrange":100,
+    },
+    "AralSea":{
+        "type":"mapdetector",
+        "path":"AralSea",
+        "point":[
+            {
+                "pos":[502, 300], # point in desert
+                "allowederr":20,
+            },
+        ],
+        "allowederrrange":100,
+    },
+    
 }

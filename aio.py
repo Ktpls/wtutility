@@ -1,7 +1,7 @@
 from utilitypack.utility import *
 from aio_config import *
 import traceback
-
+import hashlib
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
@@ -10,18 +10,23 @@ def main():
 
     # 告示板
     idlebulletincontents = [
-        ['(=w=)', 69],
+        ['(=w=)', 66],
         ['(>^<)', 30],
         ['(0v0)', 1],
+        ['($w$)', 1],
+        ['(#.#)', 1],
+        ['(@~@)', 1],
     ]
     # 每天固定一种
-    initPyRandom(time.strftime('%Y-%m-%d', time.localtime()))
+
+    seed = time.strftime('%Y-%m-%d', time.localtime()).encode('utf-8')
+    seed = hashlib.md5(seed).digest()
+    seed = int.from_bytes(seed[:8], 'big')
     bulletin = bulletinBoard(
         idlebulletincontents[
             summonCard(
-                integralProb(
-                    [c[1] for c in idlebulletincontents]
-                )
+                [c[1] for c in idlebulletincontents],
+                np.random.Generator(np.random.PCG64(seed))
             )
         ][0]
     )
@@ -92,9 +97,9 @@ def main():
     def rebootfoo():
         hud.stop()
         bootAsAdmin(__file__)
-        dur=100
-        freqseq=[500,750,400]
-        [win32api.Beep(f,dur) for f in freqseq]
+        dur = 100
+        freqseq = [500, 750, 400]
+        [win32api.Beep(f, dur) for f in freqseq]
         sys.exit()
     hotkeyaction.append(hotkeymanager.hotkeytask(
         key=[win32con.VK_CONTROL, win32con.VK_F9],
@@ -110,8 +115,8 @@ def main():
     while (True):
         fps.next()
         hud.clear()
-        
-        decideresult=hkm.decideAllHotKey()
+
+        decideresult = hkm.decideAllHotKey()
         for i in range(len(decideresult)):
             if decideresult[i]:
                 try:
@@ -120,9 +125,9 @@ def main():
                     raise e
                 except Exception as e:
                     traceback.print_exc()
-                    
+
         for bus in business:
-            
+
             try:
                 bus()
             except Exception as e:

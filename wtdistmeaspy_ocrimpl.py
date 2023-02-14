@@ -4,13 +4,16 @@ from utilitypack import *
 
 tesseractpath = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
+
 class implocr:
     @staticmethod
     def init():
         ...
+
     @staticmethod
     def ocr(ps):
         ...
+
 
 class implTesseract(implocr):
     @staticmethod
@@ -18,9 +21,25 @@ class implTesseract(implocr):
         ptact.tesseract_cmd = tesseractpath
 
     @staticmethod
-    def ocr(m):
-        # padding for ease of recongnization by tesseract
-        black = cv.copyMakeBorder(m, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
+    def ocr(black):
+
+        # filter density to remove noise points
+        for i in range(2):
+            black = densityfilter(black/255, [5, 5], 3/25).astype('float')*255
+            # dbglogsavestep(black)
+
+        charw, charh = 10, 20
+        # filter density in single char region
+        # padding left and right for full convolve
+        black = cv.copyMakeBorder(
+            black, 0, 0, charw, charw, cv.BORDER_CONSTANT, value=0)
+        density = black.astype('float').sum(axis=0)/255
+        density = np.correlate(density, np.ones(10))
+        density /= (charw*charh)
+        for x in range(len(density)):
+            if density[x] < 0.05:
+                black[:, int(x+0.5*charw+0.5)] = 0
+        # dbglogsavestep(black)
 
         plottingscalestr = ptact.image_to_string(
             black.astype('uint8'), lang='eng', config='--psm 7')
@@ -50,5 +69,5 @@ class implCNN(implocr):
 
     @staticmethod
     def ocr(ps):
-        assert(model is not None)
+        assert (model is not None)
         return numinstr(wtdmpsocr(ps, model))

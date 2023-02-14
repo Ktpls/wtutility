@@ -2,7 +2,7 @@
 
 # %%
 from utilref import *
-from wtdmpsocr import getmodel, tsize, tsizep1, typeElse
+from wtdmpsocr import getmodel, tsize, tsizep1, typeElse,device
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 from torch.utils.data import Dataset
@@ -10,8 +10,6 @@ import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 from defs import *
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
 
 
 # %%
@@ -29,8 +27,8 @@ writer = SummaryWriter("runs")  # 存放log文件的目录
 class labeldataset(Dataset):
     def __init__(self, path):
 
-        # we got dirs 0-10 in root
-        self.piclist = {}
+        # we got dirs 0-10 in root, maybe some not exist cuz no sample under it
+        self.piclist = list(range(tsizep1))
         for t in range(tsizep1):
             rootoft = rf'{path}\{t}'
             self.piclist[t] = AllFileIn(
@@ -38,33 +36,38 @@ class labeldataset(Dataset):
 
         # cache this for usage in __getitem__()
         self.endpos = list(itertools.accumulate(
-            [len(t) for t in self.piclist.values()]))
+            [len(t) for t in self.piclist]))
+
+        self.cache = None
+
+    def sampleassetnum(self):
+        return self.endpos[-1]
 
     def __len__(self):
-        return self.endpos[-1]
+        return 30000
 
     standardshape = [50, 40]
 
     @staticmethod
-    def dataenhancement(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
+    def dataEnhance(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
 
-    #def dataenhancement(m, t, enh_hairing=False, enh_blocking=False, enh_randmov=False, enh_noisedot=False, enh_noiseline=False, enh_lineblocking=False):
+        m = np.copy(m)
 
         if enh_hairing:
             # grow some hair
             regsum = regionsum(m, [3, 3])
-            addups = np.logical_and((m<0.1), (regsum == 3))
+            addups = np.logical_and((m < 0.1), (regsum == 3))
             addups = np.logical_and(addups, (np.random.random(m.shape) < 0.4))
             m += addups
 
         if enh_blocking:
             # blocking
-            lt = np.random.rand(2)*m.shape
-            hw = np.random.rand(2)*[2, 5]+[1, 2]
+            hw = np.random.rand(2)*[2, 10]+[1, 2]
+            lt = np.random.rand(2)*(m.shape-hw)
             rd = lt+hw
-            for i in range(2):
-                if rd[i] >= m.shape[i]:
-                    rd[i] = m.shape[i]
+            # for i in range(2):
+            #     if rd[i] >= m.shape[i]:
+            #         rd[i] = m.shape[i]
             lt, rd = lt.astype('int'), rd.astype('int')
             m[lt[0]:rd[0], lt[1]:rd[1]] = 0
 
@@ -73,6 +76,7 @@ class labeldataset(Dataset):
         totalmov = np.zeros(2, dtype='float32')+0.5*np.array([charh, charw])
         mov = np.array(labeldataset.standardshape) / \
             2-0.5*np.array([charh, charw])
+
         # rand mov
         if enh_randmov:
             # dont think any usefulness in conv net
@@ -133,18 +137,44 @@ class labeldataset(Dataset):
 
         return m, tmat
 
-    def readsample(self, t, idx):
+    def readSample_Realtime(self, t, idx):
+        if idx >= len(self.piclist[t]):
+            raise IndexError(
+                f'index err on type{t}: {idx} of {len(self.piclist[t])}')
         img = cv.imread(
             self.piclist[t][idx])[:, :, 0].astype('float32')/255  # as gray/255
 
         # shape standardlize included
-        img, tmat = labeldataset.dataenhancement(img, t)
+        img, tmat = labeldataset.dataEnhance(img, t)
         return ToTensor()(img), ToTensor()(tmat), t
 
-    def __getitem__(self, idx):
-        return self.drawbyflattenedidx(np.random.randint(0, len(self)))
+    def readSample_WithCaching(self, t, idx):
 
-    def drawbyflattenedidx(self, idx):
+        if self.cache is None:
+            # init cache
+            self.cache = [[cv.imread(
+                path)[:, :, 0].astype('float32')/255 for path in self.piclist[t]] for t in range(tsizep1)]
+
+        if idx >= len(self.piclist[t]):
+            raise IndexError(
+                f'index err on type{t}: {idx} of {len(self.piclist[t])}')
+
+        img = self.cache[t][idx]
+
+        # shape standardlize included
+        img, tmat = labeldataset.dataEnhance(img, t)
+        return ToTensor()(img), ToTensor()(tmat), t
+
+    def readSample(self, t, idx):
+        return labeldataset.readSample_WithCaching(self, t, idx)
+
+    def __getitem__(self, idx):
+        return self.draw_uniformOnType(np.random.random())
+
+    def drawByFlattenedIdxFrac(self, idxfrac):
+        return self.drawByFlattenedIdx(idxfrac*self.sampleassetnum)
+
+    def drawByFlattenedIdx(self, idx):
         # get the type where idx laies
         # in case of out of range
         idx %= self.endpos[-1]
@@ -155,19 +185,28 @@ class labeldataset(Dataset):
             lastendpos = self.endpos[t]
         t = tt
         idx = idx-self.endpos[t-1] if t != 0 else idx
-        return self.readsample(t, idx)
+        return self.readSample(t, idx)
+
+    def draw_uniformOnType(self, idxfrac):
+        while (True):
+            try:
+                # to skip empty
+                t = int(np.random.random()*(tsizep1))
+                ret = self.drawByType(t, idxfrac)
+                break
+            except IndexError:
+                continue
+        return ret
 
     # idxfrac: 0~1 idx, which will be converted into real idx by timing len(thistype)
-    def drawbytype(self, t, idxfrac):
-        if len(self.piclist[t]) == 0:
-            raise IndexError(f'no img under {t}')
+    def drawByType(self, t, idxfrac):
         idx = int(idxfrac*len(self.piclist[t]))
-        return self.readsample(t, idx)
+        return self.readSample(t, idx)
 
 
 training_data = labeldataset(rf'.\charDataset\labeled')
 test_data = training_data
-batch_size = 16
+batch_size =32
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -180,7 +219,7 @@ def trainAnEpoch():
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=1e-4)
-    epochs = 100*2
+    epochs = 1
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
@@ -197,24 +236,26 @@ def trainAnEpoch():
             lose.backward()
             optimizer.step()
 
-            if batch % 10 == 0:
+            if batch % 100 == 0:
                 current = batch * batchsizeof(m)
                 print(f" [{current:>5d}/{size:>5d}]")
+                writer.add_scalar('loss', lose.item()/batchsizeof(m), current)
 
-        # test
-        model.eval()
-        with torch.no_grad():
-            test_loss = 0
-            for batch, (m, tmat, t) in enumerate(test_dataloader):
-                m, tmat, t = m.to(device), tmat.to(device), t.to(device)
-                tmathat = model.forward(m)
-                test_loss += model.lose(tmathat, tmat, t).item()
-            test_loss /= len(test_dataloader.dataset)
-            print(f"Test Error:")
-            print(f"Avg loss: {test_loss:>8f}")
+        # # test
+        # model.eval()
+        # with torch.no_grad():
+        #     test_loss = 0
+        #     for batch, (m, tmat, t) in enumerate(test_dataloader):
+        #         m, tmat, t = m.to(device), tmat.to(device), t.to(device)
+        #         tmathat = model.forward(m)
+        #         test_loss += model.lose(tmathat, tmat,
+        #                                 t).item() / batchsizeof(m)
+        #         break
+        #     #test_loss /= len(test_dataloader.dataset)
+        #     print(f"Test Error:")
+        #     print(f"Avg loss: {test_loss:>8f}")
 
-            writer.add_scalar('train/loss', test_loss, ep)  # 画loss，横坐标为epoch
-    win32api.Beep(1000,1000)
+    win32api.Beep(1000, 1000)
     print("Done!")
 
 
@@ -238,7 +279,7 @@ def viewmodel():
     with torch.no_grad():
         for i in range(tsizep1):
             try:
-                m, tmat, t = datasetusing.drawbytype(i, np.random.rand())
+                m, tmat, t = datasetusing.drawByType(i, np.random.rand())
             except IndexError as e:
                 print(e)
                 continue

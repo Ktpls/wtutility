@@ -102,11 +102,11 @@ class networkOperationImplementation_netshinterfacesetinterfacedisable(
 
     @staticmethod
     def setoffwifi():
-        os.system('netsh interface set interface name="WLAN" admin=disable')
+        os.system('netsh interface set interface name="WLAN 2" admin=disable')
 
     @staticmethod
     def setonwifi():
-        os.system('netsh interface set interface name="WLAN" admin=enable')
+        os.system('netsh interface set interface name="WLAN 2" admin=enable')
 
 
 networkOperationImplementationAvailableList = [
@@ -358,7 +358,7 @@ class mapdetector(detector):
 
             def zoompointimg(m):
                 mattr = np.array([[pointtemplatezoomrate, 0, 0],
-                                  [0, pointtemplatezoomrate, 0]])
+                                  [0, pointtemplatezoomrate, 0]],dtype=np.float32)
                 return cv.warpAffine(
                     m, mattr,
                     np.round(np.flip(m.shape[:2]) *
@@ -410,12 +410,16 @@ class mapdetector(detector):
                     if pi[0] != ps['type']:
                         return False
                 if 'pos' in ps:
-                    if np.sqrt((pi[1] - ps['pos'])**2) <= ps['allowederr']:
+                    err = np.sqrt(((np.array(pi[1]) - ps['pos'])**2).sum())
+                    if err > ps['allowederr']:
                         return False
+                return True
 
-            # all point selector
+            # apply all selector on all point info
+            # all point selector, if selection not empty then regarded as valid
             result4eachselector = [any([applypointselectoronpointinfo(
                 pi, ps) for pi in pointinfo.items()]) for ps in self.para['point']]
+            # summing up all selector result, if all valid then pass this condition
             resulttotal = all(result4eachselector)
             if not resulttotal:
                 return False
@@ -423,12 +427,13 @@ class mapdetector(detector):
         return True
 
 
-def getdetector(info):
+def getdetector(info)->mapdetector:
     try:
         obj = eval(f'{info["type"]}(info)')
         return obj
     except BaseException as err:
         allchanneloutput('err in getdetector(), {}'.format(err))
+        traceback.print_exc()
         if throwerringetdetector:
             raise err
 

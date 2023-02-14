@@ -160,26 +160,6 @@ def planetrack(m,
                wingspanleast=0,
                scoreleast=0.1,
                mask=None):
-    """_summary_
-
-    Args:
-        m (_type_): _description_
-        posref (_type_): _description_
-        wingspanref (int, optional): _description_. Defaults to -1.
-        searchrange (int, optional): _description_. Defaults to 100.
-        backgroundrange (int, optional): _description_. Defaults to 31.
-        adptthresh (float, optional): _description_. Defaults to 0.4.
-        regionrange (int, optional): _description_. Defaults to 10.
-        routhresh (float, optional): _description_. Defaults to 0.2.
-        posrellamb (int, optional): _description_. Defaults to 0.
-        wingspanrellamb (int, optional): _description_. Defaults to 0.
-        wingspanleast (int, optional): _description_. Defaults to 0.
-        scoreleast (float, optional): _description_. Defaults to 0.1.
-        mask (_type_, optional): _description_. Defaults to None.
-
-    Returns:
-        _type_: _description_
-    """
     mask = mask.astype('float32') * 1 / 255
     size = [m.shape[1], m.shape[0]]
     posref = point_legalize(posref, size)

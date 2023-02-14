@@ -41,7 +41,7 @@ availtransformation['fisheye'] = transformation_fisheye
 def transformation_detailenh(view):
 
     def modval(x):
-        #return np.arctan(x)*15*2/np.pi
+        # return np.arctan(x)*15*2/np.pi
         return x * detailenh_coef
 
     regave = regionave(view, [11, 11])
@@ -55,7 +55,7 @@ availtransformation['detail'] = transformation_detailenh
 
 
 def gettelescopeview():
-    #view of len
+    # view of len
     scr = screenshoter(0).shotbgr().astype('float')
     sizescr = np.array(scr.shape[:2])
     lt = (sizescr * 0.5 - sizelen * 0.5).astype('int')
@@ -65,7 +65,7 @@ def gettelescopeview():
     for t in transformationapplied:
         view = availtransformation[t](view)
     view = view.astype('int')
-    #in case of totally black place in view
-    #although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
+    # in case of totally black place in view
+    # although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
     view[view < 1] = 1
     return view
