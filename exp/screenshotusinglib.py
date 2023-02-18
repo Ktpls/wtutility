@@ -15,7 +15,7 @@ def main():
         if i % 10 == 0:
             print(i)
     ps.stop()
-    print(ps.read_ave_t())
+    print(ps.aveTime())
 
 
 if __name__ == "__main__":

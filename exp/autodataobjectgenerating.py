@@ -32,7 +32,6 @@ def generateFileWithList(filename, l):
 
 
 dolist = [
-    ['doInput', 'id', 'i'],
-    ['doTest2', 'scope', 'scope2'],
+    ['doShotCache', 't', 'm'],
 ]
 generateFileWithList('adogoutput', dolist)

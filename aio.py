@@ -5,6 +5,10 @@ import hashlib
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
+def beepOnErr():
+    
+    win32api.Beep(1000,1000)
+    win32api.Beep(500,1000)
 
 def main():
 
@@ -31,8 +35,9 @@ def main():
         ][0]
     )
 
-    # 业务
+    # 日常运作的业务
     business = []
+    # 热键
     hotkeyaction = []
 
     # wtdistmeas
@@ -91,6 +96,15 @@ def main():
             key=win32con.VK_F11,
             foo=holdCAndTell
         ))
+    
+    #eagle eye
+    if usingeagleeye:
+        import eagleeye
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_F8,
+            foo=eagleeye.onClick
+        ))
+        business.append(eagleeye.onFrame)
 
     # reboot, not working on exit
 
@@ -124,6 +138,9 @@ def main():
                 except SystemExit as e:
                     raise e
                 except Exception as e:
+                    beepOnErr()
+                    if throwErrorInHotkey:
+                        raise e
                     traceback.print_exc()
 
         for bus in business:
@@ -131,7 +148,10 @@ def main():
             try:
                 bus()
             except Exception as e:
+                beepOnErr()
                 traceback.print_exc()
+                if throwErrorInBus:
+                    raise e
 
         # show bulletin
         hud.writecontent(

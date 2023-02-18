@@ -1,3 +1,7 @@
 usingwtdistmeaspy=True
 usingtelescope=True
 usingkeyshortcut=True
+usingeagleeye=True
+
+throwErrorInBus=True
+throwErrorInHotkey=True

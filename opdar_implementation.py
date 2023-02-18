@@ -1,12 +1,15 @@
 from utilitypack import *
+from opdar_config import *
+
+uimask = cv.imread(r"./asset/opdar/UIMASK.png")
+uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
+odc = DataCollector(r'.\asset\opdar\datacollector.txt','./output/opdar_plane/')
 
 
 def scoring(X, lamb, mu=0):
     return 1 / ((lamb * (X - mu))**2 + 1)
 
 
-def getlambfromtarget(how, where):
-    return np.sqrt((1 / how - 1)) / where
 
 
 def deltaX(X):
@@ -157,7 +160,7 @@ def planetrack(m,
                routhresh=0.2,
                posrellamb=0,
                wingspanrellamb=0,
-               wingspanleast=0,
+               wingspanleast=4,
                scoreleast=0.1,
                mask=None):
     mask = mask.astype('float32') * 1 / 255
@@ -312,3 +315,91 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     # Extract traslation
 
     return curr_pts, m
+
+
+class tracker:
+
+    def setup(self, p0):
+        self.omegastab = [stablizer(stablamb, 0), stablizer(stablamb, 0)]
+        self.lastpos = p0
+        self.lastwingspan = -1
+        self.ss = screenshoter()
+        # no longer able to shot wt individually, but setwindowcaptureaffinity solved hud in another way
+
+        curr = self.ss.shot().astype('uint8')
+        self.lastshottime = time.perf_counter()
+        self.prev_red = curr[:, :, 2]
+
+        self.trackbuildinguptimer = 2 * fps
+
+    def track(self):
+        curr = self.ss.shotbgr().astype('uint8')
+        shottime = time.perf_counter()
+        tdelta = shottime - self.lastshottime
+
+        curr_red = curr[:, :, 2]
+        trackingpoints, cm = cameramotion(self.prev_red, curr_red, uimask,
+                                          camerestablizersubsamplerate)
+
+        curr_gray = None
+        # blue channel
+        if planetrackerchannel == 'B':
+            curr_gray = curr[:, :, 0]
+        # gray channel
+        elif planetrackerchannel == 'G':
+            curr_gray = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
+        else:  # fallback to blue
+            curr_gray = curr[:, :, 0]
+
+        pomega = np.zeros([2])
+        for c in range(len(pomega)):
+            pomega[c] = self.omegastab[c].val()
+        pestimated = self.lastpos+tdelta*pomega if self.trackbuildinguptimer == 0 else \
+            self.lastpos
+        preference = cm @ np.concatenate((pestimated, [1]))
+        plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
+
+        ret = planetrack(curr_gray,
+                         preference,
+                         wingspanref=self.lastwingspan,
+                         searchrange=searchrange,
+                         adptthresh=adptthresh,
+                         backgroundrange=backgroundrange,
+                         regionrange=regionrange,
+                         routhresh=routhresh,
+                         posrellamb=posrellamb,
+                         wingspanrellamb=wingspanrellamb,
+                         wingspanleast=wingspanleast,
+                         scoreleast=scoreleast,
+                         mask=uimask.copy())
+        if ret != None:
+            ponshot, wingspan, planemap, pul, maxscore = ret
+
+            # collecing for dl project
+            # ponshot is in x,y format
+            if np.random.random()<0.1:
+                m4coll = curr[
+                    int(ponshot[1])-searchrange:int(ponshot[1])+searchrange,
+                    int(ponshot[0])-searchrange:int(ponshot[0])+searchrange,
+                    :]
+                odc.save(m4coll)
+        else:
+            # no found to update, keep estimation
+            ponshot, wingspan, planemap, pul, maxscore = [
+                preference, self.lastwingspan,
+                np.zeros([1, 1]), [0, 0], 0
+            ]
+
+        pomega = (ponshot - plastinthisframe) / tdelta
+
+        self.prev_red = curr_red
+        self.lastshottime = shottime
+        for c in range(len(self.omegastab)):
+            acceptableerr = -1 if self.trackbuildinguptimer > 0 \
+                else self.omegastab[c].val()*stabaccepterrrelthr+stabaccepterrabsthr
+            pomega[c] = self.omegastab[c].sample(pomega[c], acceptableerr)
+        self.lastpos = ponshot
+        self.lastwingspan = wingspan
+        if self.trackbuildinguptimer > 0:
+            self.trackbuildinguptimer -= 1
+        return ponshot, pomega, plastinthisframe, wingspan, cm, trackingpoints, planemap, pul, maxscore

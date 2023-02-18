@@ -1,6 +1,7 @@
 
 from utilitypack import rgb2bgr, hsv2rgb, np
-from opdar_implementation import getlambfromtarget
+def getlambfromtarget(how, where):
+    return np.sqrt((1 / how - 1)) / where
 # screen
 w = 1920
 h = 1080

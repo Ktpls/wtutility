@@ -349,7 +349,7 @@ class perf_statistic:
 
     def clear(self):
         self._starttime = None
-        self._totaltime = 0
+        self._stagedtime = 0
         self._cycle = 0
 
     def start(self):
@@ -361,14 +361,17 @@ class perf_statistic:
     def stop(self):
         if self._starttime is None:
             return
-        self._totaltime += time.perf_counter() - self._starttime
+        self._stagedtime += self._timeCurrentlyCounting()
         self._starttime = None
 
-    def read_ave_t(self):
-        return self._totaltime / self._cycle if self._cycle > 0 else 0
+    def aveTime(self):
+        return self._timeCurrentlyCounting() / self._cycle if self._cycle > 0 else 0
 
-    def read_total_t(self):
-        return self._totaltime
+    def _timeCurrentlyCounting(self):
+        return time.perf_counter() - self._starttime
+
+    def time(self):
+        return self._stagedtime+self._timeCurrentlyCounting()
 
 
 def convolve_norm(m, k):
@@ -754,3 +757,25 @@ def zfunc(xl, yl, xr, yr):
             return foo_single(x)
 
     return foo_universal
+
+
+class DataCollector:
+    def __init__(self, configpath, outputpath) -> None:
+        self.outputpath = outputpath
+        if not os.path.exists(configpath):
+            # cuz rb+ wont create file without existance
+            open(configpath, 'wb+').close()
+        self.f = open(configpath, 'rb+')
+        try:
+            self.idx = int(self.f.read().decode())
+        except Exception:
+            traceback.print_exc()
+            self.idx = 0
+
+    def __del__(self):
+        self.f.seek(0)
+        self.f.write(f'{self.idx}'.encode())
+
+    def save(self, m):
+        savemat(m, f'{self.idx}', path=self.outputpath)
+        self.idx += 1

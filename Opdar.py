@@ -1,91 +1,9 @@
-from opdar_config import *
+
 from opdar_implementation import *
 
 # setup
 hud = fullScrHUD()
 hud.setup()
-
-uimask = cv.imread(r"./asset/opdar/UIMASK.png")
-uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
-
-
-class tracker:
-
-    def setup(self, p0):
-        self.omegastab = [stablizer(stablamb, 0), stablizer(stablamb, 0)]
-        self.lastpos = p0
-        self.lastwingspan = -1
-        self.ss = screenshoter()
-        # no longer able to shot wt individually, but setwindowcaptureaffinity solved hud in another way
-
-        curr = self.ss.shot().astype('uint8')
-        self.lastshottime = time.perf_counter()
-        self.prev_red = curr[:, :, 2]
-
-        self.trackbuildinguptimer = 2 * fps
-
-    def track(self):
-        curr = self.ss.shot().astype('uint8')
-        shottime = time.perf_counter()
-        tdelta = shottime - self.lastshottime
-
-        curr_red = curr[:, :, 2]
-        trackingpoints, cm = cameramotion(self.prev_red, curr_red, uimask,
-                                          camerestablizersubsamplerate)
-
-        curr_gray = None
-        # blue channel
-        if planetrackerchannel == 'B':
-            curr_gray = curr[:, :, 0]
-        # gray channel
-        elif planetrackerchannel == 'G':
-            curr_gray = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
-        else:  # fallback to blue
-            curr_gray = curr[:, :, 0]
-
-        pomega = np.zeros([2])
-        for c in range(len(pomega)):
-            pomega[c] = self.omegastab[c].val()
-        pestimated = self.lastpos+tdelta*pomega if self.trackbuildinguptimer == 0 else \
-            self.lastpos
-        preference = cm @ np.concatenate((pestimated, [1]))
-        plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
-
-        ret = planetrack(curr_gray,
-                         preference,
-                         wingspanref=self.lastwingspan,
-                         searchrange=searchrange,
-                         adptthresh=adptthresh,
-                         backgroundrange=backgroundrange,
-                         regionrange=regionrange,
-                         routhresh=routhresh,
-                         posrellamb=posrellamb,
-                         wingspanrellamb=wingspanrellamb,
-                         wingspanleast=wingspanleast,
-                         scoreleast=scoreleast,
-                         mask=uimask.copy())
-        if ret != None:
-            ponshot, wingspan, planemap, pul, maxscore = ret
-        else:
-            # no found to update, keep estimation
-            ponshot, wingspan, planemap, pul, maxscore = [
-                preference, self.lastwingspan,
-                np.zeros([1, 1]), [0, 0], 0
-            ]
-
-        pomega = (ponshot - plastinthisframe) / tdelta
-
-        self.prev_red = curr_red
-        self.lastshottime = shottime
-        for c in range(len(self.omegastab)):
-            acceptableerr = -1 if self.trackbuildinguptimer > 0 \
-                else self.omegastab[c].val()*stabaccepterrrelthr+stabaccepterrabsthr
-            pomega[c] = self.omegastab[c].sample(pomega[c], acceptableerr)
-        self.lastpos = ponshot
-        self.lastwingspan = wingspan
-        if self.trackbuildinguptimer > 0:
-            self.trackbuildinguptimer -= 1
-        return ponshot, pomega, plastinthisframe, wingspan, cm, trackingpoints, planemap, pul, maxscore
 
 
 def main():
@@ -113,6 +31,7 @@ def main():
             win32api.Beep(500, 100)
         if isKBDown(win32con.VK_F12):
             hud.stop()
+            odc=None
             break
 
         output = np.zeros([h, w, 3], np.uint8)
