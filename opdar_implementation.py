@@ -3,13 +3,11 @@ from opdar_config import *
 
 uimask = cv.imread(r"./asset/opdar/UIMASK.png")
 uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
-odc = DataCollector(r'.\asset\opdar\datacollector.txt','./output/opdar_plane/')
+odc = DataCollector('./output/opdar_plane/')
 
 
 def scoring(X, lamb, mu=0):
     return 1 / ((lamb * (X - mu))**2 + 1)
-
-
 
 
 def deltaX(X):
@@ -348,6 +346,9 @@ class tracker:
         # gray channel
         elif planetrackerchannel == 'G':
             curr_gray = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
+        # value channel
+        elif planetrackerchannel == 'V':
+            curr_gray = np.max(curr, axis=2)
         else:  # fallback to blue
             curr_gray = curr[:, :, 0]
 
@@ -377,7 +378,7 @@ class tracker:
 
             # collecing for dl project
             # ponshot is in x,y format
-            if np.random.random()<0.1:
+            if np.random.random() < 0.1:
                 m4coll = curr[
                     int(ponshot[1])-searchrange:int(ponshot[1])+searchrange,
                     int(ponshot[0])-searchrange:int(ponshot[0])+searchrange,

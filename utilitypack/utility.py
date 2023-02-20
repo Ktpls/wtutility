@@ -1,3 +1,4 @@
+import openpyxl as opx
 import traceback
 import itertools
 import sys
@@ -92,7 +93,9 @@ def regionsum(m, size, mask=None):
     if m.size <= 0:
         return m
     if mask is not None:
-        mask[mask != 0] = 1
+        mask[mask > 0] = 1
+    if len(m.shape) > 2 and mask is not None:  # with channel dim
+        mask = mask.reshape(mask.shape+(1,))
     return cv.filter2D(m if mask is None else m * mask, -1,
                        np.ones(size, np.float32))
 
@@ -109,10 +112,15 @@ def regionave(m,
               notConsiderMaskInDenominator=True):
     if m.size <= 0:
         return m
+    if mask is not None:
+        mask = np.copy(mask)
+        mask[mask > 0] = 1
     if mask is None or notConsiderMaskInDenominator:
         denominator = size[0] * size[1]
     else:
         denominator = (regionsum(mask, size) + 0.01)
+        if len(m.shape) > 2:  # m with channel dim
+            denominator = denominator.reshape(denominator.shape+(1,))
     return regionsum(m, size, mask) / denominator
 
 
@@ -760,22 +768,21 @@ def zfunc(xl, yl, xr, yr):
 
 
 class DataCollector:
-    def __init__(self, configpath, outputpath) -> None:
-        self.outputpath = outputpath
-        if not os.path.exists(configpath):
-            # cuz rb+ wont create file without existance
-            open(configpath, 'wb+').close()
-        self.f = open(configpath, 'rb+')
-        try:
-            self.idx = int(self.f.read().decode())
-        except Exception:
-            traceback.print_exc()
-            self.idx = 0
+    randNameLen = 10
 
-    def __del__(self):
-        self.f.seek(0)
-        self.f.write(f'{self.idx}'.encode())
+    def __init__(self, outputpath) -> None:
+        self.outputpath = outputpath
+
+    @staticmethod
+    def geneName():
+        charset = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        idx = np.random.choice(range(len(charset)),
+                               DataCollector.randNameLen, replace=True)
+        return ''.join([charset[i] for i in idx])
 
     def save(self, m):
-        savemat(m, f'{self.idx}', path=self.outputpath)
-        self.idx += 1
+        savemat(m, f'{DataCollector.geneName()}', path=self.outputpath)
+
+
+def Xls2ListList(path):
+    return [[ele.value for ele in ln] for ln in (opx.load_workbook(path).active.rows)]

@@ -23,12 +23,23 @@ halfdesired=[
     'Japan',
     'Poland',
     'Poland(winter)',
-    'Finland',
+    #'Finland',
 ]
 
 whitelistedmap=desireds+halfdesired
 
 specialmapdetectors={
+    "Sinai":{
+        "type":"mapdetector",
+        "path":"Sinai",
+        "point":[
+            {
+                "pos":[272, 294], # B
+                "allowederr":20,
+            },
+        ],
+        "allowederrrange":100,
+    },
     "FrozenPass":{
         "type":"mapdetector",
         "path":"FrozenPass",

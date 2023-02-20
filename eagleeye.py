@@ -12,18 +12,20 @@ class doShotCache:
         self.m = m
 
 
-eedc = DataCollector(r'.\asset\eagleeye\datacollector.txt',
-                     r'./output/eagleeye/')
+eedc = DataCollector(r'./output/eagleeye/')
 cacheMaxNum = 10
 cacheRate = 2
 lastCacheTime = None
 cachedShots: List[doShotCache] = []
-timeReverse=0.1
+timeReverse=0.3
+lastSaveTime=None
+timeSaveInterval=3
 timer = perf_statistic(startnow=True)
 ss = screenshoter()
 
 
 def onClick():
+    global lastSaveTime
     nowtime=timer.time()
     i=len(cachedShots)-1
     while(i>=0):
@@ -33,7 +35,11 @@ def onClick():
     if i<0:
         # no shot satisfied
         return
+    if lastSaveTime is not None and nowtime-lastSaveTime<timeSaveInterval:
+        # too short
+        return
     eedc.save(cachedShots[i].m)
+    lastSaveTime=nowtime
     win32api.Beep(1000, 100)
 
 

@@ -8,12 +8,12 @@ h = 1080
 
 # opdar
 fps = 15
-stablamb = 0.75
+stablamb = 0.9
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
 camerestablizersubsamplerate = 0.1
-planetrackerchannel = 'G'
+planetrackerchannel = 'V'
 searchrange = 60  # -sr~+sr
 backgroundrange = 51
 adptthresh = 0.32

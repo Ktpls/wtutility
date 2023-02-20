@@ -5,10 +5,12 @@ import hashlib
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
+
 def beepOnErr():
-    
-    win32api.Beep(1000,1000)
-    win32api.Beep(500,1000)
+
+    win32api.Beep(1000, 1000)
+    win32api.Beep(500, 1000)
+
 
 def main():
 
@@ -96,13 +98,32 @@ def main():
             key=win32con.VK_F11,
             foo=holdCAndTell
         ))
-    
-    #eagle eye
+
+    # eagle eye
     if usingeagleeye:
         import eagleeye
+        eedcstate = False
+
+        def eedcswitch():
+            nonlocal eedcstate
+            if eedcstate:
+                eagleeye.cachedShots = []
+                eedcstate=False
+                bulletin.putup('eedc off',1)
+            else:
+                eedcstate=True
+                bulletin.putup('eedc on',1)
         hotkeyaction.append(hotkeymanager.hotkeytask(
             key=win32con.VK_F8,
-            foo=eagleeye.onClick
+            foo=eedcswitch
+        ))
+
+        def eedcOnClickWithSwitch():
+            if eedcstate:
+                eagleeye.onClick()
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_LBUTTON,
+            foo=eedcOnClickWithSwitch
         ))
         business.append(eagleeye.onFrame)
 
