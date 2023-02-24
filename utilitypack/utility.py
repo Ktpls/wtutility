@@ -58,7 +58,7 @@ def savemat(m, name=None, path=None, suffix='.png', autorename=True):
         os.makedirs(path)
     totalpath = os.path.join(path, name + suffix)
     # find suitable name
-    if os.path.exists(totalpath) and autorename:
+    if autorename and os.path.exists(totalpath) :
         suffix_idx = 0
         while (True):
             suffix_idx += 1
@@ -395,10 +395,24 @@ class fpsmanager:
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
-    def next(self):
+    def BlockUntilNextFrame(self):
         sleepuntil(lambda: time.perf_counter() - self.lt > self.frametime,
                    dt=0.5 * self.frametime)
         self.lt = time.perf_counter()
+
+    '''
+    usage
+    use it with mutiple fpsmanagers
+    if time is apropriate, ret true and update time
+    if fpsmanager.PassIfBeforeNextFrame():
+        do your task here
+    '''
+
+    def PassIfBeforeNextFrame(self) -> bool:
+        result = time.perf_counter() - self.lt > self.frametime
+        if result:
+            self.lt = time.perf_counter()
+        return result
 
 
 class hotkeymanager:

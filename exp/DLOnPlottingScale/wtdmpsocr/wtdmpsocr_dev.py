@@ -1,21 +1,23 @@
 # warthunder distance measurement plotting scale optical character reconginization
 
 # %%
+#basics
 from utilref import *
-from wtdmpsocr import getmodel, tsize, tsizep1, typeElse,device
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 from torch.utils.data import Dataset
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
+from wtdmpsocr import getmodel, tsize, tsizep1, typeElse,device
 from defs import *
+#torch.set_num_threads(12) 
 
 
 # %%
 # nn def
 
-modelpath = 'wtdmpsocr.pth'
+modelpath = 'wtdmpsocr_new.pth'
 model = getmodel(modelpath)
 [os.remove(f) for f in AllFileIn('runs')]
 writer = SummaryWriter("runs")  # 存放log文件的目录
@@ -37,6 +39,7 @@ class labeldataset(Dataset):
         # cache this for usage in __getitem__()
         self.endpos = list(itertools.accumulate(
             [len(t) for t in self.piclist]))
+        assert(self.endpos[-1]!=0) #that means u got no sample, probabily with totally wrong dataset path
 
         self.cache = None
 
@@ -46,7 +49,7 @@ class labeldataset(Dataset):
     def __len__(self):
         return 30000
 
-    standardshape = [50, 40]
+    standardshape = [40, 20]
 
     @staticmethod
     def dataEnhance(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
@@ -204,9 +207,9 @@ class labeldataset(Dataset):
         return self.readSample(t, idx)
 
 
-training_data = labeldataset(rf'.\charDataset\labeled')
+training_data = labeldataset(rf'..\dataset\charDataset\labeled')
 test_data = training_data
-batch_size =32
+batch_size =64
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -219,7 +222,7 @@ def trainAnEpoch():
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=1e-4)
-    epochs = 1
+    epochs = 3
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
@@ -235,9 +238,9 @@ def trainAnEpoch():
             optimizer.zero_grad()
             lose.backward()
             optimizer.step()
-
-            if batch % 100 == 0:
-                current = batch * batchsizeof(m)
+            
+            current = batch * batchsizeof(m)
+            if current % 100 == 0:
                 print(f" [{current:>5d}/{size:>5d}]")
                 writer.add_scalar('loss', lose.item()/batchsizeof(m), current)
 
@@ -253,7 +256,8 @@ def trainAnEpoch():
         #         break
         #     #test_loss /= len(test_dataloader.dataset)
         #     print(f"Test Error:")
-        #     print(f"Avg loss: {test_loss:>8f}")
+        #     print(f"Av
+        # g loss: {test_loss:>8f}")
 
     win32api.Beep(1000, 1000)
     print("Done!")
@@ -366,3 +370,4 @@ savemodel(modelpath)
 writer.close()
 
 # %%
+os.system("pause")

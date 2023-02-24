@@ -170,9 +170,9 @@ def planetrack(m,
     pbr = (posref + searchrange).astype('int32')
     pul = point_legalize(pul, size)
     pbr = point_legalize(pbr, size)
+    m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
 
     # adaptive thresh
-    m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
     if not mask is None:
         mask = mask[pul[1]:pbr[1], pul[0]:pbr[0]]
         m = m * mask

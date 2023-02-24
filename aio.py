@@ -148,7 +148,7 @@ def main():
     hkm = hotkeymanager(hotkeyaction)
 
     while (True):
-        fps.next()
+        fps.BlockUntilNextFrame()
         hud.clear()
 
         decideresult = hkm.decideAllHotKey()

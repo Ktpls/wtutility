@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>tagsviewer</title>
+</head>
+
+<body>
+    <div>
+        <div id="divName"></button>
+    </div>
+    <div>
+        <canvas id="myCanvas" width="120" height="120" style="border:1px solid #d3d3d3;background:#ffffff;">
+            Your browser does not support the HTML5 canvas tag.
+        </canvas>
+    </div>
+    <div>
+        <button id="btnNext">Next</button>
+    </div>
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <script>
+        setCanvasPic = function (b64pic) {
+            var c = document.getElementById("myCanvas");
+            var ctx = c.getContext("2d");
+            var img = new Image();
+            img.src = 'data:image/png;base64,' + b64pic;
+            img.onload = function () {
+                // 图像加载完成 ，绘制画布中
+                ctx.drawImage(img, 0, 0);
+            }
+        };
+
+        btnNextClick = function () {
+            $.ajax({
+                url: "/NextSample",
+                type: "GET",
+                success: function (result) {
+                    if (result['out'] < 0) {
+                        alert('On the end!');
+                    }
+                    else {
+                        setCanvasPic(result['pic']);
+                        $('#divName')[0].innerHTML=result['name'];
+                    }
+                }
+            });
+        };
+        $("#btnNext").on("click", btnNextClick);
+
+        canvasKeyPress = function (e) {
+            if (e.code == "KeyW") { //next
+                btnNextClick();
+            }
+            else if (e.code == "KeyA") {//min
+                $.ajax({
+                    url: "/SetMin",
+                    method: "POST",
+                    success: function (result) {
+                        setCanvasPic(result['out'])
+                    }
+                });
+            }
+            else if (e.code == "KeyD") {//add
+                $.ajax({
+                    url: "/SetAdd",
+                    method: "POST",
+                    success: function (result) {
+                        setCanvasPic(result['out'])
+                    }
+                });
+            }
+        }
+        //$("#myCanvas").on("keydown", canvasKeyPress);
+        document.onkeydown = canvasKeyPress;
+
+        $(document).ready(function () {
+            $.ajax({
+                url: "/InitFileList",
+                type: "GET",
+            });
+        });
+    </script>
+</body>
+
+</html>
