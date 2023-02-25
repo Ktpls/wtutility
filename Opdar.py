@@ -111,11 +111,16 @@ def main():
             planemap = planemap.astype('uint8').reshape(
                 np.concatenate((planemap.shape, [1])))
             planemap = np.concatenate((planemap, planemap, planemap), 2)
-            bigplanemap = cv.copyMakeBorder(
-                planemap, pul[1], output.shape[0] - planemap.shape[0] - pul[1],
-                pul[0], output.shape[1] - planemap.shape[1] - pul[0],
-                cv.BORDER_CONSTANT)
-            output += bigplanemap
+            # bigplanemap = cv.copyMakeBorder(
+            #     planemap, pul[1], output.shape[0] - planemap.shape[0] - pul[1],
+            #     pul[0], output.shape[1] - planemap.shape[1] - pul[0],
+            #     cv.BORDER_CONSTANT)
+            # output += bigplanemap
+            
+            #pul is in [x,y], originated from screensize = np.array([w, h], np.int32)
+            output[pul[1]:pul[1]+planemap.shape[0],
+                   pul[0]:pul[0]+planemap.shape[1],
+                   :]+=planemap
 
             # #last pos
             # output=cv.circle(

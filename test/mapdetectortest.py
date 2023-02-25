@@ -2,7 +2,7 @@ from utilref import *
 os.chdir(r'C:\file\code\wtutility')
 from autofreshmap_implementation import *
 whitelistedmapdetector, stateDetector=loadAssetsNeeded4FreshAMap()
-loadingscreen=cv.imread(r"C:\file\code\wtutility\asset\autofreshmap\rawmaterial\Japan.png")
+loadingscreen=cv.imread(r"C:\file\code\wtutility\asset\autofreshmap\map\Berlin.png")
 
 ret = False
 # name,detector

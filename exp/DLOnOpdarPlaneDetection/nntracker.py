@@ -98,5 +98,10 @@ def getmodel(modelpath):
     #print(model)
     return model
 
+def getmodelsmall(modelpath):
+    model = setModel(nntracker_small(), path=modelpath).to(device)
+    #print(model)
+    return model
+
 
 # %%

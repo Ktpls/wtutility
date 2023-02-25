@@ -794,8 +794,10 @@ class DataCollector:
                                DataCollector.randNameLen, replace=True)
         return ''.join([charset[i] for i in idx])
 
-    def save(self, m):
-        savemat(m, f'{DataCollector.geneName()}', path=self.outputpath)
+    def save(self, m,name=None):
+        if name is None:
+            name = DataCollector.geneName()
+        savemat(m, f'{name}', path=self.outputpath)
 
 
 def Xls2ListList(path):

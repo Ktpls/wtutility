@@ -12,6 +12,8 @@ stablamb = 0.9
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
+useNNTracker=False
+trackFps=30
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = 'V'
 searchrange = 60  # -sr~+sr
@@ -31,7 +33,7 @@ screensize = np.array([w, h], np.int32)
 lockpoint_default = screensize*[0.5, 0.3]
 
 # render
-lockcirclethickness = 2
+lockcirclethickness = 1
 innerhue = 180
 lockcirclecolorinner = 255*rgb2bgr(hsv2rgb((innerhue, 0.5, 0.8)))
 lockcirclecoloroutter = 255*rgb2bgr(hsv2rgb((innerhue+180, 0.5, 0.8)))
@@ -44,3 +46,7 @@ speedvectorcolor = 255*rgb2bgr(hsv2rgb((firecontrolserieshue, 0.6, 1)))
 firecontrolcirclecolor = 255*rgb2bgr(hsv2rgb((firecontrolserieshue, 0.6, 1)))
 lineheight = 25
 textcolor = 255*rgb2bgr(hsv2rgb((0, 0, 1)))
+
+#datacollecting
+collectingPlaneSample=True
+collectingPlaneSampleRate=0.3

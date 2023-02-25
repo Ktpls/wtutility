@@ -212,9 +212,6 @@ def viewmaxpool():
             plt.imshow(cv.cvtColor(srchat, cv.COLOR_BGR2RGB))
 
 def testloss():
-    def calclose(lbl, lblhat):
-        #[b,c,h,w]
-        return (((lbl - lblhat)**2).sum(dim=[-1, -2, -3])**2).sum()
     model.train()
     with torch.no_grad():
         batchnum=10
@@ -230,6 +227,30 @@ def testloss():
             if batch>=batchnum:
                 break
         print(f" [{(lose/samplenum):>5d}]")
+def viewModelOnPic():
+    def viewModelOnAPic(m):
+        if type(m) is np.ndarray or type(m) is cv.Mat:
+            m=ToTensor()(m)
+        m=m.reshape((1,)+m.shape) #add batch
+        with torch.no_grad():
+            result=model.forward(m)
+        result=result[0,:,:,:] #debatch
+        result=tensorimg2ndarray(result)
+        result=cv.threshold(result,0.5,1,cv.THRESH_BINARY)[1]
+        return result
+    filelist=[row[0] for row in Xls2ListList(r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sampleNotIncluded.xlsx") if row[0] is not None]
+    
+    singleMapWidthHeightRatio=2
+    pltwidth=np.ceil(np.sqrt(len(filelist)/singleMapWidthHeightRatio)).astype(np.int32)
+    pltheight=np.ceil(singleMapWidthHeightRatio*pltwidth).astype(np.int32)
+    npp=nestedPyPlot([pltheight,pltwidth],[1,2],plt.figure(figsize=(16, 16)))
+    for i,p in enumerate(filelist):
+        m=cv.imread(p)
+        npp.subplot(i,0)
+        plt.imshow(cv.cvtColor(m, cv.COLOR_BGR2RGB))
+        npp.subplot(i,1)
+        result=viewModelOnAPic(m)
+        plt.imshow(result,**{'cmap': 'gray', 'vmin': 0, 'vmax': 1})
 
 def viewmodel():
     datasetusing = training_data
@@ -253,6 +274,7 @@ def viewmodel():
             npp.subplot(i, 0)
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
+            lblhat=cv.threshold(lblhat,0.5,1,cv.THRESH_BINARY)[1]
             plt.imshow(lblhat, **imshowconfig)
 
 

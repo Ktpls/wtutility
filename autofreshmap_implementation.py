@@ -402,6 +402,11 @@ class mapdetector(detector):
                                            detectpointsimilarity)
                 for typ, temp in self.pointtemplatelist.items()
             }
+            pointinfo = {
+                typ: result
+                for typ, result in pointinfo.items()
+                if result is not None
+            } #filter
 
             def applypointselectoronpointinfo(pi, ps):
                 # pi:(key,value), dict item
