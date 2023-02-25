@@ -147,7 +147,33 @@ def estimateWingSpan(m):
     dist2max = dist2.max()
     return 2 * np.sqrt(dist2max)
 
+from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
+nntrker=getmodel(r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker_small.pth')
+def planetracknn(m,
+               posref,
+               mask=None,
+               *paraelse):
+    mask = mask.astype('float32') * 1 / 255
+    size = [m.shape[1], m.shape[0]]
+    posref = point_legalize(posref, size)
 
+    # get region
+    pul = (posref - searchrange).astype('int32')
+    pbr = (posref + searchrange).astype('int32')
+    pul = point_legalize(pul, size)
+    pbr = point_legalize(pbr, size)
+    m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
+    
+    with torch.no_grad():
+        result=nntrker.forward(m)
+    result=tensorimg2ndarray(result)
+    Y=np.arange(m.shape[0]).reshape((m.shape[0],1))
+    X=np.arange(m.shape[1]).reshape((1,m.shape[1]))
+    aveX=(X*result).sum()/(result.sum()+0.001)
+    aveY=(Y*result).sum()/(result.sum()+0.001)
+    
+    # (posx, posy), wingspan, clustermax, pul, its score
+    return (aveX,aveY), estimateWingSpan(result),result,pul,1
 def planetrack(m,
                posref,
                wingspanref=-1,
@@ -329,6 +355,8 @@ class tracker:
         self.prev_red = curr[:, :, 2]
 
         self.trackbuildinguptimer = 2 * fps
+        
+        self.lazyplanetrackerfpsmanager=fpsmanager(fps=3)
 
     def track(self):
         curr = self.ss.shotbgr().astype('uint8')
@@ -360,32 +388,35 @@ class tracker:
         preference = cm @ np.concatenate((pestimated, [1]))
         plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
 
-        ret = planetrack(curr_gray,
-                         preference,
-                         wingspanref=self.lastwingspan,
-                         searchrange=searchrange,
-                         adptthresh=adptthresh,
-                         backgroundrange=backgroundrange,
-                         regionrange=regionrange,
-                         routhresh=routhresh,
-                         posrellamb=posrellamb,
-                         wingspanrellamb=wingspanrellamb,
-                         wingspanleast=wingspanleast,
-                         scoreleast=scoreleast,
-                         mask=uimask.copy())
-        if ret != None:
-            ponshot, wingspan, planemap, pul, maxscore = ret
+        useEstimation=True
+        if self.lazyplanetrackerfpsmanager.CheckIfTimeToDoNextFrame():
+            ret = planetrack(curr_gray,
+                            preference,
+                            wingspanref=self.lastwingspan,
+                            searchrange=searchrange,
+                            adptthresh=adptthresh,
+                            backgroundrange=backgroundrange,
+                            regionrange=regionrange,
+                            routhresh=routhresh,
+                            posrellamb=posrellamb,
+                            wingspanrellamb=wingspanrellamb,
+                            wingspanleast=wingspanleast,
+                            scoreleast=scoreleast,
+                            mask=uimask.copy())
+            if ret != None:
+                ponshot, wingspan, planemap, pul, maxscore = ret
+                useEstimation=False
+                # # collecing for dl project
+                # # ponshot is in x,y format
+                # if np.random.random() < 0.1:
+                #     m4coll = curr[
+                #         int(ponshot[1])-searchrange:int(ponshot[1])+searchrange,
+                #         int(ponshot[0])-searchrange:int(ponshot[0])+searchrange,
+                #         :]
+                #     odc.save(m4coll)
 
-            # collecing for dl project
-            # ponshot is in x,y format
-            if np.random.random() < 0.1:
-                m4coll = curr[
-                    int(ponshot[1])-searchrange:int(ponshot[1])+searchrange,
-                    int(ponshot[0])-searchrange:int(ponshot[0])+searchrange,
-                    :]
-                odc.save(m4coll)
-        else:
-            # no found to update, keep estimation
+        if useEstimation:
+            # no found to update, or canceled by fps, keep estimation
             ponshot, wingspan, planemap, pul, maxscore = [
                 preference, self.lastwingspan,
                 np.zeros([1, 1]), [0, 0], 0

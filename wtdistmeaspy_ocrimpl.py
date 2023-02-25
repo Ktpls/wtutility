@@ -1,5 +1,4 @@
-from exp.DLOnPlottingScale.wtdmpsocr.wtdmpsocr import getmodel, wtdmpsocr
-import pytesseract.pytesseract as ptact
+
 from utilitypack import *
 
 tesseractpath = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -18,10 +17,13 @@ class implocr:
 class implTesseract(implocr):
     @staticmethod
     def init():
-        ptact.tesseract_cmd = tesseractpath
+        # import pytesseract.pytesseract as ptact
+        # ptact.tesseract_cmd = tesseractpath
+        pass
 
     @staticmethod
     def ocr(black):
+        #import pytesseract.pytesseract as ptact
 
         # filter density to remove noise points
         for i in range(2):
@@ -41,8 +43,9 @@ class implTesseract(implocr):
                 black[:, int(x+0.5*charw+0.5)] = 0
         # dbglogsavestep(black)
 
-        plottingscalestr = ptact.image_to_string(
-            black.astype('uint8'), lang='eng', config='--psm 7')
+        # plottingscalestr = ptact.image_to_string(
+        #     black.astype('uint8'), lang='eng', config='--psm 7')
+        plottingscalestr=''
 
         plottingscale = numinstr(plottingscalestr)
         plottingscalestr = str(plottingscale)
@@ -64,10 +67,12 @@ model = None
 class implCNN(implocr):
     @staticmethod
     def init():
+        from exp.DLOnPlottingScale.wtdmpsocr.wtdmpsocr import getmodel
         global model
         model = getmodel(modelpath)
 
     @staticmethod
     def ocr(ps):
+        from exp.DLOnPlottingScale.wtdmpsocr.wtdmpsocr import wtdmpsocr
         assert (model is not None)
         return numinstr(wtdmpsocr(ps, model))

@@ -80,6 +80,18 @@ class nntracker(torch.nn.Module):
     def forward(self, m):
         return self.matchtempl(1 - m)
 
+class nntracker_small(torch.nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.matchtempl = torch.nn.Sequential(
+            cbrp_skip(3, 32, 5, 5),
+            torch.nn.Conv2d(32, 1, 5, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+
+    def forward(self, m):
+        return self.matchtempl(1 - m)
 
 def getmodel(modelpath):
     model = setModel(nntracker(), path=modelpath).to(device)

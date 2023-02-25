@@ -117,7 +117,7 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     dbglogsavestep(mcolorym)
 
     mcolorvalid = cv.inRange(mcolorym, hsv2opencv8bithsv(
-        [60-25, 70, 50]), hsv2opencv8bithsv([60+25, 100, 100]))/255
+        [60-25, 80, 70]), hsv2opencv8bithsv([60+25, 100, 100]))/255
     dbglogsavestep(mcolorvalid*255)
 
     mym = mcolored.copy()

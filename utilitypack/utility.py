@@ -404,11 +404,11 @@ class fpsmanager:
     usage
     use it with mutiple fpsmanagers
     if time is apropriate, ret true and update time
-    if fpsmanager.PassIfBeforeNextFrame():
+    if fpsmanager.CheckIfTimeToDoNextFrame():
         do your task here
     '''
 
-    def PassIfBeforeNextFrame(self) -> bool:
+    def CheckIfTimeToDoNextFrame(self) -> bool:
         result = time.perf_counter() - self.lt > self.frametime
         if result:
             self.lt = time.perf_counter()
@@ -799,4 +799,4 @@ class DataCollector:
 
 
 def Xls2ListList(path):
-    return [[ele.value for ele in ln] for ln in (opx.load_workbook(path).active.rows)]
+    return [[ele.value for ele in row] for row in (opx.load_workbook(path).active.rows)]
