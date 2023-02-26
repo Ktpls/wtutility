@@ -44,7 +44,7 @@ def setModel(model, path=None):
         print(f'Warning: Path {path} not exist. Set model default')
         return model
     else:
-        print(f'Loading existed nn')
+        print(f'{path} not existed, Loading existed nn')
         model.load_state_dict(torch.load(path))
         return model
 
@@ -63,3 +63,19 @@ def tensorimg2ndarray(m):
     m = np.array(m)
     m = np.moveaxis(m, -3, -1)
     return m
+
+class kineticEnergyAccelerator:
+
+    def __init__(self,threshpow=0) -> None:
+        self.mul = 1
+        self.threshpow=threshpow
+    
+    def getmul(self):
+        return self.mul
+    
+    def __call__(self, loss):
+        loss=self.mul*loss
+        mag = torch.log10(loss.detach())
+        if mag < self.threshpow:
+            self.mul *= 10
+        return loss

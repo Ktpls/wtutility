@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from nntracker import getmodel, device
+from nntracker import getmodel, getmodelsmall, device
 #torch.set_num_threads(12)
 
 # %%
@@ -35,8 +35,10 @@ class labeldataset(Dataset):
             for p in selection
         ]
         self.cacheLbl = [
-            cv.imread(os.path.join(path, f'lbl/{p}'))[:, :, 0:1].astype(
-                np.float32) / 255 for p in selection
+            cv.threshold(
+                cv.imread(os.path.join(path, f'lbl/{p}'))[:, :, 0:1].astype(
+                    np.float32) / 255, 0.5, 1, cv.THRESH_BINARY)[1]
+            for p in selection
         ]
 
     def __len__(self):
@@ -68,7 +70,7 @@ class labeldataset(Dataset):
             Y += l0 * 0.5
             X += l0 * 0.5
             m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
-            
+
             # #cut so no black part
             # l1 = int(l0 / ((np.tan(np.abs(the)) + 1) * np.cos(np.abs(the))))
             # offset = int((l0 - l1) * 0.5)
@@ -91,10 +93,23 @@ class labeldataset(Dataset):
         the = np.random.rand() * (the_u - the_l) + the_l
         dttp = [rot(m, the) for m in dttp]
 
+        def zoom(m, rate):
+            l0 = m.shape[0]
+            X = np.arange(l0).reshape([1, l0]).astype(np.float32)
+            Y = np.arange(l0).reshape([l0, 1]).astype(np.float32)
+            XY = np.array(np.meshgrid(X, Y))
+            XY -= l0 / 2
+            XY /= rate
+            XY += l0 / 2
+            return cv.remap(m, *XY, cv.INTER_LINEAR)
+
+        rate = (np.random.rand() * 0.2) + 0.9
+        dttp = [zoom(m, rate) for m in dttp]
+
         #flip
         def flip(m, reallyflip: bool):
             if reallyflip:
-                return np.flip(m, axis=1)# flip lr
+                return np.flip(m, axis=1)  # flip lr
             else:
                 return m
 
@@ -134,15 +149,24 @@ training_data = labeldataset(
 batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
+
 # %%
-# train
+# trainx
 
 def calclose(lbl, lblhat):
     #[b,c,h,w]
-    return (((lbl - lblhat)**2).sum(dim=[-1, -2, -3])**2).sum()
+    loss= \
+    (
+        (
+            ((lbl - lblhat)**2).sum(dim=[-1, -2, -3])
+            #     /
+            # (lbl.sum(dim=[-1, -2, -3]) + 1)
+        )**2
+    ).sum()
+    
+    return (loss)
 
 def trainAnEpoch():
-
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     epochs = 9
@@ -166,8 +190,10 @@ def trainAnEpoch():
             current = batch * batchsizeof(datatuple[0])
             if current % 100 == 0:
                 print(f" [{current:>5d}/{size:>5d}]")
+                loss2show=lose.item() / batchsizeof(datatuple[0])
+                print(f" [loss={loss2show}]")
                 writer.add_scalar('loss',
-                                  (lose.item() / batchsizeof(datatuple[0])),
+                                  (loss2show),
                                   current)
 
     win32api.Beep(1000, 1000)
@@ -180,7 +206,6 @@ trainAnEpoch()
 # all the continious running should only be applied on codes above!
 # plz stop here
 exit()
-
 
 # %%
 # view effect
@@ -211,53 +236,65 @@ def viewmaxpool():
             npp.subplot(i, 1)
             plt.imshow(cv.cvtColor(srchat, cv.COLOR_BGR2RGB))
 
+
 def testloss():
     model.train()
     with torch.no_grad():
-        batchnum=10
-        samplenum=0
-        lose=0
+        batchnum = 10
+        samplenum = 0
+        lose = 0
         for batch, datatuple in enumerate(train_dataloader):
 
             datatuple = [d.to(device) for d in datatuple]
             src, lbl = datatuple
             lblhat = model.forward(src)
             lose += calclose(lbl, lblhat).item()
-            samplenum+=batchsizeof(datatuple[0])
-            if batch>=batchnum:
+            samplenum += batchsizeof(datatuple[0])
+            if batch >= batchnum:
                 break
-        print(f" [{(lose/samplenum):>5d}]")
+        print(f" [{(lose/samplenum)}]")
+
+
 def viewModelOnPic():
+
     def viewModelOnAPic(m):
         if type(m) is np.ndarray or type(m) is cv.Mat:
-            m=ToTensor()(m)
-        m=m.reshape((1,)+m.shape) #add batch
+            m = ToTensor()(m)
+        m = m.reshape((1, ) + m.shape)  #add batch
         with torch.no_grad():
-            result=model.forward(m)
-        result=result[0,:,:,:] #debatch
-        result=tensorimg2ndarray(result)
-        result=cv.threshold(result,0.5,1,cv.THRESH_BINARY)[1]
+            result = model.forward(m)
+        result = result[0, :, :, :]  #debatch
+        result = tensorimg2ndarray(result)
+        result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
         return result
-    filelist=[row[0] for row in Xls2ListList(r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sampleNotIncluded.xlsx") if row[0] is not None]
-    
-    singleMapWidthHeightRatio=2
-    pltwidth=np.ceil(np.sqrt(len(filelist)/singleMapWidthHeightRatio)).astype(np.int32)
-    pltheight=np.ceil(singleMapWidthHeightRatio*pltwidth).astype(np.int32)
-    npp=nestedPyPlot([pltheight,pltwidth],[1,2],plt.figure(figsize=(16, 16)))
-    for i,p in enumerate(filelist):
-        m=cv.imread(p)
-        npp.subplot(i,0)
+
+    filelist = [
+        row[0] for row in Xls2ListList(
+            r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sampleNotIncluded.xlsx"
+        ) if row[0] is not None
+    ]
+
+    singleMapWidthHeightRatio = 2
+    pltwidth = np.ceil(np.sqrt(len(filelist) /
+                               singleMapWidthHeightRatio)).astype(np.int32)
+    pltheight = np.ceil(singleMapWidthHeightRatio * pltwidth).astype(np.int32)
+    npp = nestedPyPlot([pltheight, pltwidth], [1, 2],
+                       plt.figure(figsize=(16, 16)))
+    for i, p in enumerate(filelist):
+        m = cv.imread(p)
+        npp.subplot(i, 0)
         plt.imshow(cv.cvtColor(m, cv.COLOR_BGR2RGB))
-        npp.subplot(i,1)
-        result=viewModelOnAPic(m)
-        plt.imshow(result,**{'cmap': 'gray', 'vmin': 0, 'vmax': 1})
+        npp.subplot(i, 1)
+        result = viewModelOnAPic(m)
+        plt.imshow(result, **{'cmap': 'gray', 'vmin': 0, 'vmax': 1})
+
 
 def viewmodel():
     datasetusing = training_data
     model.eval()
 
     samplenum = 3 * 4
-    npp = nestedPyPlot([3, 4], [2, 1], plt.figure(figsize=(16, 16)))
+    npp = nestedPyPlot([3, 4], [2, 2], plt.figure(figsize=(16, 16)))
     imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
     with torch.no_grad():
         for i in range(samplenum):
@@ -274,8 +311,10 @@ def viewmodel():
             npp.subplot(i, 0)
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
-            lblhat=cv.threshold(lblhat,0.5,1,cv.THRESH_BINARY)[1]
+            lblhat = cv.threshold(lblhat, 0.5, 1, cv.THRESH_BINARY)[1]
             plt.imshow(lblhat, **imshowconfig)
+            npp.subplot(i, 2)
+            plt.imshow(lbl, **imshowconfig)
 
 
 viewmodel()
