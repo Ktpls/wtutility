@@ -49,4 +49,4 @@ textcolor = 255*rgb2bgr(hsv2rgb((0, 0, 1)))
 
 #datacollecting
 collectingPlaneSample=True
-collectingPlaneSampleRate=0.3
+collectingPlaneSampleRate=0.1

@@ -153,9 +153,10 @@ def estimateWingSpan(m):
 
 from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
-nntrker = getmodel(
-    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker.pth')
-
+if useNNTracker:
+    nntrker = getmodel(r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker.pth')
+else:
+    nntrker = None
 
 def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     mask = mask.astype('float32') * 1 / 255

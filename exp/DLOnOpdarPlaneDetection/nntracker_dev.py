@@ -1,48 +1,72 @@
 # neural network tracker
-
 # %%
 #basics
-from utilref import *
+
+from nntracker import *
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 from torch.utils.data import Dataset
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from nntracker import getmodel, getmodelsmall, device
 #torch.set_num_threads(12)
 
 # %%
 # nn def
 modelpath = 'nntracker.pth'
-model = getmodel(modelpath)
+model = getmodelsmall(modelpath)
 [os.remove(f) for f in AllFileIn('runs')]
 writer = SummaryWriter("runs")  # 存放log文件的目录
 
 # %%
 # dataset
 
+labeldatasetsize = 60000
+
 
 class labeldataset(Dataset):
 
-    def __init__(self, path, selection):
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def __readFileInterface_Folder(folder, pathlist):
+        mlist = [os.path.join(folder, m) for m in pathlist]
+        mlist = [cv.imread(m, 1) for m in mlist]
+        mlist = [m.astype(np.float32) / 255 for m in mlist]
+        return mlist
+
+    @staticmethod
+    def __readFileInterface_Zip(zipf, pathlist):
+        from zipfile import ZipFile
+        zipf = ZipFile(zipf)
+        mlist = [zipf.read(imgf) for imgf in pathlist]
+        mlist = [np.frombuffer(m, dtype=np.uint8) for m in mlist]
+        mlist = [cv.imdecode(m, 1) for m in mlist]
+        mlist = [m.astype(np.float32) / 255 for m in mlist]
+        return mlist
+
+    def init(self, path, selection, pathtype='fld'):
         selection = Xls2ListList(selection)
         selection = [s[0] for s in selection]
         selection = [s for s in selection if s is not None]
 
-        self.cacheSrc = [
-            cv.imread(os.path.join(path, f'spl/{p}')).astype(np.float32) / 255
-            for p in selection
-        ]
+        if pathtype == 'fld':
+            reader = labeldataset.__readFileInterface_Folder
+        elif pathtype == 'zip':
+            reader = labeldataset.__readFileInterface_Zip
+        else:
+            raise TypeError(f'inproper path type {pathtype}')
+
+        self.cacheSrc = reader(path, [f'spl/{p}' for p in selection])
+        cacheLbl = reader(path, [f'lbl/{p}' for p in selection])
         self.cacheLbl = [
-            cv.threshold(
-                cv.imread(os.path.join(path, f'lbl/{p}'))[:, :, 0:1].astype(
-                    np.float32) / 255, 0.5, 1, cv.THRESH_BINARY)[1]
-            for p in selection
+            cv.threshold(p, 0.5, 1, cv.THRESH_BINARY)[1] for p in cacheLbl
         ]
+        return self
 
     def __len__(self):
-        return 30000
+        return labeldatasetsize
 
     @staticmethod
     def dataEnhance(src, lbl):
@@ -88,7 +112,7 @@ class labeldataset(Dataset):
             # m = cv.warpAffine(m, matzoomback, [l0, l0])
             return m
 
-        the_u = np.pi / 6
+        the_u = np.pi / 12
         the_l = -the_u
         the = np.random.rand() * (the_u - the_l) + the_l
         dttp = [rot(m, the) for m in dttp]
@@ -104,7 +128,8 @@ class labeldataset(Dataset):
             return cv.remap(m, *XY, cv.INTER_LINEAR)
 
         rate = (np.random.rand() * 0.2) + 0.9
-        dttp = [zoom(m, rate) for m in dttp]
+
+        # dttp = [zoom(m, rate) for m in dttp]
 
         #flip
         def flip(m, reallyflip: bool):
@@ -142,16 +167,21 @@ class labeldataset(Dataset):
         return self.readSample(np.random.random())
 
 
-training_data = labeldataset(
+batch_size = 32
+training_data = labeldataset().init(
     r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all',
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selection.xlsx"
-)
-batch_size = 64
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\train.xlsx",
+    'fld')
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
-
+test_data = labeldataset().init(
+    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all',
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\test.xlsx",
+    'fld')
+test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 # %%
-# trainx
+# train
+
 
 def calclose(lbl, lblhat):
     #[b,c,h,w]
@@ -163,13 +193,41 @@ def calclose(lbl, lblhat):
             # (lbl.sum(dim=[-1, -2, -3]) + 1)
         )**2
     ).sum()
-    
+
     return (loss)
+
+    #return (((lbl - lblhat)**2).sum(dim=[-1, -2, -3])**2).sum()
+
+
+def viewLossOnTest():
+
+    model.eval()
+    size = len(test_dataloader.dataset)
+    losstotal = 0
+    samplenum = 0
+    with torch.no_grad():
+        for batch, datatuple in enumerate(test_dataloader):
+
+            datatuple = [d.to(device) for d in datatuple]
+            src, lbl = datatuple
+            lblhat = model.forward(src)
+            losstotal += calclose(lbl, lblhat).item()
+            samplenum += batchsizeof(src)
+            if batch >= 10:
+                break
+    print(f" [testloss]")
+    loss2show = losstotal / samplenum
+    print(f" [loss={loss2show}]")
+    writer.add_scalar('testloss', (loss2show), 0)
+
+
+epochnum = 3
+
 
 def trainAnEpoch():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    epochs = 9
+    epochs = epochnum
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
@@ -190,13 +248,13 @@ def trainAnEpoch():
             current = batch * batchsizeof(datatuple[0])
             if current % 100 == 0:
                 print(f" [{current:>5d}/{size:>5d}]")
-                loss2show=lose.item() / batchsizeof(datatuple[0])
+                loss2show = lose.item() / batchsizeof(datatuple[0])
                 print(f" [loss={loss2show}]")
-                writer.add_scalar('loss',
-                                  (loss2show),
-                                  current)
+                writer.add_scalar('loss', (loss2show), current)
+            if current % 2**13 == 0:
+                viewLossOnTest()
 
-    win32api.Beep(1000, 1000)
+    #win32api.Beep(1000, 1000)
     print("Done!")
 
 

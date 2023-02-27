@@ -802,3 +802,13 @@ class DataCollector:
 
 def Xls2ListList(path):
     return [[ele.value for ele in row] for row in (opx.load_workbook(path).active.rows)]
+
+
+def AllFileIn(path, includeFileInSubDir=True):
+    import os
+    ret = []
+    for dirpath, dir, file in os.walk(path):
+        if not includeFileInSubDir and dirpath != path:
+            continue
+        ret.extend([os.path.join(dirpath, f)for f in file])
+    return ret
