@@ -54,9 +54,7 @@ class cbrps(torch.nn.Module):
         #[b,c,h,w]
         return self.component.forward(m)
 
-
-# old styled
-class cbrp_skip(torch.nn.Module):
+class cbrpsold(torch.nn.Module):
     #input chan, output chan, convolve size, pooling size
     #n_o should be like 2*n, cuz maxpool will be concated with former output
     def __init__(self, n_i, n_o, n_c, n_p) -> None:
@@ -76,16 +74,14 @@ class cbrp_skip(torch.nn.Module):
         b = self.pool.forward(a)
         c = torch.concat([a, b], dim=-3)
         return c
-
-
 class nntracker(torch.nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
         self.matchtempl = torch.nn.Sequential(
-            cbrp_skip(3, 32, 5, 5),
-            cbrp_skip(32, 64, 5, 5),
-            cbrp_skip(64, 16, 5, 5),
+            cbrpsold(3, 32, 5, 5),
+            cbrpsold(32, 32, 5, 5),
+            cbrpsold(32, 16, 5, 5),
             torch.nn.Conv2d(16, 1, 5, padding='same'),
             torch.nn.LeakyReLU(),
         )
@@ -99,7 +95,7 @@ class nntracker_small(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.matchtempl = torch.nn.Sequential(
-            cbrp_skip(3, 32, 5, 5),
+            cbrps(3, 32, 5, 5),
             torch.nn.Conv2d(32, 1, 5, padding='same'),
             torch.nn.LeakyReLU(),
         )
@@ -108,16 +104,43 @@ class nntracker_small(torch.nn.Module):
         return self.matchtempl(1 - m)
 
 
+
+
+class cbr(torch.nn.Module):
+    def __init__(self, n_i, n_o, n_c, n_p) -> None:
+        super().__init__()
+        self.component = torch.nn.Sequential(
+            torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
+            torch.nn.BatchNorm2d(n_o),
+            torch.nn.LeakyReLU(),
+        )
+
+    def forward(self, m):
+        #[b,c,h,w]
+        return self.component.forward(m)
+
+class nntrackersimple(torch.nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.matchtempl = torch.nn.Sequential(
+            cbr(3, 32, 5, 5),
+            cbr(32, 32, 5, 5),
+            cbr(32, 16, 5, 5),
+            torch.nn.Conv2d(16, 1, 5, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+
+    def forward(self, m):
+        return self.matchtempl( 1-m)
+
+
+
 def getmodel(modelpath):
     model = setModel(nntracker(), path=modelpath).to(device)
     #print(model)
     return model
 
-
-def getmodelsmall(modelpath):
-    model = setModel(nntracker_small(), path=modelpath).to(device)
-    #print(model)
-    return model
 
 
 # %%
