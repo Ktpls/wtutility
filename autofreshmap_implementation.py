@@ -34,6 +34,7 @@ if resolution=='m1920x1080r1920x1080':
         }
     }
     standardMapLeftTopPoint = [286, 216]
+    pointtemplatezoomrate=1.0
 
 elif resolution=='m1920x1080r1366x768':
     # 1366x768,75%
@@ -56,6 +57,7 @@ elif resolution=='m1920x1080r1366x768':
         }
     }
     standardMapLeftTopPoint = [294, 221]
+    pointtemplatezoomrate=1.4 #1920/1366
 
 if log2file:
     logg = logger(
@@ -102,11 +104,11 @@ class networkOperationImplementation_netshinterfacesetinterfacedisable(
 
     @staticmethod
     def setoffwifi():
-        os.system('netsh interface set interface name="WLAN 2" admin=disable')
+        os.system(f'netsh interface set interface name="{wlanname}" admin=disable')
 
     @staticmethod
     def setonwifi():
-        os.system('netsh interface set interface name="WLAN 2" admin=enable')
+        os.system(f'netsh interface set interface name="{wlanname}" admin=enable')
 
 
 networkOperationImplementationAvailableList = [

@@ -1,10 +1,9 @@
 from utilref import *
 
 import os
-os.chdir('..')
-
+print(os.getcwd())
 from wtdistmeaspy_implementation import *
-scr=cv.imread(r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-02-05-01-06-59_OnSEC_DN\unnamed.png")
+scr=cv.imread(r"D:\File\code\prog\wtutility\asset\wtdistmeaspy\log\2023-03-02-22-06-05_OnSEC_PE\unnamed.png")
 SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}_NormalTrace/'.format(
                         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),
                         ))

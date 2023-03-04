@@ -240,7 +240,7 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     # but our cnn using data collected from tesseract daily using uses the standard 20x10 char pic
     black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
     dbglogsavestep(black)
-    plottingscale = ocrimpl.ocr(black)
+    plottingscale = ocrimpl.ocr(black,dbglogsavestep,log)
     
     # cnn works fine even with dirty relblack pic
     # relblack = cv.copyMakeBorder(relblack, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)

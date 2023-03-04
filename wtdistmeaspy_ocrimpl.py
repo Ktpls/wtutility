@@ -1,7 +1,7 @@
 
 from utilitypack import *
 
-tesseractpath = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+from wtdistmeaspy_config import *
 
 
 class implocr:
@@ -10,25 +10,25 @@ class implocr:
         ...
 
     @staticmethod
-    def ocr(ps):
+    def ocr(ps,dbglogsavestep,log):
         ...
 
 
 class implTesseract(implocr):
     @staticmethod
     def init():
-        # import pytesseract.pytesseract as ptact
-        # ptact.tesseract_cmd = tesseractpath
         pass
 
     @staticmethod
-    def ocr(black):
-        #import pytesseract.pytesseract as ptact
+    def ocr(black,dbglogsavestep,log):
+        log('using implTesseract.ocr()')
+        import pytesseract.pytesseract as ptact
+        ptact.tesseract_cmd = tesseractpath
 
         # filter density to remove noise points
         for i in range(2):
             black = densityfilter(black/255, [5, 5], 3/25).astype('float')*255
-            # dbglogsavestep(black)
+            dbglogsavestep(black)
 
         charw, charh = 10, 20
         # filter density in single char region
@@ -41,14 +41,15 @@ class implTesseract(implocr):
         for x in range(len(density)):
             if density[x] < 0.05:
                 black[:, int(x+0.5*charw+0.5)] = 0
-        # dbglogsavestep(black)
+        dbglogsavestep(black)
 
-        # plottingscalestr = ptact.image_to_string(
-        #     black.astype('uint8'), lang='eng', config='--psm 7')
-        plottingscalestr=''
+        plottingscalestr = ptact.image_to_string(
+            black.astype('uint8'), lang='eng', config='--psm 7')
+        log(f'plottingscalestr={plottingscalestr}')
 
         plottingscale = numinstr(plottingscalestr)
         plottingscalestr = str(plottingscale)
+        log(f'plottingscaleToNumToStr={plottingscalestr}')
         if len(plottingscalestr) > 3:
             # got extra characters
             # trim and do it again
@@ -57,10 +58,10 @@ class implTesseract(implocr):
             # but if arrow, or any tank icon blocking the digit chars this would have no way to fix
             plottingscalestr = plottingscalestr[:3]
             plottingscale = numinstr(plottingscalestr)
+        log(f'plottingscaleFinal={plottingscale}')
         return plottingscale
 
 
-modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
 model = None
 
 
@@ -72,7 +73,12 @@ class implCNN(implocr):
         model = getmodel(modelpath)
 
     @staticmethod
-    def ocr(ps):
+    def ocr(ps,dbglogsavestep,log):
+        log('using implCNN.ocr()')
         from exp.DLOnPlottingScale.wtdmpsocr.wtdmpsocr import wtdmpsocr
         assert (model is not None)
-        return numinstr(wtdmpsocr(ps, model))
+        result=wtdmpsocr(ps, model,cnnresultthresh)
+        log(f'resultstr={result}')
+        result=numinstr(result)
+        log(f'resultnum={result}')
+        return result
