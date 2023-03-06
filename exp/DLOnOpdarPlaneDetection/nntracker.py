@@ -78,60 +78,15 @@ class nntracker(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.matchtempl = torch.nn.Sequential(
-            cbrpsold(3, 32, 5, 11),
-            #cbrpsold(32, 32, 5, 5),
-            cbrpsold(32, 16, 5, 11),
+            cbrps(3, 32, 5, 11),
+            cbrps(32, 32, 5, 5),
+            cbrps(32, 16, 5, 11),
             torch.nn.Conv2d(16, 1, 5, padding='same'),
             torch.nn.LeakyReLU(),
         )
 
     def forward(self, m):
         return self.matchtempl(1 - m)
-
-
-class nntracker_small(torch.nn.Module):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.matchtempl = torch.nn.Sequential(
-            cbrps(3, 32, 5, 5),
-            torch.nn.Conv2d(32, 1, 5, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-
-    def forward(self, m):
-        return self.matchtempl(1 - m)
-
-
-
-
-class cbr(torch.nn.Module):
-    def __init__(self, n_i, n_o, n_c, n_p) -> None:
-        super().__init__()
-        self.component = torch.nn.Sequential(
-            torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
-            torch.nn.BatchNorm2d(n_o),
-            torch.nn.LeakyReLU(),
-        )
-
-    def forward(self, m):
-        #[b,c,h,w]
-        return self.component.forward(m)
-
-class nntrackersimple(torch.nn.Module):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.matchtempl = torch.nn.Sequential(
-            cbr(3, 32, 5, 5),
-            cbr(32, 32, 5, 5),
-            cbr(32, 16, 5, 5),
-            torch.nn.Conv2d(16, 1, 5, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-
-    def forward(self, m):
-        return self.matchtempl( 1-m)
 
 
 
