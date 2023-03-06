@@ -90,7 +90,7 @@ class RisingEdgeTrigger:
         return not oldstate and state
 
 
-def wtdmpsocr(ps,model):
+def wtdmpsocr(ps,model,resultthresh=0.5):
     assert(type(ps) is np.ndarray and len(ps.shape)==2)
     ps = ps.astype(np.float32).reshape((1, 1)+ps.shape)/255
     # [batch,channel,h,w]
@@ -124,6 +124,6 @@ def wtdmpsocr(ps,model):
     cscd = CharStateChangeDetector()
     result = ''
     for x in range(len(targmax)):  # range(w)
-        if cscd.input(targmax[x] if tmax[x] > 0.2 else typeElse):
+        if cscd.input(targmax[x] if tmax[x] > resultthresh else typeElse):
             result += f'{targmax[x]}'
     return result

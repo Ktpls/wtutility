@@ -21,3 +21,6 @@ retryOnFailure=7
 retryDelay=0.25
 keepEveryMeasInRecord=False
 ocrimpltype='cnn'
+tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
+modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
+cnnresultthresh=0.5

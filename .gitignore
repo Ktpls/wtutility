@@ -1,6 +1,6 @@
 .git/
 __pycache__/
-.vscode/
+#.vscode/
 output/
 *.7z
 log/

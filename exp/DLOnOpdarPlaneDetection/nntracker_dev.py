@@ -10,8 +10,7 @@ import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
-#torch.set_num_threads(12)
-
+from nntracker import getmodel, getmodelsmall, device
 # %%
 # nn def
 modelpath = r'nntracker.pth'
@@ -61,103 +60,104 @@ class labeldataset(Dataset):
         else:
             raise TypeError(f'inproper path type {pathtype}')
 
-        self.cacheSrc = reader(path, [f'spl/{p}' for p in selection])
-        cacheLbl = reader(path, [f'lbl/{p}' for p in selection])
-        self.cacheLbl = [
-            cv.threshold(p, 0.5, 1, cv.THRESH_BINARY)[1][:, :, 0]
-            for p in cacheLbl
+        cacheSrc = [
+            cv.imread(os.path.join(path, f'spl/{p}')).astype(np.float32) / 255
+            for p in selection
+        ]
+        cacheLbl = [
+            cv.threshold(
+                cv.imread(os.path.join(path, f'lbl/{p}'))[:, :, 0:1].astype(
+                    np.float32) / 255, 0.5, 1, cv.THRESH_BINARY)[1]
+            for p in selection
+        ]
+
+        def dataEnhance(src, lbl):
+            dttp = [src, lbl]
+
+            #rot
+            def rot(m, the):
+                #theta in [-pi/2,pi/2]
+                #assert right squared img0 here
+                rotmat = np.array([
+                    [np.cos(the), -np.sin(the)],
+                    [np.sin(the), np.cos(the)],
+                ])
+
+                l0 = m.shape[0]
+                Y, X = np.arange(l0,
+                                 dtype=np.float32), np.arange(l0,
+                                                              dtype=np.float32)
+                X, Y = np.meshgrid(X, Y)
+                Y -= l0 * 0.5
+                X -= l0 * 0.5
+                Xp = rotmat[0, 0] * X + rotmat[0, 1] * Y
+                Yp = rotmat[1, 0] * X + rotmat[1, 1] * Y
+                X = Xp
+                Y = Yp
+                Y += l0 * 0.5
+                X += l0 * 0.5
+                m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
+                return m
+
+            the_u = np.pi / 6
+            the_l = -the_u
+            the = np.random.rand() * (the_u - the_l) + the_l
+            dttp = [rot(m, the) for m in dttp]
+
+            def zoom(m, rate):
+                l0 = m.shape[0]
+                X = np.arange(l0).reshape([1, l0]).astype(np.float32)
+                Y = np.arange(l0).reshape([l0, 1]).astype(np.float32)
+                XY = np.array(np.meshgrid(X, Y))
+                XY -= l0 / 2
+                XY /= rate
+                XY += l0 / 2
+                return cv.remap(m, *XY, cv.INTER_LINEAR)
+
+            rate = (np.random.rand() * 0.2) + 0.9
+            dttp = [zoom(m, rate) for m in dttp]
+
+            #flip
+            def flip(m, reallyflip: bool):
+                if reallyflip:
+                    return np.flip(m, axis=1)  # flip lr
+                else:
+                    return m
+
+            reallyflip = (np.random.rand() < 0.5)
+            dttp = [flip(m, reallyflip) for m in dttp]
+            dttp = [np.ascontiguousarray(m) for m in dttp]
+
+            #give back channel dim
+            dttp = [
+                m if len(m.shape) == 3 else m.reshape(m.shape + (1, ))
+                for m in dttp
+            ]
+            src, lbl = dttp
+            return src, lbl
+
+        def makeSample():
+            idx = int(len(cacheSrc) * np.random.random())
+
+            src = cacheSrc[idx]
+            lbl = cacheLbl[idx]
+
+            # shape standardlize included
+            src, lbl = labeldataset.dataEnhance(src, lbl)
+
+            return ToTensor()(src), ToTensor()(lbl)
+
+        self.pairs = [
+            makeSample()
+            for i in np.random.choice(len(cacheLbl), len(self), replace=True)
         ]
         return self
 
     def __len__(self):
         return labeldatasetsize
 
-    @staticmethod
-    def dataEnhance(src, lbl, rotenh=True, zomenh=True, flpenh=True):
-        dttp = [src, lbl]
-
-        #rot
-        def rot(m, the):
-            #theta in [-pi/2,pi/2]
-            #assert right squared img0 here
-            rotmat = np.array([
-                [np.cos(the), -np.sin(the)],
-                [np.sin(the), np.cos(the)],
-            ])
-
-            l0 = m.shape[0]
-            Y, X = np.arange(l0, dtype=np.float32), np.arange(l0,
-                                                              dtype=np.float32)
-            X, Y = np.meshgrid(X, Y)
-            Y -= l0 * 0.5
-            X -= l0 * 0.5
-            Xp = rotmat[0, 0] * X + rotmat[0, 1] * Y
-            Yp = rotmat[1, 0] * X + rotmat[1, 1] * Y
-            X = Xp
-            Y = Yp
-            Y += l0 * 0.5
-            X += l0 * 0.5
-            m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
-            return m
-
-        if rotenh:
-            the_u = np.pi / 12
-            the_l = -the_u
-            the = np.random.rand() * (the_u - the_l) + the_l
-            dttp = [rot(m, the) for m in dttp]
-
-        def zoom(m, rate):
-            l0 = m.shape[0]
-            X = np.arange(l0).reshape([1, l0]).astype(np.float32)
-            Y = np.arange(l0).reshape([l0, 1]).astype(np.float32)
-            XY = np.array(np.meshgrid(X, Y))
-            XY -= l0 / 2
-            XY /= rate
-            XY += l0 / 2
-            return cv.remap(m, *XY, cv.INTER_LINEAR)
-
-        if zomenh:
-            rate = (np.random.rand() * 0.2) + 0.9
-            dttp = [zoom(m, rate) for m in dttp]
-
-        #flip
-        def flip(m, reallyflip: bool):
-            if reallyflip:
-                return np.flip(m, axis=1)  # flip lr
-            else:
-                return m
-
-        if flpenh:
-            reallyflip = (np.random.rand() < 0.5)
-            dttp = [flip(m, reallyflip) for m in dttp]
-            dttp = [np.ascontiguousarray(m) for m in dttp]
-
-        #thresh for those cv.INTER_LINEAR transformation
-        #dttp[1] = cv.threshold(dttp[1], 0.5, 1, cv.THRESH_BINARY)[1]
-
-        #give back channel dim
-        dttp = [
-            m if len(m.shape) == 3 else m.reshape(m.shape + (1, ))
-            for m in dttp
-        ]
-        src, lbl = dttp
-        return src, lbl
-
-    #idx in [0,1)
-
-    def readSample(self, idx):
-        idx = int(len(self.cacheSrc) * idx)
-
-        src = self.cacheSrc[idx]
-        lbl = self.cacheLbl[idx]
-
-        # shape standardlize included
-        src, lbl = labeldataset.dataEnhance(src, lbl)
-
-        return ToTensor()(src), ToTensor()(lbl)
-
     def __getitem__(self, idx):
-        return self.readSample(np.random.random())
+        return self.pairs[int(len(self.pairs) * np.random.random())]
 
 
 batch_size = 32
@@ -170,10 +170,13 @@ test_data = labeldataset().init(
     r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all',
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\test.xlsx",
     'fld')
+batch_size = 64
+train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 # %%
 # train
+
 
 
 def calclose(lbl, lblhat):
@@ -188,7 +191,6 @@ def calclose(lbl, lblhat):
     ).sum()
 
     return (loss)
-
 
 def viewLossOnTest(testbatch=3):
 
