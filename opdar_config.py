@@ -12,7 +12,7 @@ stablamb = 0.9
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
-useNNTracker=False
+useNNTracker=True
 trackFps=30
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = 'V'

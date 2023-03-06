@@ -14,15 +14,17 @@ import time
 
 # %%
 # nn def
-modelpath = 'nntracker.pth'
+modelpath = r'nntracker.pth'
 model = getmodel(modelpath)
 #[os.remove(f) for f in AllFileIn('runs')]
-writer = SummaryWriter(f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}")  # 存放log文件的目录
+writer = SummaryWriter(
+    f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
+)  # 存放log文件的目录
 
 # %%
 # dataset
 
-labeldatasetsize = 10000
+labeldatasetsize = 30000
 
 
 class labeldataset(Dataset):
@@ -177,12 +179,12 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 def calclose(lbl, lblhat):
     #[b,c,h,w]
     loss= \
-    1*(
+    10000*(
         (
             ((lbl - lblhat)**2).sum(dim=[-1, -2, -3])**2
             #     /
             # (lbl.sum(dim=[-1, -2, -3]) + 1)
-        )
+        )#**2
     ).sum()
 
     return (loss)
@@ -190,7 +192,7 @@ def calclose(lbl, lblhat):
 
 def viewLossOnTest(testbatch=3):
 
-#    model.eval()
+    #    model.eval()
     losstotal = 0
     samplenum = 0
     with torch.no_grad():
@@ -211,7 +213,9 @@ def viewLossOnTest(testbatch=3):
 
 def trainAnEpoch(epochnum=6):
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(),
+                                  lr=1e-4,
+                                  weight_decay=1e-2)
     epochs = epochnum
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
@@ -230,7 +234,6 @@ def trainAnEpoch(epochnum=6):
             lose.backward()
             optimizer.step()
 
-            
             current = batch * batchsizeof(src)
             if current % 2**10 == 0:
                 print(f" [{current:>5d}/{size:>5d}]")
@@ -296,7 +299,7 @@ def viewmodel():
     samplenum = 3 * 4
     npp = nestedPyPlot([3, 4], [2, 2], plt.figure(figsize=(16, 16)))
     imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
-    imshowconfignonnorm={'cmap': 'gray'}
+    imshowconfignonnorm = {'cmap': 'gray'}
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
@@ -312,7 +315,7 @@ def viewmodel():
             npp.subplot(i, 0)
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
-            #lblhat = cv.threshold(lblhat, 0.5, 1, cv.THRESH_BINARY)[1]
+            lblhat = cv.threshold(lblhat, 0.5, 1, cv.THRESH_BINARY)[1]
             plt.imshow(lblhat, **imshowconfig)
             npp.subplot(i, 2)
             plt.imshow(lbl, **imshowconfig)

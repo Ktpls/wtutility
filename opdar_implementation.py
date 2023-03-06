@@ -154,9 +154,11 @@ def estimateWingSpan(m):
 from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
 if useNNTracker:
-    nntrker = getmodel(r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker.pth')
+    nntrker = getmodel(
+        r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker.pth')
 else:
     nntrker = None
+
 
 def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     mask = mask.astype('float32') * 1 / 255
@@ -176,28 +178,61 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
         m = m.reshape((1, ) + m.shape)  #add batch
         result = nntrker.forward(m)
         result = result[0, :, :, :]
+        m = mndarray
     result = tensorimg2ndarray(result)
     # savemat(result)
     # savemat(mndarray)
     result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
-    Y = np.arange(result.shape[0]).reshape((result.shape[0], 1))
-    X = np.arange(result.shape[1]).reshape((1, result.shape[1]))
-    pointsum = result.sum()
-    if pointsum < 1:
+
+    #clustering
+    contours = cv.findContours(result.astype('uint8'), cv.RETR_EXTERNAL,
+                               cv.CHAIN_APPROX_NONE)[0]
+    contnum = len(contours)
+    if contnum == 0:  # found nothing
         return None
-    aveX = (X * result).sum() / (pointsum + 0.001)
-    aveY = (Y * result).sum() / (pointsum + 0.001)
+    info = np.zeros([contnum, 4])  # x, y, wingspan, averangeAdaptiveThreshErr
+    for c in range(contnum):
+        mgray = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
+        mcontour = np.zeros_like(mgray)
+        cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
+        cluster = mcontour * mgray
+        clusterbinary = cv.threshold(cluster, 0.1, 1, cv.THRESH_BINARY)[1]
 
+        clusterXdist = clusterbinary.sum(0)
+        clusterYdist = clusterbinary.sum(1)
+        X = np.arange(pul[0], pbr[0])
+        Y = np.arange(pul[1], pbr[1])
+
+        info[c] = [(X * clusterXdist).sum() / (clusterXdist.sum() + 0.001),
+                   (Y * clusterYdist).sum() / (clusterYdist.sum() + 0.001),
+                   estimateWingSpan(clusterbinary),
+                   cluster.sum() / clusterbinary.sum()]
+
+    wingspanref = np.max(info[:, 2], axis=0)
+    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + 0.001)
+    scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
+    scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
+
+    totalscore = scorewingspan * info[:, 3]
+    maxscorecontourid = np.argmax(totalscore, axis=0)
+    # not matched satisfyingly
+    if totalscore[maxscorecontourid] < scoreleast:
+        return None
+    mcontourmax = np.zeros_like(mgray)
+    cv.drawContours(mcontourmax,
+                    contours,
+                    maxscorecontourid,
+                    1,
+                    thickness=cv.FILLED)
+    clustermax = mcontourmax * mgray
     # (posx, posy), wingspan, clustermax, pul, its score
-
-    wingspan = estimateWingSpan(result)
-    assert (wingspan > 0.5)
-    return (aveX, aveY), wingspan, result, pul, 1
+    return info[maxscorecontourid,
+                0:2], info[maxscorecontourid,
+                           2], clustermax, pul, info[maxscorecontourid, 3]
 
 
 def planetrack(m,
                posref,
-               wingspanref=-1,
                searchrange=100,
                backgroundrange=31,
                adptthresh=0.4,
@@ -433,13 +468,16 @@ class tracker:
                 # collecing for dl project
                 # ponshot is in x,y format
                 collectingPlaneSample
-                if collectingPlaneSample and  np.random.random() < collectingPlaneSampleRate:
+                if collectingPlaneSample and np.random.random(
+                ) < collectingPlaneSampleRate:
                     name = DataCollector.geneName()
                     m4coll = curr[int(ponshot[1]) -
                                   searchrange:int(ponshot[1]) + searchrange,
                                   int(ponshot[0]) -
                                   searchrange:int(ponshot[0]) + searchrange, :]
                     odc[0].save(m4coll, name)
+
+
 #                    odc[1].save(planemap * 255, name)
 
         if useEstimation:

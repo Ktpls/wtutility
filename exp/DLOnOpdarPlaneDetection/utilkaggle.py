@@ -47,7 +47,7 @@ def setModel(model, path=None):
         print(f'Warning: Path {path} not exist. Set model default')
         return model
     else:
-        print(f'{path} not existed, Loading existed nn')
+        print(f'Loading existed nn {path}')
         model.load_state_dict(torch.load(path))
         return model
 

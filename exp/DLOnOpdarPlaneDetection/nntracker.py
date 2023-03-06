@@ -1,14 +1,13 @@
 # warthunder distance measurement plotting scale optical character reconginization
 
-RunOnWtUtilityEnviroment = False
+RunOnWtUtilityEnviroment = True
 # %%
 #basics
 if RunOnWtUtilityEnviroment:
-    # from utilref import *
-    # if __package__ == '':
-    #     from utilref import setModel, torch, batchsizeof, cv, np
-    # else:
-    #     from .utilref import setModel, torch, batchsizeof, cv, np
+    if __package__ == '':
+        from utilref import *
+    else:
+        from .utilref import *
     pass
 else:
     from utilkaggle import *
@@ -79,9 +78,9 @@ class nntracker(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.matchtempl = torch.nn.Sequential(
-            cbrpsold(3, 32, 5, 5),
-            cbrpsold(32, 32, 5, 5),
-            cbrpsold(32, 16, 5, 5),
+            cbrpsold(3, 32, 5, 11),
+            #cbrpsold(32, 32, 5, 5),
+            cbrpsold(32, 16, 5, 11),
             torch.nn.Conv2d(16, 1, 5, padding='same'),
             torch.nn.LeakyReLU(),
         )
