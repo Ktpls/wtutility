@@ -58,6 +58,28 @@ elif resolution=='m1920x1080r1366x768':
     }
     standardMapLeftTopPoint = [294, 221]
     pointtemplatezoomrate=1.4 #1920/1366
+elif resolution=='m1920x1080r1280x720':
+    # 1280x720,75%
+    stateDetectorInfo = {
+        'hanger': {
+            'path': signName2Path('hanger'),
+            'lt': [863, 22],
+        },
+        'MissionCanceled': {
+            'path': signName2Path('MissionCanceled'),
+            'lt': [876, 941],
+        },
+        'LoadingMap': {
+            'path': signName2Path('LoadingMap'),
+            'lt': [1030, 209],
+        },
+        'OK': {
+            'path': signName2Path('OK'),
+            'lt': [896, 554],
+        }
+    }
+    standardMapLeftTopPoint = [292, 218]
+    pointtemplatezoomrate=1.5 #1920/1366
 
 if log2file:
     logg = logger(

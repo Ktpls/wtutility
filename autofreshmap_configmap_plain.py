@@ -80,13 +80,13 @@ specialmapdetectors={
         "type":"mapdetector",
         "path":"Poland",
         "spawncenter":[86, 313],
-        "allowederrrange":200,
+        "allowederrrange":150,
     },
     "Poland(winter)":{
         "type":"mapdetector",
         "path":"Poland(winter)",
         "spawncenter":[86, 313],
-        "allowederrrange":200,
+        "allowederrrange":150,
     },
     "Jungle":{
         "type":"mapdetector",

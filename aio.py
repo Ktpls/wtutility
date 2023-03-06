@@ -144,7 +144,7 @@ def main():
     # main loop
     hud = fullScrHUD()
     hud.setup()
-    fps = fpsmanager(10)
+    fps = fpsmanager(aiofps)
     hkm = hotkeymanager(hotkeyaction)
 
     while (True):
