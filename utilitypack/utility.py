@@ -781,6 +781,9 @@ def zfunc(xl, yl, xr, yr):
     return foo_universal
 
 
+def randomString(charset,length):
+    return ''.join([charset[i] for i in np.random.choice(range(len(charset)),length, replace=True)])
+
 class DataCollector:
     randNameLen = 10
 
@@ -789,10 +792,7 @@ class DataCollector:
 
     @staticmethod
     def geneName():
-        charset = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        idx = np.random.choice(range(len(charset)),
-                               DataCollector.randNameLen, replace=True)
-        return ''.join([charset[i] for i in idx])
+        return randomString('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',DataCollector.randNameLen)
 
     def save(self, m,name=None):
         if name is None:
