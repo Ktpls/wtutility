@@ -1,10 +1,11 @@
-
 from utilref import *
 #%%
 # perform dataenh
 
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
+
+
 class labeldataset(Dataset):
 
     def __init__(self) -> None:
@@ -26,7 +27,7 @@ class labeldataset(Dataset):
         mlist = [cv.imdecode(m, 1) for m in mlist]
         mlist = [m.astype(np.float32) / 255 for m in mlist]
         return mlist
-    
+
     def init(self, path, selection, size, pathtype='fld'):
         self.size = size
         selection = Xls2ListList(selection)
@@ -63,8 +64,9 @@ class labeldataset(Dataset):
 
 train_data = labeldataset().init(
     r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all',
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selall.xlsx",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\train.xlsx",
     32768, 'fld')
+
 
 def dataEnhance(src, lbl):
     dttp = [src, lbl]
@@ -79,8 +81,7 @@ def dataEnhance(src, lbl):
         ])
 
         l0 = m.shape[0]
-        Y, X = np.arange(l0, dtype=np.float32), np.arange(l0,
-                                                            dtype=np.float32)
+        Y, X = np.arange(l0, dtype=np.float32), np.arange(l0, dtype=np.float32)
         X, Y = np.meshgrid(X, Y)
         Y -= l0 * 0.5
         X -= l0 * 0.5
@@ -124,29 +125,34 @@ def dataEnhance(src, lbl):
 
     #give back channel dim
     dttp = [
-        m if len(m.shape) == 3 else m.reshape(m.shape + (1, ))
-        for m in dttp
+        m if len(m.shape) == 3 else m.reshape(m.shape + (1, )) for m in dttp
     ]
     src, lbl = dttp
     return src, lbl
 
+
 def makeSample(cachepair):
     # shape standardlize included
-    return dataEnhance(
-        *cachepair[int(len(cachepair) * np.random.random())])
+    return dataEnhance(*cachepair[int(len(cachepair) * np.random.random())])
 
-def makeSampleAndPrintProgress(size,cachepair,path):
+
+def makeSampleAndPrintProgress(size, cachepair, path):
     percentage = 0
     for i in range(size):
         if i > (percentage + 1) * 0.01 * size:
             percentage = np.floor(i / size * 100)
             print(f'{percentage}%')
-        src,lbl = makeSample(cachepair)
-        name=DataCollector.geneName()
-        savemat(src*255,name,rf'{path}/spl')
-        savemat(lbl*255,name,rf'{path}/lbl')
-        
-outpath=r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed"
+        src, lbl = makeSample(cachepair)
+        name = DataCollector.geneName()
+        savemat(src * 255, name, rf'{path}/spl')
+        savemat(lbl * 255, name, rf'{path}/lbl')
+
+
+outpath = r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed"
+
+
 def performDataEnh():
-    makeSampleAndPrintProgress(32768,train_data.pairs,outpath)
+    makeSampleAndPrintProgress(8192, train_data.pairs, outpath)
+
+
 performDataEnh()
