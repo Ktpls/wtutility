@@ -23,4 +23,4 @@ keepEveryMeasInRecord=False
 ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
-cnnresultthresh=0.5
+cnnresultthresh=0.3
