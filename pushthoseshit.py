@@ -1,6 +1,6 @@
 import os
 import subprocess
-os.chdir(r"C:\file\code\wtutility")
+os.chdir(r".")
 while(True):
     ret=subprocess.run(["git", "push"])
     print(ret)
