@@ -38,7 +38,6 @@ specialmapdetectors={
                 "allowederr":20,
             },
         ],
-        "allowederrrange":100,
     },
     "FrozenPass":{
         "type":"mapdetector",
@@ -80,13 +79,13 @@ specialmapdetectors={
         "type":"mapdetector",
         "path":"Poland",
         "spawncenter":[86, 313],
-        "allowederrrange":150,
+        "allowederrrange":100,
     },
     "Poland(winter)":{
         "type":"mapdetector",
         "path":"Poland(winter)",
         "spawncenter":[86, 313],
-        "allowederrrange":150,
+        "allowederrrange":100,
     },
     "Jungle":{
         "type":"mapdetector",
@@ -133,7 +132,11 @@ specialmapdetectors={
                 "allowederr":20,
             },
         ],
-        "allowederrrange":100,
+    },
+    'FieldsOfPoland':{
+        "type":"mapdetector",
+        "path":"FieldsOfPoland",
+        "thresh":0.09
     },
     
 }

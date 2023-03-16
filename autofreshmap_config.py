@@ -6,7 +6,8 @@ subsampleddetection=True
 subsampleddetectionrate=0.25
 
 log2file=False
-dbglog=False
+dbglog=True
+waitaftergoodmap=True
 
 standardMatchThreshold=0.115
 
@@ -21,3 +22,4 @@ resolution='m1920x1080r1280x720'
 
 wlanname4netshinterface='WLAN'
 wlanname4netshwlan='ChinaNet-pHmm'
+#wlanname4netshwlan='as20'
