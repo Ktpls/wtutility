@@ -15,7 +15,6 @@ from nntracker import getmodel, device
 # nn def
 modelpath = r'nntracker.pth'
 model = getmodel(modelpath)
-#[os.remove(f) for f in AllFileIn('runs')]
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
 )  # 存放log文件的目录
