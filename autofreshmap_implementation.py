@@ -126,20 +126,32 @@ class networkOperationImplementation_netshinterfacesetinterfacedisable(
 
     @staticmethod
     def setoffwifi():
-        os.system(f'netsh interface set interface name="{wlanname}" admin=disable')
+        os.system(f'netsh interface set interface name="{wlanname4netshinterface}" admin=disable')
 
     @staticmethod
     def setonwifi():
-        os.system(f'netsh interface set interface name="{wlanname}" admin=enable')
+        os.system(f'netsh interface set interface name="{wlanname4netshinterface}" admin=enable')
+
+
+class networkOperationImplementation_netshwlandisconnect(networkOperationImplementationSuite):
+
+    @staticmethod
+    def setoffwifi():
+        os.system(f'netsh wlan disconnect')
+
+    @staticmethod
+    def setonwifi():
+        os.system(f'netsh wlan connect name="{wlanname4netshwlan}"')
 
 
 networkOperationImplementationAvailableList = [
     'ipconfigrelease',
     'netshinterfacesetinterfacedisable',
+    'netshwlandisconnect',
 ]
 
 networkOperationImplementationName = networkOperationImplementationAvailableList[
-    1]
+    2]
 
 
 def setoffwifi():

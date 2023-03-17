@@ -10,6 +10,8 @@ def main():
         activeWindow(getWTHwnd())
         mouse.mov(*(0,0))
         freshAMap()
+        if waitaftergoodmap:
+            os.system('pause')
     except Exception as err:
         traceback.print_exc()
         win32api.Beep(1000,1000)
