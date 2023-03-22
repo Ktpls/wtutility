@@ -73,6 +73,7 @@ class cbrpsold(torch.nn.Module):
         b = self.pool.forward(a)
         c = torch.concat([a, b], dim=-3)
         return c
+
 class nntracker(torch.nn.Module):
 
     def __init__(self) -> None:
