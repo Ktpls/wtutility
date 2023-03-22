@@ -49,7 +49,7 @@ class labeldataset(Dataset):
     def __len__(self):
         return 30000
 
-    standardshape = [40, 20]
+    standardshape = [20, 20] #height,width
 
     @staticmethod
     def dataEnhance(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):

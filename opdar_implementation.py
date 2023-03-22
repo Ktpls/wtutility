@@ -155,7 +155,7 @@ from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
 if useNNTracker:
     nntrker = getmodel(
-        r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\nntracker.pth')
+        r'.\exp\DLOnOpdarPlaneDetection\nntracker.pth')
 else:
     nntrker = None
 
@@ -233,15 +233,7 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
 
 def planetrack(m,
                posref,
-               searchrange=100,
-               backgroundrange=31,
-               adptthresh=0.4,
-               regionrange=10,
-               routhresh=0.2,
-               posrellamb=0,
-               wingspanrellamb=0,
-               wingspanleast=4,
-               scoreleast=0.1,
+               wingspanref=-1,
                mask=None):
     mask = mask.astype('float32') * 1 / 255
     size = [m.shape[1], m.shape[0]]
@@ -253,21 +245,26 @@ def planetrack(m,
     pul = point_legalize(pul, size)
     pbr = point_legalize(pbr, size)
     m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
-
-    # adaptive thresh
     if not mask is None:
         mask = mask[pul[1]:pbr[1], pul[0]:pbr[0]]
         m = m * mask
     if m.size <= 0:
         return None
     imgshape = m.shape
-    m = m.astype('float32')
+    m = m.astype('float32')*1/255
+
+    # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange], mask)
-    m = ave - m
-    m = cv.threshold(m, 0, 0, cv.THRESH_TOZERO)[1]
-    m = cv.normalize(m, m, 0, 1, cv.NORM_MINMAX)
+    madat = ave - m
+    madat = cv.threshold(madat, 0, 0, cv.THRESH_TOZERO)[1]
+    madat = cv.normalize(madat, madat, 0, 1, cv.NORM_MINMAX)
     # normally filter from background color
-    m = cv.threshold(m, adptthresh, 0, cv.THRESH_TOZERO)[1]
+    madat = cv.threshold(madat, adptthresh, 0, cv.THRESH_TOZERO)[1]
+    
+    #abs thresh
+    mabst = cv.threshold(m, abslthresh, 1, cv.THRESH_BINARY_INV)[1]
+    
+    m=madat*mabst
 
     # clustering
     def density(m, eps=5):
@@ -452,15 +449,6 @@ class tracker:
                 ret = planetrack(curr_gray,
                                  preference,
                                  wingspanref=self.lastwingspan,
-                                 searchrange=searchrange,
-                                 adptthresh=adptthresh,
-                                 backgroundrange=backgroundrange,
-                                 regionrange=regionrange,
-                                 routhresh=routhresh,
-                                 posrellamb=posrellamb,
-                                 wingspanrellamb=wingspanrellamb,
-                                 wingspanleast=wingspanleast,
-                                 scoreleast=scoreleast,
                                  mask=uimask.copy())
             if ret != None:
                 ponshot, wingspan, planemap, pul, maxscore = ret

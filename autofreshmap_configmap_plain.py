@@ -24,6 +24,7 @@ halfdesired=[
     'Poland',
     'Poland(winter)',
     #'Finland',
+    'Tunisia',
 ]
 
 whitelistedmap=desireds+halfdesired
@@ -138,5 +139,16 @@ specialmapdetectors={
         "path":"FieldsOfPoland",
         "thresh":0.09
     },
-    
+    "Tunisia":{
+        "type":"mapdetector",
+        "path":"Tunisia",
+        "spawncenter":[424, 564],
+        "allowederrrange":100,
+        "point":[
+            {
+                "pos":[79, 357], # A point
+                "allowederr":20,
+            },
+        ],
+    },
 }

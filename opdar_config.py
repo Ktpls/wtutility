@@ -12,13 +12,14 @@ stablamb = 0.9
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
-useNNTracker=True
-trackFps=30
+useNNTracker=False
+trackFps=15
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = 'V'
 searchrange = 60  # -sr~+sr
-backgroundrange = 11
+backgroundrange = 21
 adptthresh = 0.32
+abslthresh=0.55
 regionrange = 3
 routhresh = 0.05
 posrellamb = getlambfromtarget(0.75, 1)

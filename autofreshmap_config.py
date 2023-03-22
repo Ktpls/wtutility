@@ -7,7 +7,7 @@ subsampleddetectionrate=0.25
 
 log2file=False
 dbglog=True
-waitaftergoodmap=True
+waitaftergoodmap=False
 
 standardMatchThreshold=0.115
 

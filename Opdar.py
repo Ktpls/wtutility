@@ -1,4 +1,3 @@
-
 from opdar_implementation import *
 
 # setup
@@ -6,15 +5,43 @@ hud = fullScrHUD()
 hud.setup()
 
 
+def beepOnErr():
+
+    win32api.Beep(1000, 1000)
+    win32api.Beep(500, 1000)
+throwErrorInHotkey=True
 def main():
     tr = tracker()
     tracking = False
     lastT = time.perf_counter()
 
-    # perfst=[
-    #   perf_statistic(),
-    #   perf_statistic(),
-    #   perf_statistic()]
+    hklist = []
+
+    def turnon():
+        tr.setup(lockpoint_default)
+        nonlocal tracking
+        tracking = True
+
+    hklist.append(hotkeymanager.hotkeytask([win32con.VK_F10], turnon))
+
+    def turnoff():
+        nonlocal tracking
+        tracking = False
+        win32api.Beep(500, 100)
+
+    hklist.append(hotkeymanager.hotkeytask([win32con.VK_F11], turnoff))
+    
+    # key shortcuts
+    import keyshortcut
+
+    def holdCAndTell():
+        keyshortcut.holdC()
+        win32api.Beep(1000,100)
+    hklist.append(hotkeymanager.hotkeytask(
+        key=win32con.VK_F12,
+        foo=holdCAndTell
+    ))
+    hkm = hotkeymanager(hklist)
 
     while (True):
         sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps,
@@ -22,17 +49,16 @@ def main():
         nowtime = time.perf_counter()
         frametime = nowtime - lastT
         lastT = nowtime
-
-        if isKBDown(win32con.VK_F10):
-            tr.setup(lockpoint_default)
-            tracking = True
-        if isKBDown(win32con.VK_F11):
-            tracking = False
-            win32api.Beep(500, 100)
-        if isKBDown(win32con.VK_F12):
-            hud.stop()
-            odc=None
-            break
+        decideresult = hkm.decideAllHotKey()
+        for i in range(len(decideresult)):
+            if decideresult[i]:
+                try:
+                    hkm.hktl[i].foo()
+                except Exception as e:
+                    beepOnErr()
+                    if throwErrorInHotkey:
+                        raise e
+                    traceback.print_exc()
 
         output = np.zeros([h, w, 3], np.uint8)
 
@@ -116,11 +142,10 @@ def main():
             #     pul[0], output.shape[1] - planemap.shape[1] - pul[0],
             #     cv.BORDER_CONSTANT)
             # output += bigplanemap
-            
+
             #pul is in [x,y], originated from screensize = np.array([w, h], np.int32)
-            output[pul[1]:pul[1]+planemap.shape[0],
-                   pul[0]:pul[0]+planemap.shape[1],
-                   :]+=planemap
+            output[pul[1]:pul[1] + planemap.shape[0],
+                   pul[0]:pul[0] + planemap.shape[1], :] += planemap
 
             # #last pos
             # output=cv.circle(

@@ -49,6 +49,18 @@ class chardetector(torch.nn.Module):
             torch.nn.LeakyReLU(),
             
         )
+        # self.matchtemplnew = torch.nn.Sequential(
+        #     torch.nn.Conv2d(1, 32, 9, padding='same'),
+        #     torch.nn.LeakyReLU(),
+        #     torch.nn.Conv2d(32, 64, 3, padding='same'),
+        #     torch.nn.LeakyReLU(),
+        #     torch.nn.Conv2d(64, 16, 3, padding='same'),
+        #     #torch.nn.BatchNorm2d(16),
+        #     torch.nn.LeakyReLU(),
+        #     torch.nn.Conv2d(16, tsize, [charh, charw-1], padding=[0, int((charw-1-1)/2)]),
+        #     torch.nn.LeakyReLU(),
+        # )
+        # expects output with height=1
 
     def forward(self, m):
         tmat = self.matchtempl(m)
@@ -56,6 +68,8 @@ class chardetector(torch.nn.Module):
 
     def lose(self, tmathat, tmat, t):
         batchsize = batchsizeof(tmat)
+        
+        tmat=torch.max(tmat,dim=-2) # do max along height to squeeze it with height=1
 
         # type right = 0, wrong =1
         coef = torch.scatter(
@@ -70,6 +84,7 @@ class chardetector(torch.nn.Module):
         # [batch,channel,h,w]
         err = torch.sum(coef*(tmathat-tmat)**2)
         return err
+
 
 
 
