@@ -11,7 +11,7 @@ if RunOnWtUtilityEnviroment:
     pass
 else:
     from utilkaggle import *
-
+from torch import nn
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
@@ -74,7 +74,7 @@ class cbrpsold(torch.nn.Module):
         c = torch.concat([a, b], dim=-3)
         return c
 
-class nntracker(torch.nn.Module):
+class nntracker_simple(torch.nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
@@ -90,9 +90,78 @@ class nntracker(torch.nn.Module):
         return self.matchtempl(1 - m)
 
 
+class YOLOv1(nn.Module):
+    def __init__(self, num_classes=20, num_boxes=2,S=7):
+        super(YOLOv1, self).__init__()
+        self.num_classes = num_classes
+        self.num_boxes = num_boxes
+        self.S=S
+        self.convs=nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
+            nn.ReLU(True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(64, 192, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(192, 128, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(True),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+        )
+        self.fcs=nn.Sequential(
+            nn.Linear(7*7*1024, 4096),
+            nn.ReLU(True),
+            nn.Linear(4096, S*S*(self.num_classes + self.num_boxes*5)),
+            nn.ReLU(True),
+            )
+
+    def forward(self, x):
+        x=self.convs(x)
+        x = x.view(-1, self.S*self.S*1024)
+        x=self.fcs(x)
+        x = x.view(-1, self.S, self.S, self.num_classes + self.num_boxes*5)
+        return x
 
 def getmodel(modelpath):
-    model = setModel(nntracker(), path=modelpath).to(device)
+    model = setModel(YOLOv1(), path=modelpath).to(device)
     #print(model)
     return model
 

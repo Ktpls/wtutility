@@ -33,25 +33,76 @@ tsize = 10
 tsizep1 = tsize+1
 typeElse = tsizep1-1
 
+class cbrp(torch.nn.Module):
+    def __init__(self,infeat,outfeat,convsize,poolsize) -> None:
+        super().__init__()
+        self.cbr = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, outfeat, convsize, padding='same'),
+            torch.nn.BatchNorm2d(outfeat),
+            torch.nn.LeakyReLU(),
+        )
+        #self.pool= torch.nn.AvgPool2d(poolsize,padding=int(poolsize/2),stride=1)
+
+    def forward(self, m):
+        mcbr=self.cbr(m)
+        return mcbr#+self.pool(mcbr)
+
+class inception(torch.nn.Module):
+    def __init__(self,infeat,outfeat11,outfeatpool,outfeat33,outfeat55) -> None:
+        super().__init__()
+        self.path11 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.pathpool = torch.nn.Sequential(
+            torch.nn.MaxPool2d(3,stride=1,padding=1),
+            torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path33 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat33, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path55 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat55, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+    def forward(self, m):
+        return torch.concat([
+            self.path11(m),
+            self.pathpool(m),
+            self.path33(m),
+            self.path55(m)
+        ],dim=-3) #channel
 
 class chardetector(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.matchtempl = torch.nn.Sequential(
-            torch.nn.Conv2d(1, 32, 5, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(32, 64, 9, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(64, 16, 9, padding='same'),
-            #torch.nn.BatchNorm2d(16),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(16, tsize, [charh-1, charw-1], padding='same'),
+        self.comp = torch.nn.Sequential(
+            
+            # cbrp(1,32,9,9),
+            # cbrp(32,64,3,3),
+            # cbrp(64,16,3,3),
+            cbrp(1,8,7,7),
+            inception(8,4,4,4,4),
+            torch.nn.BatchNorm2d(16),
+            inception(16,8,8,8,8),
+            torch.nn.BatchNorm2d(32),
+            inception(32,4,4,4,4),
+            torch.nn.BatchNorm2d(16),
+            torch.nn.Conv2d(16, tsize, [charh, charw-1], padding=[0,int((charw-1-1)/2)]),
             torch.nn.LeakyReLU(),
             
         )
 
     def forward(self, m):
-        tmat = self.matchtempl(m)
+        tmat = self.comp(m)
         return tmat  # that
 
     def lose(self, tmathat, tmat, t):
@@ -68,6 +119,8 @@ class chardetector(torch.nn.Module):
         # and fine adjust
         coef = coef*3+1
         # [batch,channel,h,w]
+        tmat=tmat.max(dim=-2)[0]
+        tmat=tmat.unsqueeze(2) #give height dim back
         err = torch.sum(coef*(tmathat-tmat)**2)
         return err
 
