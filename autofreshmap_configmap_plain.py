@@ -24,7 +24,7 @@ halfdesired=[
     'Poland',
     'Poland(winter)',
     #'Finland',
-    'Tunisia',
+    #'Tunisia',
 ]
 
 whitelistedmap=desireds+halfdesired
