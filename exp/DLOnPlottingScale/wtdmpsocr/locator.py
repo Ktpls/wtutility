@@ -235,7 +235,7 @@ if devmode:
 def cut():
     with torch.no_grad():
         piclist = AllFileIn(
-            r"C:\file\code\wtutility\exp\DLOnPlottingScale\wtdmp_noised_scale_collection_project.202301112304\appendix")
+            r"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\plottingscaleorgDataset\appendix")
         for p in piclist:
             m = cv.imread(p)[:, :, 0]
             m = model.standardlizeImgShape(m)

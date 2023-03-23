@@ -12,7 +12,7 @@ train_data = labeldataset().init(
 #%%
 def get_AABB(binary_image):
     """
-    This function takes a binary value image as input and output the AABB of object in image which is indicated with its pixel value=255
+    This function takes a binary value image as input and outputs the AABB of the object in the image which is indicated by its pixel value=255.
     """
     # find the indices of non-zero elements in the binary image
     non_zero_indices = np.nonzero(binary_image)

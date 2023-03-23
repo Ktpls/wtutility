@@ -9,37 +9,42 @@ from torch.utils.data import Dataset
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from wtdmpsocr import getmodel, tsize, tsizep1, typeElse,device
+from wtdmpsocr import getmodel, tsize, tsizep1, typeElse, device
 from defs import *
-#torch.set_num_threads(12) 
-
+#torch.set_num_threads(12)
 
 # %%
 # nn def
 
-modelpath = 'wtdmpsocr_new.pth'
+modelpath = 'wtdmpsocr.pth'
 model = getmodel(modelpath)
-[os.remove(f) for f in AllFileIn('runs')]
-writer = SummaryWriter("runs")  # 存放log文件的目录
+#[os.remove(f) for f in AllFileIn('runs')]
+from datetime import datetime
+
+nowtimestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+writer = SummaryWriter(f"runs/{nowtimestamp}")  # 存放log文件的目录
 
 # %%
 # dataset
 
 
 class labeldataset(Dataset):
+
     def __init__(self, path):
 
         # we got dirs 0-10 in root, maybe some not exist cuz no sample under it
         self.piclist = list(range(tsizep1))
         for t in range(tsizep1):
             rootoft = rf'{path}\{t}'
-            self.piclist[t] = AllFileIn(
-                rootoft) if os.path.exists(rootoft) else []
+            self.piclist[t] = AllFileIn(rootoft) if os.path.exists(
+                rootoft) else []
 
         # cache this for usage in __getitem__()
-        self.endpos = list(itertools.accumulate(
-            [len(t) for t in self.piclist]))
-        assert(self.endpos[-1]!=0) #that means u got no sample, probabily with totally wrong dataset path
+        self.endpos = list(itertools.accumulate([len(t)
+                                                 for t in self.piclist]))
+        assert (
+            self.endpos[-1] != 0
+        )  #that means u got no sample, probabily with totally wrong dataset path
 
         self.cache = None
 
@@ -47,12 +52,19 @@ class labeldataset(Dataset):
         return self.endpos[-1]
 
     def __len__(self):
-        return 30000
+        return 65536
 
-    standardshape = [20, 20] #height,width
+    standardshape = [20, 40]  #h,w
 
     @staticmethod
-    def dataEnhance(m, t, enh_hairing=True, enh_blocking=True, enh_randmov=False, enh_noisedot=True, enh_noiseline=True, enh_lineblocking=True):
+    def dataEnhance(m,
+                    t,
+                    enh_hairing=True,
+                    enh_blocking=False,
+                    enh_randmov=False,
+                    enh_noisedot=True,
+                    enh_noiseline=True,
+                    enh_lineblocking=True):
 
         m = np.copy(m)
 
@@ -65,9 +77,9 @@ class labeldataset(Dataset):
 
         if enh_blocking:
             # blocking
-            hw = np.random.rand(2)*[2, 10]+[1, 2]
-            lt = np.random.rand(2)*(m.shape-hw)
-            rd = lt+hw
+            hw = np.random.rand(2) * [2, 10] + [1, 2]
+            lt = np.random.rand(2) * (m.shape - hw)
+            rd = lt + hw
             # for i in range(2):
             #     if rd[i] >= m.shape[i]:
             #         rd[i] = m.shape[i]
@@ -76,7 +88,8 @@ class labeldataset(Dataset):
 
         # standardlize shape and mov char to the center
         # move tmat center to char center
-        totalmov = np.zeros(2, dtype='float32')+0.5*np.array([charh, charw])
+        totalmov = np.zeros(2,
+                            dtype='float32') + 0.5 * np.array([charh, charw])
         mov = np.array(labeldataset.standardshape) / \
             2-0.5*np.array([charh, charw])
 
@@ -92,18 +105,21 @@ class labeldataset(Dataset):
         m = cv.warpAffine(m, matmov, np.flip(labeldataset.standardshape))
 
         # set tmat
-        tmat = np.zeros(labeldataset.standardshape+[tsize, ], dtype='float32')
-        if t != tsizep1-1:  # not t else
+        tmat = np.zeros(labeldataset.standardshape + [
+            tsize,
+        ],
+                        dtype='float32')
+        if t != tsizep1 - 1:  # not t else
             # tmat[:,:,t] indicates answer pos
             totalmov = totalmov.round().astype('int')
 
             # gaussian answer
             X, Y = np.meshgrid(
-                np.arange(labeldataset.standardshape[1])-totalmov[1],
-                np.arange(labeldataset.standardshape[0])-totalmov[0])
+                np.arange(labeldataset.standardshape[1]) - totalmov[1],
+                np.arange(labeldataset.standardshape[0]) - totalmov[0])
 
             # directly set answerchannel = np.exp(-(X**2+Y**2)/(sigma)**2) will lead to underflow
-            dist2 = (X**2+Y**2)/(2)**2
+            dist2 = (X**2 + Y**2) / (2)**2
             dist2[dist2 > 3] = 3.1
             answerchannel = np.exp(-dist2)
             answerchannel[dist2 > 3] = 0
@@ -140,32 +156,30 @@ class labeldataset(Dataset):
 
         return m, tmat
 
-    def readSample_Realtime(self, t, idx):
-        if idx >= len(self.piclist[t]):
-            raise IndexError(
-                f'index err on type{t}: {idx} of {len(self.piclist[t])}')
-        img = cv.imread(
-            self.piclist[t][idx])[:, :, 0].astype('float32')/255  # as gray/255
-
-        # shape standardlize included
-        img, tmat = labeldataset.dataEnhance(img, t)
-        return ToTensor()(img), ToTensor()(tmat), t
-
     def readSample_WithCaching(self, t, idx):
 
         if self.cache is None:
             # init cache
-            self.cache = [[cv.imread(
-                path)[:, :, 0].astype('float32')/255 for path in self.piclist[t]] for t in range(tsizep1)]
+            self.cache = [[
+                cv.imread(path)[:, :, 0].astype('float32') / 255
+                for path in self.piclist[t]
+            ] for t in range(tsizep1)]
 
         if idx >= len(self.piclist[t]):
-            raise IndexError(
-                f'index err on type{t}: {idx} of {len(self.piclist[t])}')
+            return None
 
         img = self.cache[t][idx]
 
         # shape standardlize included
-        img, tmat = labeldataset.dataEnhance(img, t)
+
+        img, tmat = labeldataset.dataEnhance(img, t,
+            # enh_hairing=False,
+            # enh_blocking=False,
+            # enh_randmov=False,
+            # enh_noisedot=False,
+            # enh_noiseline=False,
+            # enh_lineblocking=False
+            )
         return ToTensor()(img), ToTensor()(tmat), t
 
     def readSample(self, t, idx):
@@ -175,7 +189,7 @@ class labeldataset(Dataset):
         return self.draw_uniformOnType(np.random.random())
 
     def drawByFlattenedIdxFrac(self, idxfrac):
-        return self.drawByFlattenedIdx(idxfrac*self.sampleassetnum)
+        return self.drawByFlattenedIdx(idxfrac * self.sampleassetnum)
 
     def drawByFlattenedIdx(self, idx):
         # get the type where idx laies
@@ -187,49 +201,45 @@ class labeldataset(Dataset):
                 tt = t
             lastendpos = self.endpos[t]
         t = tt
-        idx = idx-self.endpos[t-1] if t != 0 else idx
+        idx = idx - self.endpos[t - 1] if t != 0 else idx
         return self.readSample(t, idx)
 
     def draw_uniformOnType(self, idxfrac):
         while (True):
-            try:
-                # to skip empty
-                t = int(np.random.random()*(tsizep1))
-                ret = self.drawByType(t, idxfrac)
+            # to skip empty
+            t = int(np.random.random() * (tsizep1))
+            ret = self.drawByType(t, idxfrac)
+            if ret is not None:
                 break
-            except IndexError:
-                continue
         return ret
 
     # idxfrac: 0~1 idx, which will be converted into real idx by timing len(thistype)
     def drawByType(self, t, idxfrac):
-        idx = int(idxfrac*len(self.piclist[t]))
+        idx = int(idxfrac * len(self.piclist[t]))
         return self.readSample(t, idx)
 
 
 training_data = labeldataset(rf'..\dataset\charDataset\labeled')
 test_data = training_data
-batch_size =64
+batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
-
 
 # %%
 # train
 
 
 def trainAnEpoch():
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=1e-4)
-    epochs = 3
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    epochs = 6
+    outputperbatchnum = 100
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
 
         # train
         model.train()
-        size = len(train_dataloader.dataset)
+        start_time = time.time()
         for batch, (m, tmat, t) in enumerate(train_dataloader):
 
             m, tmat, t = m.to(device), tmat.to(device), t.to(device)
@@ -238,26 +248,16 @@ def trainAnEpoch():
             optimizer.zero_grad()
             lose.backward()
             optimizer.step()
-            
-            current = batch * batchsizeof(m)
-            if current % 100 == 0:
-                print(f" [{current:>5d}/{size:>5d}]")
-                writer.add_scalar('loss', lose.item()/batchsizeof(m), current)
 
-        # # test
-        # model.eval()
-        # with torch.no_grad():
-        #     test_loss = 0
-        #     for batch, (m, tmat, t) in enumerate(test_dataloader):
-        #         m, tmat, t = m.to(device), tmat.to(device), t.to(device)
-        #         tmathat = model.forward(m)
-        #         test_loss += model.lose(tmathat, tmat,
-        #                                 t).item() / batchsizeof(m)
-        #         break
-        #     #test_loss /= len(test_dataloader.dataset)
-        #     print(f"Test Error:")
-        #     print(f"Av
-        # g loss: {test_loss:>8f}")
+            if batch % outputperbatchnum == 0:
+                end_time = time.time()
+                batch_time = end_time - start_time
+                start_time = end_time
+                avg_loss = lose.item() / batchsizeof(m)
+                print(f"Batch {batch}/{len(train_dataloader)}")
+                print(f"Average Loss: {avg_loss}")
+                print(f"Training Speed: {outputperbatchnum/batch_time} b/s")
+                writer.add_scalar("Training Loss", avg_loss, batch)
 
     win32api.Beep(1000, 1000)
     print("Done!")
@@ -265,99 +265,60 @@ def trainAnEpoch():
 
 trainAnEpoch()
 
-
 # %%
 # view model tmat
 
 
 def viewmodel():
-    viewindetachedimg = True
     datasetusing = test_data
     model.eval()
 
-    if viewindetachedimg:
-        npp = nestedPyPlot([4, 3], [1, 3], plt.figure(figsize=(16, 16)))
-    else:
-        npp = nestedPyPlot([3, 4], [1, 1], plt.figure(figsize=(16, 16)))
+    npp = nestedPyPlot([4, 3], [1, 3], plt.figure(figsize=(16, 16)))
 
     with torch.no_grad():
         for i in range(tsizep1):
-            try:
-                m, tmat, t = datasetusing.drawByType(i, np.random.rand())
-            except IndexError as e:
-                print(e)
+            ret = datasetusing.drawByType(i, np.random.rand())
+            if ret is None:
                 continue
-
-            tmathat = model.forward(m.reshape((1,)+m.shape))[0, :, :, :]
+            m, tmat, t=ret
+            tmathat = model.forward(m.reshape((1, ) + m.shape))[0, :, :, :]
             m = tensorimg2ndarray(m)[:, :, 0]  # delete channel dim
             tmat = tensorimg2ndarray(tmat)
             tmathat = tensorimg2ndarray(tmathat)
 
-            if viewindetachedimg:
-                nestedindex = 0
+            nestedindex = 0
 
-                def setnppsubplot():
-                    nonlocal nestedindex
-                    npp.subplot(i, nestedindex)
-                    nestedindex += 1
-                imshowconfig = {
-                    'cmap': 'gray',
-                    'vmin': 0,
-                    'vmax': 1
-                }
-                # img
-                setnppsubplot()
-                plt.imshow(m, **imshowconfig)
+            def setnppsubplot():
+                nonlocal nestedindex
+                npp.subplot(i, nestedindex)
+                nestedindex += 1
 
-                # tmathat right
-                setnppsubplot()
-                plt.imshow(tmathat[:, :, t] if t !=
-                           typeElse else np.zeros_like(m), **imshowconfig)
+            imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
+            # img
+            setnppsubplot()
+            plt.imshow(m, **imshowconfig)
 
-                # tmathat wrong
-                setnppsubplot()
-                tmathatelse = np.copy(tmathat)
-                if t != tsizep1-1:
-                    tmathatelse[:, :, t] = 0
-                channelelse = np.max(tmathatelse, axis=2)
-                plt.imshow(np.max(tmathatelse, axis=2), **imshowconfig)
+            # tmathat right
+            setnppsubplot()
+            plt.imshow(
+                np.repeat(tmathat[:, :, t], 20, axis=0)
+                if t != typeElse else np.zeros_like(m), **imshowconfig)
 
-            else:
-
-                m2show = np.zeros(m.shape[0:2] + (3,))
-
-                # show sample
-                m3channeld = np.repeat(
-                    m.reshape(m.shape[0:2] + (1,)), 3, axis=2)
-                np.putmask(m2show, m3channeld > 0.1, m3channeld*0.5)
-
-                # tmathat type right
-                if t != tsizep1-1:
-                    channelright = tmathat[:, :, t]
-                    channelright[channelright > 1] = 1
-                    np.putmask(m2show[:, :, 1], channelright
-                               > 0.1, channelright)
-
-                # tmathat type wrong
-                tmathatelse = np.copy(tmathat)
-                if t != tsizep1-1:
-                    tmathatelse[:, :, t] = 0
-                channelelse = np.max(tmathatelse, axis=2)
-                np.putmask(m2show[:, :, 0], channelelse > 0.1, channelelse)
-
-                # # show tmat type right
-                # if t!=tsizep1-1:
-                #     np.putmask(m2show[:, :, 1], tmat[:, :, t] > 0.1, tmat[:, :, t])
-
-                npp.subplot(i, 0)
-                plt.imshow(m2show)
+            # tmathat wrong
+            setnppsubplot()
+            tmathatelse = np.copy(tmathat)
+            if t != tsizep1 - 1:
+                tmathatelse[:, :, t] = 0
+            channelelse = np.max(tmathatelse, axis=2)
+            plt.imshow(np.repeat(np.max(tmathatelse, axis=2), 20, axis=0),
+                       **imshowconfig)
 
 
 viewmodel()
 
-
 # %%
 # save
+
 
 def savemodel(path):
     torch.save(model.state_dict(), path)
