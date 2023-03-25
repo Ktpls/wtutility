@@ -91,7 +91,7 @@ class nntracker_simple(torch.nn.Module):
 
 
 class YOLOv1(nn.Module):
-    def __init__(self, num_classes=20, num_boxes=2,S=7):
+    def __init__(self, num_classes=0, num_boxes=2,S=7):
         super(YOLOv1, self).__init__()
         self.num_classes = num_classes
         self.num_boxes = num_boxes

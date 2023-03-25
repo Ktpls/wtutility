@@ -85,7 +85,7 @@ class chardetector(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.comp = torch.nn.Sequential(
-            cbrp(1,8,7,7),
+            cbrp(1,8,9,9),
             inception(8,4,4,4,4),
             torch.nn.BatchNorm2d(16),
             inception(16,8,8,8,8),
@@ -103,9 +103,6 @@ class chardetector(torch.nn.Module):
 
     def lose(self, tmathat, tmat, t):
         batchsize = batchsizeof(tmat)
-        
-        tmat=torch.max(tmat,dim=-2) # do max along height to squeeze it with height=1
-
         # type right = 0, wrong =1
         coef = torch.scatter(
             torch.ones((batchsize, tsizep1), dtype=torch.float32),
@@ -115,7 +112,7 @@ class chardetector(torch.nn.Module):
         )[:, :tsize].reshape((batchsize, tsize, 1, 1))
 
         # and fine adjust
-        coef = coef*3+1
+        coef = coef*5+1
         # [batch,channel,h,w]
         tmat=tmat.max(dim=-2)[0]
         tmat=tmat.unsqueeze(2) #give height dim back

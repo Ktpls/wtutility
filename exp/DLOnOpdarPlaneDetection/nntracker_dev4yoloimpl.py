@@ -21,15 +21,15 @@ writer = SummaryWriter(
 
 # %%
 # dataset
-from nntracker_common import labeldataset
+from nntracker_common import labeldataset, yoloformdatafset
 
-train_data = labeldataset().init(
+train_data = yoloformdatafset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\sel.xlsx",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
     32768, 'zip')
-test_data = labeldataset().init(
+test_data = yoloformdatafset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\sel.xlsx",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
     64, 'zip')
 
 #%%
@@ -54,16 +54,18 @@ def yolo_loss(pred, target, S, B, C, lambda_coord, lambda_noobj):
     """
     # separate predictions for objectness, box coordinates, and class probabilities
     pred_obj = pred[..., :B]
-    pred_box = pred[..., B:B*5]
-    pred_class = pred[..., B*5:]
+    pred_box = pred[..., B:B * 5]
+    pred_class = pred[..., B * 5:]
 
     # separate targets for objectness, box coordinates, and class probabilities
     target_obj = target[..., :B]
-    target_box = target[..., B:B*5]
-    target_class = target[..., B*5:]
+    target_box = target[..., B:B * 5]
+    target_class = target[..., B * 5:]
 
     # calculate binary cross-entropy loss for objectness
-    obj_loss = F.binary_cross_entropy_with_logits(pred_obj, target_obj, reduction='none')
+    obj_loss = F.binary_cross_entropy_with_logits(pred_obj,
+                                                  target_obj,
+                                                  reduction='none')
 
     # calculate MSE loss for box coordinates
     box_loss = F.mse_loss(pred_box, target_box, reduction='none')
@@ -79,7 +81,9 @@ def yolo_loss(pred, target, S, B, C, lambda_coord, lambda_noobj):
     noobj_loss = lambda_noobj * torch.sum(obj_loss[noobj_mask])
 
     # calculate class loss
-    class_loss = F.binary_cross_entropy_with_logits(pred_class, target_class, reduction='none')
+    class_loss = F.binary_cross_entropy_with_logits(pred_class,
+                                                    target_class,
+                                                    reduction='none')
 
     # sum up all losses
     total_loss = torch.sum(coord_loss + noobj_loss + class_loss)
@@ -95,9 +99,15 @@ def viewLossOnTest(testbatch=3):
     with torch.no_grad():
         for batch, datatuple in enumerate(test_dataloader):
 
-            (images, targets) =datatuple
+            (images, targets) = datatuple
             outputs = model(images)
-            losstotal += yolo_loss(outputs, targets, S=7, B=2, C=1, lambda_coord=5, lambda_noobj=0.5).item()
+            losstotal += yolo_loss(outputs,
+                                   targets,
+                                   S=7,
+                                   B=2,
+                                   C=1,
+                                   lambda_coord=5,
+                                   lambda_noobj=0.5).item()
             samplenum += batchsizeof(images)
             if batch >= testbatch:
                 break
@@ -123,10 +133,16 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
 
             model.train()
             datatuple = [d.to(device) for d in datatuple]
-            (images, targets) =datatuple
+            (images, targets) = datatuple
             optimizer.zero_grad()
             outputs = model(images)
-            loss = yolo_loss(outputs, targets, S=7, B=2, C=1, lambda_coord=5, lambda_noobj=0.5)
+            loss = yolo_loss(outputs,
+                             targets,
+                             S=7,
+                             B=2,
+                             C=1,
+                             lambda_coord=5,
+                             lambda_noobj=0.5)
             loss.backward()
             if batch % outputperbatchnum == 0:
                 end_time = time.time()
@@ -134,15 +150,15 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
                 print(
                     f"Training speed: {outputperbatchnum/(end_time-start_time):>5f} batches per second"
                 )
-                aveloss = loss.item()/batchsizeof(images)
+                aveloss = loss.item() / batchsizeof(images)
                 print(f"Average loss: {aveloss:>7f}")
-                writer.add_scalar('trainloss',
-                                  aveloss, batch)
+                writer.add_scalar('trainloss', aveloss, batch)
                 start_time = time.time()
 
         viewLossOnTest()
     #win32api.Beep(1000, 1000)
     print("Done!")
+
 
 trainAnEpoch()
 
@@ -153,6 +169,7 @@ if __name__ == '__main__':
 
 # %%
 # view effect
+
 
 def viewModelOnPic():
 
@@ -221,6 +238,7 @@ viewmodel()
 
 # %%
 # save
+
 
 def savemodel(path):
     torch.save(model.state_dict(), path)

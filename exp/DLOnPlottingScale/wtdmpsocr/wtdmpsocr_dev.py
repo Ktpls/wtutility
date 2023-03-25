@@ -60,8 +60,9 @@ class labeldataset(Dataset):
     def dataEnhance(m,
                     t,
                     enh_hairing=True,
+                    enh_dropout=True,
                     enh_blocking=False,
-                    enh_randmov=False,
+                    enh_randmov=True,
                     enh_noisedot=True,
                     enh_noiseline=True,
                     enh_lineblocking=True):
@@ -71,9 +72,15 @@ class labeldataset(Dataset):
         if enh_hairing:
             # grow some hair
             regsum = regionsum(m, [3, 3])
-            addups = np.logical_and((m < 0.1), (regsum == 3))
-            addups = np.logical_and(addups, (np.random.random(m.shape) < 0.4))
+            addups = np.logical_and((m < 0.1), (regsum >= 3))
+            hairingrate = np.random.random() * 0.6 - 0.2
+            addups = np.logical_and(addups,
+                                    (np.random.random(m.shape) < hairingrate))
             m += addups
+
+        if enh_dropout:
+            # randomly set half of pixels in image m to 0
+            m = (np.random.random(m.shape) > 0.2) * m
 
         if enh_blocking:
             # blocking
@@ -96,7 +103,7 @@ class labeldataset(Dataset):
         # rand mov
         if enh_randmov:
             # dont think any usefulness in conv net
-            mov += np.random.uniform(-1, 1, size=2) * [5, 5]
+            mov += np.random.uniform(-1, 1, size=2) * [1, 5]
         totalmov += mov
         matmov = np.array([
             [1, 0, mov[1]],
@@ -172,14 +179,17 @@ class labeldataset(Dataset):
 
         # shape standardlize included
 
-        img, tmat = labeldataset.dataEnhance(img, t,
-            # enh_hairing=False,
-            # enh_blocking=False,
-            # enh_randmov=False,
-            # enh_noisedot=False,
-            # enh_noiseline=False,
-            # enh_lineblocking=False
-            )
+        img, tmat = labeldataset.dataEnhance(
+            img,
+            t,
+            # True,
+            # True,
+            # False,
+            # False,
+            # False,
+            # False,
+            # False
+        )
         return ToTensor()(img), ToTensor()(tmat), t
 
     def readSample(self, t, idx):
@@ -221,7 +231,7 @@ class labeldataset(Dataset):
 
 training_data = labeldataset(rf'..\dataset\charDataset\labeled')
 test_data = training_data
-batch_size = 64
+batch_size = 128
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -230,7 +240,9 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 
 def trainAnEpoch():
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(),
+                                  lr=1e-4,
+                                  weight_decay=1e-2)
     epochs = 6
     outputperbatchnum = 100
     for ep in range(epochs):
@@ -280,7 +292,7 @@ def viewmodel():
             ret = datasetusing.drawByType(i, np.random.rand())
             if ret is None:
                 continue
-            m, tmat, t=ret
+            m, tmat, t = ret
             tmathat = model.forward(m.reshape((1, ) + m.shape))[0, :, :, :]
             m = tensorimg2ndarray(m)[:, :, 0]  # delete channel dim
             tmat = tensorimg2ndarray(tmat)
@@ -309,7 +321,6 @@ def viewmodel():
             tmathatelse = np.copy(tmathat)
             if t != tsizep1 - 1:
                 tmathatelse[:, :, t] = 0
-            channelelse = np.max(tmathatelse, axis=2)
             plt.imshow(np.repeat(np.max(tmathatelse, axis=2), 20, axis=0),
                        **imshowconfig)
 

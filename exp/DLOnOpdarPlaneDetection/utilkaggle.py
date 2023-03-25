@@ -6,16 +6,19 @@ import matplotlib.pyplot as plt
 import openpyxl as opx
 import os
 
-def Xls2ListList(path=None, sheetname=None):
+def Xls2ListList(path=None, sheetname=None, killNones=True):
     if path is None:
         path=r'eles.in.xlsx' 
     xls=opx.load_workbook(path)
     if sheetname is None:
         sheet=xls.active
     else:
-        sheet=xls[sheet]
+        sheet=xls[sheetname]
     
-    return [[ele.value for ele in ln] for ln in (sheet.rows)]
+    ret=[[ele.value for ele in ln] for ln in (sheet.rows)]
+    if killNones:
+        ret=[l for l in ret if any([e is not None for e in l])]
+    return ret
 
 
 def AllFileIn(path, includeFileInSubDir=True):
