@@ -80,10 +80,24 @@ class yoloformdatafset(Dataset):
     def __init__(self) -> None:
         super().__init__()
 
-    def init(self, path, selection, size, pathtype='fld', sheetname=None):
+    # #grid ,#bondingbox, width,widthofsourcepic
+    def init(self,
+             path,
+             selection,
+             size,
+             S=7,
+             B=1,
+             W=448,
+             W0=100,
+             pathtype='fld',
+             sheetname=None):
         self.size = size
         selection = Xls2ListList(selection, sheetname)
-        self.names = [s[0] for s in selection]
+        selection = selection[1:]
+        if len(selection)>512:
+            selection=selection[:512]
+        names = [s[0] for s in selection]
+        self.S, self.B, self.W, self.W0 = S, B, W, W0
 
         if pathtype == 'fld':
             reader = readImgInFolder
@@ -92,8 +106,28 @@ class yoloformdatafset(Dataset):
         else:
             raise TypeError(f'inproper path type {pathtype}')
 
-        self.pairs = list(
-            zip(reader(path, [f'spl/{p}' for p in selection]), selection))
+        pic = reader(path, [f'spl/{p}' for p in names])
+
+        pairs = list(zip(pic, selection))
+
+        def W0ToW(pair):
+            img, (Name, MinX, MinY, MaxX, MaxY, CenterX, CenterY) = pair
+
+            coors = [MinX, MinY, MaxX, MaxY, CenterX, CenterY]
+            coors = map(lambda x: self.W / self.W0 * float(x), coors)
+            MinX, MinY, MaxX, MaxY, CenterX, CenterY = coors
+
+            img = cv.resize(img, (self.W, self.W))
+            img = ToTensor()(img)
+
+            grids = np.zeros([self.S, self.S, self.B * 5], np.float32)
+            center = (CenterY, CenterX)
+            centergrid = [int(self.S * c / self.W) for c in center]
+            grids[centergrid[0], centergrid[1]] = [1,MinX, MinY, MaxX, MaxY]
+            lbl = torch.tensor(grids)
+            return img, lbl
+
+        self.pairs = [W0ToW(p) for p in pairs]
 
         return self
 
@@ -101,10 +135,7 @@ class yoloformdatafset(Dataset):
         return self.size
 
     def __getitem__(self, idx):
-        return [
-            ToTensor()(i)
-            for i in self.pairs[int(len(self.pairs) * np.random.random())]
-        ]
+        return self.pairs[int(len(self.pairs) * np.random.random())]
 
     def rawlength(self):
         return len(self.pairs)

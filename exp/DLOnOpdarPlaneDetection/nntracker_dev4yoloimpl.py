@@ -13,8 +13,13 @@ from nntracker import getmodel, device
 import torch.nn.functional as F
 # %%
 # nn def
+S = 7
+B = 1
+C = 0
+W = 448
+W0 = 100
 modelpath = r'yolotracker.pth'
-model = getmodel(modelpath)
+model = setModel(YOLOv1(C, B, S), path=modelpath).to(device)
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
 )  # 存放log文件的目录
@@ -26,15 +31,15 @@ from nntracker_common import labeldataset, yoloformdatafset
 train_data = yoloformdatafset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
-    32768, 'zip')
+    32768, S, B, W, W0, 'zip', 'train')
 test_data = yoloformdatafset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
-    64, 'zip')
+    64, S, B, W, W0, 'zip', 'test')
 
 #%%
 # for easier modify batchsize without reload all samples
-batch_size = 32
+batch_size = 4
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -72,6 +77,7 @@ def yolo_loss(pred, target, S, B, C, lambda_coord, lambda_noobj):
 
     # create mask for cells with object
     obj_mask = target_obj > 0.5
+    obj_mask = torch.repeat_interleave(obj_mask, 4, 3)
 
     # calculate coordinate loss only for cells with object
     coord_loss = lambda_coord * torch.sum(box_loss[obj_mask])
@@ -81,9 +87,10 @@ def yolo_loss(pred, target, S, B, C, lambda_coord, lambda_noobj):
     noobj_loss = lambda_noobj * torch.sum(obj_loss[noobj_mask])
 
     # calculate class loss
-    class_loss = F.binary_cross_entropy_with_logits(pred_class,
-                                                    target_class,
-                                                    reduction='none')
+    # class_loss = F.binary_cross_entropy_with_logits(pred_class,
+    #                                                 target_class,
+    #                                                 reduction='none')
+    class_loss = 0
 
     # sum up all losses
     total_loss = torch.sum(coord_loss + noobj_loss + class_loss)
@@ -103,9 +110,9 @@ def viewLossOnTest(testbatch=3):
             outputs = model(images)
             losstotal += yolo_loss(outputs,
                                    targets,
-                                   S=7,
-                                   B=2,
-                                   C=1,
+                                   S=S,
+                                   B=B,
+                                   C=C,
                                    lambda_coord=5,
                                    lambda_noobj=0.5).item()
             samplenum += batchsizeof(images)
@@ -138,9 +145,9 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
             outputs = model(images)
             loss = yolo_loss(outputs,
                              targets,
-                             S=7,
-                             B=2,
-                             C=1,
+                             S=S,
+                             B=B,
+                             C=C,
                              lambda_coord=5,
                              lambda_noobj=0.5)
             loss.backward()
