@@ -58,6 +58,19 @@ def main():
             key=0xc0,
             foo=hkcallWTDistMeas
         ))
+        
+        
+        #auto caliberation
+        caliOperator=wtdistmeaspy.loadCalibrationOperator()
+            
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=win32con.VK_F9,
+            foo=lambda:caliOperator.start(1000,10)
+        ))
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=[win32con.VK_CONTROL,win32con.VK_F9],
+            foo=lambda:caliOperator.stop()
+        ))
 
     # telescope
     if usingtelescope:
@@ -126,6 +139,8 @@ def main():
             foo=eedcOnClickWithSwitch
         ))
         business.append(eagleeye.onFrame)
+        
+    
 
     # reboot, not working on exit
 
@@ -137,7 +152,7 @@ def main():
         [win32api.Beep(f, dur) for f in freqseq]
         sys.exit()
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=[win32con.VK_CONTROL, win32con.VK_F9],
+        key=[win32con.VK_CONTROL,win32con.VK_SHIFT, win32con.VK_F12],
         foo=rebootfoo
     ))
 
