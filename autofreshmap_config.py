@@ -21,5 +21,5 @@ throwerrinmain=False
 resolution='m1920x1080r1280x720'
 
 wlanname4netshinterface='WLAN'
-wlanname4netshwlan='ChinaNet-pHmm'
-#wlanname4netshwlan='as20'
+#wlanname4netshwlan='ChinaNet-pHmm'
+wlanname4netshwlan='as20'

@@ -559,7 +559,8 @@ def freshAMap():
                 loadingscreen = scr
                 return True
             if stateDetector['hanger'].detect(scr):  # for click not succeed
-                # click(stateDetector['hanger'].getsigncenter())
+                press(keycode.key_Enter)
+            if stateDetector['OK'].detect(scr):
                 press(keycode.key_Enter)
             return False
 

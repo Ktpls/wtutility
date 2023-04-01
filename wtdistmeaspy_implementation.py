@@ -212,14 +212,15 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ''):
     # text is a little bit out of range between two vertical lines,
     # so 2x interval is with slight possibility losing char pixel
     # but 2.5x interval is quite enough
-    mps = np.copy(mcolored[-3-1-14:-3-1, -psfindrange:, :])
+    base=-3-1+plottingscalePosOffset
+    mps = np.copy(mcolored[base-14:base, -psfindrange:, :])
     dbglogsavestep(mps)
     # consider cut map in the last step, for using as more region info in detection as possible
 
     # filter absolute color
     mpshsv = cv.cvtColor(mps, cv.COLOR_BGR2HSV)
     darkgraypoints = cv.inRange(mpshsv, hsv2opencv8bithsv(
-        [0, 0, 0]), hsv2opencv8bithsv([360, 50, 30]))
+        [0, 0, 0]), hsv2opencv8bithsv([360, 56, 30]))
     dbglogsavestep(darkgraypoints)
 
     # filter adaptive value(lightness)
