@@ -59,17 +59,12 @@ def main():
             foo=hkcallWTDistMeas
         ))
         
-        
-        #auto caliberation
-        caliOperator=wtdistmeaspy.loadCalibrationOperator()
-            
+        def stopCali():
+            wtdistmeaspy.caliOperator.stop()
+            win32api.Beep(1000,1000)
         hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_F9,
-            foo=lambda:caliOperator.start(1000,10)
-        ))
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=[win32con.VK_CONTROL,win32con.VK_F9],
-            foo=lambda:caliOperator.stop()
+            key=[win32con.VK_CONTROL,0xc0],
+            foo=stopCali
         ))
 
     # telescope

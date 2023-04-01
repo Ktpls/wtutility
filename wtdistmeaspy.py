@@ -1,7 +1,7 @@
 
 from wtdistmeaspy_implementation import *
 
-
+caliOperator=loadCalibrationOperator()
 def mainlogic():
     sleep(measdelay)  # for network delay
 
@@ -56,8 +56,14 @@ def mainlogic():
             return None  # keep dbglog unneeded
         dbglogreason = strictErrCheck()
         if dbglogreason is not None:
+            # not usable
             prompt += 'but {}. \n'.format(dbglogreason)
             prompt += 'Not recommended to use, better try again\n'
+        else:
+            #everything goes great
+            # continue to load cali
+            caliOperator.start(dist,3)
+            
         prompt += '{}'.format('\n'.join(refresult))
         prompt += '\n'
         prompt += 'dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n' %\

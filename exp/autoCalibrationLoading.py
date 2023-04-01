@@ -15,7 +15,7 @@ def recon():
     hsv_image += np.array([[hsv2opencv8bithsv((huerange, 0, 0))]])
     huemax = hsv2opencv8bithsv((360, 0, 0))[0]
     hsv_image[hsv_image[:, :, 0] > huemax, 0] -= huemax
-    lower_red = hsv2opencv8bithsv((0, 40, 40))
+    lower_red = hsv2opencv8bithsv((0, 50, 50))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
     #  apply ui mask here
@@ -36,7 +36,7 @@ def recon():
         )
 
     # search graduation around vertical crosshair line, again use distribution
-    gridSearchWidth = 10
+    gridSearchWidth = 5
     gridSearchRange = np.array(
         [crosshair[1] - gridSearchWidth, crosshair[1] + gridSearchWidth])
 
@@ -53,19 +53,7 @@ def recon():
                                           gridSearchRange[i])
     distOnY_Grid = (red_mask[:, gridSearchRange[0]:gridSearchRange[1]]).sum(
         axis=1)
-    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth
-
-    # suppress line detection around horizontal crosshair line
-    forbidenWidthAroundCrosshair = 5
-    forbidenRangeAroundCrosshair = [
-        crosshair[0] - forbidenWidthAroundCrosshair,
-        crosshair[0] + forbidenWidthAroundCrosshair
-    ]
-    for i in range(len(gridSearchRange)):
-        forbidenRangeAroundCrosshair[i] = validateCoor(
-            [0, red_mask.shape[0]], forbidenRangeAroundCrosshair[i])
-    line[forbidenRangeAroundCrosshair[0]:
-         forbidenRangeAroundCrosshair[1]] = False
+    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth *2
 
     #degenerate wide line occupying multiple rows into one
     line = line.astype(np.float32)
@@ -80,28 +68,41 @@ def recon():
             line[int(center)] = 1
         i += 1
     line = line > 0.5
+
+    linepos = np.where(line)[0]
+    x=np.arange(len(linepos))
+    dy= (arrayshift(linepos, -1) - linepos)[:-1]
+    ddy=(arrayshift(dy, -1) - dy)[:-1]
+    # def linarRegression(x, y):
+    #     m = len(x)
+    #     x_bar = np.mean(x)
+    #     w = (np.sum(
+    #         (x - x_bar) * y)) / (np.sum(x**2) - (1 / m) * (np.sum(x))**2)
+    #     b = np.mean(y - w * x)
+    #     return w, b
+    a=ddy.mean()*0.5
+    b=(dy-2*a*x[:-1]).mean()
+    c=linepos[0]
+    Y=a*x**2+b*x+c
+    # plt.plot(x,linepos)
+    # plt.plot(x,Y)
+    # plt.show()
+    
     #rebuild
     rebuildMap = np.zeros_like(red_mask)
     rebuildMap[crosshair[0], :] = 1
     rebuildMap[:, crosshair[1]] = 1
+    
+    #using original data
     rebuildMap[line, gridSearchRange[0]:gridSearchRange[1]] = 1
+    
+    #using model
+    lineposmodel=Y.astype(np.int32)
+    rebuildMap[lineposmodel, gridSearchRange[0]+100:gridSearchRange[1]+100] = 1
+    
     savematflt(rebuildMap)
-
-    linepos = np.where(line)[0]
     
-
-    def regression(x, y):
-        m = len(x)
-        x_bar = np.mean(x)
-        w = (np.sum(
-            (x - x_bar) * y)) / (np.sum(x**2) - (1 / m) * (np.sum(x))**2)
-        b = np.mean(y - w * x)
-        return w, b
-
-    y = np.arange(1, 1 + len(linepos)) * 100
-    w, b = regression(linepos, y)
-    
-    return crosshair[0]*w+b
+    return
 
 
 print(recon())

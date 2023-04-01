@@ -322,21 +322,20 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
     red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
     #  apply ui mask here
     red_mask = red_mask * uimask
-    savematflt(red_mask)
 
     # use distribution to find crosshair
     distOnX = red_mask.sum(axis=0)
     distOnY = red_mask.sum(axis=1)
     crosshair = [np.argmax(distOnY), np.argmax(distOnX)]
-    crosshairSafeThresh = 500
+    crosshairSafeThresh = 300
     if distOnX[crosshair[1]] < crosshairSafeThresh or distOnY[
             crosshair[0]] < crosshairSafeThresh:
-        raise BadCrossHairException(
+        raise BadCrossHairException  (
             'AC_BAD_CRHR, maybe go try switch night mode or just not in snipping'
         )
 
     # search graduation around vertical crosshair line, again use distribution
-    gridSearchWidth = 10
+    gridSearchWidth = 5
     gridSearchRange = np.array(
         [crosshair[1] - gridSearchWidth, crosshair[1] + gridSearchWidth])
 
@@ -353,19 +352,7 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
                                           gridSearchRange[i])
     distOnY_Grid = (red_mask[:, gridSearchRange[0]:gridSearchRange[1]]).sum(
         axis=1)
-    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth
-
-    # suppress line detection around horizontal crosshair line
-    forbidenWidthAroundCrosshair = 5
-    forbidenRangeAroundCrosshair = [
-        crosshair[0] - forbidenWidthAroundCrosshair,
-        crosshair[0] + forbidenWidthAroundCrosshair
-    ]
-    for i in range(len(gridSearchRange)):
-        forbidenRangeAroundCrosshair[i] = validateCoor(
-            [0, red_mask.shape[0]], forbidenRangeAroundCrosshair[i])
-    line[forbidenRangeAroundCrosshair[0]:
-         forbidenRangeAroundCrosshair[1]] = False
+    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth *2
 
     #degenerate wide line occupying multiple rows into one
     line = line.astype(np.float32)
@@ -380,29 +367,17 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
             line[int(center)] = 1
         i += 1
     line = line > 0.5
-    #rebuild
-    rebuildMap = np.zeros_like(red_mask)
-    rebuildMap[crosshair[0], :] = 1
-    rebuildMap[:, crosshair[1]] = 1
-    rebuildMap[line, gridSearchRange[0]:gridSearchRange[1]] = 1
-    savematflt(rebuildMap)
 
     linepos = np.where(line)[0]
-
-    def regression(x, y):
-        m = len(x)
-        x_bar = np.mean(x)
-        w = (np.sum(
-            (x - x_bar) * y)) / (np.sum(x**2) - (1 / m) * (np.sum(x))**2)
-        b = np.mean(y - w * x)
-        return w, b
-
-    y = np.arange(1, 1 + len(linepos)) * 100
-    w, b = regression(linepos, y)
-
-    #calinow=crosshair[0]*w+b
-    posnow = crosshair[0]
-    targetpos = (targetcali - b) / w
+    x=np.arange(len(linepos))*200
+    dy= (arrayshift(linepos, -1) - linepos)[:-1]/200
+    ddy=(arrayshift(dy, -1) - dy)[:-1]/200
+    
+    a=ddy.mean()*0.5
+    b=(dy-2*a*x[:-1]).mean()
+    c=linepos[0]
+    targetpos=a*targetcali**2+b*targetcali+c
+    posnow=crosshair[0]
     return targetpos, posnow
 
 
@@ -429,15 +404,14 @@ def switchNightMode():
 
 
 def adjustCaliberation(pidoutput):
-    direction = np.sign(pidoutput)
-    pidoutput = np.abs(pidoutput)
-    if direction > 0:
-        for i in range(int(pidoutput)):
-            gameinput.press(gameinput.keycode.key_PageUp)
-    else:
-        for i in range(int(pidoutput)):
-            gameinput.press(gameinput.keycode.key_PageDown)
+    control=pidoutput*0.002
+    print(control)
 
+    keycode2press=gameinput.keycode.key_PageUp if control > 0 else gameinput.keycode.key_PageDown
+
+    gameinput.keydown(keycode2press)
+    sleep(np.abs(control))
+    gameinput.keyup(keycode2press)
 
 
 class loadCalibrationOperator:
@@ -466,7 +440,7 @@ class loadCalibrationOperator:
         return self.result
 
 def loadCalibration(targetcali, errAllowed, operator:loadCalibrationOperator):
-    pid = PIDController(1, 0, 0.1)
+    pid = PIDController(1.5, 0, 1.5)
     ss = screenshoter()
     while (True):
         if operator.stopsignal:
@@ -476,12 +450,12 @@ def loadCalibration(targetcali, errAllowed, operator:loadCalibrationOperator):
             return
         try:
             #cali err in pixel
-            caliresult = getNowCalibration(ss.shotbgr, targetcali)
+            caliresult = getNowCalibration(ss.shotbgr(), targetcali)
         except BadCrossHairException:
             #try switch
             switchNightMode()
             try:
-                caliresult = getNowCalibration(ss.shotbgr)
+                caliresult = getNowCalibration(ss.shotbgr(), targetcali)
             except BadCrossHairException:
                 #give it back
                 switchNightMode()
@@ -490,9 +464,11 @@ def loadCalibration(targetcali, errAllowed, operator:loadCalibrationOperator):
                 return
 
         targetpix, nowpix = caliresult
-        if np.abs(targetpix - nowpix) < errAllowed:
+        #print(targetpix,nowpix)
+        if np.abs(targetpix - nowpix) <= errAllowed:
             operator.result= "Great"
             operator.stopped=True
+            print(operator.result)
             return
         adjustCaliberation(pid.update(targetpix, nowpix))
-        time.sleep(0.1)
+        sleep(0.2)
