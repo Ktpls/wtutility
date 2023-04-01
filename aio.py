@@ -59,11 +59,23 @@ def main():
             foo=hkcallWTDistMeas
         ))
         
-        def stopCali():
-            wtdistmeaspy.caliOperator.stop()
-            win32api.Beep(1000,1000)
+        def startCali():
+            lastStaged=wtdistmeaspy.lastDistMeasResultStaged.get()
+            if type(lastStaged) is bool and not lastStaged:
+                bulletin.putup("no staged dist result", 10)
+                return
+            wtdistmeaspy.caliOperator.start(lastStaged,2)
+            bulletin.putup(f"caliberating to {lastStaged}", 10)
         hotkeyaction.append(hotkeymanager.hotkeytask(
             key=[win32con.VK_CONTROL,0xc0],
+            foo=startCali
+        ))
+        
+        def stopCali():
+            wtdistmeaspy.caliOperator.stop()
+            bulletin.putup(f"stopped", 10)
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=[win32con.VK_SHIFT,0xc0],
             foo=stopCali
         ))
 

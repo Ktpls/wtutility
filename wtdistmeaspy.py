@@ -2,6 +2,17 @@
 from wtdistmeaspy_implementation import *
 
 caliOperator=loadCalibrationOperator()
+class LastDistMeasResult:
+    def __init__(self):
+        self.val=None
+    def get(self):
+        if self.val is None:
+            return False
+        return self.val
+    def set(self,val):
+        self.val=val
+lastDistMeasResultStaged=LastDistMeasResult()
+lastDistMeasResultStaged.set(1000)
 def mainlogic():
     sleep(measdelay)  # for network delay
 
@@ -60,9 +71,9 @@ def mainlogic():
             prompt += 'but {}. \n'.format(dbglogreason)
             prompt += 'Not recommended to use, better try again\n'
         else:
-            #everything goes great
-            # continue to load cali
-            caliOperator.start(dist,3)
+            #everything goes great.
+            # stage result
+            lastDistMeasResultStaged.set(dist)
             
         prompt += '{}'.format('\n'.join(refresult))
         prompt += '\n'

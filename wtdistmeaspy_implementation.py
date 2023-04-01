@@ -3,6 +3,7 @@ import matplotlib as mpl
 from utilitypack.utility import *
 import gameinput
 from wtdistmeaspy_config import *
+import scipy.interpolate
 
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmark.png"
 kernelyellowmark = cv.imread(yellowmarkpath)
@@ -330,7 +331,7 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
     crosshairSafeThresh = 300
     if distOnX[crosshair[1]] < crosshairSafeThresh or distOnY[
             crosshair[0]] < crosshairSafeThresh:
-        raise BadCrossHairException  (
+        raise BadCrossHairException(
             'AC_BAD_CRHR, maybe go try switch night mode or just not in snipping'
         )
 
@@ -352,7 +353,7 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
                                           gridSearchRange[i])
     distOnY_Grid = (red_mask[:, gridSearchRange[0]:gridSearchRange[1]]).sum(
         axis=1)
-    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth *2
+    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth * 2
 
     #degenerate wide line occupying multiple rows into one
     line = line.astype(np.float32)
@@ -369,15 +370,10 @@ def getNowCalibration(m, targetcali, dbg: bool = False, dbglogpath: str = ''):
     line = line > 0.5
 
     linepos = np.where(line)[0]
-    x=np.arange(len(linepos))*200
-    dy= (arrayshift(linepos, -1) - linepos)[:-1]/200
-    ddy=(arrayshift(dy, -1) - dy)[:-1]/200
-    
-    a=ddy.mean()*0.5
-    b=(dy-2*a*x[:-1]).mean()
-    c=linepos[0]
-    targetpos=a*targetcali**2+b*targetcali+c
-    posnow=crosshair[0]
+    x = np.arange(len(linepos)) * 200
+    f = scipy.interpolate.interp1d(x, linepos)
+    targetpos = f(targetcali)
+    posnow = crosshair[0]
     return targetpos, posnow
 
 
@@ -404,10 +400,10 @@ def switchNightMode():
 
 
 def adjustCaliberation(pidoutput):
-    control=pidoutput*0.002
+    control = pidoutput * 0.001
     print(control)
 
-    keycode2press=gameinput.keycode.key_PageUp if control > 0 else gameinput.keycode.key_PageDown
+    keycode2press = gameinput.keycode.key_PageUp if control > 0 else gameinput.keycode.key_PageDown
 
     gameinput.keydown(keycode2press)
     sleep(np.abs(control))
@@ -415,59 +411,55 @@ def adjustCaliberation(pidoutput):
 
 
 class loadCalibrationOperator:
+
     def __init__(self) -> None:
-        self.stopsignal=True
-        self.stopped=True
-        self.result=''
-    
-    def start(self,targetcali, errAllowed):
+        self.stopsignal = True
+        self.stopped = True
+        self.result = ''
+
+    def start(self, targetcali, errAllowed):
         if not self.stopped:
             # no running again
             return
-        self.stopsignal=False
-        self.stopped=False
-        self.result=''
-        threading.Thread(target=loadCalibration,args=(targetcali, errAllowed,self)).start()
-    
+        self.stopsignal = False
+        self.stopped = False
+        self.result = ''
+        threading.Thread(target=loadCalibration,
+                         args=(targetcali, errAllowed, self)).start()
+
     def stop(self):
         if self.stopped:
             return
-        self.stopsignal=True
-        while(True):
+        self.stopsignal = True
+        while (True):
             if self.stopped:
                 break
             sleep(0.5)
         return self.result
 
-def loadCalibration(targetcali, errAllowed, operator:loadCalibrationOperator):
+
+def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
     pid = PIDController(1.5, 0, 1.5)
     ss = screenshoter()
     while (True):
         if operator.stopsignal:
             #forced stop
-            operator.result= "Stoped"
-            operator.stopped=True
+            operator.result = "Stoped"
+            operator.stopped = True
             return
         try:
             #cali err in pixel
             caliresult = getNowCalibration(ss.shotbgr(), targetcali)
         except BadCrossHairException:
-            #try switch
-            switchNightMode()
-            try:
-                caliresult = getNowCalibration(ss.shotbgr(), targetcali)
-            except BadCrossHairException:
-                #give it back
-                switchNightMode()
-                operator.result= "Bad crosshair detection"
-                operator.stopped=True
-                return
+            operator.result = "Bad crosshair detection"
+            operator.stopped = True
+            return
 
         targetpix, nowpix = caliresult
         #print(targetpix,nowpix)
         if np.abs(targetpix - nowpix) <= errAllowed:
-            operator.result= "Great"
-            operator.stopped=True
+            operator.result = "Great"
+            operator.stopped = True
             print(operator.result)
             return
         adjustCaliberation(pid.update(targetpix, nowpix))
