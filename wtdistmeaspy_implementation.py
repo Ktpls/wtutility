@@ -362,7 +362,9 @@ def getNowCalibration(m, targetcali, dbglogsavestep, log):
     gridlineVerPos = np.where(gridlineVer)[0]
     log(np.ndarray.__repr__(gridlineVerPos))
     targetDistance = np.arange(len(gridlineVerPos)) * 200
-    f = scipy.interpolate.interp1d(targetDistance, gridlineVerPos)
+    f = scipy.interpolate.interp1d(
+        targetDistance, gridlineVerPos,
+        bounds_error=False,fill_value="extrapolate",assume_sorted=True)
     targetpos = f(targetcali)
     posnow = crosshair[0]
     log(str([targetpos, posnow]))
@@ -479,6 +481,7 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
             operator.stopped = True
             log(operator.result)
             return
+        except Other
 
         targetpix, nowpix, mil = caliresult
         log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')
