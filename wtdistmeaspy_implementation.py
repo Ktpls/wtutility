@@ -481,7 +481,6 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
             operator.stopped = True
             log(operator.result)
             return
-        except Other
 
         targetpix, nowpix, mil = caliresult
         log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')
