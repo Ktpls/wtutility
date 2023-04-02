@@ -283,7 +283,7 @@ class BadCrossHairException(BaseException):
         super().__init__(*args)
 
 
-def getNowCalibration(m, targetcali, dbglogsavestep, log):
+def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
 
     # Load input image
     input_image = m
@@ -354,11 +354,11 @@ def getNowCalibration(m, targetcali, dbglogsavestep, log):
                 line[int(center)] = 1
             i += 1
         line = line > 0.5
-        return line
+        return line,gridSearchRange # range just for rebuilding
 
     # get calibration table
     gridSearchWidth = 5
-    gridlineVer = findGridAroundLine(crosshair[1], 1, gridSearchWidth)
+    gridlineVer,rangeVer = findGridAroundLine(crosshair[1], 1, gridSearchWidth)
     gridlineVerPos = np.where(gridlineVer)[0]
     log(np.ndarray.__repr__(gridlineVerPos))
     targetDistance = np.arange(len(gridlineVerPos)) * 200
@@ -370,12 +370,24 @@ def getNowCalibration(m, targetcali, dbglogsavestep, log):
     log(str([targetpos, posnow]))
 
     # get mil interval
-    gridlineHor = findGridAroundLine(crosshair[0], 0, gridSearchWidth)
+    gridlineHor,rangeHor = findGridAroundLine(crosshair[0], 0, gridSearchWidth)
     gridlineHorPos = np.where(gridlineHor)[0]
     gridlineHorInterval = (arrayshift(gridlineHorPos, -1) -
                            gridlineHorPos)[:-1]
     # that should be evenly distributed
     mil = gridlineHorInterval.mean()
+    
+    if dbg:
+        rebuildMap = np.zeros_like(red_mask)
+        rebuildMap[crosshair[0], :] = 1
+        rebuildMap[:, crosshair[1]] = 1
+        
+        # calibration grid
+        rebuildMap[gridlineVer, rangeVer[0]:rangeVer[1]] = 1
+        
+        # mil
+        rebuildMap[rangeHor[0]:rangeHor[1],gridlineHor] = 1
+        dbglogsavestep(rebuildMap * 255)
 
     return targetpos, posnow, mil
 
@@ -475,7 +487,7 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
         try:
             #cali err in pixel
             caliresult = getNowCalibration(ss.shotbgr(), targetcali,
-                                           dbglogsavestep, log)
+                                           caliDbg, dbglogsavestep, log)
         except BadCrossHairException:
             operator.result = "Bad crosshair detection"
             operator.stopped = True
@@ -493,4 +505,4 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
         control = pid.update(targetpix, nowpix) * caliControlMul / mil
         log(f'control {control}')
         adjustCaliberation(control)
-        sleep(0.05)
+        sleep(delayEveryCali)

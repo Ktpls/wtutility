@@ -613,7 +613,7 @@ def freshAMap():
             return False
 
         # sleep at least some time
-        sleep(5)
+        sleep(minDelayAfterDisconnected)
         if not keepdetecting(detectGameCanceled):
             return
 

@@ -5,10 +5,10 @@ textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
 
 plerrreq=10
-ymerrreq=0.5
+ymerrreq=0.45
 griderrreq=10
-plerrreqstrict=7
-ymerrreqstrict=0.55
+plerrreqstrict=10
+ymerrreqstrict=0.5
 griderrreqstrict=4
 plottingscalestrictlower=100
 plottingscalestrictupper=500
@@ -28,7 +28,8 @@ cnnresultthresh=0.25
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2
 
-caliDbg=False
+caliDbg=True
 caliP=1
-caliD=0.0
-caliControlMul=0.13
+caliD=0
+caliControlMul=0.125
+delayEveryCali = 0.1

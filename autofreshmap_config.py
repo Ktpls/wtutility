@@ -3,7 +3,7 @@ from autofreshmap_configmap_plain import whitelistedmap,specialmapdetectors
 
 singlechanneleddetection=False
 subsampleddetection=True
-subsampleddetectionrate=0.25
+subsampleddetectionrate=0.2
 
 log2file=False
 dbglog=True
@@ -14,6 +14,8 @@ standardMatchThreshold=0.115
 setonwifirecoverthresh=13
 
 detectpointsimilarity=0.05
+
+minDelayAfterDisconnected=5
 
 throwerringetdetector=True
 throwerrinmain=False
