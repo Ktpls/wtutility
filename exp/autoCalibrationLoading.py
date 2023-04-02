@@ -35,70 +35,62 @@ def recon():
             'AC_BAD_CRHR, maybe go try switch night mode or just not in snipping'
         )
 
-    # search graduation around vertical crosshair line, again use distribution
-    gridSearchWidth = 5
-    gridSearchRange = np.array(
-        [crosshair[1] - gridSearchWidth, crosshair[1] + gridSearchWidth])
+    def findGridAroundLine(pos,axis,gridSearchWidth):
+        # search grid line around vertical crosshair line, again use distribution
+        
+        gridSearchRange = np.array(
+            [pos - gridSearchWidth, pos + gridSearchWidth])
 
-    #[AllowedRange[0],AllowedRange[1]), left closed right open
-    def validateCoor(AllowedRange, coor):
-        if coor < AllowedRange[0]:
-            coor = AllowedRange[0]
-        if coor >= AllowedRange[1]:
-            coor = AllowedRange[1] - 1
-        return coor
+        #[AllowedRange[0],AllowedRange[1]), left closed right open
+        def validateCoor(AllowedRange, coor):
+            if coor < AllowedRange[0]:
+                coor = AllowedRange[0]
+            if coor >= AllowedRange[1]:
+                coor = AllowedRange[1] - 1
+            return coor
 
-    for i in range(len(gridSearchRange)):
-        gridSearchRange[i] = validateCoor([0, red_mask.shape[1]],
-                                          gridSearchRange[i])
-    distOnY_Grid = (red_mask[:, gridSearchRange[0]:gridSearchRange[1]]).sum(
-        axis=1)
-    line = distOnY_Grid > 10 if gridSearchWidth >= 10 else distOnY_Grid > 0.5 * gridSearchWidth *2
+        for i in range(len(gridSearchRange)):
+            gridSearchRange[i] = validateCoor([0, red_mask.shape[axis]],
+                                            gridSearchRange[i])
+        distOnAxis_Grid = (
+            red_mask[:, gridSearchRange[0]:gridSearchRange[1]] if axis==1
+            else red_mask[ gridSearchRange[0]:gridSearchRange[1],:]
+            ).sum(
+            axis=axis)
+        line = distOnAxis_Grid > 10 if gridSearchWidth >= 10 else distOnAxis_Grid > 0.5 * gridSearchWidth *2
 
-    #degenerate wide line occupying multiple rows into one
-    line = line.astype(np.float32)
-    degenWindow = 3
-    i = 0
-    while i < len(line) - degenWindow:
-        windowSum = line[i:i + degenWindow].sum()
-        if windowSum > 1:
-            center = (np.arange(i, i + degenWindow) *
-                      line[i:i + degenWindow]).sum() / windowSum
-            line[i:i + degenWindow] = 0
-            line[int(center)] = 1
-        i += 1
-    line = line > 0.5
-
-    linepos = np.where(line)[0]
-    x=np.arange(len(linepos))
-    dy= (arrayshift(linepos, -1) - linepos)[:-1]
-    ddy=(arrayshift(dy, -1) - dy)[:-1]
-    # def linarRegression(x, y):
-    #     m = len(x)
-    #     x_bar = np.mean(x)
-    #     w = (np.sum(
-    #         (x - x_bar) * y)) / (np.sum(x**2) - (1 / m) * (np.sum(x))**2)
-    #     b = np.mean(y - w * x)
-    #     return w, b
-    a=ddy.mean()*0.5
-    b=(dy-2*a*x[:-1]).mean()
-    c=linepos[0]
-    Y=a*x**2+b*x+c
-    # plt.plot(x,linepos)
-    # plt.plot(x,Y)
-    # plt.show()
+        #degenerate wide line occupying multiple rows into one
+        line = line.astype(np.float32)
+        degenWindow = 3
+        i = 0
+        while i < len(line) - degenWindow:
+            windowSum = line[i:i + degenWindow].sum()
+            if windowSum > 1:
+                center = (np.arange(i, i + degenWindow) *
+                        line[i:i + degenWindow]).sum() / windowSum
+                line[i:i + degenWindow] = 0
+                line[int(center)] = 1
+            i += 1
+        line = line > 0.5
+        return line,gridSearchRange
+    
+    gridSearchWidth=5
+    gridlineVer,rangeVer=findGridAroundLine(crosshair[1],1,gridSearchWidth)
+    gridlineHor,rangeHor=findGridAroundLine(crosshair[0],0,gridSearchWidth)
+    
+    
+    
     
     #rebuild
     rebuildMap = np.zeros_like(red_mask)
     rebuildMap[crosshair[0], :] = 1
     rebuildMap[:, crosshair[1]] = 1
     
-    #using original data
-    rebuildMap[line, gridSearchRange[0]:gridSearchRange[1]] = 1
+    # calibration grid
+    rebuildMap[gridlineVer, rangeVer[0]:rangeVer[1]] = 1
     
-    #using model
-    lineposmodel=Y.astype(np.int32)
-    rebuildMap[lineposmodel, gridSearchRange[0]+100:gridSearchRange[1]+100] = 1
+    # mil
+    rebuildMap[rangeHor[0]:rangeHor[1],gridlineHor] = 1
     
     savematflt(rebuildMap)
     

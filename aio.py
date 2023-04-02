@@ -64,7 +64,7 @@ def main():
             if type(lastStaged) is bool and not lastStaged:
                 bulletin.putup("no staged dist result", 10)
                 return
-            wtdistmeaspy.caliOperator.start(lastStaged,2)
+            wtdistmeaspy.caliOperator.start(lastStaged,1)
             bulletin.putup(f"caliberating to {lastStaged}", 10)
         hotkeyaction.append(hotkeymanager.hotkeytask(
             key=[win32con.VK_CONTROL,0xc0],

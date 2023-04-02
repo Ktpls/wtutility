@@ -27,3 +27,8 @@ cnnresultthresh=0.25
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2
+
+caliDbg=False
+caliP=1
+caliD=0.0
+caliControlMul=0.13

@@ -12,7 +12,7 @@ class LastDistMeasResult:
     def set(self,val):
         self.val=val
 lastDistMeasResultStaged=LastDistMeasResult()
-lastDistMeasResultStaged.set(1000)
+
 def mainlogic():
     sleep(measdelay)  # for network delay
 

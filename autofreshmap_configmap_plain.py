@@ -16,7 +16,7 @@ desireds=[
 
 
 halfdesired=[
-    #'AshRiver',
+    'AshRiver',
     'FrozenPass',
     'Karelia',
     'Japan',

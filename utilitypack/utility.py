@@ -39,7 +39,7 @@ class logger:
 
     def log(self, content):
         self.f.write((content + '\n').encode('utf8'))
-        self.f.flush()
+        #self.f.flush()
 
     def __del__(self):
         self.f.close()
