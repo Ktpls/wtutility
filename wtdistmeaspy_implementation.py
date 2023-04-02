@@ -43,6 +43,23 @@ def didSolveMapSucceed(solvemapret):
     return len(solvemapret) > 1
 
 
+def kickOutWrongItemInUniformData(l, sqrErrReq):
+    l = np.copy(l)
+    while (True):
+        if (len(l) < 1):
+            # no available interval
+            return False
+        ave = l.mean()
+        errs = (l - ave)**2
+        err = np.sqrt(errs.sum() / len(errs)) / ave
+        if (err < sqrErrReq):
+            break
+
+        # lower err and try again
+        l = np.delete(l, errs.argmax())
+    return l, err
+
+
 def SolveMap_BottomRightSmallMap(isrc,
                                  dbg: bool = False,
                                  dbglogpath: str = ''):
@@ -192,22 +209,15 @@ def SolveMap_BottomRightSmallMap(isrc,
 
     interval = np.array(interval)
     intervaltotalnum = len(interval)
-    while (True):
-        if (len(interval) < 1):
-            # no available interval
-            errormsg = "GD_BAD_INTE"
-            log(errormsg)
-            return [errormsg]
-        ave = interval.mean()
-        errs = (interval - ave)**2
-        err = errs.sum() / len(errs)
-        if (err < griderrreq):
-            log("grid interval samples used %d out of %d, err=%5f\n" %
-                (len(interval), intervaltotalnum, err))
-            break
 
-        # lower err and try again
-        interval = np.delete(interval, errs.argmax())
+    kickoutresult = kickOutWrongItemInUniformData(interval, griderrreq)
+    if type(kickoutresult) is bool and not kickoutresult:
+        errormsg = "GD_BAD_INTE"
+        log(errormsg)
+        return [errormsg]
+    interval, err = kickoutresult
+    log("grid interval samples used %d out of %d, err=%5f\n" %
+        (len(interval), intervaltotalnum, err))
 
     log('used intervals\n%s' % ('\n'.join(['%4d' % i for i in interval])))
 
@@ -275,6 +285,10 @@ def cutBottomRightMap(m):
 
 uimask = cv.imread(r".\asset\opdar\UIMASK.png")[:, :, 0].astype(
     np.float32) / 255
+uimask = cv.resize(uimask, (np.flip(uimask.shape[0:2]) *
+                            caliTableDetectionZoomRate).astype(np.int32))
+uimask[uimask > 0.5] = 1
+uimask[uimask <= 0.5] = 0
 
 
 class BadCrossHairException(BaseException):
@@ -283,10 +297,15 @@ class BadCrossHairException(BaseException):
         super().__init__(*args)
 
 
-def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
+def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
+
+    def AdjustByZoomRate(degenWindow):
+        return int(np.round(degenWindow * caliTableDetectionZoomRate))
 
     # Load input image
-    input_image = m
+    input_image = cv.resize(m, (np.flip(m.shape[0:2]) *
+                                caliTableDetectionZoomRate).astype(np.int32),
+                            interpolation=cv.INTER_NEAREST)
     dbglogsavestep(input_image)
 
     # Convert input image to HSV color space
@@ -295,6 +314,7 @@ def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
     # Define lower and upper bounds for red color in HSV color space
     # shift hue up by range, move parts over 360 back to hue-360
     # then filter [0,2*range]
+    # consider use adaptive hue filter, cuz red is not so clear after zoomed in
     huerange = 20
     hsv_image += np.array([[hsv2opencv8bithsv((huerange, 0, 0))]])
     huemax = hsv2opencv8bithsv((360, 0, 0))[0]
@@ -311,7 +331,7 @@ def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
     distOnX = red_mask.sum(axis=0)
     distOnY = red_mask.sum(axis=1)
     crosshair = [np.argmax(distOnY), np.argmax(distOnX)]
-    crosshairSafeThresh = 300
+    crosshairSafeThresh = AdjustByZoomRate(300)
     if distOnX[crosshair[1]] < crosshairSafeThresh or distOnY[
             crosshair[0]] < crosshairSafeThresh:
         raise BadCrossHairException(
@@ -339,11 +359,14 @@ def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
             red_mask[:,
                      gridSearchRange[0]:gridSearchRange[1]] if axis == 1 else
             red_mask[gridSearchRange[0]:gridSearchRange[1], :]).sum(axis=axis)
-        line = distOnAxis_Grid > 10 if gridSearchWidth >= 10 else distOnAxis_Grid > 0.5 * gridSearchWidth * 2
+
+        line = distOnAxis_Grid > np.min(
+            [0.5 * gridSearchWidth * 2,
+             AdjustByZoomRate(10)])  # cuz gridline length is limited
 
         #degenerate wide line occupying multiple rows into one
         line = line.astype(np.float32)
-        degenWindow = 3
+        degenWindow = AdjustByZoomRate(3)
         i = 0
         while i < len(line) - degenWindow:
             windowSum = line[i:i + degenWindow].sum()
@@ -354,42 +377,67 @@ def getNowCalibration(m, targetcali,dbg, dbglogsavestep, log):
                 line[int(center)] = 1
             i += 1
         line = line > 0.5
-        return line,gridSearchRange # range just for rebuilding
+        return line, gridSearchRange  # range just for rebuilding
 
     # get calibration table
-    gridSearchWidth = 5
-    gridlineVer,rangeVer = findGridAroundLine(crosshair[1], 1, gridSearchWidth)
+    gridSearchWidth = AdjustByZoomRate(5)
+    gridlineVer, rangeVer = findGridAroundLine(crosshair[1], 1,
+                                               gridSearchWidth)
     gridlineVerPos = np.where(gridlineVer)[0]
+    log('gridlineVerPos')
     log(np.ndarray.__repr__(gridlineVerPos))
     targetDistance = np.arange(len(gridlineVerPos)) * 200
-    f = scipy.interpolate.interp1d(
-        targetDistance, gridlineVerPos,
-        bounds_error=False,fill_value="extrapolate",assume_sorted=True)
+    f = scipy.interpolate.interp1d(targetDistance,
+                                   gridlineVerPos,
+                                   bounds_error=False,
+                                   fill_value="extrapolate",
+                                   assume_sorted=True)
     targetpos = f(targetcali)
     posnow = crosshair[0]
-    log(str([targetpos, posnow]))
+    log(f'targetpos{targetpos}, posnow{posnow}')
 
     # get mil interval
-    gridlineHor,rangeHor = findGridAroundLine(crosshair[0], 0, gridSearchWidth)
+    gridlineHor, rangeHor = findGridAroundLine(crosshair[0], 0,
+                                               gridSearchWidth)
     gridlineHorPos = np.where(gridlineHor)[0]
     gridlineHorInterval = (arrayshift(gridlineHorPos, -1) -
                            gridlineHorPos)[:-1]
+    log('gridlineHorInterval')
+    log(np.ndarray.__repr__(gridlineHorInterval))
+
+    gridlineHorInterval = np.array(
+        [i for i in gridlineHorInterval if i > milGridIntervalMin])
+    log('gridlineHorInterval, filtered')
+    log(np.ndarray.__repr__(gridlineHorInterval))
+    kickResult = kickOutWrongItemInUniformData(gridlineHorInterval,
+                                               milDataErrorReq)
+    if type(kickResult) is bool and not kickResult:
+        #not too bad, just more time on calibrating
+        log('warning, gridlineHorInterval may be too bad to pass milDataErrorReq, check go it'
+            )
+    else:
+        gridlineHorInterval, _ = kickResult
+        log('gridlineHorInterval, kicked out')
+        log(np.ndarray.__repr__(gridlineHorInterval))
+
     # that should be evenly distributed
     mil = gridlineHorInterval.mean()
-    
+
     if dbg:
         rebuildMap = np.zeros_like(red_mask)
         rebuildMap[crosshair[0], :] = 1
         rebuildMap[:, crosshair[1]] = 1
-        
+
         # calibration grid
         rebuildMap[gridlineVer, rangeVer[0]:rangeVer[1]] = 1
-        
+
         # mil
-        rebuildMap[rangeHor[0]:rangeHor[1],gridlineHor] = 1
+        rebuildMap[rangeHor[0]:rangeHor[1], gridlineHor] = 1
         dbglogsavestep(rebuildMap * 255)
 
-    return targetpos, posnow, mil
+    ret = np.array((targetpos, posnow, mil))
+    ret /= caliTableDetectionZoomRate
+    return ret
 
 
 class PIDController:
@@ -486,8 +534,8 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
             return
         try:
             #cali err in pixel
-            caliresult = getNowCalibration(ss.shotbgr(), targetcali,
-                                           caliDbg, dbglogsavestep, log)
+            caliresult = getNowCalibration(ss.shotbgr(), targetcali, caliDbg,
+                                           dbglogsavestep, log)
         except BadCrossHairException:
             operator.result = "Bad crosshair detection"
             operator.stopped = True

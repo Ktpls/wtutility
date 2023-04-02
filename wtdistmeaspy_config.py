@@ -6,7 +6,7 @@ outputpos=(100,500)
 
 plerrreq=10
 ymerrreq=0.45
-griderrreq=10
+griderrreq=0.1
 plerrreqstrict=10
 ymerrreqstrict=0.5
 griderrreqstrict=4
@@ -33,3 +33,6 @@ caliP=1
 caliD=0
 caliControlMul=0.125
 delayEveryCali = 0.1
+caliTableDetectionZoomRate=0.5
+milDataErrorReq=0.1
+milGridIntervalMin=5
