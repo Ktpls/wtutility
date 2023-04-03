@@ -248,7 +248,7 @@ def SolveMap_BottomRightSmallMap(isrc,
     # filter adaptive value(lightness)
     mpsgray = mpshsv[:, :, 2]
     mpsgray = mpsgray.astype('float')
-    relblack = cv.threshold((mpsgray - (regionave(mpsgray, [3, 3]) - 5)), 0,
+    relblack = cv.threshold((mpsgray - (regionave(mpsgray, [5, 5]) - 5)), 0,
                             255, cv.THRESH_BINARY_INV)[1]
     dbglogsavestep(relblack)
 
@@ -315,11 +315,11 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     # shift hue up by range, move parts over 360 back to hue-360
     # then filter [0,2*range]
     # consider use adaptive hue filter, cuz red is not so clear after zoomed in
-    huerange = 20
+    huerange = 10
     hsv_image += np.array([[hsv2opencv8bithsv((huerange, 0, 0))]])
     huemax = hsv2opencv8bithsv((360, 0, 0))[0]
     hsv_image[hsv_image[:, :, 0] > huemax, 0] -= huemax
-    lower_red = hsv2opencv8bithsv((0, 35, 35))
+    lower_red = hsv2opencv8bithsv((0, 34, 70))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
     dbglogsavestep(red_mask * 255)
@@ -380,7 +380,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
         return line, gridSearchRange  # range just for rebuilding
 
     # get calibration table
-    gridSearchWidth = AdjustByZoomRate(5)
+    gridSearchWidth = AdjustByZoomRate(10)
     gridlineVer, rangeVer = findGridAroundLine(crosshair[1], 1,
                                                gridSearchWidth)
     gridlineVerPos = np.where(gridlineVer)[0]
@@ -478,7 +478,7 @@ class loadCalibrationOperator:
         self.stopped = True
         self.result = ''
 
-    def start(self, targetcali, errAllowed):
+    def start(self, targetcali):
         if not self.stopped:
             # no running again
             return
@@ -486,7 +486,7 @@ class loadCalibrationOperator:
         self.stopped = False
         self.result = ''
         threading.Thread(target=loadCalibration,
-                         args=(targetcali, errAllowed, self)).start()
+                         args=(targetcali, autoCaliErr, self)).start()
 
     def stop(self):
         if self.stopped:

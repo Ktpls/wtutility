@@ -23,7 +23,7 @@ keepEveryMeasInRecord=False
 ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
-cnnresultthresh=0.25
+cnnresultthresh=0.3
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2
@@ -33,6 +33,7 @@ caliP=1
 caliD=0
 caliControlMul=0.125
 delayEveryCali = 0.1
-caliTableDetectionZoomRate=0.5
+caliTableDetectionZoomRate=1.0
 milDataErrorReq=0.1
 milGridIntervalMin=5
+autoCaliErr=2
