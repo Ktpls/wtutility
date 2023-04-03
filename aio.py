@@ -20,7 +20,7 @@ def main():
         ['(>^<)', 30],
         ['(0v0)', 1],
         ['($w$)', 1],
-        ['(#.#)', 1],
+        ['(0w<)', 1],
         ['(@~@)', 1],
     ]
     # 每天固定一种
@@ -57,6 +57,26 @@ def main():
         hotkeyaction.append(hotkeymanager.hotkeytask(
             key=0xc0,
             foo=hkcallWTDistMeas
+        ))
+        
+        def startCali():
+            lastStaged=wtdistmeaspy.lastDistMeasResultStaged.get()
+            if type(lastStaged) is bool and not lastStaged:
+                bulletin.putup("no staged dist result", 10)
+                return
+            wtdistmeaspy.caliOperator.start(lastStaged,1)
+            bulletin.putup(f"caliberating to {lastStaged}", 10)
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=[win32con.VK_CONTROL,0xc0],
+            foo=startCali
+        ))
+        
+        def stopCali():
+            wtdistmeaspy.caliOperator.stop()
+            bulletin.putup(f"stopped", 10)
+        hotkeyaction.append(hotkeymanager.hotkeytask(
+            key=[win32con.VK_SHIFT,0xc0],
+            foo=stopCali
         ))
 
     # telescope
@@ -126,6 +146,8 @@ def main():
             foo=eedcOnClickWithSwitch
         ))
         business.append(eagleeye.onFrame)
+        
+    
 
     # reboot, not working on exit
 
@@ -137,7 +159,7 @@ def main():
         [win32api.Beep(f, dur) for f in freqseq]
         sys.exit()
     hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=[win32con.VK_CONTROL, win32con.VK_F9],
+        key=[win32con.VK_CONTROL,win32con.VK_SHIFT, win32con.VK_F12],
         foo=rebootfoo
     ))
 

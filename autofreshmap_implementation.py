@@ -559,7 +559,8 @@ def freshAMap():
                 loadingscreen = scr
                 return True
             if stateDetector['hanger'].detect(scr):  # for click not succeed
-                # click(stateDetector['hanger'].getsigncenter())
+                press(keycode.key_Enter)
+            if stateDetector['OK'].detect(scr):
                 press(keycode.key_Enter)
             return False
 
@@ -612,7 +613,7 @@ def freshAMap():
             return False
 
         # sleep at least some time
-        sleep(5)
+        sleep(minDelayAfterDisconnected)
         if not keepdetecting(detectGameCanceled):
             return
 

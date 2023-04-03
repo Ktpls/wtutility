@@ -1,11 +1,8 @@
 
 desireds=[
     'AralSea',
-    'AshRiver',
-    'EuropeanProvince',
     'FieldsOfPoland',
     'FireArc',
-    'MaginotLineDomination#1',
     'MaginotLineDomination#2',
     'Pradesh',
     'RedDesert',
@@ -14,17 +11,21 @@ desireds=[
     'SecondBattleOfElAlameinDomination#1',
     'SecondBattleOfElAlameinDomination#2',
     'Sinai',
+    'Berlin',
 ]
 
 
 halfdesired=[
+    'AshRiver',
     'FrozenPass',
     'Karelia',
     'Japan',
     'Poland',
     'Poland(winter)',
     #'Finland',
-    #'Tunisia',
+    'Tunisia',
+    'MaginotLineDomination#1',
+    'EuropeanProvince',
 ]
 
 whitelistedmap=desireds+halfdesired
@@ -151,4 +152,17 @@ specialmapdetectors={
             },
         ],
     },
+    "MaginotLineDomination#1":{
+        "type":"mapdetector",
+        "path":"MaginotLineDomination#1",
+        "spawncenter":[290, 65],
+        "allowederrrange":100,
+    },
+    "EuropeanProvince":{
+        "type":"mapdetector",
+        "path":"EuropeanProvince",
+        "spawncenter":[476, 303],
+        "allowederrrange":100,
+    },
+    
 }

@@ -196,10 +196,11 @@ class labeldataset(Dataset):
         return labeldataset.readSample_WithCaching(self, t, idx)
 
     def __getitem__(self, idx):
-        return self.draw_uniformOnType(np.random.random())
+        #return self.draw_uniformOnType(np.random.random())
+        return self.drawByFlattenedIdxFrac(np.random.random())
 
-    def drawByFlattenedIdxFrac(self, idxfrac):
-        return self.drawByFlattenedIdx(idxfrac * self.sampleassetnum)
+    def drawByFlattenedIdxFrac(self,ifrac):
+        return self.drawByFlattenedIdx(int(ifrac * self.sampleassetnum()))
 
     def drawByFlattenedIdx(self, idx):
         # get the type where idx laies
@@ -214,18 +215,18 @@ class labeldataset(Dataset):
         idx = idx - self.endpos[t - 1] if t != 0 else idx
         return self.readSample(t, idx)
 
-    def draw_uniformOnType(self, idxfrac):
+    def draw_uniformOnType(self,ifrac):
         while (True):
             # to skip empty
-            t = int(np.random.random() * (tsizep1))
-            ret = self.drawByType(t, idxfrac)
+            t = int(np.random.random()* (tsizep1))
+            ret = self.drawByType(t, ifrac)
             if ret is not None:
                 break
         return ret
 
     # idxfrac: 0~1 idx, which will be converted into real idx by timing len(thistype)
-    def drawByType(self, t, idxfrac):
-        idx = int(idxfrac * len(self.piclist[t]))
+    def drawByType(self, t,ifrac):
+        idx = int(ifrac * len(self.piclist[t]))
         return self.readSample(t, idx)
 
 
@@ -242,7 +243,7 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 def trainAnEpoch():
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=1e-4,
-                                  weight_decay=1e-2)
+                                  weight_decay=1e-4)
     epochs = 6
     outputperbatchnum = 100
     for ep in range(epochs):

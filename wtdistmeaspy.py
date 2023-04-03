@@ -1,6 +1,17 @@
 
 from wtdistmeaspy_implementation import *
 
+caliOperator=loadCalibrationOperator()
+class LastDistMeasResult:
+    def __init__(self):
+        self.val=None
+    def get(self):
+        if self.val is None:
+            return False
+        return self.val
+    def set(self,val):
+        self.val=val
+lastDistMeasResultStaged=LastDistMeasResult()
 
 def mainlogic():
     sleep(measdelay)  # for network delay
@@ -56,8 +67,14 @@ def mainlogic():
             return None  # keep dbglog unneeded
         dbglogreason = strictErrCheck()
         if dbglogreason is not None:
+            # not usable
             prompt += 'but {}. \n'.format(dbglogreason)
             prompt += 'Not recommended to use, better try again\n'
+        else:
+            #everything goes great.
+            # stage result
+            lastDistMeasResultStaged.set(dist)
+            
         prompt += '{}'.format('\n'.join(refresult))
         prompt += '\n'
         prompt += 'dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n' %\
