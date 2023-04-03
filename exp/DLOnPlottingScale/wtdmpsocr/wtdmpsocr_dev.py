@@ -84,7 +84,7 @@ class labeldataset(Dataset):
 
         if enh_blocking:
             # blocking
-            hw = np.random.rand(2) * [2, 10] + [1, 2]
+            hw = np.random.rand(2) * [6, 10] + [-2, 2]
             lt = np.random.rand(2) * (m.shape - hw)
             rd = lt + hw
             # for i in range(2):

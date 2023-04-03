@@ -6,3 +6,6 @@ correct auto labeled chars by hand
 use output above to train nn chardetector
 use chardetector to classify chars in plotting scale screenshot
 and output this
+
+dropout is not available with bn, but it on original image is great for antioverfitting
+growing hair is same, but using both them two is better
