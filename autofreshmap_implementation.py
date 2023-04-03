@@ -562,6 +562,8 @@ def freshAMap():
                 press(keycode.key_Enter)
             if stateDetector['OK'].detect(scr):
                 press(keycode.key_Enter)
+            if stateDetector['MissionCanceled'].detect(scr):
+                press(keycode.key_Enter)
             return False
 
         if not keepdetecting(detectLoadingMap):
