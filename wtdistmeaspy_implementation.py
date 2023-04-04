@@ -319,7 +319,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     hsv_image += np.array([[hsv2opencv8bithsv((huerange, 0, 0))]])
     huemax = hsv2opencv8bithsv((360, 0, 0))[0]
     hsv_image[hsv_image[:, :, 0] > huemax, 0] -= huemax
-    lower_red = hsv2opencv8bithsv((0, 34, 70))
+    lower_red = hsv2opencv8bithsv((0, 30, 65))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
     dbglogsavestep(red_mask * 255)

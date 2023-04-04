@@ -142,6 +142,8 @@ class networkOperationImplementation_netshwlandisconnect(networkOperationImpleme
     @staticmethod
     def setonwifi():
         os.system(f'netsh wlan connect name="{wlanname4netshwlan}"')
+        os.system(f'netsh wlan set profileparameter name="{wlanname4netshwlan}" connectionMode=auto')
+        #set auto so it will be auto connected the next time u boot
 
 
 networkOperationImplementationAvailableList = [
