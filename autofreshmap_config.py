@@ -9,6 +9,9 @@ log2file=False
 dbglog=True
 waitaftergoodmap=False
 
+standardSpawnCenterError=100
+standardPointSelectorError=20
+
 standardMatchThreshold=0.115
 
 setonwifirecoverthresh=13

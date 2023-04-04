@@ -5,6 +5,7 @@ from matplotlib import image
 from utilitypack import *
 from gameinput import *
 from autofreshmap_config import *
+import re
 
 assetroot = './asset/autofreshmap/'
 
@@ -13,7 +14,7 @@ def signName2Path(name):
     return r'statesign/{}.png'.format(name)
 
 
-if resolution=='m1920x1080r1920x1080':
+if resolution == 'm1920x1080r1920x1080':
     # res1920x1080,uiscale75%
     stateDetectorInfo = {
         'hanger': {
@@ -30,13 +31,13 @@ if resolution=='m1920x1080r1920x1080':
         },
         'OK': {
             'path': signName2Path('OK'),  #有时有色差，很奇怪。可能按钮是alfa很高的半透明的？
-            'lt': [896, 553], #不过使用z函数处理后色差不再是问题了
+            'lt': [896, 553],  #不过使用z函数处理后色差不再是问题了
         }
     }
     standardMapLeftTopPoint = [286, 216]
-    pointtemplatezoomrate=1.0
+    pointtemplatezoomrate = 1.0
 
-elif resolution=='m1920x1080r1366x768':
+elif resolution == 'm1920x1080r1366x768':
     # 1366x768,75%
     stateDetectorInfo = {
         'hanger': {
@@ -57,8 +58,8 @@ elif resolution=='m1920x1080r1366x768':
         }
     }
     standardMapLeftTopPoint = [294, 221]
-    pointtemplatezoomrate=1.4 #1920/1366
-elif resolution=='m1920x1080r1280x720':
+    pointtemplatezoomrate = 1.4  #1920/1366
+elif resolution == 'm1920x1080r1280x720':
     # 1280x720,75%
     stateDetectorInfo = {
         'hanger': {
@@ -79,7 +80,7 @@ elif resolution=='m1920x1080r1280x720':
         }
     }
     standardMapLeftTopPoint = [292, 218]
-    pointtemplatezoomrate=1.5 #1920/1366
+    pointtemplatezoomrate = 1.5  #1920/1366
 
 if log2file:
     logg = logger(
@@ -126,14 +127,19 @@ class networkOperationImplementation_netshinterfacesetinterfacedisable(
 
     @staticmethod
     def setoffwifi():
-        os.system(f'netsh interface set interface name="{wlanname4netshinterface}" admin=disable')
+        os.system(
+            f'netsh interface set interface name="{wlanname4netshinterface}" admin=disable'
+        )
 
     @staticmethod
     def setonwifi():
-        os.system(f'netsh interface set interface name="{wlanname4netshinterface}" admin=enable')
+        os.system(
+            f'netsh interface set interface name="{wlanname4netshinterface}" admin=enable'
+        )
 
 
-class networkOperationImplementation_netshwlandisconnect(networkOperationImplementationSuite):
+class networkOperationImplementation_netshwlandisconnect(
+        networkOperationImplementationSuite):
 
     @staticmethod
     def setoffwifi():
@@ -215,7 +221,8 @@ class matcher:
         self.pointlt = np.array(info['lt'])
         self.pointrd = self.pointlt + np.flip(m.shape[:2])
         self.m = matcher.imagepreprocess(m)
-        self.thresh = info['thresh']
+        self.thresh = info.get(
+            'thresh', None)  #optional thresh, for dynamic specified, if needed
 
         # for dbg output
         self.path = info['path']
@@ -244,18 +251,6 @@ class matcher:
     depressing big error in few position
     '''
 
-    #not using
-    def matchSign_LOG_SQDIFF_NORMED(self, mscr):
-
-        def fc(x):  # foo contribution
-            return np.log(1 + x)
-
-        mscr = self.cutroi(mscr)
-        mscr = matcher.imagepreprocess(mscr)
-        return ((fc((self.m - mscr)**2).sum(axis=(0, 1))) /
-                (np.sqrt(0.01 + fc(self.m**2).sum(axis=(0, 1))) *
-                 np.sqrt(0.01 + fc(mscr**2).sum(axis=(0, 1))))).mean()
-
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
 
         def fcerr(x):  # foo contribution
@@ -275,11 +270,11 @@ class matcher:
         denominator = np.prod(self.m.shape)
         return numerator / denominator
 
-    def detect(self, mscr):
+    def detect(self, mscr, specifiedThresh=None):
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
         if dbglog:
             allchanneloutput(f"{self.path} detecting: s={s}")
-        return s < self.thresh
+        return s < self.thresh if specifiedThresh is None else s < specifiedThresh
 
     def getsignpointlt(self):
         return self.pointlt
@@ -396,7 +391,8 @@ class mapdetector(detector):
 
             def zoompointimg(m):
                 mattr = np.array([[pointtemplatezoomrate, 0, 0],
-                                  [0, pointtemplatezoomrate, 0]],dtype=np.float32)
+                                  [0, pointtemplatezoomrate, 0]],
+                                 dtype=np.float32)
                 return cv.warpAffine(
                     m, mattr,
                     np.round(np.flip(m.shape[:2]) *
@@ -442,9 +438,8 @@ class mapdetector(detector):
             }
             pointinfo = {
                 typ: result
-                for typ, result in pointinfo.items()
-                if result is not None
-            } #filter
+                for typ, result in pointinfo.items() if result is not None
+            }  #filter
 
             def applypointselectoronpointinfo(pi, ps):
                 # pi:(key,value), dict item
@@ -460,8 +455,12 @@ class mapdetector(detector):
 
             # apply all selector on all point info
             # all point selector, if selection not empty then regarded as valid
-            result4eachselector = [any([applypointselectoronpointinfo(
-                pi, ps) for pi in pointinfo.items()]) for ps in self.para['point']]
+            result4eachselector = [
+                any([
+                    applypointselectoronpointinfo(pi, ps)
+                    for pi in pointinfo.items()
+                ]) for ps in self.para['point']
+            ]
             # summing up all selector result, if all valid then pass this condition
             resulttotal = all(result4eachselector)
             if not resulttotal:
@@ -470,7 +469,106 @@ class mapdetector(detector):
         return True
 
 
-def getdetector(info)->mapdetector:
+def zoompointimg(m):
+    mattr = np.array(
+        [[pointtemplatezoomrate, 0, 0], [0, pointtemplatezoomrate, 0]],
+        dtype=np.float32)
+    return cv.warpAffine(
+        m, mattr,
+        np.round(np.flip(m.shape[:2]) * pointtemplatezoomrate).astype(
+            np.int32))
+
+
+Asset4PointDetection_Template = {
+    t: zoompointimg(cv.imread(assetpath2realpath(signName2Path(t))))
+    for t in ['A', 'B', 'C']
+}
+Asset4PointDetection_Pointmask = zoompointimg(
+    cv.imread(assetpath2realpath(signName2Path('zonemask'))))[:, :, 0]
+
+
+class mapdetector_new(detector):
+    '''
+    para: {
+        "mapreq":path,
+        "needPointTemp":bool
+        "foo":str
+    }
+    the so called path is actually map name, by which mapname2assetpath is needed
+    after that assetpath2realpath will be done in matcher
+    '''
+
+    def __init__(self, para: dict):
+        para = deepcopy(para)
+
+        if 'mapreq' in para:
+            bean4dmtc = {
+                'mask': None,
+                'lt': standardMapLeftTopPoint,
+                'thresh': standardMatchThreshold,
+                'path': mapname2assetpath(para["mapreq"])
+            }
+            self.mtc = matcher(bean4dmtc)
+        else:
+            self.mtc = None
+
+        self.foo = para['foo']
+
+    def detect(self, mscr):
+
+        mapcut = cutmap(mscr)
+
+        def detectMapShape(specialThresh=None):
+            return self.mtc.detect(mscr, specialThresh)
+
+        def distance(a, b):
+            err = np.sqrt(((a - b)**2).sum())
+            return err
+
+        def detectSpawn():
+            center = getMapSpawnCenter(mapcut)
+            return center
+
+        def spawnAround(point, err=None):
+            if err is None:
+                err = standardSpawnCenterError
+            return distance(detectSpawn(), point) < err
+
+        def selectPoint(ptype=None, ppos=None, err=None):
+            if ptype is None:
+                ptype = [k for k in Asset4PointDetection_Template.keys()]
+            if type(ptype) is str:
+                ptype = [ptype]
+            result = [
+                threshedmatchtemplate(mapcut, temp,
+                                      Asset4PointDetection_Pointmask,
+                                      detectpointsimilarity)
+                for temp in Asset4PointDetection_Template[ptype]
+            ]
+            result = [r for r in result if r is not None]
+
+            if ppos is not None:
+                if err is None:
+                    err = standardPointSelectorError
+                result = [r for r in result if distance(r, ppos) < err]
+
+            return len(result) != 0
+
+        retVal = None
+
+        def ret(val):
+            nonlocal retVal
+            retVal = val
+
+        try:
+            exec(self.foo)
+            return retVal
+        except BaseException as e:
+            traceback.print_exc()
+            raise e
+
+
+def getdetector(info) -> mapdetector:
     try:
         obj = eval(f'{info["type"]}(info)')
         return obj
@@ -489,6 +587,19 @@ def maplist2detectorlist(ml):
             "type": "mapdetector",
             "path": m
         })
+        for m in ml
+    }
+    return dl
+
+
+def maplist2detectorlist_new(ml):
+    ml = deduplicate(ml)
+    dl = {
+        m: mapdetector_new(specialmapdetectors[m] if m in
+                           specialmapdetectors else {
+                               "mapreq": m,
+                               "foo": 'ret(detectMapShape())'
+                           })
         for m in ml
     }
     return dl
