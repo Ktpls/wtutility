@@ -61,7 +61,7 @@ class labeldataset(Dataset):
                     t,
                     enh_hairing=True,
                     enh_dropout=True,
-                    enh_blocking=True,
+                    enh_blocking=False,
                     enh_randmov=False,
                     enh_noisedot=True,
                     enh_noiseline=True,
@@ -80,11 +80,17 @@ class labeldataset(Dataset):
 
         if enh_dropout:
             # randomly set half of pixels in image m to 0
-            m = (np.random.random(m.shape) > 0.2) * m
+            dropoutrate = np.random.normal(0.2, 0.2)
+            if dropoutrate > 0.5:
+                dropoutrate = 0.5
+            if dropoutrate < 0:
+                dropoutrate = 0
+            m = (np.random.random(m.shape) > dropoutrate) * m / (1 -
+                                                                 dropoutrate)
 
         if enh_blocking:
             # blocking
-            hw = np.random.rand(2) * [6, 10] + [-2, 2]
+            hw = np.random.rand(2) * [4, 10] + [-2, 2]
             lt = np.random.rand(2) * (m.shape - hw)
             rd = lt + hw
             # for i in range(2):
@@ -142,17 +148,17 @@ class labeldataset(Dataset):
 
         if enh_noiseline:
             # noise line
-            for i in range(int(np.random.uniform(-2, 5))):
+            for i in range(int(np.random.uniform(-2, 3))):
                 p = (np.random.rand(2, 2) *
                      np.flip([labeldataset.standardshape])).astype('int')
                 m = cv.line(m, p[0], p[1], color=1, thickness=1)
 
         if enh_noisedot:
             # noise dot
-            for i in range(int(np.random.uniform(10, 50))):
-                p = (np.random.rand(2) *
-                     labeldataset.standardshape).astype('int')
-                m[p[0], p[1]] = 1
+            noiseDotRate=np.random.uniform(-0.05, 0.1)
+            noiseDotMask=(np.random.random(m.shape)<noiseDotRate).astype(np.float32)
+            m+=noiseDotMask
+            m[m>1]=1
 
         if enh_lineblocking:
             # black line
@@ -197,9 +203,9 @@ class labeldataset(Dataset):
 
     def __getitem__(self, idx):
         #return self.draw_uniformOnType(np.random.random())
-        return self.drawByFlattenedIdxFrac(np.random.random())
+        return self.draw_uniformOnType(np.random.random())
 
-    def drawByFlattenedIdxFrac(self,ifrac):
+    def drawByFlattenedIdxFrac(self, ifrac):
         return self.drawByFlattenedIdx(int(ifrac * self.sampleassetnum()))
 
     def drawByFlattenedIdx(self, idx):
@@ -215,24 +221,33 @@ class labeldataset(Dataset):
         idx = idx - self.endpos[t - 1] if t != 0 else idx
         return self.readSample(t, idx)
 
-    def draw_uniformOnType(self,ifrac):
+    def draw_uniformOnType(self, ifrac):
         while (True):
             # to skip empty
-            t = int(np.random.random()* (tsizep1))
+            t = int(np.random.random() * (tsizep1))
             ret = self.drawByType(t, ifrac)
             if ret is not None:
                 break
         return ret
 
     # idxfrac: 0~1 idx, which will be converted into real idx by timing len(thistype)
-    def drawByType(self, t,ifrac):
+    def drawByType(self, t, ifrac):
         idx = int(ifrac * len(self.piclist[t]))
         return self.readSample(t, idx)
+    
+    def draw_SpecifiedType(self, ifrac, type:List):
+        while (True):
+            # to skip empty
+            t = int(np.random.choice(type))
+            ret = self.drawByType(t, ifrac)
+            if ret is not None:
+                break
+        return ret
 
 
 training_data = labeldataset(rf'..\dataset\charDataset\labeled')
 test_data = training_data
-batch_size =64
+batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 

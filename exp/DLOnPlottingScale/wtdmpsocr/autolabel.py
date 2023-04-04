@@ -4,7 +4,7 @@
 import re
 from utilref import *
 
-autolabelUsing='tes'
+autolabelUsing='cnn'
 
 if autolabelUsing=='tes':
     import pytesseract.pytesseract as ptact
@@ -66,5 +66,5 @@ def classifyall(path):
         classify(m)
         if i%100==0:
             print(f'{i} of {len(flist)}')
-classifyall(r"C:\file\code\wtutility\exp\DLOnPlottingScale\wtdmpsocr\output")
+classifyall(r"D:\File\code\prog\wtutility\exp\DLOnPlottingScale\wtdmpsocr\output")
 # %%

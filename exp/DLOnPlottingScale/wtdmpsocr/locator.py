@@ -10,7 +10,7 @@ from defs import *
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
-devmode = False
+devmode = True
 
 # %%
 '''
@@ -22,11 +22,27 @@ class locator(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.locer = torch.nn.Sequential(
-            torch.nn.Conv2d(1, 32, 5, padding='same'),
+            torch.nn.Conv2d(1, 32, [19,25], padding='same'), # quite large, but in good vision
+            torch.nn.BatchNorm2d(32),
             torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(32, 20, 5, padding='same'),
+            torch.nn.MaxPool2d(3,1,1),
+            
+            torch.nn.Conv2d(32, 32, 3, padding='same'),
+            torch.nn.BatchNorm2d(32),
             torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(20, 1, [charh-1, charw-1], padding='same'),
+            torch.nn.MaxPool2d(3,1,1),
+            
+            torch.nn.Conv2d(32, 32, 3, padding='same'),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.LeakyReLU(),
+            torch.nn.MaxPool2d(3,1,1),
+            
+            torch.nn.Conv2d(32, 32, 3, padding='same'),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.LeakyReLU(),
+            torch.nn.MaxPool2d(3,1,1),
+            
+            torch.nn.Conv2d(32, 1, [charh-1, charw-1], padding='same'),
             torch.nn.MaxPool2d([20, 1])
         )
 
@@ -43,7 +59,7 @@ class locator(torch.nn.Module):
         tmp = torch.arange(lhat.shape[-1])
         tmp = torch.reshape(tmp, (1,)+tmp.shape)
         tmp = torch.repeat_interleave(tmp, batchsizeof(lhat), dim=0)
-        weight = torch.exp(-((tmp-lpos)/2)**2)
+        weight = torch.exp(-((tmp-lpos)/5)**2)
         gain = (lhat*weight).sum()
         return -gain
         # return torch.nn.CrossEntropyLoss()(lhat, l)+torch.mean(torch.mean(punishweight*lhat,dim=-1))
@@ -66,13 +82,14 @@ print(model)
 
 # %%
 class labeldataset(Dataset):
-    def __init__(self, train):
+    def __init__(self, train, size):
         Dataroot =\
-            rf'.\locatorDataset\{"trains" if train else "tests"}'
+            rf'D:\File\code\prog\wtutility\exp\DLOnPlottingScale\dataset\locatorDataset\{"trains" if train else "tests"}'
         self.piclist = AllFileIn(Dataroot)
+        self.size=size
 
     def __len__(self):
-        return len(self.piclist)
+        return self.size
 
     @staticmethod
     def dataenhancement(m, l):
@@ -120,15 +137,14 @@ class labeldataset(Dataset):
         return ToTensor()(img), torch.tensor(l),
 
     def __getitem__(self, idx):
-        # in case of out of range
-        idx %= len(self.piclist)
+        idx=int(np.random.random()*len(self.piclist))
         return self.readsample(idx)
 
 
 if devmode:
-    training_data = labeldataset(train=True)
-    test_data = labeldataset(train=False)
-    batch_size = 10
+    training_data = labeldataset(train=True,size=8192)
+    test_data = labeldataset(train=False,size=128)
+    batch_size = 16
     train_dataloader = DataLoader(training_data, batch_size=batch_size)
     test_dataloader = DataLoader(test_data, batch_size=batch_size)
     for X, y in test_dataloader:
@@ -142,7 +158,7 @@ def trainAnEpoch():
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=1e-3)
-    epochs = 20
+    epochs = 1
     for ep in range(epochs):
         print(f"Epoch {ep+1}")
         print("-------------------------------")
@@ -162,6 +178,7 @@ def trainAnEpoch():
             if batch % 20 == 0:
                 current = batch * batch_size
                 print(f" [{current:>5d}/{size:>5d}]")
+                print(f"{lose.item()}/{lhat.shape[0]}")
 
         # test
         model.eval()
@@ -235,12 +252,12 @@ if devmode:
 def cut():
     with torch.no_grad():
         piclist = AllFileIn(
-            r"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\plottingscaleorgDataset\appendix")
+            r"D:\File\code\prog\wtutility\exp\DLOnPlottingScale\dataset\plottingscaleorgDataset\appendix")
         for p in piclist:
             m = cv.imread(p)[:, :, 0]
             m = model.standardlizeImgShape(m)
             mt = torch.tensor(m).type(torch.float)/255
-            mt = mt.reshape((1,)+mt.shape)
+            mt = mt.reshape((1,1)+mt.shape)
             start = model.forward(mt).argmax()
             start = int(start)
 
