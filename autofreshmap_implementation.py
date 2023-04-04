@@ -148,7 +148,9 @@ class networkOperationImplementation_netshwlandisconnect(
     @staticmethod
     def setonwifi():
         os.system(f'netsh wlan connect name="{wlanname4netshwlan}"')
-        os.system(f'netsh wlan set profileparameter name="{wlanname4netshwlan}" connectionMode=auto')
+        os.system(
+            f'netsh wlan set profileparameter name="{wlanname4netshwlan}" connectionMode=auto'
+        )
         #set auto so it will be auto connected the next time u boot
 
 
@@ -234,14 +236,6 @@ class matcher:
         else:
             self.mask = None
 
-    #not using
-    def matchSign_SQDIFF_NORMED(self, mscr):
-        mscr = mscr[self.pointlt[1]:self.pointrd[1],
-                    self.pointlt[0]:self.pointrd[0]]
-        result = cv.matchTemplate(mscr, self.m, cv.TM_SQDIFF_NORMED)
-        minValue, maxValue, minLoc, maxLoc = cv.minMaxLoc(result)
-        return minValue
-
     def cutroi(self, m):
         return m[self.pointlt[1]:self.pointrd[1],
                  self.pointlt[0]:self.pointrd[0], :]
@@ -262,7 +256,6 @@ class matcher:
             x /= (u - l)
             return x
 
-        mscr = self.cutroi(mscr)
         mscr = matcher.imagepreprocess(mscr)
 
         numerator = fcerr(np.square(self.m - mscr).sum(axis=(2, )))\
@@ -270,7 +263,9 @@ class matcher:
         denominator = np.prod(self.m.shape)
         return numerator / denominator
 
-    def detect(self, mscr, specifiedThresh=None):
+    def detect(self, mscr, specifiedThresh=None, cutRequired=True):
+        if cutRequired:
+            mscr = self.cutroi(mscr)
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
         if dbglog:
             allchanneloutput(f"{self.path} detecting: s={s}")
@@ -363,112 +358,6 @@ def cutmap(m):
     return mm
 
 
-class mapdetector(detector):
-    #para: {"path":path}
-    # the so called path is actually map name, by which mapname2assetpath is needed
-    # after that assetpath2realpath will be done in matcher
-    def __init__(self, para: dict):
-        para = deepcopy(para)
-        para.setdefault('mask', None)
-        para.setdefault('lt', standardMapLeftTopPoint)
-
-        if 'path' in para:
-            para.setdefault('thresh', standardMatchThreshold)
-            para["path"] = mapname2assetpath(para["path"])
-            self.mtc = matcher(para)
-            self.detectmapshape = True
-        else:
-            self.detectmapshape = False
-
-        if 'spawncenter' in para:
-            self.detectspawn = True
-            self.spawncenter: np.ndarray = para['spawncenter']
-            self.allowederrrange: int = para['allowederrrange']
-        else:
-            self.detectspawn = False
-
-        if 'point' in para:
-
-            def zoompointimg(m):
-                mattr = np.array([[pointtemplatezoomrate, 0, 0],
-                                  [0, pointtemplatezoomrate, 0]],
-                                 dtype=np.float32)
-                return cv.warpAffine(
-                    m, mattr,
-                    np.round(np.flip(m.shape[:2]) *
-                             pointtemplatezoomrate).astype(np.int32))
-
-            self.detectpoint = True
-            self.pointtemplatelist = {
-                t:
-                zoompointimg(cv.imread(assetpath2realpath(signName2Path(t))))
-                for t in ['A', 'B', 'C']
-            }
-            self.pointmask = zoompointimg(
-                cv.imread(assetpath2realpath(signName2Path('zonemask')))[:, :,
-                                                                         0])
-        else:
-            self.detectpoint = False
-
-        self.para = para
-
-    def detect(self, mscr):
-        if self.detectmapshape:
-            if not self.mtc.detect(mscr):
-                return False
-
-        if self.detectspawn:
-            # cant imagine one would detect spawn without deteting map shape
-            m = self.mtc.cutroi(mscr)
-            center = getMapSpawnCenter(m)
-            err = np.sqrt(((center - self.spawncenter)**2).sum())
-            if dbglog:
-                allchanneloutput(
-                    f"detected spawn is {center}, desired is {self.spawncenter}, err={err}, allowederr={self.allowederrrange}"
-                )
-            if err >= self.allowederrrange:
-                return False
-
-        if self.detectpoint:
-            m = cutmap(mscr)
-            pointinfo = {
-                typ: threshedmatchtemplate(m, temp, self.pointmask,
-                                           detectpointsimilarity)
-                for typ, temp in self.pointtemplatelist.items()
-            }
-            pointinfo = {
-                typ: result
-                for typ, result in pointinfo.items() if result is not None
-            }  #filter
-
-            def applypointselectoronpointinfo(pi, ps):
-                # pi:(key,value), dict item
-                # which is (pointtype, pointpos)
-                if 'type' in ps:
-                    if pi[0] != ps['type']:
-                        return False
-                if 'pos' in ps:
-                    err = np.sqrt(((np.array(pi[1]) - ps['pos'])**2).sum())
-                    if err > ps['allowederr']:
-                        return False
-                return True
-
-            # apply all selector on all point info
-            # all point selector, if selection not empty then regarded as valid
-            result4eachselector = [
-                any([
-                    applypointselectoronpointinfo(pi, ps)
-                    for pi in pointinfo.items()
-                ]) for ps in self.para['point']
-            ]
-            # summing up all selector result, if all valid then pass this condition
-            resulttotal = all(result4eachselector)
-            if not resulttotal:
-                return False
-
-        return True
-
-
 def zoompointimg(m):
     mattr = np.array(
         [[pointtemplatezoomrate, 0, 0], [0, pointtemplatezoomrate, 0]],
@@ -487,11 +376,10 @@ Asset4PointDetection_Pointmask = zoompointimg(
     cv.imread(assetpath2realpath(signName2Path('zonemask'))))[:, :, 0]
 
 
-class mapdetector_new(detector):
+class mapdetector(detector):
     '''
     para: {
         "mapreq":path,
-        "needPointTemp":bool
         "foo":str
     }
     the so called path is actually map name, by which mapname2assetpath is needed
@@ -568,34 +456,10 @@ class mapdetector_new(detector):
             raise e
 
 
-def getdetector(info) -> mapdetector:
-    try:
-        obj = eval(f'{info["type"]}(info)')
-        return obj
-    except BaseException as err:
-        allchanneloutput('err in getdetector(), {}'.format(err))
-        traceback.print_exc()
-        if throwerringetdetector:
-            raise err
-
-
 def maplist2detectorlist(ml):
     ml = deduplicate(ml)
     dl = {
-        m:
-        getdetector(specialmapdetectors[m] if m in specialmapdetectors else {
-            "type": "mapdetector",
-            "path": m
-        })
-        for m in ml
-    }
-    return dl
-
-
-def maplist2detectorlist_new(ml):
-    ml = deduplicate(ml)
-    dl = {
-        m: mapdetector_new(specialmapdetectors[m] if m in
+        m: mapdetector(specialmapdetectors[m] if m in
                            specialmapdetectors else {
                                "mapreq": m,
                                "foo": 'ret(detectMapShape())'

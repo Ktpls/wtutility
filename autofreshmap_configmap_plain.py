@@ -32,137 +32,80 @@ whitelistedmap=desireds+halfdesired
 
 specialmapdetectors={
     "Sinai":{
-        "type":"mapdetector",
-        "path":"Sinai",
-        "point":[
-            {
-                "pos":[272, 294], # B
-                "allowederr":20,
-            },
-        ],
+        "mapreq":"Sinai",
+        #B
+        "foo":'ret(detectMapShape() and selectPoint(ppos=[272, 294]))'
     },
     "FrozenPass":{
-        "type":"mapdetector",
-        "path":"FrozenPass",
-        "spawncenter":[474,477],
-        "allowederrrange":100,
+        "mapreq":"FrozenPass",
+        "foo":'ret(detectMapShape() and spawnAround([474,477]))'
     },
     "EasternEurope":{
-        "type":"mapdetector",
-        "path":"EasternEurope",
-        "spawncenter":[109,456],
-        "allowederrrange":100,
+        "mapreq":"EasternEurope",
+        "foo":'ret(detectMapShape() and spawnAround([109,456]))'
     },
     "Karelia":{
-        "type":"mapdetector",
-        "path":"Karelia",
-        "spawncenter":[316, 160],
-        "allowederrrange":100,
+        "mapreq":"Karelia",
+        "foo":'ret(detectMapShape() and spawnAround([316, 160]))'
     },
     "Japan":{
-        "type":"mapdetector",
-        "path":"Japan",
-        "spawncenter":[233, 572],
-        "allowederrrange":100,
-        "point":[
-            {
-                "pos":[325, 310], # B point
-                "allowederr":20,
-            },
-        ],
+        "mapreq":"Japan",
+        # b point
+        "foo":'ret(detectMapShape() and spawnAround([233, 572]) and selectPoint(ppos=[325, 310]))'
     },
     "Normandy":{
-        "type":"mapdetector",
-        "path":"Normandy",
-        "spawncenter":[536, 164],
-        "allowederrrange":100,
+        "mapreq":"Normandy",
+        "foo":'ret(detectMapShape() and spawnAround([536, 164]))'
     },
     "Poland":{
-        "type":"mapdetector",
-        "path":"Poland",
-        "spawncenter":[86, 313],
-        "allowederrrange":100,
+        "mapreq":"Poland",
+        "foo":'ret(detectMapShape() and spawnAround([86, 313]))'
     },
     "Poland(winter)":{
-        "type":"mapdetector",
-        "path":"Poland(winter)",
-        "spawncenter":[86, 313],
-        "allowederrrange":100,
+        "mapreq":"Poland(winter)",
+        "foo":'ret(detectMapShape() and spawnAround([86, 313]))'
     },
     "Jungle":{
-        "type":"mapdetector",
-        "path":"Jungle",
-        "spawncenter":[130, 352],
-        "allowederrrange":100,
+        "mapreq":"Jungle",
+        "foo":'ret(detectMapShape() and spawnAround([130, 352]))'
     },
     "FieldsOfNormandy":{
-        "type":"mapdetector",
-        "path":"FieldsOfNormandy",
-        "spawncenter":[ 88, 294],
-        "allowederrrange":100,
+        "mapreq":"FieldsOfNormandy",
+        "foo":'ret(detectMapShape() and spawnAround([ 88, 294]))'
     },
     "AshRiver":{
-        "type":"mapdetector",
-        "path":"AshRiver",
-        "spawncenter":[ 87, 359],
-        "allowederrrange":100,
+        "mapreq":"AshRiver",
+        "foo":'ret(detectMapShape() and spawnAround([ 87, 359]))'
     },
     "Finland":{
-        "type":"mapdetector",
-        "path":"Finland",
-        "spawncenter":[355,526],
-        "allowederrrange":100,
-        "point":[
-            {
-                "pos":[492, 289], # C
-                "allowederr":20,
-            },
-        ],
+        "mapreq":"Finland",
+        #c point
+        "foo":'ret(detectMapShape() and spawnAround([355,526]) and selectPoint(ppos=[492, 289])'
     },
     "SandsOfSinai":{
-        "type":"mapdetector",
-        "path":"SandsOfSinai",
-        "spawncenter":[334, 61],
-        "allowederrrange":100,
+        "mapreq":"SandsOfSinai",
+        "foo":'ret(detectMapShape() and spawnAround([334, 61]))'
     },
     "AralSea":{
-        "type":"mapdetector",
-        "path":"AralSea",
-        "point":[
-            {
-                "pos":[502, 300], # point in desert
-                "allowederr":20,
-            },
-        ],
+        "mapreq":"AralSea",
+        "foo":'ret(detectMapShape() and spawnAround([502, 300]))'
     },
-    'FieldsOfPoland':{
-        "type":"mapdetector",
-        "path":"FieldsOfPoland",
-        "thresh":0.09
+    "FieldsOfPoland":{
+        "mapreq":"FieldsOfPoland",
+        "foo":'ret(detectMapShape(0.08))'
     },
     "Tunisia":{
-        "type":"mapdetector",
-        "path":"Tunisia",
-        "spawncenter":[424, 564],
-        "allowederrrange":100,
-        "point":[
-            {
-                "pos":[79, 357], # A point
-                "allowederr":20,
-            },
-        ],
+        "mapreq":"Tunisia",
+        # A point
+        "foo":'ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))'
     },
     "MaginotLineDomination#1":{
-        "type":"mapdetector",
-        "path":"MaginotLineDomination#1",
-        "spawncenter":[290, 65],
-        "allowederrrange":100,
+        "mapreq":"MaginotLineDomination#1",
+        "foo":'ret(detectMapShape() and spawnAround([290, 65]))'
     },
     "EuropeanProvince":{
-        "type":"mapdetector",
-        "path":"EuropeanProvince",
-        "spawncenter":[476, 303],
-        "allowederrrange":100,
-    },
+        "mapreq":"EuropeanProvince",
+        "foo":'ret(detectMapShape() and spawnAround([476, 303]))'
+    }
     
 }
