@@ -120,7 +120,7 @@ class chardetector(torch.nn.Module):
                 (batchsize, 1)))[:, :tsize].reshape((batchsize, tsize, 1, 1))
 
         # and fine adjust
-        coef = coef * 5 + 1
+        coef = coef * 2 + 1
         # [batch,channel,h,w]
         tmat = tmat.max(dim=-2)[0]
         tmat = tmat.unsqueeze(2)  #give height dim back

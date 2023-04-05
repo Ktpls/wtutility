@@ -62,42 +62,12 @@ class labeldataset(Dataset):
                     enh_hairing=True,
                     enh_dropout=True,
                     enh_blocking=False,
-                    enh_randmov=False,
+                    enh_randmov=True,
                     enh_noisedot=True,
                     enh_noiseline=True,
                     enh_lineblocking=True):
 
         m = np.copy(m)
-
-        if enh_hairing:
-            # grow some hair
-            regsum = regionsum(m, [3, 3])
-            addups = np.logical_and((m < 0.1), (regsum >= 3))
-            hairingrate = np.random.random() * 0.6 - 0.2
-            addups = np.logical_and(addups,
-                                    (np.random.random(m.shape) < hairingrate))
-            m += addups
-
-        if enh_dropout:
-            # randomly set half of pixels in image m to 0
-            dropoutrate = np.random.normal(0.2, 0.2)
-            if dropoutrate > 0.5:
-                dropoutrate = 0.5
-            if dropoutrate < 0:
-                dropoutrate = 0
-            m = (np.random.random(m.shape) > dropoutrate) * m / (1 -
-                                                                 dropoutrate)
-
-        if enh_blocking:
-            # blocking
-            hw = np.random.rand(2) * [4, 10] + [-2, 2]
-            lt = np.random.rand(2) * (m.shape - hw)
-            rd = lt + hw
-            # for i in range(2):
-            #     if rd[i] >= m.shape[i]:
-            #         rd[i] = m.shape[i]
-            lt, rd = lt.astype('int'), rd.astype('int')
-            m[lt[0]:rd[0], lt[1]:rd[1]] = 0
 
         # standardlize shape and mov char to the center
         # move tmat center to char center
@@ -116,6 +86,7 @@ class labeldataset(Dataset):
             [0, 1, mov[0]],
         ])
         m = cv.warpAffine(m, matmov, np.flip(labeldataset.standardshape))
+        m=(m>0.5).astype(np.float32)
 
         # set tmat
         tmat = np.zeros(labeldataset.standardshape + [
@@ -146,6 +117,27 @@ class labeldataset(Dataset):
             # no non zero point for type else
             pass
 
+        if enh_hairing:
+            # grow some hair
+            regsum = regionsum(m, [3, 3])
+            regionthresh=np.random.choice(np.arange(1,5))
+            addups = np.logical_and((m < 0.1), (regsum == regionthresh))
+            hairingrate = np.random.random() * 0.6 - 0.1
+            addups = np.logical_and(addups,
+                                    (np.random.random(m.shape) < hairingrate))
+            m += addups
+
+        if enh_blocking:
+            # blocking
+            hw = np.random.rand(2) * [4, 10] + [-2, 2]
+            lt = np.random.rand(2) * (m.shape - hw)
+            rd = lt + hw
+            # for i in range(2):
+            #     if rd[i] >= m.shape[i]:
+            #         rd[i] = m.shape[i]
+            lt, rd = lt.astype('int'), rd.astype('int')
+            m[lt[0]:rd[0], lt[1]:rd[1]] = 0
+            
         if enh_noiseline:
             # noise line
             for i in range(int(np.random.uniform(-2, 3))):
@@ -162,10 +154,17 @@ class labeldataset(Dataset):
 
         if enh_lineblocking:
             # black line
-            for i in range(int(np.random.uniform(-2, 5))):
+            for i in range(int(np.random.uniform(-2, 3))):
                 p = (np.random.rand(2, 2) *
                      np.flip([labeldataset.standardshape])).astype('int')
                 m = cv.line(m, p[0], p[1], color=0, thickness=1)
+
+
+        if enh_dropout:
+            # randomly set half of pixels in image m to 0
+            dropoutrate = np.random.uniform(0,0.3)
+            m = (np.random.random(m.shape) > dropoutrate) * m / (1 -
+                                                                 dropoutrate)
 
         return m, tmat
 

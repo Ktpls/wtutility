@@ -9,7 +9,7 @@ log2file=False
 dbglog=True
 waitaftergoodmap=False
 
-standardSpawnCenterError=100
+standardSpawnCenterError=200
 standardPointSelectorError=20
 
 standardMatchThreshold=0.115
@@ -26,4 +26,4 @@ throwerrinmain=False
 resolution='m1920x1080r1280x720'
 
 wlanname4netshinterface='WLAN'
-wlanname4netshwlan=['ChinaNet-pHmm','as20'][1]
+wlanname4netshwlan=['ChinaNet-pHmm','as20'][0]

@@ -424,21 +424,22 @@ class mapdetector(detector):
 
         def selectPoint(ptype=None, ppos=None, err=None):
             if ptype is None:
+                # fall back to all
                 ptype = [k for k in Asset4PointDetection_Template.keys()]
             if type(ptype) is str:
                 ptype = [ptype]
             result = [
-                threshedmatchtemplate(mapcut, temp,
+                threshedmatchtemplate(mapcut, Asset4PointDetection_Template[t],
                                       Asset4PointDetection_Pointmask,
                                       detectpointsimilarity)
-                for temp in Asset4PointDetection_Template[ptype]
+                for t in ptype
             ]
             result = [r for r in result if r is not None]
 
             if ppos is not None:
                 if err is None:
                     err = standardPointSelectorError
-                result = [r for r in result if distance(r, ppos) < err]
+                result = [r for r in result if distance(np.array(r), np.array(ppos)) < err]
 
             return len(result) != 0
 

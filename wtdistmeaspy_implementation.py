@@ -296,7 +296,19 @@ class BadCrossHairException(BaseException):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
-
+LineKernel=None
+def SetLineKernel():
+    global LineKernel
+    kernelLength=21
+    kernelHalfWidth=2
+    lineHalfWidth=1.5
+    alongWidth=np.linspace(-kernelHalfWidth,kernelHalfWidth,kernelHalfWidth*2+1)
+    kerValAlongWidth=np.exp(-(alongWidth/lineHalfWidth)**2)
+    Transfer0To1ToM1To1=scipy.interpolate.interp1d([0,1/np.e,1],[-1,0,1],assume_sorted=True)
+    kerValAlongWidth=Transfer0To1ToM1To1(kerValAlongWidth)
+    # vertical now
+    LineKernel=np.repeat(kerValAlongWidth.reshape((1,)+kerValAlongWidth.shape),kernelLength,axis=0)/kernelLength
+SetLineKernel()
 def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
     def AdjustByZoomRate(degenWindow):
@@ -315,16 +327,25 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     # shift hue up by range, move parts over 360 back to hue-360
     # then filter [0,2*range]
     # consider use adaptive hue filter, cuz red is not so clear after zoomed in
-    huerange = 10
+    # consider use vertical or horizontal line conv to filter
+    huerange = 20
     hsv_image += np.array([[hsv2opencv8bithsv((huerange, 0, 0))]])
     huemax = hsv2opencv8bithsv((360, 0, 0))[0]
     hsv_image[hsv_image[:, :, 0] > huemax, 0] -= huemax
-    lower_red = hsv2opencv8bithsv((0, 30, 65))
+    lower_red = hsv2opencv8bithsv((0, 35, 60))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
     dbglogsavestep(red_mask * 255)
     #  apply ui mask here
     red_mask = red_mask * uimask
+    dbglogsavestep(red_mask * 255)
+    
+    FilterThresh=0.5
+    LineFilteredVer=cv.filter2D(red_mask,-1,LineKernel)>FilterThresh
+    LineFilteredHor=cv.filter2D(red_mask,-1,LineKernel.T)>FilterThresh
+    LineFiltered=np.logical_or(LineFilteredHor,LineFilteredVer)
+    red_mask=np.logical_and(LineFiltered,red_mask>0.5).astype(np.float32)
+    dbglogsavestep(LineFiltered * 255)
     dbglogsavestep(red_mask * 255)
 
     # use distribution to find crosshair
@@ -361,7 +382,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
             red_mask[gridSearchRange[0]:gridSearchRange[1], :]).sum(axis=axis)
 
         line = distOnAxis_Grid > np.min(
-            [0.5 * gridSearchWidth * 2,
+            [0.75 * gridSearchWidth * 2,
              AdjustByZoomRate(10)])  # cuz gridline length is limited
 
         #degenerate wide line occupying multiple rows into one
@@ -462,13 +483,29 @@ def switchNightMode():
     gameinput.press(gameinput.keycode.key_F6)
 
 
+# to stop oscilation in autoCali due to sleep() precise
+def PreciseSleep(t):
+    if t>0.1:
+        # too rough
+        sleep(t)
+    else:
+        starttime=time.perf_counter()
+        while(True):
+            if time.perf_counter()-starttime>=t:
+                break
+
 def adjustCaliberation(pidoutput):
 
     keycode2press = gameinput.keycode.key_PageUp if pidoutput > 0 else gameinput.keycode.key_PageDown
+    
+    control=np.abs(pidoutput)
+    # if control<0.5:
+    #     control=2*control**2 # make it more precise
 
     gameinput.keydown(keycode2press)
-    sleep(np.abs(pidoutput))
+    PreciseSleep(control)
     gameinput.keyup(keycode2press)
+    return control
 
 
 class loadCalibrationOperator:
@@ -552,5 +589,6 @@ def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
             return
         control = pid.update(targetpix, nowpix) * caliControlMul / mil
         log(f'control {control}')
-        adjustCaliberation(control)
+        # get the real control, but without direction
+        control=adjustCaliberation(control)
         sleep(delayEveryCali)
