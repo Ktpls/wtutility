@@ -81,10 +81,10 @@ def main():
         if tracking:
 
             # track
-            ponshot, pomega, plastinthisframe, wingspanpx, cm, trackingpoints, planemap, pul, maxscore = tr.track(
+            ponshot, pomega, plastinthisframe, wingspanpx, cm, trackingpoints, planemap, pul, maxscore, thetabypix = tr.track(
             )
 
-            distance = targetwingspan / (c_thetabypix * wingspanpx)
+            distance = targetwingspan / (thetabypix * wingspanpx)
 
             te = distance / vbullet
             # the compensation of calculation delay from shot time
@@ -92,7 +92,7 @@ def main():
             pest = te * pomega
             pverticaltargeting = [
                 0,
-                0.5 * np.arcsin(9.8e-3 * distance / vbullet**2) / c_thetabypix
+                0.5 * np.arcsin(9.8e-3 * distance / vbullet**2) / thetabypix
             ]
             estimed = ponshot + pcompensation + pest + pverticaltargeting
             pnow = ponshot + pcompensation

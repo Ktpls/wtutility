@@ -193,6 +193,9 @@ def assetpath2realpath(ap):
     return os.path.join(assetroot, ap)
 
 
+zfoo4matcher = ZFunc(10, 0, 20, 1)
+
+
 class matcher:
 
     @staticmethod
@@ -247,21 +250,9 @@ class matcher:
 
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
 
-        def fcerr(x):  # foo contribution
-            l = 3 * (10**2)
-            u = 3 * (20**2)
-            x[x < l] = l
-            x[x > u] = u
-            x -= l
-            x /= (u - l)
-            return x
-
         mscr = matcher.imagepreprocess(mscr)
-
-        numerator = fcerr(np.square(self.m - mscr).sum(axis=(2, )))\
-            .sum(axis=(0, 1))
-        denominator = np.prod(self.m.shape)
-        return numerator / denominator
+        return zfoo4matcher(np.sqrt(
+            np.square(self.m - mscr).mean(axis=(2, )))).mean(axis=(0, 1))
 
     def detect(self, mscr, specifiedThresh=None, cutRequired=True):
         if cutRequired:
@@ -333,7 +324,7 @@ def getMapSpawnCenter(m, spawntype='blue'):
     X = np.arange(m.shape[1])
     Y = np.arange(m.shape[0])
     XY = np.meshgrid(X, Y)
-    center = [(C * m).sum() / m.sum() for C in XY]
+    center = [(C * m).sum() / (m.sum() + 0.01) for C in XY]
     return np.array(center)
 
 
@@ -370,7 +361,7 @@ def zoompointimg(m):
 
 Asset4PointDetection_Template = {
     t: zoompointimg(cv.imread(assetpath2realpath(signName2Path(t))))
-    for t in ['A', 'B', 'C']
+    for t in ['A', 'B', 'C', 'redA', 'redB', 'blueA', 'blueB']
 }
 Asset4PointDetection_Pointmask = zoompointimg(
     cv.imread(assetpath2realpath(signName2Path('zonemask'))))[:, :, 0]
@@ -393,7 +384,7 @@ class mapdetector(detector):
             bean4dmtc = {
                 'mask': None,
                 'lt': standardMapLeftTopPoint,
-                'thresh': standardMatchThreshold,
+                'thresh': standardMapMatchThreshold,
                 'path': mapname2assetpath(para["mapreq"])
             }
             self.mtc = matcher(bean4dmtc)
@@ -431,15 +422,17 @@ class mapdetector(detector):
             result = [
                 threshedmatchtemplate(mapcut, Asset4PointDetection_Template[t],
                                       Asset4PointDetection_Pointmask,
-                                      detectpointsimilarity)
-                for t in ptype
+                                      detectpointsimilarity) for t in ptype
             ]
             result = [r for r in result if r is not None]
 
             if ppos is not None:
                 if err is None:
                     err = standardPointSelectorError
-                result = [r for r in result if distance(np.array(r), np.array(ppos)) < err]
+                result = [
+                    r for r in result
+                    if distance(np.array(r), np.array(ppos)) < err
+                ]
 
             return len(result) != 0
 
@@ -460,11 +453,11 @@ class mapdetector(detector):
 def maplist2detectorlist(ml):
     ml = deduplicate(ml)
     dl = {
-        m: mapdetector(specialmapdetectors[m] if m in
-                           specialmapdetectors else {
-                               "mapreq": m,
-                               "foo": 'ret(detectMapShape())'
-                           })
+        m:
+        mapdetector(specialmapdetectors[m] if m in specialmapdetectors else {
+            "mapreq": m,
+            "foo": 'ret(detectMapShape())'
+        })
         for m in ml
     }
     return dl
@@ -544,7 +537,7 @@ def freshAMap():
                 press(keycode.key_Enter)
             return False
 
-        if not keepdetecting(detectLoadingMap):
+        if not keepdetecting(detectLoadingMap, 1):
             return
 
         win32api.Beep(500, 100)
@@ -594,7 +587,7 @@ def freshAMap():
 
         # sleep at least some time
         sleep(minDelayAfterDisconnected)
-        if not keepdetecting(detectGameCanceled):
+        if not keepdetecting(detectGameCanceled, sleeptime=2):
             return
 
         setonwifi()

@@ -24,7 +24,7 @@ def main():
             signName2Path('zonemask')))[:, :, 0]
         
         #zone
-        for p in ['A', 'B', 'C']:
+        for p in ['A', 'B', 'C','redA', 'redB', 'blueA', 'blueB']:
             temp = cv.imread(assetpath2realpath(signName2Path(p)))
             result = threshedmatchtemplate(m, temp, pointmask,
                                            detectpointsimilarity)

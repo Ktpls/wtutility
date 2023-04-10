@@ -154,8 +154,7 @@ def estimateWingSpan(m):
 from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
 if useNNTracker:
-    nntrker = getmodel(
-        r'.\exp\DLOnOpdarPlaneDetection\nntracker.pth')
+    nntrker = getmodel(r'.\exp\DLOnOpdarPlaneDetection\nntracker.pth')
 else:
     nntrker = None
 
@@ -231,10 +230,7 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
                            2], clustermax, pul, info[maxscorecontourid, 3]
 
 
-def planetrack(m,
-               posref,
-               wingspanref=-1,
-               mask=None):
+def planetrack(m, posref, wingspanref=-1, mask=None):
     mask = mask.astype('float32') * 1 / 255
     size = [m.shape[1], m.shape[0]]
     posref = point_legalize(posref, size)
@@ -251,7 +247,7 @@ def planetrack(m,
     if m.size <= 0:
         return None
     imgshape = m.shape
-    m = m.astype('float32')*1/255
+    m = m.astype('float32') * 1 / 255
 
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange], mask)
@@ -260,11 +256,11 @@ def planetrack(m,
     madat = cv.normalize(madat, madat, 0, 1, cv.NORM_MINMAX)
     # normally filter from background color
     madat = cv.threshold(madat, adptthresh, 0, cv.THRESH_TOZERO)[1]
-    
+
     #abs thresh
     mabst = cv.threshold(m, abslthresh, 1, cv.THRESH_BINARY_INV)[1]
-    
-    m=madat*mabst
+
+    m = madat * mabst
 
     # clustering
     def density(m, eps=5):
@@ -309,7 +305,7 @@ def planetrack(m,
         # no suggusted wingspan
         # use the bigest one as reference, since its often clear in first tracking
         wingspanref = np.max(info[:, 2], axis=0)
-    wingspanerrrelative = (wingspanref - info[:, 2]) / wingspanref
+    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + 0.0001)
     scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
     scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
 
@@ -394,6 +390,25 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     return curr_pts, m
 
 
+from wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom, BadCrossHairException
+
+
+def GetMilIntervalFromScrShot(m):
+
+    def dbglogsavestep(m, name=None, method='savemat'):
+        pass
+
+    def log(s):
+        pass
+
+    dbg = False
+    red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
+    crosshair = GetCrosshair(red_mask)
+    gridlineHor, rangeHor, mil = getMilInterval(red_mask,
+        crosshair, AdjustByZoomRate(gridSearchWidth_unzoom), log)
+    return mil
+
+
 class tracker:
 
     def setup(self, p0):
@@ -441,8 +456,21 @@ class tracker:
         preference = cm @ np.concatenate((pestimated, [1]))
         plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
 
-        useEstimation = True
+        #set to be default
+        ponshot, wingspan, planemap, pul, maxscore = [
+            preference, self.lastwingspan,
+            np.zeros([1, 1]), [0, 0], 0
+        ]
+        thetabypix=c_thetabypix
         if self.lazyplanetrackerfpsmanager.CheckIfTimeToDoNextFrame():
+            self.lazyplanetrackerfpsmanager.SetToNextFrame()
+            
+            if useThetaByPixCalcFromMil:
+                try:
+                    thetabypix=(2*3.1415926/6000)/GetMilIntervalFromScrShot(curr)
+                except BadCrossHairException:
+                    pass
+            
             if useNNTracker:
                 ret = planetracknn(curr, preference, mask=uimask.copy())
             else:
@@ -450,9 +478,9 @@ class tracker:
                                  preference,
                                  wingspanref=self.lastwingspan,
                                  mask=uimask.copy())
+            
             if ret != None:
                 ponshot, wingspan, planemap, pul, maxscore = ret
-                useEstimation = False
                 # collecing for dl project
                 # ponshot is in x,y format
                 collectingPlaneSample
@@ -464,16 +492,7 @@ class tracker:
                                   int(ponshot[0]) -
                                   searchrange:int(ponshot[0]) + searchrange, :]
                     odc[0].save(m4coll, name)
-
-
 #                    odc[1].save(planemap * 255, name)
-
-        if useEstimation:
-            # no found to update, or canceled by fps, keep estimation
-            ponshot, wingspan, planemap, pul, maxscore = [
-                preference, self.lastwingspan,
-                np.zeros([1, 1]), [0, 0], 0
-            ]
 
         pomega = (ponshot - plastinthisframe) / tdelta
 
@@ -487,4 +506,4 @@ class tracker:
         self.lastwingspan = wingspan
         if self.trackbuildinguptimer > 0:
             self.trackbuildinguptimer -= 1
-        return ponshot, pomega, plastinthisframe, wingspan, cm, trackingpoints, planemap, pul, maxscore
+        return ponshot, pomega, plastinthisframe, wingspan, cm, trackingpoints, planemap, pul, maxscore, thetabypix
