@@ -5,9 +5,9 @@ from nntracker_common import labeldataset
 
 
 train_data = labeldataset().init(
-    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all',
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\train.xlsx",
-    32768, 'fld')
+    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon',
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx",
+    8192, 'fld')
 
 
 def dataEnhance(src, lbl):
@@ -36,9 +36,7 @@ def dataEnhance(src, lbl):
         m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
         return m
 
-    the_u = np.pi / 6
-    the_l = -the_u
-    the = np.random.rand() * (the_u - the_l) + the_l
+    the=np.random.uniform(-np.pi / 4,np.pi / 4)
     dttp = [rot(m, the) for m in dttp]
 
     def zoom(m, rate):
@@ -51,7 +49,7 @@ def dataEnhance(src, lbl):
         XY += l0 / 2
         return cv.remap(m, *XY, cv.INTER_LINEAR)
 
-    rate = (np.random.rand() * 0.2) + 0.9
+    rate = np.random.uniform(0.8,1.2)
     dttp = [zoom(m, rate) for m in dttp]
 
     #flip
@@ -70,6 +68,8 @@ def dataEnhance(src, lbl):
         m if len(m.shape) == 3 else m.reshape(m.shape + (1, )) for m in dttp
     ]
     src, lbl = dttp
+    lbl[lbl<0.5]=0
+    lbl[lbl>=0.5]=1 #thresh
     return src, lbl
 
 

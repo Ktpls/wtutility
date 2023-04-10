@@ -48,11 +48,10 @@ class labeldataset(Dataset):
         else:
             raise TypeError(f'inproper path type {pathtype}')
 
-        self.pairs = list(
-            zip(reader(path, [f'spl/{p}' for p in selection]), [
-                cv.threshold(p[:, :, 0:1], 0.5, 1, cv.THRESH_BINARY)[1]
-                for p in reader(path, [f'lbl/{p}' for p in selection])
-            ]))
+        spl=reader(path, [rf'spl/{p}' for p in selection])
+        lbl=reader(path, [rf'lbl/{p}' for p in selection])
+        lbl=[cv.threshold(p[:, :, 0:1], 0.5, 1, cv.THRESH_BINARY)[1] for p in lbl]
+        self.pairs = list(zip(spl,lbl))
 
         return self
 

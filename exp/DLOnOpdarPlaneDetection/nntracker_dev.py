@@ -22,18 +22,21 @@ writer = SummaryWriter(
 # dataset
 from nntracker_common import labeldataset
 
+print('loading dataset')
 train_data = labeldataset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\sel.xlsx",
-    32768, 'zip')
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
+    8192, 'zip', 'all')
 test_data = labeldataset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\sel.xlsx",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
+    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
     64, 'zip')
+print('load finished')
 
 #%%
-# for easier modify batchsize without reload all samples
-batch_size = 32
+# dataloader
+# for easier modify batchsize without reloading all samples
+batch_size = 4
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -46,9 +49,9 @@ def calclose(lbl, lblhat):
     loss= \
     1*(
         (
-            ((lbl - lblhat)**2).sum(dim=[-1, -2, -3])**2
-            #     /
-            # (lbl.sum(dim=[-1, -2, -3]) + 1)
+            ((lbl - lblhat)**2).sum(dim=[-1, -2, -3])
+                /
+            (lbl.sum(dim=[-1, -2, -3]) + 0.01)
         )#**2
     ).sum()
 
@@ -104,15 +107,15 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
                 print(
                     f"Training speed: {outputperbatchnum/(end_time-start_time):>5f} batches per second"
                 )
-                aveloss = loss.item()/batchsizeof(src)
+                aveloss = loss.item() / batchsizeof(src)
                 print(f"Average loss: {aveloss:>7f}")
-                writer.add_scalar('trainloss',
-                                  aveloss, batch)
+                writer.add_scalar('trainloss', aveloss, batch)
                 start_time = time.time()
 
         viewLossOnTest()
     #win32api.Beep(1000, 1000)
     print("Done!")
+
 
 trainAnEpoch()
 
@@ -123,6 +126,7 @@ if __name__ == '__main__':
 
 # %%
 # view effect
+
 
 def viewModelOnPic():
 
@@ -191,6 +195,7 @@ viewmodel()
 
 # %%
 # save
+
 
 def savemodel(path):
     torch.save(model.state_dict(), path)
