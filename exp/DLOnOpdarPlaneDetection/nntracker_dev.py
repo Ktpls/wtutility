@@ -26,11 +26,13 @@ print('loading dataset')
 train_data = labeldataset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
-    8192, 'zip', 'all')
+    8192, 'zip', 'all', model.stdShape)
 test_data = labeldataset().init(
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
-    64, 'zip')
+    64,
+    'zip',
+    stdShape=model.stdShape)
 print('load finished')
 
 #%%

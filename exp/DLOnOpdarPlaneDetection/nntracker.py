@@ -117,23 +117,48 @@ class inception(torch.nn.Module):
 
 class nntracker_simple(torch.nn.Module):
 
+    stdShape=np.array([100,100])
     def __init__(self) -> None:
         super().__init__()
-        self.matchtempl = torch.nn.Sequential(
+        self.enco = torch.nn.Sequential(
             cbrps(3, 16, 9, 9),
             torch.nn.BatchNorm2d(16),
             inception(16,8,8,8,8),
             torch.nn.BatchNorm2d(32),
-            inception(32,8,8,8,8),
-            torch.nn.BatchNorm2d(32),
             inception(32,4,4,4,4),
             torch.nn.BatchNorm2d(16),
-            torch.nn.Conv2d(16, 1, 5, padding='same'),
+            torch.nn.Conv2d(16, 1, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.fullcon=torch.nn.Sequential(
+            torch.nn.Linear(np.prod(nntracker_simple.stdShape),100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,np.prod(nntracker_simple.stdShape)),
+            torch.nn.LeakyReLU(),
+        )
+        self.deco=torch.nn.Sequential(
+            inception(2,8,8,8,8),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.Conv2d(32, 1, 1, padding='same'),
             torch.nn.LeakyReLU(),
         )
 
     def forward(self, m):
-        return self.matchtempl(1 - m)
+        encoout=self.enco(m)
+        tmp=encoout.view(-1,np.prod(nntracker_simple.stdShape))
+        tmp=self.fullcon(tmp)
+        tmp=tmp.view(-1,1,nntracker_simple.stdShape[1],nntracker_simple.stdShape[0])
+        tmp=torch.concat((encoout,tmp),dim=-3)
+        decoout=self.deco(tmp)
+        return decoout
 
 
 class YOLOv1(nn.Module):
@@ -210,7 +235,7 @@ class YOLOv1(nn.Module):
 
 def getmodel(modelpath):
     model = setModel(nntracker_simple(), path=modelpath).to(device)
-    print(model)
+    #print(model)
     return model
 
 
