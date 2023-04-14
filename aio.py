@@ -2,6 +2,7 @@ from utilitypack.utility import *
 from aio_config import *
 import traceback
 import hashlib
+import functools
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
@@ -118,6 +119,18 @@ def main():
             key=win32con.VK_F11,
             foo=holdCAndTell
         ))
+        
+        def Char2Ascii(c:str):
+            assert len(c)>=1
+            return int(c.encode('ascii')[0])
+        keylist=['W','A','S','D']
+        direction=['up','left','down','right']
+        kd=zip(keylist,direction)
+        for pair in kd:
+            hotkeyaction.append(hotkeymanager.hotkeytask(
+                key=[win32con.VK_CONTROL,Char2Ascii(pair[0])],
+                foo=functools.partial(keyshortcut.move_mouse,pair[1])
+            ))
 
     # eagle eye
     if usingeagleeye:
