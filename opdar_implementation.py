@@ -113,7 +113,7 @@ def fit_errmax(P):
     ave = P.sum(0) / P.shape[0]
     ave = np.repeat(ave.reshape([1, 2]), P.shape[0], axis=0)
     Pcenterized = P - ave
-    #X==P[:,0], Y==P[:,1]
+    #layout: X==P[:,0], Y==P[:,1]
     delta = (Pcenterized[:, 0]**2 - Pcenterized[:, 1]**2).sum()
     gamma = (Pcenterized[:, 0] * Pcenterized[:, 1]).sum()
     base = np.sqrt(delta**2 + 4 * gamma**2)

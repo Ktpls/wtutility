@@ -34,7 +34,7 @@ class labeldataset(Dataset):
     def __init__(self) -> None:
         super().__init__()
 
-    def init(self, path, selection, size, pathtype='fld', sheetname=None):
+    def init(self, path, selection, size, pathtype='fld', sheetname=None, stdShape=None):
         self.size = size
         selection = Xls2ListList(selection, sheetname)
         selection = [s[0] for s in selection]
@@ -48,11 +48,13 @@ class labeldataset(Dataset):
         else:
             raise TypeError(f'inproper path type {pathtype}')
 
-        self.pairs = list(
-            zip(reader(path, [f'spl/{p}' for p in selection]), [
-                cv.threshold(p[:, :, 0:1], 0.5, 1, cv.THRESH_BINARY)[1]
-                for p in reader(path, [f'lbl/{p}' for p in selection])
-            ]))
+        spl=reader(path, [rf'spl/{p}' for p in selection])
+        lbl=reader(path, [rf'lbl/{p}' for p in selection])
+        if stdShape is not None:
+            spl=[cv.resize(m,stdShape) for m in spl]
+            lbl=[cv.resize(m,stdShape) for m in lbl]
+        lbl=[cv.threshold(p[:, :, 0:1], 0.5, 1, cv.THRESH_BINARY)[1] for p in lbl]
+        self.pairs = list(zip(spl,lbl))
 
         return self
 

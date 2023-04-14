@@ -12,6 +12,7 @@ if RunOnWtUtilityEnviroment:
 else:
     from utilkaggle import *
 from torch import nn
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
@@ -53,6 +54,7 @@ class cbrps(torch.nn.Module):
         #[b,c,h,w]
         return self.component.forward(m)
 
+
 class cbrpsold(torch.nn.Module):
     #input chan, output chan, convolve size, pooling size
     #n_o should be like 2*n, cuz maxpool will be concated with former output
@@ -74,29 +76,99 @@ class cbrpsold(torch.nn.Module):
         c = torch.concat([a, b], dim=-3)
         return c
 
-class nntracker_simple(torch.nn.Module):
 
-    def __init__(self) -> None:
+class inception(torch.nn.Module):
+
+    def __init__(self, infeat, outfeat11, outfeatpool, outfeat33,
+                 outfeat55) -> None:
         super().__init__()
-        self.matchtempl = torch.nn.Sequential(
-            cbrps(3, 32, 5, 11),
-            cbrps(32, 32, 5, 5),
-            cbrps(32, 16, 5, 11),
-            torch.nn.Conv2d(16, 1, 5, padding='same'),
+        self.path11 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.pathpool = torch.nn.Sequential(
+            torch.nn.MaxPool2d(3, stride=1, padding=1),
+            torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path33 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat33, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path55 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat55, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
             torch.nn.LeakyReLU(),
         )
 
     def forward(self, m):
-        return self.matchtempl(1 - m)
+        return torch.concat(
+            [self.path11(m),
+             self.pathpool(m),
+             self.path33(m),
+             self.path55(m)],
+            dim=-3)  #channel
+
+
+class nntracker_simple(torch.nn.Module):
+
+    stdShape=np.array([100,100])
+    def __init__(self) -> None:
+        super().__init__()
+        self.enco = torch.nn.Sequential(
+            cbrps(3, 16, 9, 9),
+            torch.nn.BatchNorm2d(16),
+            inception(16,8,8,8,8),
+            torch.nn.BatchNorm2d(32),
+            inception(32,4,4,4,4),
+            torch.nn.BatchNorm2d(16),
+            torch.nn.Conv2d(16, 1, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.fullcon=torch.nn.Sequential(
+            torch.nn.Linear(np.prod(nntracker_simple.stdShape),100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10,100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100,np.prod(nntracker_simple.stdShape)),
+            torch.nn.LeakyReLU(),
+        )
+        self.deco=torch.nn.Sequential(
+            inception(2,8,8,8,8),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.Conv2d(32, 1, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+
+    def forward(self, m):
+        encoout=self.enco(m)
+        tmp=encoout.view(-1,np.prod(nntracker_simple.stdShape))
+        tmp=self.fullcon(tmp)
+        tmp=tmp.view(-1,1,nntracker_simple.stdShape[1],nntracker_simple.stdShape[0])
+        tmp=torch.concat((encoout,tmp),dim=-3)
+        decoout=self.deco(tmp)
+        return decoout
 
 
 class YOLOv1(nn.Module):
-    def __init__(self, num_classes=0, num_boxes=1,S=7):
+
+    def __init__(self, num_classes=0, num_boxes=1, S=7):
         super(YOLOv1, self).__init__()
         self.num_classes = num_classes
         self.num_boxes = num_boxes
-        self.S=S
-        self.convs=nn.Sequential(
+        self.S = S
+        self.convs = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
             nn.ReLU(True),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -146,25 +218,25 @@ class YOLOv1(nn.Module):
             nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
         )
-        self.fcs=nn.Sequential(
-            nn.Linear(7*7*1024, 4096),
+        self.fcs = nn.Sequential(
+            nn.Linear(7 * 7 * 1024, 4096),
             nn.ReLU(True),
-            nn.Linear(4096, S*S*(self.num_classes + self.num_boxes*5)),
+            nn.Linear(4096, S * S * (self.num_classes + self.num_boxes * 5)),
             nn.ReLU(True),
-            )
+        )
 
     def forward(self, x):
-        x=self.convs(x)
-        x = x.view(-1, self.S*self.S*1024)
-        x=self.fcs(x)
-        x = x.view(-1, self.S, self.S, self.num_classes + self.num_boxes*5)
+        x = self.convs(x)
+        x = x.view(-1, self.S * self.S * 1024)
+        x = self.fcs(x)
+        x = x.view(-1, self.S, self.S, self.num_classes + self.num_boxes * 5)
         return x
 
+
 def getmodel(modelpath):
-    model = setModel(YOLOv1(), path=modelpath).to(device)
+    model = setModel(nntracker_simple(), path=modelpath).to(device)
     #print(model)
     return model
-
 
 
 # %%
