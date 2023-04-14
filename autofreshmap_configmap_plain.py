@@ -106,6 +106,11 @@ specialmapdetectors={
     "EuropeanProvince":{
         "mapreq":"EuropeanProvince",
         "foo":'ret(detectMapShape() and spawnAround([476, 303]))'
+    },
+    "Berlin":{
+        "mapreq":"Berlin",
+        # bottom spawn
+        "foo":'ret(detectMapShape() and spawnAround([306, 504]))'
     }
     
 }
