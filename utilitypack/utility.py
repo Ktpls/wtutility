@@ -58,7 +58,7 @@ def savemat(m, name=None, path=None, suffix='.png', autorename=True):
         os.makedirs(path)
     totalpath = os.path.join(path, name + suffix)
     # find suitable name
-    if autorename and os.path.exists(totalpath) :
+    if autorename and os.path.exists(totalpath):
         suffix_idx = 0
         while (True):
             suffix_idx += 1
@@ -95,7 +95,7 @@ def regionsum(m, size, mask=None):
     if mask is not None:
         mask[mask > 0] = 1
     if len(m.shape) > 2 and mask is not None:  # with channel dim
-        mask = mask.reshape(mask.shape+(1,))
+        mask = mask.reshape(mask.shape + (1, ))
     return cv.filter2D(m if mask is None else m * mask, -1,
                        np.ones(size, np.float32))
 
@@ -106,10 +106,7 @@ def regionsum(m, size, mask=None):
 # denominator will be #pix nearby on mask
 # u may ask mask==None does the same as notConsiderMaskInDenominator==True
 # but if u want to use mask and dont want to be constrained by boundary. unimplemented though
-def regionave(m,
-              size,
-              mask=None,
-              notConsiderMaskInDenominator=True):
+def regionave(m, size, mask=None, notConsiderMaskInDenominator=True):
     if m.size <= 0:
         return m
     if mask is not None:
@@ -120,7 +117,7 @@ def regionave(m,
     else:
         denominator = (regionsum(mask, size) + 0.01)
         if len(m.shape) > 2:  # m with channel dim
-            denominator = denominator.reshape(denominator.shape+(1,))
+            denominator = denominator.reshape(denominator.shape + (1, ))
     return regionsum(m, size, mask) / denominator
 
 
@@ -373,13 +370,14 @@ class perf_statistic:
         self._starttime = None
 
     def aveTime(self):
-        return self._timeCurrentlyCounting() / self._cycle if self._cycle > 0 else 0
+        return self._timeCurrentlyCounting(
+        ) / self._cycle if self._cycle > 0 else 0
 
     def _timeCurrentlyCounting(self):
         return time.perf_counter() - self._starttime
 
     def time(self):
-        return self._stagedtime+self._timeCurrentlyCounting()
+        return self._stagedtime + self._timeCurrentlyCounting()
 
 
 def convolve_norm(m, k):
@@ -395,24 +393,24 @@ class fpsmanager:
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
-    def BlockUntilNextFrame(self):
+    def WaitUntilNextFrame(self):
         sleepuntil(lambda: time.perf_counter() - self.lt > self.frametime,
                    dt=0.5 * self.frametime)
-        self.lt = time.perf_counter()
+        self.SetToNextFrame()
 
-    '''
-    usage
-    use it with mutiple fpsmanagers
-    if time is apropriate, ret true and update time
-    if fpsmanager.CheckIfTimeToDoNextFrame():
-        do your task here
-    '''
 
     def CheckIfTimeToDoNextFrame(self) -> bool:
+        '''
+        usage
+        if fpsmanager.CheckIfTimeToDoNextFrame():
+            fpsmanager.SetToNextFrame()
+            do your task here
+        '''
         result = time.perf_counter() - self.lt > self.frametime
-        if result:
-            self.lt = time.perf_counter()
         return result
+    
+    def SetToNextFrame(self):
+        self.lt = time.perf_counter()
 
 
 class hotkeymanager:
@@ -434,20 +432,21 @@ class hotkeymanager:
         self.hktl = deepcopy(hotkeytasklist)
 
         def piorered(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
-            def include(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
+
+            def include(a: hotkeymanager.hotkeytask,
+                        b: hotkeymanager.hotkeytask):
                 for k in b.key:
                     if k not in a.key:
                         return False
                 return True
+
             # a>b and b<a, not equal
             return include(a, b) and not include(b, a)
-        self.piorinfo = [
-            [aidx
-             for aidx, a in enumerate(hotkeytasklist)
-             if aidx != bidx and piorered(a, b)
-             ]
-            for bidx, b in enumerate(hotkeytasklist)
-        ]
+
+        self.piorinfo = [[
+            aidx for aidx, a in enumerate(hotkeytasklist)
+            if aidx != bidx and piorered(a, b)
+        ] for bidx, b in enumerate(hotkeytasklist)]
 
     def decideAllHotKey(self) -> List[bool]:
         keysts = {k: isKBDown(k) for k in self.kc}
@@ -457,6 +456,7 @@ class hotkeymanager:
             false = 0
             true = 1
             unknown = 2
+
         respondtable = [respondstate.unknown for hk in self.hktl]
 
         def decideRespondState(i):
@@ -468,23 +468,32 @@ class hotkeymanager:
             if all([keysts[k] for k in self.hktl[i].key]):
 
                 # didnt check piored, check it
-                [decideRespondState(p) for p in self.piorinfo[i]
-                 if respondtable[p] == respondstate.unknown]
+                [
+                    decideRespondState(p) for p in self.piorinfo[i]
+                    if respondtable[p] == respondstate.unknown
+                ]
 
                 # no piored responded
-                if all([respondtable[p] == respondstate.false for p in self.piorinfo[i]]):
+                if all([
+                        respondtable[p] == respondstate.false
+                        for p in self.piorinfo[i]
+                ]):
                     respondtable[i] = respondstate.true
                 else:
                     respondtable[i] = respondstate.false
             else:
                 # not respond this
                 respondtable[i] = respondstate.false
+
         for hkidx, hk in enumerate(self.hktl):
             decideRespondState(hkidx)
 
         assert (all([rt != respondstate.unknown for rt in respondtable]))
 
-        return [respondtable[hkidx] == respondstate.true for hkidx, hk in enumerate(self.hktl)]
+        return [
+            respondtable[hkidx] == respondstate.true
+            for hkidx, hk in enumerate(self.hktl)
+        ]
 
     def doAllDecidedKey(self, decideresult, throwonerr=False):
         for i in range(len(decideresult)):
@@ -573,6 +582,7 @@ def digitsof(s: str):
 def numinstr(s: str):
     s = digitsof(s)
     return int(s) if len(s) > 0 else 0
+
 
 # summon from card pool
 
@@ -754,35 +764,48 @@ def setadmin(file):
         exit()
 
 
-def zfunc(xl, yl, xr, yr):
-    slope = (yr - yl) / (xr - xl)
-
-    def foo_single(x):
-        if x < xl:
-            return yl
-        elif x > xr:
-            return yr
+class ZFunc:
+    '''
+    x1x2 at any order
+    '''
+    def __init__(self, x1, y1, x2, y2) -> None:
+        if x1 < x2:
+            #[lower or higher, x or y]
+            self.pt = np.array([[x1, y1], [x2, y2]])
         else:
-            return (x - xl) * slope + yl
+            self.pt = np.array([[x2, y2], [x1, y1]])
+        self.slope = (self.pt[1, 1] - self.pt[0, 1]) / (self.pt[1, 0] -
+                                                        self.pt[0, 0] + 0.0001)
+        self.bias = self.pt[0, 1] - self.pt[0, 0] * self.slope
 
-    def foo_ndarray(x):
-        x = np.copy(x)
-        x[x < xl] = yl
-        x[x > xr] = yr
-        x = (x - xl) * slope + yl
-        return x
+    def __CallOnNDArray(self, x: np.ndarray):
+        y = self.slope * x + self.bias
+        y[x < self.pt[0, 0]] = self.pt[0, 1]
+        y[x > self.pt[1, 0]] = self.pt[1, 1]
+        return y
 
-    def foo_universal(x):
+    def __CallOnNum(self, x):
+        if x < self.pt[0, 0]:
+            y = self.pt[0, 1]
+        elif x > self.pt[1, 0]:
+            y = self.pt[1, 1]
+        else:
+            y = self.slope * x + self.bias
+        return y
+
+    def __call__(self, x):
         if type(x) is np.ndarray:
-            return foo_ndarray(x)
+            return self.__CallOnNDArray(x)
         else:
-            return foo_single(x)
-
-    return foo_universal
+            return self.__CallOnNum(x)
 
 
-def randomString(charset,length):
-    return ''.join([charset[i] for i in np.random.choice(range(len(charset)),length, replace=True)])
+def randomString(charset, length):
+    return ''.join([
+        charset[i]
+        for i in np.random.choice(range(len(charset)), length, replace=True)
+    ])
+
 
 class DataCollector:
     randNameLen = 10
@@ -792,25 +815,27 @@ class DataCollector:
 
     @staticmethod
     def geneName():
-        return randomString('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',DataCollector.randNameLen)
+        return randomString('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                            DataCollector.randNameLen)
 
-    def save(self, m,name=None):
+    def save(self, m, name=None):
         if name is None:
             name = DataCollector.geneName()
         savemat(m, f'{name}', path=self.outputpath)
 
+
 def Xls2ListList(path=None, sheetname=None, killNones=True):
     if path is None:
-        path=r'eles.in.xlsx' 
-    xls=opx.load_workbook(path)
+        path = r'eles.in.xlsx'
+    xls = opx.load_workbook(path)
     if sheetname is None:
-        sheet=xls.active
+        sheet = xls.active
     else:
-        sheet=xls[sheetname]
-    
-    ret=[[ele.value for ele in ln] for ln in (sheet.rows)]
+        sheet = xls[sheetname]
+
+    ret = [[ele.value for ele in ln] for ln in (sheet.rows)]
     if killNones:
-        ret=[l for l in ret if any([e is not None for e in l])]
+        ret = [l for l in ret if any([e is not None for e in l])]
     return ret
 
 
@@ -820,5 +845,5 @@ def AllFileIn(path, includeFileInSubDir=True):
     for dirpath, dir, file in os.walk(path):
         if not includeFileInSubDir and dirpath != path:
             continue
-        ret.extend([os.path.join(dirpath, f)for f in file])
+        ret.extend([os.path.join(dirpath, f) for f in file])
     return ret

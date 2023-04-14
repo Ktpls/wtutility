@@ -12,5 +12,5 @@ def mainloop(fps,hotkeyactionlist):
     hkm = hotkeymanager(hotkeyactionlist)
     
     while (True):
-        fps.BlockUntilNextFrame()
+        fps.WaitUntilNextFrame()
         hkm.doAllDecidedKey(hkm.decideAllHotKey())

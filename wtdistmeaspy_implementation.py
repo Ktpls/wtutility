@@ -296,23 +296,33 @@ class BadCrossHairException(BaseException):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
-LineKernel=None
+
+LineKernel = None
+
+
 def SetLineKernel():
     global LineKernel
-    kernelLength=21
-    kernelHalfWidth=2
-    lineHalfWidth=1.5
-    alongWidth=np.linspace(-kernelHalfWidth,kernelHalfWidth,kernelHalfWidth*2+1)
-    kerValAlongWidth=np.exp(-(alongWidth/lineHalfWidth)**2)
-    Transfer0To1ToM1To1=scipy.interpolate.interp1d([0,1/np.e,1],[-1,0,1],assume_sorted=True)
-    kerValAlongWidth=Transfer0To1ToM1To1(kerValAlongWidth)
+    kernelLength = 21
+    kernelHalfWidth = 2
+    lineHalfWidth = 1.5
+    alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth,
+                             kernelHalfWidth * 2 + 1)
+    kerValAlongWidth = np.exp(-(alongWidth / lineHalfWidth)**2)
+    Transfer0To1ToM1To1 = scipy.interpolate.interp1d([0, 1 / np.e, 1],
+                                                     [-1, 0, 1],
+                                                     assume_sorted=True)
+    kerValAlongWidth = Transfer0To1ToM1To1(kerValAlongWidth)
     # vertical now
-    LineKernel=np.repeat(kerValAlongWidth.reshape((1,)+kerValAlongWidth.shape),kernelLength,axis=0)/kernelLength
-SetLineKernel()
-def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
+    LineKernel = np.repeat(
+        kerValAlongWidth.reshape((1, ) + kerValAlongWidth.shape),
+        kernelLength,
+        axis=0) / kernelLength
 
-    def AdjustByZoomRate(degenWindow):
-        return int(np.round(degenWindow * caliTableDetectionZoomRate))
+
+SetLineKernel()
+
+
+def SnipScencePreProcess(m, dbg, dbglogsavestep, log):
 
     # Load input image
     input_image = cv.resize(m, (np.flip(m.shape[0:2]) *
@@ -339,15 +349,22 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     #  apply ui mask here
     red_mask = red_mask * uimask
     dbglogsavestep(red_mask * 255)
-    
-    FilterThresh=0.5
-    LineFilteredVer=cv.filter2D(red_mask,-1,LineKernel)>FilterThresh
-    LineFilteredHor=cv.filter2D(red_mask,-1,LineKernel.T)>FilterThresh
-    LineFiltered=np.logical_or(LineFilteredHor,LineFilteredVer)
-    red_mask=np.logical_and(LineFiltered,red_mask>0.5).astype(np.float32)
+
+    FilterThresh = 0.5
+    LineFilteredVer = cv.filter2D(red_mask, -1, LineKernel) > FilterThresh
+    LineFilteredHor = cv.filter2D(red_mask, -1, LineKernel.T) > FilterThresh
+    LineFiltered = np.logical_or(LineFilteredHor, LineFilteredVer)
+    red_mask = np.logical_and(LineFiltered, red_mask > 0.5).astype(np.float32)
     dbglogsavestep(LineFiltered * 255)
     dbglogsavestep(red_mask * 255)
+    return red_mask
 
+
+def AdjustByZoomRate(degenWindow):
+    return int(np.round(degenWindow * caliTableDetectionZoomRate))
+
+
+def GetCrosshair(red_mask):
     # use distribution to find crosshair
     distOnX = red_mask.sum(axis=0)
     distOnY = red_mask.sum(axis=1)
@@ -358,67 +375,51 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
         raise BadCrossHairException(
             'AC_BAD_CRHR, maybe go try switch night mode or just not in snipping'
         )
+    return crosshair
 
-    def findGridAroundLine(pos, axis, gridSearchWidth):
-        # search grid line around vertical crosshair line, again use distribution
 
-        gridSearchRange = np.array(
-            [pos - gridSearchWidth, pos + gridSearchWidth])
+def findGridAroundLine(red_mask, pos, axis, gridSearchWidth):
+    # search grid line around vertical crosshair line, again use distribution
 
-        #[AllowedRange[0],AllowedRange[1]), left closed right open
-        def validateCoor(AllowedRange, coor):
-            if coor < AllowedRange[0]:
-                coor = AllowedRange[0]
-            if coor >= AllowedRange[1]:
-                coor = AllowedRange[1] - 1
-            return coor
+    gridSearchRange = np.array([pos - gridSearchWidth, pos + gridSearchWidth])
 
-        for i in range(len(gridSearchRange)):
-            gridSearchRange[i] = validateCoor([0, red_mask.shape[axis]],
-                                              gridSearchRange[i])
-        distOnAxis_Grid = (
-            red_mask[:,
-                     gridSearchRange[0]:gridSearchRange[1]] if axis == 1 else
-            red_mask[gridSearchRange[0]:gridSearchRange[1], :]).sum(axis=axis)
+    #[AllowedRange[0],AllowedRange[1]), left closed right open
+    def validateCoor(AllowedRange, coor):
+        if coor < AllowedRange[0]:
+            coor = AllowedRange[0]
+        if coor >= AllowedRange[1]:
+            coor = AllowedRange[1] - 1
+        return coor
 
-        line = distOnAxis_Grid > np.min(
-            [0.75 * gridSearchWidth * 2,
-             AdjustByZoomRate(10)])  # cuz gridline length is limited
+    for i in range(len(gridSearchRange)):
+        gridSearchRange[i] = validateCoor([0, red_mask.shape[axis]],
+                                          gridSearchRange[i])
+    distOnAxis_Grid = (
+        red_mask[:, gridSearchRange[0]:gridSearchRange[1]] if axis == 1 else
+        red_mask[gridSearchRange[0]:gridSearchRange[1], :]).sum(axis=axis)
 
-        #degenerate wide line occupying multiple rows into one
-        line = line.astype(np.float32)
-        degenWindow = AdjustByZoomRate(3)
-        i = 0
-        while i < len(line) - degenWindow:
-            windowSum = line[i:i + degenWindow].sum()
-            if windowSum > 1:
-                center = (np.arange(i, i + degenWindow) *
-                          line[i:i + degenWindow]).sum() / windowSum
-                line[i:i + degenWindow] = 0
-                line[int(center)] = 1
-            i += 1
-        line = line > 0.5
-        return line, gridSearchRange  # range just for rebuilding
+    line = distOnAxis_Grid > np.min(
+        [0.75 * gridSearchWidth * 2,
+         AdjustByZoomRate(10)])  # cuz gridline length is limited
 
-    # get calibration table
-    gridSearchWidth = AdjustByZoomRate(10)
-    gridlineVer, rangeVer = findGridAroundLine(crosshair[1], 1,
-                                               gridSearchWidth)
-    gridlineVerPos = np.where(gridlineVer)[0]
-    log('gridlineVerPos')
-    log(np.ndarray.__repr__(gridlineVerPos))
-    targetDistance = np.arange(len(gridlineVerPos)) * 200
-    f = scipy.interpolate.interp1d(targetDistance,
-                                   gridlineVerPos,
-                                   bounds_error=False,
-                                   fill_value="extrapolate",
-                                   assume_sorted=True)
-    targetpos = f(targetcali)
-    posnow = crosshair[0]
-    log(f'targetpos{targetpos}, posnow{posnow}')
+    #degenerate wide line occupying multiple rows into one
+    line = line.astype(np.float32)
+    degenWindow = AdjustByZoomRate(3)
+    i = 0
+    while i < len(line) - degenWindow:
+        windowSum = line[i:i + degenWindow].sum()
+        if windowSum > 1:
+            center = (np.arange(i, i + degenWindow) *
+                      line[i:i + degenWindow]).sum() / windowSum
+            line[i:i + degenWindow] = 0
+            line[int(center)] = 1
+        i += 1
+    line = line > 0.5
+    return line, gridSearchRange  # range just for rebuilding
 
-    # get mil interval
-    gridlineHor, rangeHor = findGridAroundLine(crosshair[0], 0,
+
+def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
+    gridlineHor, rangeHor = findGridAroundLine(red_mask, crosshair[0], 0,
                                                gridSearchWidth)
     gridlineHorPos = np.where(gridlineHor)[0]
     gridlineHorInterval = (arrayshift(gridlineHorPos, -1) -
@@ -443,6 +444,37 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
     # that should be evenly distributed
     mil = gridlineHorInterval.mean()
+    return gridlineHor, rangeHor, mil
+
+
+gridSearchWidth_unzoom = 10
+
+
+def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
+
+    red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
+
+    crosshair = GetCrosshair(red_mask)
+    # get calibration table
+    gridSearchWidth = AdjustByZoomRate(gridSearchWidth_unzoom)
+    gridlineVer, rangeVer = findGridAroundLine(red_mask, crosshair[1], 1,
+                                               gridSearchWidth)
+    gridlineVerPos = np.where(gridlineVer)[0]
+    log('gridlineVerPos')
+    log(np.ndarray.__repr__(gridlineVerPos))
+    targetDistance = np.arange(len(gridlineVerPos)) * 200
+    f = scipy.interpolate.interp1d(targetDistance,
+                                   gridlineVerPos,
+                                   bounds_error=False,
+                                   fill_value="extrapolate",
+                                   assume_sorted=True)
+    targetpos = f(targetcali)
+    posnow = crosshair[0]
+    log(f'targetpos{targetpos}, posnow{posnow}')
+
+    # get mil interval
+    gridlineHor, rangeHor, mil = getMilInterval(red_mask, crosshair,
+                                                gridSearchWidth, log)
 
     if dbg:
         rebuildMap = np.zeros_like(red_mask)
@@ -485,20 +517,21 @@ def switchNightMode():
 
 # to stop oscilation in autoCali due to sleep() precise
 def PreciseSleep(t):
-    if t>0.1:
+    if t > 0.1:
         # too rough
         sleep(t)
     else:
-        starttime=time.perf_counter()
-        while(True):
-            if time.perf_counter()-starttime>=t:
+        endtime = time.perf_counter()+t
+        while (True):
+            if time.perf_counter() >= endtime:
                 break
+
 
 def adjustCaliberation(pidoutput):
 
     keycode2press = gameinput.keycode.key_PageUp if pidoutput > 0 else gameinput.keycode.key_PageDown
-    
-    control=np.abs(pidoutput)
+
+    control = np.abs(pidoutput)
     # if control<0.5:
     #     control=2*control**2 # make it more precise
 
@@ -522,8 +555,67 @@ class loadCalibrationOperator:
         self.stopsignal = False
         self.stopped = False
         self.result = ''
+
+        def loadCalibration(targetcali, errAllowed):
+            pid = PIDController(caliP, 0, caliD)
+            ss = screenshoter()
+            if caliDbg:
+                # same as in solve
+                dbglogpath = r'./asset/wtdistmeaspy/log/{}_GetCali/'.format(
+                    time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime()))
+
+                def dbglogsavestep(m, name='unnamed', method='savemat'):
+                    nonlocal dbglogpath
+                    exec('{}(m,path=dbglogpath,name=name)'.format(method))
+
+                logg = logger(os.path.join(dbglogpath, 'log.log'))
+
+                def log(s):
+                    logg(s)
+            else:
+
+                def dbglogsavestep(m, name=None, method='savemat'):
+                    pass
+
+                logg = None
+
+                def log(s):
+                    pass
+
+            while (True):
+                if self.stopsignal:
+                    #forced stop
+                    self.result = "Stoped"
+                    self.stopped = True
+                    log(self.result)
+                    return
+                try:
+                    #cali err in pixel
+                    caliresult = getNowCalibration(ss.shotbgr(), targetcali,
+                                                   caliDbg, dbglogsavestep,
+                                                   log)
+                except BadCrossHairException:
+                    self.result = "Bad crosshair detection"
+                    self.stopped = True
+                    log(self.result)
+                    return
+
+                targetpix, nowpix, mil = caliresult
+                log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')
+                #print(targetpix,nowpix)
+                if np.abs(targetpix - nowpix) <= errAllowed:
+                    self.result = "Great"
+                    self.stopped = True
+                    log(self.result)
+                    return
+                control = pid.update(targetpix, nowpix) * caliControlMul / mil
+                log(f'control {control}')
+                # get the real control, but without direction
+                control = adjustCaliberation(control)
+                sleep(delayEveryCali)
+
         threading.Thread(target=loadCalibration,
-                         args=(targetcali, autoCaliErr, self)).start()
+                         args=(targetcali, autoCaliErr)).start()
 
     def stop(self):
         if self.stopped:
@@ -534,61 +626,3 @@ class loadCalibrationOperator:
                 break
             sleep(0.5)
         return self.result
-
-
-def loadCalibration(targetcali, errAllowed, operator: loadCalibrationOperator):
-    pid = PIDController(caliP, 0, caliD)
-    ss = screenshoter()
-    if caliDbg:
-        # same as in solve
-        dbglogpath = r'./asset/wtdistmeaspy/log/{}_GetCali/'.format(
-            time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime()))
-
-        def dbglogsavestep(m, name='unnamed', method='savemat'):
-            nonlocal dbglogpath
-            exec('{}(m,path=dbglogpath,name=name)'.format(method))
-
-        logg = logger(os.path.join(dbglogpath, 'log.log'))
-
-        def log(s):
-            logg(s)
-    else:
-
-        def dbglogsavestep(m, name=None, method='savemat'):
-            pass
-
-        logg = None
-
-        def log(s):
-            pass
-
-    while (True):
-        if operator.stopsignal:
-            #forced stop
-            operator.result = "Stoped"
-            operator.stopped = True
-            log(operator.result)
-            return
-        try:
-            #cali err in pixel
-            caliresult = getNowCalibration(ss.shotbgr(), targetcali, caliDbg,
-                                           dbglogsavestep, log)
-        except BadCrossHairException:
-            operator.result = "Bad crosshair detection"
-            operator.stopped = True
-            log(operator.result)
-            return
-
-        targetpix, nowpix, mil = caliresult
-        log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')
-        #print(targetpix,nowpix)
-        if np.abs(targetpix - nowpix) <= errAllowed:
-            operator.result = "Great"
-            operator.stopped = True
-            log(operator.result)
-            return
-        control = pid.update(targetpix, nowpix) * caliControlMul / mil
-        log(f'control {control}')
-        # get the real control, but without direction
-        control=adjustCaliberation(control)
-        sleep(delayEveryCali)

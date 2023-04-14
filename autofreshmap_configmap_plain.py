@@ -8,7 +8,7 @@ desireds=[
     'RedDesert',
     'SandsOfSinai',
     'SandsOfTunisia',
-    'SecondBattleOfElAlameinDomination#1',
+    #'SecondBattleOfElAlameinDomination#1',
     'SecondBattleOfElAlameinDomination#2',
     'Sinai',
     'Berlin',
@@ -16,13 +16,13 @@ desireds=[
 
 
 halfdesired=[
-    'AshRiver',
+    'AshRiver', #not great with high br
     'FrozenPass',
     'Karelia',
     'Japan',
     'Poland',
     'Poland(winter)',
-    #'Finland',
+    'Finland',
     'Tunisia',
     'MaginotLineDomination#1',
     'EuropeanProvince',
@@ -33,8 +33,8 @@ whitelistedmap=desireds+halfdesired
 specialmapdetectors={
     "Sinai":{
         "mapreq":"Sinai",
-        #B
-        "foo":'ret(detectMapShape() and selectPoint(ppos=[272, 294]))'
+        #B, or battle mode at any side
+        "foo":'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectPoint("blueA") or selectPoint("blueB") ) )'
     },
     "FrozenPass":{
         "mapreq":"FrozenPass",
@@ -59,11 +59,11 @@ specialmapdetectors={
     },
     "Poland":{
         "mapreq":"Poland",
-        "foo":'ret(detectMapShape() and spawnAround([86, 313]))'
+        "foo":'ret(detectMapShape() and spawnAround([86, 313]) and selectPoint("A"))' # includes domination and conquest, not battle
     },
     "Poland(winter)":{
         "mapreq":"Poland(winter)",
-        "foo":'ret(detectMapShape() and spawnAround([86, 313]))'
+        "foo":'ret(detectMapShape() and spawnAround([86, 313]) and selectPoint("A"))'
     },
     "Jungle":{
         "mapreq":"Jungle",
@@ -80,19 +80,19 @@ specialmapdetectors={
     "Finland":{
         "mapreq":"Finland",
         #c point
-        "foo":'ret(detectMapShape() and spawnAround([355,526]) and selectPoint(ppos=[492, 289])'
+        "foo":'ret(detectMapShape() and spawnAround([355,526]) and selectPoint(ppos=[492, 289]))'
     },
-    "SandsOfSinai":{
-        "mapreq":"SandsOfSinai",
-        "foo":'ret(detectMapShape() and spawnAround([334, 61]))'
-    },
+    # "SandsOfSinai":{
+        # "mapreq":"SandsOfSinai",
+        # "foo":'ret(detectMapShape() and spawnAround([334, 61]))'
+    # },
     "AralSea":{
         "mapreq":"AralSea",
         "foo":'ret(detectMapShape() and spawnAround([502, 300]))'
     },
     "FieldsOfPoland":{
         "mapreq":"FieldsOfPoland",
-        "foo":'ret(detectMapShape(0.08))'
+        "foo":'ret(detectMapShape())'
     },
     "Tunisia":{
         "mapreq":"Tunisia",

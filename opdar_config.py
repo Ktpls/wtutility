@@ -8,7 +8,7 @@ h = 1080
 
 # opdar
 fps = 15
-stablamb = 0.9
+stablamb = 0.75
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
@@ -18,7 +18,7 @@ camerestablizersubsamplerate = 0.1
 planetrackerchannel = 'V'
 searchrange = 60  # -sr~+sr
 backgroundrange = 21
-adptthresh = 0.32
+adptthresh = 0.1
 abslthresh=0.55
 regionrange = 3
 routhresh = 0.05
@@ -28,6 +28,7 @@ wingspanleast = 5
 scoreleast = 0.1
 # firecontrol
 c_thetabypix = 0.8115411412708535*1e-3
+useThetaByPixCalcFromMil=False
 targetwingspan = 16.3e-3
 vbullet = 0.800
 screensize = np.array([w, h], np.int32)
@@ -49,5 +50,5 @@ lineheight = 25
 textcolor = 255*rgb2bgr(hsv2rgb((0, 0, 1)))
 
 #datacollecting
-collectingPlaneSample=True
+collectingPlaneSample=False
 collectingPlaneSampleRate=0.1
