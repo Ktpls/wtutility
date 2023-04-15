@@ -79,7 +79,8 @@ def mainlogic():
         prompt += '\n'
         prompt += 'dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n' %\
             (distingrid, plottingscale, playererr, ymerr, griderr)
-    if dbglogreason is not None:
+    if dbglogreason is not None and collectFailDebugOutput:
+        # resolve with debug config
         ret = SolveMap_BottomRightSmallMap(scr, dbg=True, dbglogpath=r'./asset/wtdistmeaspy/log/{}_On{}/'.format(
             time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime()),
             dbglogreason

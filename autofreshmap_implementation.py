@@ -381,15 +381,20 @@ class mapdetector(detector):
         para = deepcopy(para)
 
         if 'mapreq' in para:
-            bean4dmtc = {
+            mapreq = para["mapreq"]
+            # formalize to list
+            if type(mapreq) is str:
+                mapreq = [mapreq]
+            mapreq = [mapname2assetpath(mr) for mr in mapreq]
+            bean4mtc = [{
                 'mask': None,
                 'lt': standardMapLeftTopPoint,
                 'thresh': standardMapMatchThreshold,
-                'path': mapname2assetpath(para["mapreq"])
-            }
-            self.mtc = matcher(bean4dmtc)
+                'path': mr
+            } for mr in mapreq]
+            self.mtc = [matcher(bm) for bm in bean4mtc]
         else:
-            self.mtc = None
+            self.mtc = []
 
         self.foo = para['foo']
 
@@ -397,8 +402,8 @@ class mapdetector(detector):
 
         mapcut = cutmap(mscr)
 
-        def detectMapShape(specialThresh=None):
-            return self.mtc.detect(mscr, specialThresh)
+        def detectMapShape(mtcid=0, thresh=None):
+            return self.mtc[mtcid].detect(mscr, thresh)
 
         def distance(a, b):
             err = np.sqrt(((a - b)**2).sum())

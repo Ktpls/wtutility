@@ -270,9 +270,10 @@ def SolveMap_BottomRightSmallMap(isrc,
     # plottingscale = ocrimpl.ocr(black)
 
     # im collecting samples on dl prac
-    savemat(black,
-            f'black4CNN_{plottingscale}',
-            path='./output/wtdmp_noised_scale_collection_project/')
+    if collectPlottingScale:
+        savemat(black,
+                f'black4CNN_{plottingscale}',
+                path='./output/wtdmp_noised_scale_collection_project/')
 
     return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale
 

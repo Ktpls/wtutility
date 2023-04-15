@@ -120,15 +120,12 @@ def main():
             foo=holdCAndTell
         ))
         
-        def Char2Ascii(c:str):
-            assert len(c)>=1
-            return int(c.encode('ascii')[0])
-        keylist=['W','A','S','D']
+        keylist=[win32con.VK_UP,win32con.VK_LEFT,win32con.VK_DOWN,win32con.VK_RIGHT]
         direction=['up','left','down','right']
         kd=zip(keylist,direction)
         for pair in kd:
             hotkeyaction.append(hotkeymanager.hotkeytask(
-                key=[win32con.VK_CONTROL,Char2Ascii(pair[0])],
+                key=[win32con.VK_CONTROL,pair[0]],
                 foo=functools.partial(keyshortcut.move_mouse,pair[1])
             ))
 
