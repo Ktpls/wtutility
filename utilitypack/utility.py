@@ -405,6 +405,8 @@ class fpsmanager:
         if fpsmanager.CheckIfTimeToDoNextFrame():
             fpsmanager.SetToNextFrame()
             do your task here
+        used in doing stuff peroidically, but in another loop with different peroid
+        so have to check if it is time to do it
         '''
         result = time.perf_counter() - self.lt > self.frametime
         return result
@@ -815,7 +817,8 @@ class DataCollector:
 
     @staticmethod
     def geneName():
-        return randomString('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        charSet4RandomString = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        return randomString(charSet4RandomString,
                             DataCollector.randNameLen)
 
     def save(self, m, name=None):

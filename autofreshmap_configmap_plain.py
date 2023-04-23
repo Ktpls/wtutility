@@ -12,10 +12,10 @@ desireds = [
 ]
 
 halfdesired = [
-    'AshRiver',  #not great with high br
+    #'AshRiver',  #not great with high br
     'FrozenPass',
     'Karelia',
-    'Japan',
+    #'Japan',
     'Poland',
     'Finland',
     'Tunisia',
@@ -24,6 +24,7 @@ halfdesired = [
     'EasternEurope',
     'SandsOfSinai',
     'Berlin',
+    'PortNovorossiysk',
 ]
 
 whitelistedmap = desireds + halfdesired
@@ -120,5 +121,9 @@ specialmapdetectors = {
         "mapreq": "Berlin",
         # bottom spawn
         "foo": 'ret(detectMapShape() and spawnAround([306, 504]))'
-    }
+    },
+    "PortNovorossiysk":{
+        "mapreq": "PortNovorossiysk",
+        "foo": 'ret(detectMapShape() and spawnAround([550, 88]))' #upper spawn
+    },
 }
