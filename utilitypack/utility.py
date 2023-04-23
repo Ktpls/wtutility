@@ -100,13 +100,13 @@ def regionsum(m, size, mask=None):
                        np.ones(size, np.float32))
 
 
-# if notConsiderMaskInDenominator:
-# denominator will not consider mask and boundary and be size[0]*size[1]
-# else:
-# denominator will be #pix nearby on mask
-# u may ask mask==None does the same as notConsiderMaskInDenominator==True
-# but if u want to use mask and dont want to be constrained by boundary. unimplemented though
 def regionave(m, size, mask=None, notConsiderMaskInDenominator=True):
+    # if notConsiderMaskInDenominator:
+    # denominator will not consider mask and boundary and be size[0]*size[1]
+    # else:
+    # denominator will be #pix nearby on mask
+    # u may ask mask==None does the same as notConsiderMaskInDenominator==True
+    # but if u want to use mask and dont want to be constrained by boundary. unimplemented though
     if m.size <= 0:
         return m
     if mask is not None:
@@ -138,10 +138,8 @@ def getWTHwnd():
     return ret
 
 
-# reconstructed with no mfc
-
-
 class screenshoter:
+    # reconstructed with no mfc
 
     def __init__(self, hwnd=0):
         self.wthwnd = hwnd
@@ -194,32 +192,30 @@ def sleepuntil(con: Callable, dt=0.01):
         time.sleep(dt)
 
 
-'''
-#init
-hud=fullScrHUD()
-hud.setup()
-...
-#main loop
-#preparing to show
-hud.clear
-#init m1
-m1=hud.getblankscreen()
-#draw sth on m1
-#then add m1 to hud
-hud.addcontent(m1)
-#or overwrite directly
-hud.writecontent(m1)
-#do the same for m2...
-...
-#ask hud to show
-hud.update()
-...
-#on exit
-hud.stop()
-'''
-
-
 class fullScrHUD:
+    '''
+    #init
+    hud=fullScrHUD()
+    hud.setup()
+    ...
+    #main loop
+    #preparing to show
+    hud.clear
+    #init m1
+    m1=hud.getblankscreen()
+    #draw sth on m1
+    #then add m1 to hud
+    hud.addcontent(m1)
+    #or overwrite directly
+    hud.writecontent(m1)
+    #do the same for m2...
+    ...
+    #ask hud to show
+    hud.update()
+    ...
+    #on exit
+    hud.stop()
+    '''
 
     def __init__(self) -> None:
         self.resolution = [1080, 1920]
@@ -398,7 +394,6 @@ class fpsmanager:
                    dt=0.5 * self.frametime)
         self.SetToNextFrame()
 
-
     def CheckIfTimeToDoNextFrame(self) -> bool:
         '''
         usage
@@ -410,7 +405,7 @@ class fpsmanager:
         '''
         result = time.perf_counter() - self.lt > self.frametime
         return result
-    
+
     def SetToNextFrame(self):
         self.lt = time.perf_counter()
 
@@ -559,8 +554,8 @@ def rgb2bgr(rgb):
     return m @ rgb
 
 
-# positive as right
 def arrayshift(a, n, fill=np.nan):
+    # n positive as right
     if n == 0:
         return a
     elif n > 0:
@@ -568,6 +563,18 @@ def arrayshift(a, n, fill=np.nan):
         return np.concatenate((np.full(n, fill), a[:-n]))
     else:
         return np.concatenate((a[-n:], np.full(-n, fill)))
+
+
+
+def integral(dx, x0, keepXM1=False):
+    # keepXM1 to keep the last element in x, or deprecate it, cuz its nan if generated from derivative
+    x = np.array(list(itertools.accumulate(dx, lambda t, e: t + e)))
+    x = np.concatenate([[x0], x if keepXM1 else x[:-1]])
+    return x
+
+
+def derivative(x):
+    return arrayshift(x, -1) - x
 
 
 def hsv2opencv8bithsv(hsv):
@@ -578,20 +585,15 @@ def digitsof(s: str):
     return ''.join(list(filter(str.isdigit, list(s))))
 
 
-# wont consider negative
-
-
 def numinstr(s: str):
+    # wont consider negative
     s = digitsof(s)
     return int(s) if len(s) > 0 else 0
 
 
-# summon from card pool
-
-# impl using np
-
-
 def summonCard(inteprob, generator=None):
+    # summon from card pool
+    # impl using np
     # norm
     prob = np.array(inteprob, dtype=np.float32)
     prob /= prob.sum()
@@ -601,10 +603,8 @@ def summonCard(inteprob, generator=None):
         return generator.choice(np.arange(len(prob)), p=prob)
 
 
-# faster summon using division
-
-
 def quickSummonCard(inteprob):
+    # faster summon using division
     pos = random.random() * inteprob[-1]
     section = [0, len(inteprob)]
 
@@ -653,11 +653,9 @@ class toast:
         return '\n'.join(self.messagelist)
 
 
-# new msg covers the lasts
-
-
 class bulletinBoard:
 
+    # new msg covers the lasts
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
         self.content = ''
@@ -684,14 +682,12 @@ def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
     return m
 
 
-# different impl., ret with content bounding box
-
-
 def outputlines2mat2(m,
                      pos,
                      content,
                      textcolor=[255, 255, 255],
                      lineinterval=10):
+    # different impl., ret with content bounding box
     pos = np.array(pos).astype('int')
     line = content.split('\n')
     yoffset = 0
@@ -746,8 +742,8 @@ def addShadow2HUD(m, thickness=2, color=50):
     return m + edge * color
 
 
-# pass in __file__
 def bootAsAdmin(file):
+    # pass in __file__
     quotedpy = '"' + file + '"'
     ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable,
                                               quotedpy, None, 1)
@@ -770,6 +766,7 @@ class ZFunc:
     '''
     x1x2 at any order
     '''
+
     def __init__(self, x1, y1, x2, y2) -> None:
         if x1 < x2:
             #[lower or higher, x or y]
