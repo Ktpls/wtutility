@@ -3,6 +3,7 @@ from aio_config import *
 import traceback
 import hashlib
 import functools
+
 bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
@@ -29,14 +30,9 @@ def main():
     seed = time.strftime('%Y-%m-%d', time.localtime()).encode('utf-8')
     seed = hashlib.md5(seed).digest()
     seed = int.from_bytes(seed[:8], 'big')
-    bulletin = bulletinBoard(
-        idlebulletincontents[
-            summonCard(
-                [c[1] for c in idlebulletincontents],
-                np.random.Generator(np.random.PCG64(seed))
-            )
-        ][0]
-    )
+    bulletin = bulletinBoard(idlebulletincontents[summonCard(
+        [c[1] for c in idlebulletincontents],
+        np.random.Generator(np.random.PCG64(seed)))][0])
 
     # 日常运作的业务
     business = []
@@ -50,35 +46,34 @@ def main():
 
         def hkcallWTDistMeas():
             bulletin.putup(wtdistmeaspy.mainlogic(), 10)
+
         '''
         VK_OEM_3=0xC0
         Used for miscellaneous characters; it can vary by keyboard.
         For the US standard keyboard, the '`~' key
         '''
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=0xc0,
-            foo=hkcallWTDistMeas
-        ))
-        
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=0xc0, foo=hkcallWTDistMeas))
+
         def startCali():
-            lastStaged=wtdistmeaspy.lastDistMeasResultStaged.get()
-            if type(lastStaged) is bool and not lastStaged:
+            lastStaged = wtdistmeaspy.lastDistMeasResultStaged.result
+            if lastStaged is None:
                 bulletin.putup("no staged dist result", 10)
                 return
             wtdistmeaspy.caliOperator.start(lastStaged)
             bulletin.putup(f"caliberating to {lastStaged}", 10)
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=[win32con.VK_CONTROL,0xc0],
-            foo=startCali
-        ))
-        
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=[win32con.VK_CONTROL, 0xc0],
+                                     foo=startCali))
+
         def stopCali():
             wtdistmeaspy.caliOperator.stop()
             bulletin.putup(f"stopped", 10)
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=[win32con.VK_SHIFT,0xc0],
-            foo=stopCali
-        ))
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=[win32con.VK_SHIFT, 0xc0],
+                                     foo=stopCali))
 
     # telescope
     if usingtelescope:
@@ -90,14 +85,14 @@ def main():
             if scope is None:
                 return
             hud.writecontent(np.flip(telescopepos), scope)
+
         business.append(telemain)
 
         def switchtele():
             tele.enabled = not tele.enabled
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_F12,
-            foo=switchtele
-        ))
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=win32con.VK_F12, foo=switchtele))
 
     # key shortcuts
     if usingkeyshortcut:
@@ -107,27 +102,28 @@ def main():
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
             bulletin.putup('LeftHolding', 1)
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_F10,
-            foo=holdLeftAndTell
-        ))
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=win32con.VK_F10, foo=holdLeftAndTell))
 
         def holdCAndTell():
             keyshortcut.holdC()
             bulletin.putup('CHolding', 1)
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_F11,
-            foo=holdCAndTell
-        ))
-        
-        keylist=[win32con.VK_UP,win32con.VK_LEFT,win32con.VK_DOWN,win32con.VK_RIGHT]
-        direction=['up','left','down','right']
-        kd=zip(keylist,direction)
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
+
+        keylist = [
+            win32con.VK_UP, win32con.VK_LEFT, win32con.VK_DOWN,
+            win32con.VK_RIGHT
+        ]
+        direction = ['up', 'left', 'down', 'right']
+        kd = zip(keylist, direction)
         for pair in kd:
-            hotkeyaction.append(hotkeymanager.hotkeytask(
-                key=[win32con.VK_CONTROL,pair[0]],
-                foo=functools.partial(keyshortcut.move_mouse,pair[1])
-            ))
+            hotkeyaction.append(
+                hotkeymanager.hotkeytask(key=[win32con.VK_CONTROL, pair[0]],
+                                         foo=functools.partial(
+                                             keyshortcut.move_mouse, pair[1])))
 
     # eagle eye
     if usingeagleeye:
@@ -138,26 +134,23 @@ def main():
             nonlocal eedcstate
             if eedcstate:
                 eagleeye.cachedShots = []
-                eedcstate=False
-                bulletin.putup('eedc off',1)
+                eedcstate = False
+                bulletin.putup('eedc off', 1)
             else:
-                eedcstate=True
-                bulletin.putup('eedc on',1)
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_F8,
-            foo=eedcswitch
-        ))
+                eedcstate = True
+                bulletin.putup('eedc on', 1)
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=win32con.VK_F8, foo=eedcswitch))
 
         def eedcOnClickWithSwitch():
             if eedcstate:
                 eagleeye.onClick()
-        hotkeyaction.append(hotkeymanager.hotkeytask(
-            key=win32con.VK_LBUTTON,
-            foo=eedcOnClickWithSwitch
-        ))
+
+        hotkeyaction.append(
+            hotkeymanager.hotkeytask(key=win32con.VK_LBUTTON,
+                                     foo=eedcOnClickWithSwitch))
         business.append(eagleeye.onFrame)
-        
-    
 
     # reboot, not working on exit
 
@@ -168,10 +161,11 @@ def main():
         freqseq = [500, 750, 400]
         [win32api.Beep(f, dur) for f in freqseq]
         sys.exit()
-    hotkeyaction.append(hotkeymanager.hotkeytask(
-        key=[win32con.VK_CONTROL,win32con.VK_SHIFT, win32con.VK_F12],
-        foo=rebootfoo
-    ))
+
+    hotkeyaction.append(
+        hotkeymanager.hotkeytask(
+            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12],
+            foo=rebootfoo))
 
     # main loop
     hud = fullScrHUD()
@@ -207,8 +201,8 @@ def main():
                     raise e
 
         # show bulletin
-        hud.writecontent(
-            np.flip(bulletinoutputpos), aPicWithText(bulletin.read(), maxsize=[400, 700]))
+        hud.writecontent(np.flip(bulletinoutputpos),
+                         aPicWithText(bulletin.read(), maxsize=[400, 700]))
 
         hud.update()
 

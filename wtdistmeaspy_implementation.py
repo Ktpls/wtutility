@@ -60,10 +60,19 @@ def kickOutWrongItemInUniformData(l, sqrErrReq):
     return l, err
 
 
+class ElementsOfBRMap:
+
+    def __init__(self, playerpos, ympos, gridave, plottingscale,
+                 result) -> None:
+        self.playerpos, self.ympos, self.gridave, self.plottingscale, self.result = playerpos, ympos, gridave, plottingscale, result
+
+
 def SolveMap_BottomRightSmallMap(isrc,
+                                 prev: ElementsOfBRMap = None,
                                  dbg: bool = False,
                                  dbglogpath: str = ''):
-
+    if prev is None:
+        prev = ElementsOfBRMap(None, None, None, None, None)
     if dbg:
 
         def dbglogsavestep(m, name='unnamed', method='savemat'):
@@ -83,6 +92,8 @@ def SolveMap_BottomRightSmallMap(isrc,
 
         def log(s):
             pass
+
+    msgExtra = []  #any beyond main ok or error message
 
     mcolored = isrc
     dbglogsavestep(mcolored)
@@ -128,13 +139,23 @@ def SolveMap_BottomRightSmallMap(isrc,
 
     afterprocessresult = playerfinder_gaussiandensity_method(mply)
     if not afterprocessresult[0]:
-        errormsg = "PL_NOT_FOUND"
-        return [errormsg]
-    _, playerpos, playererr = afterprocessresult
-
-    if playererr > plerrreq:
-        errormsg = "PL_2GREAT_ERR %5f" % playererr
-        return [errormsg]
+        if prev.playerpos is None:
+            errormsg = "PL_NOT_FOUND"
+            return [errormsg]
+        else:
+            msgExtra.append('using last playerpos')
+            playerpos = prev.playerpos
+            playererr = 0
+    else:
+        _, playerpos, playererr = afterprocessresult
+        if playererr > plerrreq:
+            if prev.playerpos is None:
+                errormsg = "PL_2GREAT_ERR %5f" % playererr
+                return [errormsg]
+            else:
+                msgExtra.append('using last playerpos')
+                playerpos = prev.playerpos
+                playererr = 0
     # try deleting too wrong points like did in grid processing
 
     # find yellow mark
@@ -158,8 +179,13 @@ def SolveMap_BottomRightSmallMap(isrc,
     log('y=(%3d,%3d),ye=%5.3f' % (ympos[0], ympos[1], ymerr))
 
     if ymerr < ymerrreq:
-        errormsg = "YM_2LESS_PROD %5f" % ymerr
-        return [errormsg]
+        if prev.ympos is None:
+            errormsg = "YM_2LESS_PROD %5f" % ymerr
+            return [errormsg]
+        else:
+            msgExtra.append('using last ympos')
+            ympos = prev.ympos
+            ymerr = 0
 
     # find grid
     mgrd = 255 - mgray
@@ -212,17 +238,23 @@ def SolveMap_BottomRightSmallMap(isrc,
 
     kickoutresult = kickOutWrongItemInUniformData(interval, griderrreq)
     if type(kickoutresult) is bool and not kickoutresult:
-        errormsg = "GD_BAD_INTE"
-        log(errormsg)
-        return [errormsg]
-    interval, err = kickoutresult
-    log("grid interval samples used %d out of %d, err=%5f\n" %
-        (len(interval), intervaltotalnum, err))
+        if prev.gridave is None:
+            errormsg = "GD_BAD_INTE"
+            log(errormsg)
+            return [errormsg]
+        else:
+            msgExtra.append('using last grid')
+            gridave = prev.gridave
+            griderr = 0
+    else:
+        interval, err = kickoutresult
+        log("grid interval samples used %d out of %d, err=%5f\n" %
+            (len(interval), intervaltotalnum, err))
 
-    log('used intervals\n%s' % ('\n'.join(['%4d' % i for i in interval])))
+        log('used intervals\n%s' % ('\n'.join(['%4d' % i for i in interval])))
 
-    gridave = interval.mean()
-    griderr = interval.var()
+        gridave = interval.mean()
+        griderr = interval.var()
 
     log('g=%3f,ge=%5f.3f' % (gridave, griderr))
 
@@ -260,14 +292,18 @@ def SolveMap_BottomRightSmallMap(isrc,
     charw, charh = 10, 20
 
     # padding for ease of recongnization by tesseract, at least in the past
-    # but our cnn using data collected from tesseract daily using uses the standard 20x10 char pic
+    # but our cnn using data collected from tesseract daily use uses the standard 20x10 char pic
     black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
     dbglogsavestep(black)
     plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
-
-    # cnn works fine even with dirty relblack pic
-    # relblack = cv.copyMakeBorder(relblack, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
-    # plottingscale = ocrimpl.ocr(black)
+    if plottingscale>plottingscalerequpper or plottingscale<plottingscalereqlower: #bad
+        if prev.plottingscale is None:
+            pass
+        else:
+            msgExtra.append('using last ps')
+            plottingscale = prev.plottingscale
+    else:
+        pass # just show it
 
     # im collecting samples on dl prac
     if collectPlottingScale:
@@ -275,7 +311,7 @@ def SolveMap_BottomRightSmallMap(isrc,
                 f'black4CNN_{plottingscale}',
                 path='./output/wtdmp_noised_scale_collection_project/')
 
-    return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale
+    return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale, msgExtra
 
 
 def cutBottomRightMap(m):
@@ -522,7 +558,7 @@ def PreciseSleep(t):
         # too rough
         sleep(t)
     else:
-        endtime = time.perf_counter()+t
+        endtime = time.perf_counter() + t
         while (True):
             if time.perf_counter() >= endtime:
                 break
