@@ -4,10 +4,18 @@ import sys
 import time
 if len(sys.argv)>1:
     os.chdir(sys.argv[1])
-while(True):
-    ret=subprocess.run(["git", "pull"])
-    print(ret)
-    if ret.returncode==0:
-        os.system("pause")
-        break
-    time.sleep(5)
+def insistCalling(cmd):
+    while(True):
+        ret=subprocess.run(cmd)
+        print(ret)
+        if ret.returncode==0:
+            break
+        time.sleep(5)
+
+insistCalling(["git", "pull"])
+print("pull done")
+
+insistCalling(["git", "push"])
+print("push done")
+
+os.system('pause')
