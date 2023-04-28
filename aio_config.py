@@ -3,7 +3,7 @@ usingtelescope=True
 usingkeyshortcut=True
 usingeagleeye=False
 
-throwErrorInBus=False
-throwErrorInHotkey=False
+throwErrorInBus=True
+throwErrorInHotkey=True
 
 aiofps=10

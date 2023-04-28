@@ -179,13 +179,9 @@ def SolveMap_BottomRightSmallMap(isrc,
     log('y=(%3d,%3d),ye=%5.3f' % (ympos[0], ympos[1], ymerr))
 
     if ymerr < ymerrreq:
-        if prev.ympos is None:
-            errormsg = "YM_2LESS_PROD %5f" % ymerr
-            return [errormsg]
-        else:
-            msgExtra.append('using last ympos')
-            ympos = prev.ympos
-            ymerr = 0
+        #should not use last ym
+        errormsg = "YM_2LESS_PROD %5f" % ymerr
+        return [errormsg]
 
     # find grid
     mgrd = 255 - mgray

@@ -3,7 +3,7 @@ from autofreshmap_configmap_plain import whitelistedmap,specialmapdetectors
 
 singlechanneleddetection=False
 subsampleddetection=True
-subsampleddetectionrate=0.2
+subsampleddetectionrate=0.1
 
 log2file=False
 dbglog=True
@@ -13,7 +13,7 @@ standardSpawnCenterError=200
 standardPointSelectorError=20
 
 standardMatchThreshold=0.3
-standardMapMatchThreshold=0.15
+standardMapMatchThreshold=0.2
 
 setonwifirecoverthresh=13
 

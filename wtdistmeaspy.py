@@ -47,8 +47,8 @@ def mainlogic():
         ]
 
         prompt = ''
-        prompt += '%s\n' % (state)
-        prompt += '\n'.join(msgExtra)
+        prompt += '%s' % (state) + ''.join([', ' + me
+                                            for me in msgExtra]) + '\n'
         prompt += 'dist=%d\n' % (dist)
 
         def strictErrCheck():
@@ -56,8 +56,6 @@ def mainlogic():
 
             if playererr > plerrreqstrict:
                 err.append('SEC_PE')
-                if lastDistMeasResultStaged.plottingscale is not None:
-                    plottingscale=lastDistMeasResultStaged.plottingscale # revert
             else:
                 lastDistMeasResultStaged.playerpos = playerpos
 
@@ -83,15 +81,21 @@ def mainlogic():
         dbglogreason = strictErrCheck()
         if len(dbglogreason) > 0:
             # not usable
-            prompt += 'but {}. \n'.format(dbglogreason)
+            prompt += 'but {}. \n'.format(','.join(dbglogreason))
             prompt += 'Not recommended to use, better try again\n'
         else:
             #everything goes great.
             # stage result
             lastDistMeasResultStaged.result = dist
 
-        prompt += '{}'.format('\n'.join(refresult))
-        prompt += '\n'
+        i=0
+        while(i<len(refresult)):
+            for j in range(3):
+                prompt+=refresult[i] + ', '
+                i+=1
+                if i>=len(refresult):
+                    break
+            prompt+='\n'
         prompt += 'dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n' %\
             (distingrid, plottingscale, playererr, ymerr, griderr)
     if dbglogreason is not None and collectFailDebugOutput:
