@@ -10,7 +10,7 @@ def insistCalling(cmd):
         print(ret)
         if ret.returncode==0:
             break
-        time.sleep(5)
+        time.sleep(1)
 
 insistCalling(["git", "pull"])
 print("pull done")
