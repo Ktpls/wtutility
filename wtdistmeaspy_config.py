@@ -7,11 +7,14 @@ outputpos=(100,500)
 plerrreq=10
 ymerrreq=0.45
 griderrreq=0.1
+plottingscalereqlower=100
+plottingscalerequpper=500
+
 plerrreqstrict=10
 ymerrreqstrict=0.5
 griderrreqstrict=4
-plottingscalestrictlower=100
-plottingscalestrictupper=500
+plottingscalestrictlower=130
+plottingscalestrictupper=460
 
 shadowthickness=2
 shadowcolor=50
