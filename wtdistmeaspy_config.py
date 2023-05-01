@@ -8,13 +8,13 @@ plerrreq=10
 ymerrreq=0.45
 griderrreq=0.1
 plottingscalereqlower=100
-plottingscalerequpper=500
+plottingscalerequpper=600
 
 plerrreqstrict=10
 ymerrreqstrict=0.5
 griderrreqstrict=4
 plottingscalestrictlower=130
-plottingscalestrictupper=460
+plottingscalestrictupper=550
 
 shadowthickness=2
 shadowcolor=50
@@ -33,7 +33,7 @@ cnnresultthresh=0.4
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2
 
-caliDbg=False
+caliDbg=True
 caliP=1
 caliD=0
 caliControlMul=0.125  # for 30%

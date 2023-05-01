@@ -292,14 +292,14 @@ def SolveMap_BottomRightSmallMap(isrc,
     black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
     dbglogsavestep(black)
     plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
-    if plottingscale>plottingscalerequpper or plottingscale<plottingscalereqlower: #bad
+    if plottingscale > plottingscalerequpper or plottingscale < plottingscalereqlower:  #bad
         if prev.plottingscale is None:
             pass
         else:
             msgExtra.append('using last ps')
             plottingscale = prev.plottingscale
     else:
-        pass # just show it
+        pass  # just show it
 
     # im collecting samples on dl prac
     if collectPlottingScale:
@@ -330,29 +330,25 @@ class BadCrossHairException(BaseException):
         super().__init__(*args)
 
 
-LineKernel = None
-
-
 def SetLineKernel():
-    global LineKernel
     kernelLength = 21
-    kernelHalfWidth = 2
-    lineHalfWidth = 1.5
+    kernelHalfWidth = 3
+    lineHalfWidth = 1.5  # could be float, cuz its soft kernel
     alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth,
                              kernelHalfWidth * 2 + 1)
     kerValAlongWidth = np.exp(-(alongWidth / lineHalfWidth)**2)
+     # transfer to m2 to 1 now
     Transfer0To1ToM1To1 = scipy.interpolate.interp1d([0, 1 / np.e, 1],
                                                      [-1, 0, 1],
                                                      assume_sorted=True)
     kerValAlongWidth = Transfer0To1ToM1To1(kerValAlongWidth)
     # vertical now
-    LineKernel = np.repeat(
-        kerValAlongWidth.reshape((1, ) + kerValAlongWidth.shape),
-        kernelLength,
-        axis=0) / kernelLength
+    return np.repeat(kerValAlongWidth.reshape((1, ) + kerValAlongWidth.shape),
+                     kernelLength,
+                     axis=0) / kernelLength
 
 
-SetLineKernel()
+LineKernel = SetLineKernel()
 
 
 def SnipScencePreProcess(m, dbg, dbglogsavestep, log):

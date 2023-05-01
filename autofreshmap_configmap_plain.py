@@ -6,16 +6,14 @@ desireds = [
     'Pradesh',
     'RedDesert',
     'SandsOfTunisia',
-    #'SecondBattleOfElAlameinDomination#1',
-    'SecondBattleOfElAlameinDomination#2',
     'Sinai',
 ]
 
 halfdesired = [
-    #'AshRiver',  #not great with high br
+    'AshRiver',  # not great with high br
     'FrozenPass',
     'Karelia',
-    #'Japan',
+    'Japan',
     'Poland',
     'Finland',
     'Tunisia',
@@ -25,6 +23,7 @@ halfdesired = [
     'SandsOfSinai',
     'Berlin',
     'PortNovorossiysk',
+    'SecondBattleOfElAlamein',
 ]
 
 whitelistedmap = desireds + halfdesired
@@ -33,7 +32,7 @@ specialmapdetectors = {
     "Sinai": {
         "mapreq":
         "Sinai",
-        #B, or battle mode at any side
+        # B, or battle mode at any side
         "foo":
         'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectPoint("blueA") or selectPoint("blueB") ) )'
     },
@@ -81,16 +80,18 @@ specialmapdetectors = {
     "Finland": {
         "mapreq":
         "Finland",
-        #c point
+        # c point
         "foo":
         'ret(detectMapShape() and spawnAround([355,526]) and selectPoint(ppos=[492, 289]))'
     },
-    # "SandsOfSinai":{
-    # "mapreq":"SandsOfSinai",
-    # "foo":'ret(detectMapShape() and spawnAround([334, 61]))'
-    # },
+    "SandsOfSinai": {
+        "mapreq": "SandsOfSinai",
+        # better survivability at upper, less likely to be killed by flankers
+        "foo": 'ret(detectMapShape() and spawnAround([334, 61]))'
+    },
     "AralSea": {
         "mapreq": "AralSea",
+        # actually both side are fine
         "foo": 'ret(detectMapShape() and spawnAround([502, 300]))'
     },
     "FieldsOfPoland": {
@@ -102,11 +103,13 @@ specialmapdetectors = {
         "Tunisia",
         # A point
         "foo":
+        # born at bottom left, go behind the stone slightly left of the bridge above a
         'ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))'
     },
     "MaginotLineDomination#1": {
         "mapreq": ["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
         "foo":
+        # born at upper, highland between two spawns
         'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([290, 65]))'
     },
     "MaginotLineDomination#2": {
@@ -115,15 +118,24 @@ specialmapdetectors = {
     },
     "EuropeanProvince": {
         "mapreq": "EuropeanProvince",
+        # at bottom right spawn, good vision at this highland
         "foo": 'ret(detectMapShape() and spawnAround([476, 303]))'
     },
     "Berlin": {
         "mapreq": "Berlin",
         # bottom spawn
+        # good vision at bottom right spawn
         "foo": 'ret(detectMapShape() and spawnAround([306, 504]))'
     },
-    "PortNovorossiysk":{
+    "PortNovorossiysk": {
         "mapreq": "PortNovorossiysk",
-        "foo": 'ret(detectMapShape() and spawnAround([550, 88]))' #upper spawn
+        # upper spawn
+        # born at upper, good vision between buildings through river and survivability for river
+        "foo": 'ret(detectMapShape() and spawnAround([550, 88]))'
+    },
+    "SecondBattleOfElAlamein": {
+        "mapreq": ['SecondBattleOfElAlameinConquest#1', 'SecondBattleOfElAlameinDomination#2'],
+        # born at upper, better vision around up right spawn
+        "foo": 'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([559, 464]))'
     },
 }
