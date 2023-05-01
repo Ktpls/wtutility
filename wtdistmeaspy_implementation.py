@@ -337,7 +337,7 @@ def SetLineKernel():
     alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth,
                              kernelHalfWidth * 2 + 1)
     kerValAlongWidth = np.exp(-(alongWidth / lineHalfWidth)**2)
-     # transfer to m2 to 1 now
+    # transfer to m2 to 1 now
     Transfer0To1ToM1To1 = scipy.interpolate.interp1d([0, 1 / np.e, 1],
                                                      [-1, 0, 1],
                                                      assume_sorted=True)
@@ -479,6 +479,12 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
 gridSearchWidth_unzoom = 10
 
 
+class BadCaliTableException(BaseException):
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
     red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
@@ -491,6 +497,10 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     gridlineVerPos = np.where(gridlineVer)[0]
     log('gridlineVerPos')
     log(np.ndarray.__repr__(gridlineVerPos))
+    if len(gridlineVerPos) == 0:
+        # so we are in snip scence, but no cali table found, maybe blocked by gui due to scope shaking
+        log('bad gridlineVerPos')
+        raise BadCaliTableException()
     targetDistance = np.arange(len(gridlineVerPos)) * 200
     f = scipy.interpolate.interp1d(targetDistance,
                                    gridlineVerPos,
@@ -628,6 +638,9 @@ class loadCalibrationOperator:
                     self.stopped = True
                     log(self.result)
                     return
+                except BadCaliTableException:
+                    log('catch BadCaliTableException, ignored and carry on')
+                    continue
 
                 targetpix, nowpix, mil = caliresult
                 log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')

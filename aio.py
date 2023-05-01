@@ -186,9 +186,11 @@ def main():
                     raise e
                 except Exception as e:
                     beepOnErr()
+                    print('#'*10)
+                    traceback.print_exc()
+                    print('#'*10)
                     if throwErrorInHotkey:
                         raise e
-                    traceback.print_exc()
 
         for bus in business:
 
@@ -196,7 +198,9 @@ def main():
                 bus()
             except Exception as e:
                 beepOnErr()
+                print('#'*10)
                 traceback.print_exc()
+                print('#'*10)
                 if throwErrorInBus:
                     raise e
 
