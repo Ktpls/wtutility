@@ -441,6 +441,10 @@ class mapdetector(detector):
 
             return len(result) != 0
 
+        def singlePoint(ppos=None):
+            return selectPoint(ptype='A',
+                               ppos=ppos) and not selectPoint(ptype='B')
+
         retVal = None
 
         def ret(val):

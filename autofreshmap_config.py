@@ -21,7 +21,7 @@ detectpointsimilarity=0.05
 
 minDelayAfterDisconnected=5
 
-throwerringetdetector=True
+throwerringetdetector=False
 throwerrinmain=False
 
 resolution='m1920x1080r1280x720'

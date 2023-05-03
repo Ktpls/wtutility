@@ -10,10 +10,10 @@ desireds = [
 ]
 
 halfdesired = [
-    'AshRiver',  # not great with high br
+    #'AshRiver',  # not great with high br
     'FrozenPass',
     'Karelia',
-    'Japan',
+    'Japan', # right with tail, left, and right again. be aware of falling down
     'Poland',
     'Finland',
     'Tunisia',
@@ -24,6 +24,7 @@ halfdesired = [
     'Berlin',
     'PortNovorossiysk',
     'SecondBattleOfElAlamein',
+    'FieldsOfNormandy'
 ]
 
 whitelistedmap = desireds + halfdesired
@@ -71,7 +72,7 @@ specialmapdetectors = {
     },
     "FieldsOfNormandy": {
         "mapreq": "FieldsOfNormandy",
-        "foo": 'ret(detectMapShape() and spawnAround([ 88, 294]))'
+        "foo": 'ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))' # single point at top
     },
     "AshRiver": {
         "mapreq": "AshRiver",
@@ -82,7 +83,7 @@ specialmapdetectors = {
         "Finland",
         # c point
         "foo":
-        'ret(detectMapShape() and spawnAround([355,526]) and selectPoint(ppos=[492, 289]))'
+        'ret(detectMapShape() and spawnAround([355,526]) and singlePoint([492, 289]))' #single point at right
     },
     "SandsOfSinai": {
         "mapreq": "SandsOfSinai",
