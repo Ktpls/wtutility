@@ -13,7 +13,6 @@ halfdesired = [
     #'AshRiver',  # not great with high br
     'FrozenPass',
     'Karelia',
-    'Japan', # right with tail, left, and right again. be aware of falling down
     'Poland',
     'Finland',
     'Tunisia',
@@ -24,10 +23,30 @@ halfdesired = [
     'Berlin',
     'PortNovorossiysk',
     'SecondBattleOfElAlamein',
-    'FieldsOfNormandy'
+    'FieldsOfNormandy',
 ]
 
-whitelistedmap = desireds + halfdesired
+highSurvivablity = [
+    'AralSea',
+    'FieldsOfPoland',
+    'FireArc',
+    'MaginotLineDomination#2',
+    'Pradesh',
+    'RedDesert',
+    'SandsOfTunisia',
+    'FrozenPass',
+    'Karelia',
+    'Poland',
+    'Finland',
+    'MaginotLineDomination#1',
+    'EuropeanProvince',
+    'SandsOfSinai',
+    'PortNovorossiysk',
+    'SecondBattleOfElAlamein',
+    'FieldsOfNormandy',
+]
+
+whitelistedmap = highSurvivablity
 
 specialmapdetectors = {
     "Sinai": {
@@ -38,8 +57,11 @@ specialmapdetectors = {
         'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectPoint("blueA") or selectPoint("blueB") ) )'
     },
     "FrozenPass": {
-        "mapreq": "FrozenPass",
-        "foo": 'ret(detectMapShape() and spawnAround([474,477]))'
+        "mapreq":
+        "FrozenPass",
+        # A or B, not single C in village
+        "foo":
+        'ret(detectMapShape() and spawnAround([474,477]) and (selectPoint(ppos=[85, 546]) or selectPoint(ppos=[325, 322])))'
     },
     "EasternEurope": {
         "mapreq": "EasternEurope",
@@ -71,8 +93,10 @@ specialmapdetectors = {
         "foo": 'ret(detectMapShape() and spawnAround([130, 352]))'
     },
     "FieldsOfNormandy": {
-        "mapreq": "FieldsOfNormandy",
-        "foo": 'ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))' # single point at top
+        "mapreq":
+        "FieldsOfNormandy",
+        "foo":
+        'ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))'  # single point at top
     },
     "AshRiver": {
         "mapreq": "AshRiver",
@@ -83,18 +107,18 @@ specialmapdetectors = {
         "Finland",
         # c point
         "foo":
-        'ret(detectMapShape() and spawnAround([355,526]) and singlePoint([492, 289]))' #single point at right
+        'ret(detectMapShape() and spawnAround([355,526]) and singlePoint([492, 289]))'  #single point at right
     },
     "SandsOfSinai": {
         "mapreq": "SandsOfSinai",
         # better survivability at upper, less likely to be killed by flankers
         "foo": 'ret(detectMapShape() and spawnAround([334, 61]))'
     },
-    "AralSea": {
-        "mapreq": "AralSea",
-        # actually both side are fine
-        "foo": 'ret(detectMapShape() and spawnAround([502, 300]))'
-    },
+    # "AralSea": {
+    #     "mapreq": "AralSea",
+    #     # actually both side are fine
+    #     "foo": 'ret(detectMapShape() and spawnAround([502, 300]))'
+    # },
     "FieldsOfPoland": {
         "mapreq": "FieldsOfPoland",
         "foo": 'ret(detectMapShape())'
@@ -135,8 +159,12 @@ specialmapdetectors = {
         "foo": 'ret(detectMapShape() and spawnAround([550, 88]))'
     },
     "SecondBattleOfElAlamein": {
-        "mapreq": ['SecondBattleOfElAlameinConquest#1', 'SecondBattleOfElAlameinDomination#2'],
+        "mapreq": [
+            'SecondBattleOfElAlameinConquest#1',
+            'SecondBattleOfElAlameinDomination#2'
+        ],
         # born at upper, better vision around up right spawn
-        "foo": 'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([559, 464]))'
+        "foo":
+        'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([219, 87]))'
     },
 }
