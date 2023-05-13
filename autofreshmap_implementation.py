@@ -260,7 +260,8 @@ class matcher:
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
         if dbglog:
             allchanneloutput(f"{self.path} detecting: s={s}")
-        return s < self.thresh if specifiedThresh is None else s < specifiedThresh
+        thresh = specifiedThresh if specifiedThresh is not None else self.thresh
+        return s < thresh
 
     def getsignpointlt(self):
         return self.pointlt
@@ -270,6 +271,47 @@ class matcher:
 
     def getsigncenter(self):
         return 0.5 * (self.pointlt + self.pointrd)
+
+
+
+
+def threshedmatchtemplate(src, temp, mask, simu):
+    matchresult = 1-cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
+    # print(minval)
+    if dbglog:
+        allchanneloutput(
+            f'threshedmatchtemplate(): minval={minval}, simuthresh={simu}')
+    return minloc if minval <= simu else None
+
+class matchTemplateClassWrapper:
+
+    def __init__(self, info: Dict):
+        path = assetpath2realpath(info['path'])
+        m = cv.imread(path)
+        if m.size == 0:
+            raise BaseException('loading matcher failed in {}'.format(path))
+        self.m = m
+        self.thresh = info.get(
+            'thresh', None)  #optional thresh, for dynamic specified, if needed
+
+        # for dbg output
+        self.path = info['path']
+
+        if info['mask'] is not None:
+            m = assetpath2realpath(info['mask'])
+            m = cv.imread(m)
+            self.mask = m
+        else:
+            self.mask = None
+
+    def detect(self, mscr, specifiedThresh=None):
+        thresh = specifiedThresh if specifiedThresh is not None else self.thresh
+        ret=threshedmatchtemplate(mscr,self.m,self.mask,thresh)
+        if dbglog:
+            allchanneloutput(
+                f"{self.path} matchTemplateClassWrapper detecting, ret={ret}")
+        return ret is not None
 
 
 class detector:
@@ -294,9 +336,14 @@ class signdetector(detector):
     #para: {"path":path,"lt":lt}
     def __init__(self, para: dict):
         para = deepcopy(para)
-        para.setdefault('thresh', standardMatchThreshold)
+        para.setdefault('thresh', 0.27)
         para.setdefault('mask', None)
-        self.mtc = matcher(para)
+        para.setdefault('type', 'matchtemplate')
+
+        if para.get('type') == 'matcher':
+            self.mtc = matcher(para)
+        elif para.get('type') == 'matchtemplate':
+            self.mtc = matchTemplateClassWrapper(para)
 
     def detect(self, mscr: np.ndarray):
         return self.mtc.detect(mscr)
@@ -330,16 +377,6 @@ def getMapSpawnCenter(m, spawntype='blue'):
 
 def mapname2assetpath(mapname):
     return 'map/' + mapname + '.png'
-
-
-def threshedmatchtemplate(src, temp, mask, simu):
-    matchresult = cv.matchTemplate(src, temp, cv.TM_SQDIFF_NORMED, mask=mask)
-    minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
-    # print(minval)
-    if dbglog:
-        allchanneloutput(
-            f'threshedmatchtemplate(): minval={minval}, simuthresh={simu}')
-    return minloc if minval <= simu else None
 
 
 def cutmap(m):

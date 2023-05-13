@@ -1,4 +1,4 @@
-desireds = [
+niceplain = [
     'AralSea',
     'FieldsOfPoland',
     'FireArc',
@@ -9,7 +9,7 @@ desireds = [
     'Sinai',
 ]
 
-halfdesired = [
+halfniceplain = [
     #'AshRiver',  # not great with high br
     'FrozenPass',
     'Karelia',
@@ -25,6 +25,8 @@ halfdesired = [
     'SecondBattleOfElAlamein',
     'FieldsOfNormandy',
 ]
+
+allniceplains=niceplain+halfniceplain
 
 highSurvivablity = [
     'AralSea',
@@ -46,7 +48,7 @@ highSurvivablity = [
     'FieldsOfNormandy',
 ]
 
-whitelistedmap = highSurvivablity
+whitelistedmap = allniceplains
 
 specialmapdetectors = {
     "Sinai": {

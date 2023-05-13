@@ -5,9 +5,11 @@ import traceback
 
 def main():
     setadmin(__file__)
+    
+    
     try:
         
-        activeWindow(getWTHwnd())
+        #activeWindow(getWTHwnd())
         mouse.mov(*(0,0))
         freshAMap()
         if waitaftergoodmap:
