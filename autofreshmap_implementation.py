@@ -77,6 +77,7 @@ elif resolution == 'm1920x1080r1280x720':
         'OK': {
             'path': signName2Path('OK'),
             'lt': [896, 554],
+            'thresh':0.2
         }
     }
     standardMapLeftTopPoint = [292, 218]
@@ -548,16 +549,14 @@ def freshAMap():
     while (True):
 
         def detectToBattle(scr):
-
+            # ret in each path so no interference between them
             if stateDetector['OK'].detect(scr):
-                # click(stateDetector['OK'].getsigncenter())
                 press(keycode.key_Enter)
+                return False
             if stateDetector['hanger'].detect(scr):
-                # click(stateDetector['hanger'].getsigncenter())
                 press(keycode.key_Enter)
                 return True
             if stateDetector['MissionCanceled'].detect(scr):
-                # click(stateDetector['MissionCanceled'].getsigncenter())
                 press(keycode.key_Enter)
                 return True
             return False
@@ -577,10 +576,13 @@ def freshAMap():
                 return True
             if stateDetector['hanger'].detect(scr):  # for click not succeed
                 press(keycode.key_Enter)
+                return False
             if stateDetector['OK'].detect(scr):
                 press(keycode.key_Enter)
+                return False
             if stateDetector['MissionCanceled'].detect(scr):
                 press(keycode.key_Enter)
+                return False
             return False
 
         if not keepdetecting(detectLoadingMap, 1):
@@ -590,9 +592,6 @@ def freshAMap():
         allchanneloutput('loading map')
 
         # determine if map desired
-        # ret=[ismapdesired, match details]
-
-        #ret= np.array([d.detect(loadingscreen) for d in whitelistedmapdetector.values()]).any()
         ret = False
         # name,detector
         for n, d in whitelistedmapdetector.items():

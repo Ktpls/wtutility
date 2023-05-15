@@ -7,6 +7,7 @@ niceplain = [
     'RedDesert',
     'SandsOfTunisia',
     'Sinai',
+    'Mozdok#2',
 ]
 
 halfniceplain = [
@@ -26,8 +27,9 @@ halfniceplain = [
     'FieldsOfNormandy',
 ]
 
-allniceplains=niceplain+halfniceplain
+allniceplains = niceplain + halfniceplain
 
+# friendly for turrentless tank destroyers
 highSurvivablity = [
     'AralSea',
     'FieldsOfPoland',
@@ -40,15 +42,18 @@ highSurvivablity = [
     'Karelia',
     'Poland',
     'Finland',
+    'Tunisia',
     'MaginotLineDomination#1',
     'EuropeanProvince',
+    'EasternEurope',
     'SandsOfSinai',
     'PortNovorossiysk',
     'SecondBattleOfElAlamein',
     'FieldsOfNormandy',
+    'Mozdok#2',
 ]
 
-whitelistedmap = allniceplains
+whitelistedmap = highSurvivablity
 
 specialmapdetectors = {
     "Sinai": {
@@ -63,7 +68,7 @@ specialmapdetectors = {
         "FrozenPass",
         # A or B, not single C in village
         "foo":
-        'ret(detectMapShape() and spawnAround([474,477]) and (selectPoint(ppos=[85, 546]) or selectPoint(ppos=[325, 322])))'
+        'ret(detectMapShape() and spawnAround([474,477]) and (not singlePoint([528, 99])))'
     },
     "EasternEurope": {
         "mapreq": "EasternEurope",
@@ -109,7 +114,7 @@ specialmapdetectors = {
         "Finland",
         # c point
         "foo":
-        'ret(detectMapShape() and spawnAround([355,526]) and singlePoint([492, 289]))'  #single point at right
+        'ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))'  #single point at right
     },
     "SandsOfSinai": {
         "mapreq": "SandsOfSinai",
