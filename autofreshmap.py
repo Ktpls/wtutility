@@ -9,7 +9,7 @@ def main():
     
     try:
         
-        #activeWindow(getWTHwnd())
+        activeWindow(getWTHwnd())
         mouse.mov(*(0,0))
         freshAMap()
         if waitaftergoodmap:
