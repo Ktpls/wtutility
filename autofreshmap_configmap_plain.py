@@ -1,3 +1,11 @@
+
+highMobility=[
+    'Carpathians',
+    'Mozdok#1',
+    'Normandy',
+]
+
+# for normal tanks
 niceplain = [
     'AralSea',
     'FieldsOfPoland',
@@ -8,9 +16,6 @@ niceplain = [
     'SandsOfTunisia',
     'Sinai',
     'Mozdok#2',
-]
-
-halfniceplain = [
     #'AshRiver',  # not great with high br
     'FrozenPass',
     'Karelia',
@@ -26,8 +31,6 @@ halfniceplain = [
     'SecondBattleOfElAlamein',
     'FieldsOfNormandy',
 ]
-
-allniceplains = niceplain + halfniceplain
 
 # friendly for turrentless tank destroyers
 highSurvivablity = [
