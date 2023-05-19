@@ -5,6 +5,8 @@ import traceback
 
 def main():
     setadmin(__file__)
+    
+    
     try:
         
         activeWindow(getWTHwnd())

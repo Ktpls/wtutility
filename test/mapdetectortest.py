@@ -9,7 +9,7 @@ def MapShaped2ScreenShaped(mapshaped):
     screenshaped[afmi.standardMapLeftTopPoint[1]:afmi.standardMapLeftTopPoint[1]+648,
                 afmi.standardMapLeftTopPoint[0]:afmi.standardMapLeftTopPoint[0]+648,:]=mapshaped
     return screenshaped
-loadingscreen=cv.imread(r"D:\File\code\prog\wtutility\test.png")
+loadingscreen=cv.imread(r"C:\Users\Kita\Desktop\nwp.png")
 ret = False
 # name,detector
 for n, d in afmi.whitelistedmapdetector.items():
