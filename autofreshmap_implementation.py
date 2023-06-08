@@ -483,6 +483,9 @@ class mapdetector(detector):
             return selectPoint(ptype='A',
                                ppos=ppos) and not selectPoint(ptype='B')
 
+        def selectBattleMode():
+            return selectPoint(ptype='redA') or selectPoint(ptype='redB')
+
         retVal = None
 
         def ret(val):
