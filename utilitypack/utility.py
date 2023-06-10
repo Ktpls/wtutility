@@ -851,7 +851,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class StoppableThread:
-
+    '''
+    derivate from it and override foo()
+    '''
     def __init__(self, pool=None) -> None:
         self.running = False
         self.pool = ThreadPoolExecutor() if pool is None else pool
