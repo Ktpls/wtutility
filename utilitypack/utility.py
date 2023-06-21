@@ -845,3 +845,41 @@ def AllFileIn(path, includeFileInSubDir=True):
             continue
         ret.extend([os.path.join(dirpath, f) for f in file])
     return ret
+
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+class StoppableThread:
+
+    def __init__(self, pool=None) -> None:
+        self.running = False
+        self.pool = ThreadPoolExecutor() if pool is None else pool
+        self.submit = None
+
+    def foo(self):
+        pass
+
+    def getRunning(self):
+        return self.running
+
+    def go(self):
+        if self.running or self.submit is not None:
+            return
+        self.running = True
+
+        def call():
+            '''
+            wrapper so can call the passed "self"'s foo
+            if not, can never know which overwritten foo should be called
+            '''
+            self.foo()
+
+        self.submit = self.pool.submit(call)
+
+    def stop(self):
+        if not self.running or self.submit is None:
+            return
+        self.running = False
+        as_completed(self.submit)
+        self.submit = None

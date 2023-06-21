@@ -1,62 +1,42 @@
 
+
+# friendly for turrentless tank destroyers
+highSurvivablity = [
+    'AralSea',
+    'EasternEurope',
+    'EuropeanProvince',
+    'FieldsOfNormandy',
+    'FieldsOfPoland',
+    'Finland',
+    #'FireArc',
+    'FrozenPass',
+    'Karelia',
+    'MaginotLineDomination#1',
+    'MaginotLineDomination#2',
+    'Mozdok#2',
+    'Poland',
+    'PortNovorossiysk',
+    'Pradesh',
+    'RedDesert',
+    'SandsOfSinai',
+    'SandsOfTunisia',
+    'SecondBattleOfElAlamein',
+    'Tunisia',
+    'AshRiver',
+]
+
 highMobility=[
     'Carpathians',
-    'Mozdok#1',
     'Normandy',
 ]
 
 # for normal tanks
 niceplain = [
-    'AralSea',
-    'FieldsOfPoland',
-    'FireArc',
-    'MaginotLineDomination#2',
-    'Pradesh',
-    'RedDesert',
-    'SandsOfTunisia',
     'Sinai',
-    'Mozdok#2',
-    #'AshRiver',  # not great with high br
-    'FrozenPass',
-    'Karelia',
-    'Poland',
-    'Finland',
-    'Tunisia',
-    'MaginotLineDomination#1',
-    'EuropeanProvince',
-    'EasternEurope',
-    'SandsOfSinai',
-    'Berlin',
-    'PortNovorossiysk',
-    'SecondBattleOfElAlamein',
-    'FieldsOfNormandy',
-]
+    #'Berlin',
+]+highSurvivablity
 
-# friendly for turrentless tank destroyers
-highSurvivablity = [
-    'AralSea',
-    'FieldsOfPoland',
-    'FireArc',
-    'MaginotLineDomination#2',
-    'Pradesh',
-    'RedDesert',
-    'SandsOfTunisia',
-    'FrozenPass',
-    'Karelia',
-    'Poland',
-    'Finland',
-    'Tunisia',
-    'MaginotLineDomination#1',
-    'EuropeanProvince',
-    'EasternEurope',
-    'SandsOfSinai',
-    'PortNovorossiysk',
-    'SecondBattleOfElAlamein',
-    'FieldsOfNormandy',
-    'Mozdok#2',
-]
-
-whitelistedmap = highSurvivablity
+whitelistedmap = niceplain
 
 specialmapdetectors = {
     "Sinai": {
@@ -64,7 +44,7 @@ specialmapdetectors = {
         "Sinai",
         # B, or battle mode at any side
         "foo":
-        'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectPoint("blueA") or selectPoint("blueB") ) )'
+        'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectBattleMode()) )'
     },
     "FrozenPass": {
         "mapreq":
@@ -117,7 +97,7 @@ specialmapdetectors = {
         "Finland",
         # c point
         "foo":
-        'ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))'  #single point at right
+        'ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))'  #not single point at left
     },
     "SandsOfSinai": {
         "mapreq": "SandsOfSinai",
