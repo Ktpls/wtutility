@@ -39,8 +39,7 @@ elif datasetname == 'origins_nntracker':
 
 train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
                                  datasettype, None, model.stdShape)
-test_data = labeldataset().init(datasetroot + path, datasetroot + sel, 16,
-                                datasettype, None, model.stdShape)
+test_data = train_data
 print('load finished')
 
 #%%

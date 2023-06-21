@@ -199,7 +199,7 @@ class SelfAttention(torch.nn.Module):
         self.to_qkv = torch.nn.Linear(dim, 3 * dim_head * heads, bias=False)
         self.to_out = torch.nn.Linear(dim_head * heads, dim)
         self.dropout = torch.nn.Dropout(dropout)
-        self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
+        #self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
 
     def forward(self, x):
         #[batch size, sequence length, and feature dimensions]
@@ -208,7 +208,7 @@ class SelfAttention(torch.nn.Module):
                                      self.dim_head).permute(2, 0, 3, 1, 4)
         # [3, batch size, num_heads, sequence length, feature dimensions per head]
         q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) / self.scale
+        attn = (q @ k.transpose(-2, -1)) #/ self.scale
         attn = attn.softmax(dim=-1)
         attn = self.dropout(attn)
         out = (attn @ v).transpose(1, 2).permute(0, 2, 1, 3).reshape(
@@ -252,6 +252,7 @@ class SelfAttentionOfConv(torch.nn.Module):
         x = x.view(-1, self.dim, *self.sashape)
         x = F.interpolate(x, size=self.inshape, mode='nearest')
         return x
+
 
 
 class nntracker_yolo(torch.nn.Module):
@@ -305,7 +306,7 @@ class nntracker_yolo(torch.nn.Module):
 
 
 def getmodel(modelpath):
-    model = setModel(nntracker_yolo(), device=device, path=modelpath)
+    model = setModel(nntracker_yolo(), device=device, path=modelpath).to(device=device)
     #print(model)
     return model
 
