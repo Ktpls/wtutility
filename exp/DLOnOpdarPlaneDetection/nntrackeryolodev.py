@@ -2,37 +2,45 @@
 # %%
 #basics
 
-from nntracker import *
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
-from nntracker import getmodel, device
+from nntracker_common import *
+from nntracker import *
 # %%
 # nn def
-modelpath = r'nntracker.pth'
+modelpath = r'nntrackeryolo.pth'
 model = getmodel(modelpath)
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
 )  # 存放log文件的目录
 
-# %%
+# %%\
 # dataset
-from nntracker_common import labeldataset
 
 print('loading dataset')
-train_data = labeldataset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
-    8192, 'zip', 'all', model.stdShape)
-test_data = labeldataset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\LE2REnh.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh\all.xlsx",
-    64,
-    'zip',
-    stdShape=model.stdShape)
+datasetname = 'largeEnoughToRecon'
+datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
+if datasetname == 'LE2REnh':
+    path = r"LE2REnh/LE2REnh.zip"
+    sel = r"LE2REnh/all.xlsx"
+    datasettype = 'zip'
+elif datasetname == 'largeEnoughToRecon':
+    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
+    sel = r"largeEnoughToRecon/all.xlsx"
+    datasettype = 'zip'
+elif datasetname == 'origins_nntracker':
+    path = r"origins_nntracker/origins_nntracker.zip"
+    sel = r"origins_nntracker/hardones.xlsx"
+    datasettype = 'zip'
+
+train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
+                                 datasettype, None, model.stdShape)
+test_data = labeldataset().init(datasetroot + path, datasetroot + sel, 16,
+                                datasettype, None, model.stdShape)
 print('load finished')
 
 #%%
@@ -46,21 +54,22 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 # train
 
 
-def calclose(lbl, lblhat):
-    #[b,c,h,w]
-    loss= \
-    1*(
-        (
-            ((lbl - lblhat)**2).sum(dim=[-1, -2, -3])
-                /
-            (lbl.sum(dim=[-1, -2, -3]) + 0.01)
-        )#**2
-    ).sum()
+def calclose(lbl, aabbhat):
+    aabb = []
+    for i in range(len(lbl)):
+        aabb.append(AABBOf(lbl[i, 0, :, :].cpu().numpy()))
+    aabb = torch.tensor(np.array(aabb), dtype=torch.float32).to(device)
+    #[b,d,h,w]
+
+    confidence = aabb[:, 4:]
+    coef = torch.repeat_interleave(confidence, 5, -1)
+    coef[:, 4] = 1
+    loss = (coef * (aabbhat - aabb)**2).sum()
 
     return (loss)
 
 
-def viewLossOnTest(testbatch=3):
+def viewLossOnTest(testbatch=1):
 
     #    model.eval()
     losstotal = 0
@@ -75,9 +84,8 @@ def viewLossOnTest(testbatch=3):
             samplenum += batchsizeof(src)
             if batch >= testbatch:
                 break
-    print(f" [testloss]")
     loss2show = losstotal / samplenum
-    print(f" [loss={loss2show}]")
+    print(f" [testloss={loss2show}]")
     writer.add_scalar('testloss', (loss2show), 0)
 
 
@@ -85,7 +93,7 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
 
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=1e-4,
-                                  weight_decay=1e-2)
+                                  weight_decay=1e-1)
     epochs = epochnum
     start_time = time.time()
     for ep in range(epochs):
@@ -98,8 +106,8 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
             model.train()
             datatuple = [d.to(device) for d in datatuple]
             src, lbl = datatuple
-            lblhat = model.forward(src)
-            loss = calclose(lbl, lblhat)
+            aabbhat = model.forward(src)
+            loss = calclose(lbl, aabbhat)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -113,8 +121,8 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
                 print(f"Average loss: {aveloss:>7f}")
                 writer.add_scalar('trainloss', aveloss, batch)
                 start_time = time.time()
+                # viewLossOnTest()
 
-        viewLossOnTest()
     #win32api.Beep(1000, 1000)
     print("Done!")
 
@@ -130,38 +138,21 @@ if __name__ == '__main__':
 # view effect
 
 
-def viewModelOnPic():
+def drawAABB(img, aabb):
+    img = np.copy(img)
+    img = cv.rectangle(img, [aabb[0], aabb[1]], [aabb[2], aabb[3]],
+                       color=(1, 0, 0),
+                       thickness=1)
+    return img
 
-    def viewModelOnAPic(m):
-        if type(m) is np.ndarray or type(m) is cv.Mat:
-            m = ToTensor()(m)
-        m = m.reshape((1, ) + m.shape)  #add batch
-        with torch.no_grad():
-            result = model.forward(m)
-        result = result[0, :, :, :]  #debatch
-        result = tensorimg2ndarray(result)
-        result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
-        return result
 
-    filelist = [
-        row[0] for row in Xls2ListList(
-            r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sampleNotIncluded.xlsx"
-        ) if row[0] is not None
-    ]
-
-    singleMapWidthHeightRatio = 2
-    pltwidth = np.ceil(np.sqrt(len(filelist) /
-                               singleMapWidthHeightRatio)).astype(np.int32)
-    pltheight = np.ceil(singleMapWidthHeightRatio * pltwidth).astype(np.int32)
-    npp = nestedPyPlot([pltheight, pltwidth], [1, 2],
-                       plt.figure(figsize=(16, 16)))
-    for i, p in enumerate(filelist):
-        m = cv.imread(p)
-        npp.subplot(i, 0)
-        plt.imshow(cv.cvtColor(m, cv.COLOR_BGR2RGB))
-        npp.subplot(i, 1)
-        result = viewModelOnAPic(m)
-        plt.imshow(result, **{'cmap': 'gray', 'vmin': 0, 'vmax': 1})
+def regulate(x, a, b):
+    if x < a:
+        return a
+    elif x > b:
+        return b
+    else:
+        return x
 
 
 def viewmodel():
@@ -176,21 +167,33 @@ def viewmodel():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
 
-            lblhat = model.forward(src.reshape((1, ) + src.shape).to(device))
-            lblhat = np.array(lblhat[0, :, :, :].cpu())
+            tsrc = src.reshape((1, ) + src.shape).to(device)
+            aabbhat = model.forward(tsrc).cpu()
+            aabbhat = np.array(aabbhat[0, :])
             #to ndarray
-
-            datatuple = [src, lbl, lblhat]
+            datatuple = [src, lbl]
             datatuple = [tensorimg2ndarray(d) for d in datatuple]
-            src, lbl, lblhat = datatuple
+            src, lbl = datatuple
+            src = cv.cvtColor(src, cv.COLOR_BGR2RGB)
 
             npp.subplot(i, 0)
-            plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
+            plt.imshow(src)
             npp.subplot(i, 1)
-            lblhat = cv.threshold(lblhat, 0.5, 1, cv.THRESH_BINARY)[1]
-            plt.imshow(lblhat, **imshowconfig)
-            npp.subplot(i, 2)
             plt.imshow(lbl, **imshowconfig)
+
+            npp.subplot(i, 2)
+            plt.imshow(drawAABB(src, AABBOf(lbl[:, :, 0])[0:4]))
+
+            aabbhatreg = np.array([
+                regulate(aabbhat[0], 0, src.shape[1]),
+                regulate(aabbhat[1], 0, src.shape[0]),
+                regulate(aabbhat[2], 0, src.shape[1]),
+                regulate(aabbhat[3], 0, src.shape[0]),
+            ]).astype(np.int32)
+
+            npp.subplot(i, 3)
+            plt.imshow(drawAABB(src, aabbhatreg[0:4]))
+            plt.title(f'{aabbhat[4]:>.2f}')
 
 
 viewmodel()

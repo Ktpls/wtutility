@@ -565,7 +565,6 @@ def arrayshift(a, n, fill=np.nan):
         return np.concatenate((a[-n:], np.full(-n, fill)))
 
 
-
 def integral(dx, x0, keepXM1=False):
     # keepXM1 to keep the last element in x, or deprecate it, cuz its nan if generated from derivative
     x = np.array(list(itertools.accumulate(dx, lambda t, e: t + e)))
@@ -815,8 +814,7 @@ class DataCollector:
     @staticmethod
     def geneName():
         charSet4RandomString = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        return randomString(charSet4RandomString,
-                            DataCollector.randNameLen)
+        return randomString(charSet4RandomString, DataCollector.randNameLen)
 
     def save(self, m, name=None):
         if name is None:

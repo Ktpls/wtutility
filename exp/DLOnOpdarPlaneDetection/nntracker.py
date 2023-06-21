@@ -12,6 +12,7 @@ if RunOnWtUtilityEnviroment:
 else:
     from utilkaggle import *
 from torch import nn
+import torch.nn.functional as F
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
@@ -55,32 +56,15 @@ class cbrps(torch.nn.Module):
         return self.component.forward(m)
 
 
-class cbrpsold(torch.nn.Module):
-    #input chan, output chan, convolve size, pooling size
-    #n_o should be like 2*n, cuz maxpool will be concated with former output
-    def __init__(self, n_i, n_o, n_c, n_p) -> None:
-        assert (n_o % 2 == 0)
-        n_o_real = int(n_o / 2)
-        super().__init__()
-        self.component = torch.nn.Sequential(
-            torch.nn.Conv2d(n_i, n_o_real, n_c, padding='same', bias=False),
-            torch.nn.BatchNorm2d(n_o_real),
-            torch.nn.LeakyReLU(),
-        )
-        self.pool = torch.nn.MaxPool2d(n_p, stride=1, padding=int(n_p / 2))
-
-    def forward(self, m):
-        #[b,c,h,w]
-        a = self.component.forward(m)
-        b = self.pool.forward(a)
-        c = torch.concat([a, b], dim=-3)
-        return c
-
-
 class inception(torch.nn.Module):
 
-    def __init__(self, infeat, outfeat11, outfeatpool, outfeat33,
-                 outfeat55) -> None:
+    def __init__(self,
+                 infeat,
+                 outfeat11,
+                 outfeatpool,
+                 outfeat33,
+                 outfeat55,
+                 bn=True) -> None:
         super().__init__()
         self.path11 = torch.nn.Sequential(
             torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
@@ -105,136 +89,223 @@ class inception(torch.nn.Module):
             torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
             torch.nn.LeakyReLU(),
         )
+        if bn is not None and bn:
+            self.bn = torch.nn.BatchNorm2d(outfeat11 + outfeatpool +
+                                           outfeat33 + outfeat55)
+        else:
+            self.bn = None
+
+    @staticmethod
+    def even(infeat, outfeat, bn=None):
+        assert outfeat % 4 == 0
+        outfeatby4 = int(outfeat / 4)
+        return inception(infeat, outfeatby4, outfeatby4, outfeatby4,
+                         outfeatby4, bn)
 
     def forward(self, m):
-        return torch.concat(
+        o = torch.concat(
             [self.path11(m),
              self.pathpool(m),
              self.path33(m),
              self.path55(m)],
-            dim=-3)  #channel
+            dim=-3)
+        if self.bn is not None:
+            o = self.bn(o)
+        return o  #channel
+
+
+class res_through(torch.nn.Module):
+
+    _modules = {}
+
+    def __init__(self, *components) -> None:
+        super().__init__()
+        self.components = components
+        for idx, module in enumerate(components):
+            self.add_module(str(idx), module)
+
+    def forward(self, m):
+        o = m
+        for l in self.components:
+            o = l(o) + o
+        return o
 
 
 class nntracker_simple(torch.nn.Module):
 
-    stdShape=np.array([100,100])
+    stdShape = np.array([100, 100])
+
     def __init__(self) -> None:
         super().__init__()
-        self.enco = torch.nn.Sequential(
-            cbrps(3, 16, 9, 9),
-            torch.nn.BatchNorm2d(16),
-            inception(16,8,8,8,8),
-            torch.nn.BatchNorm2d(32),
-            inception(32,4,4,4,4),
-            torch.nn.BatchNorm2d(16),
-            torch.nn.Conv2d(16, 1, 1, padding='same'),
+        self.preproc = torch.nn.Sequential(
+            cbrps(3, 8, 9, 9),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            torch.nn.Conv2d(8, 1, 1, padding='same'),
             torch.nn.LeakyReLU(),
         )
-        self.fullcon=torch.nn.Sequential(
-            torch.nn.Linear(np.prod(nntracker_simple.stdShape),100),
+        self.interferenceAtte = torch.nn.Sequential(
+            torch.nn.Flatten(1, -1),
+            torch.nn.Linear(np.prod(nntracker_simple.stdShape), 100),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(100,10),
+            torch.nn.Linear(100, 10),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(10,10),
+            torch.nn.Linear(10, 10),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(10,10),
+            torch.nn.Linear(10, 10),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(10,100),
+            torch.nn.Linear(10, 100),
             torch.nn.LeakyReLU(),
-            torch.nn.Linear(100,np.prod(nntracker_simple.stdShape)),
+            torch.nn.Linear(100, np.prod(nntracker_simple.stdShape)),
             torch.nn.LeakyReLU(),
         )
-        self.deco=torch.nn.Sequential(
-            inception(2,8,8,8,8),
-            torch.nn.BatchNorm2d(32),
-            torch.nn.Conv2d(32, 1, 1, padding='same'),
-            torch.nn.LeakyReLU(),
+        self.deco = torch.nn.Sequential(
+            inception.even(1, 8),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            inception.even(8, 8),
+            inception.even(8, 4),
+            torch.nn.Conv2d(4, 1, 1, padding='same'),
+            torch.nn.Sigmoid(),
         )
 
     def forward(self, m):
-        encoout=self.enco(m)
-        tmp=encoout.view(-1,np.prod(nntracker_simple.stdShape))
-        tmp=self.fullcon(tmp)
-        tmp=tmp.view(-1,1,nntracker_simple.stdShape[1],nntracker_simple.stdShape[0])
-        tmp=torch.concat((encoout,tmp),dim=-3)
-        decoout=self.deco(tmp)
-        return decoout
+        opp = self.preproc(m)
+        att = self.interferenceAtte(opp)
+        att = att.view(-1, 1, nntracker_simple.stdShape[1],
+                       nntracker_simple.stdShape[0])
+        attnorm = att / torch.sqrt((att**2 + 0.0001).sum())
+
+        out = self.deco(opp * attnorm)
+        return out
+
+    def applyOutAsAtteMaskOnM(self, m, out):
+        return m * out + (1 - out)
 
 
-class YOLOv1(nn.Module):
 
-    def __init__(self, num_classes=0, num_boxes=1, S=7):
-        super(YOLOv1, self).__init__()
-        self.num_classes = num_classes
-        self.num_boxes = num_boxes
-        self.S = S
-        self.convs = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 192, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(192, 128, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(True),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-        )
-        self.fcs = nn.Sequential(
-            nn.Linear(7 * 7 * 1024, 4096),
-            nn.ReLU(True),
-            nn.Linear(4096, S * S * (self.num_classes + self.num_boxes * 5)),
-            nn.ReLU(True),
-        )
+
+class SelfAttention(torch.nn.Module):
+
+    def __init__(self, dim, heads=8, dim_head=8, dropout=0.1):
+        #dim, the channel depth
+        super().__init__()
+        self.heads = heads
+        self.dim_head = dim_head
+        # define linear layers
+        self.to_qkv = torch.nn.Linear(dim, 3 * dim_head * heads, bias=False)
+        self.to_out = torch.nn.Linear(dim_head * heads, dim)
+        self.dropout = torch.nn.Dropout(dropout)
+        self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
 
     def forward(self, x):
-        x = self.convs(x)
-        x = x.view(-1, self.S * self.S * 1024)
-        x = self.fcs(x)
-        x = x.view(-1, self.S, self.S, self.num_classes + self.num_boxes * 5)
+        #[batch size, sequence length, and feature dimensions]
+        B, N, C = x.shape
+        qkv = self.to_qkv(x).reshape(B, N, 3, self.heads,
+                                     self.dim_head).permute(2, 0, 3, 1, 4)
+        # [3, batch size, num_heads, sequence length, feature dimensions per head]
+        q, k, v = qkv[0], qkv[1], qkv[2]
+        attn = (q @ k.transpose(-2, -1)) / self.scale
+        attn = attn.softmax(dim=-1)
+        attn = self.dropout(attn)
+        out = (attn @ v).transpose(1, 2).permute(0, 2, 1, 3).reshape(
+            B, N, self.heads * self.dim_head)
+        return self.to_out(out)
+
+
+class ReshapeModule(nn.Module):
+
+    def __init__(self, *shape):
+        super().__init__()
+        self.shape = shape
+
+    def forward(self, x):
+        return x.view(*self.shape)
+
+
+class PermuteModule(nn.Module):
+
+    def __init__(self, *arglist):
+        super().__init__()
+        self.arglist = arglist
+
+    def forward(self, x):
+        return x.permute(*self.arglist)
+
+
+class SelfAttentionOfConv(torch.nn.Module):
+    #inshape:[C,H,W]
+    def __init__(self, dim, inshape):
+        super().__init__()
+        self.inshape = inshape
+        self.sashape = [10, 10]
+        self.dim = dim
+        self.sa = SelfAttention(dim)
+
+    def forward(self, x):
+        x = F.interpolate(x, self.sashape, mode='bilinear')
+        x = x.view(-1, self.dim, np.prod(self.sashape)).permute(0, 2, 1)
+        x = self.sa(x)
+        x = x.view(-1, self.dim, *self.sashape)
+        x = F.interpolate(x, size=self.inshape, mode='nearest')
         return x
 
 
+class nntracker_yolo(torch.nn.Module):
+
+    stdShape = [100, 100]
+
+    def __init__(self) -> None:
+        super().__init__()
+        picsurface = np.prod(nntracker_yolo.stdShape)
+        self.comp = torch.nn.Sequential(
+            cbrps(3, 4, 9, 9),
+            res_through(
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+                inception.even(4, 4),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
+            ),
+            torch.nn.Conv2d(4, 1, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Flatten(1, -1),
+            torch.nn.Linear(picsurface, 100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 5),
+        )
+
+    def forward(self, m):
+        normalizeCoef = (nntracker_yolo.stdShape[0],
+                         nntracker_yolo.stdShape[0],
+                         nntracker_yolo.stdShape[1],
+                         nntracker_yolo.stdShape[1], 1)
+        out = self.comp(m) * torch.tensor(normalizeCoef).view(1, 5).to(device)
+        return out
+
+
 def getmodel(modelpath):
-    model = setModel(nntracker_simple(), path=modelpath).to(device)
+    model = setModel(nntracker_yolo(), device=device, path=modelpath)
     #print(model)
     return model
 
