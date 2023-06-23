@@ -15,7 +15,7 @@ import time
 from time import sleep
 import random
 import threading
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Iterable
 
 import cv2 as cv
 import numpy as np
@@ -416,7 +416,8 @@ class hotkeymanager:
 
     class hotkeytask:
 
-        def __init__(self, key, foo) -> None:
+        def __init__(self, key: int | Iterable, foo: Callable[[],
+                                                              None]) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
 
@@ -426,7 +427,7 @@ class hotkeymanager:
         keyconcerned = list(deduplicate(keyconcerned))
         self.kc = keyconcerned
 
-        self.hktl = deepcopy(hotkeytasklist)
+        self.hktl = hotkeytasklist
 
         def piorered(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
 
@@ -854,6 +855,7 @@ class StoppableThread:
     '''
     derivate from it and override foo()
     '''
+
     def __init__(self, pool=None) -> None:
         self.running = False
         self.pool = ThreadPoolExecutor() if pool is None else pool

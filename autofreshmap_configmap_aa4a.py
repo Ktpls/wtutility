@@ -1,20 +1,32 @@
-desireds = [
-    "AdvanceToTheRhine",
-    "Alaska",
-    "AmericanDesert",
-    "ArcticPolarBase",
-    "ArdennesDomination#1",
-    "AshRiver",
-    "Berlin",
+
+clearsky=[
+    "Campania",
+    "Carpathians",
     "EasternEurope",
+    "EuropeanProvince",
     "FieldsOfNormandy",
+    "FieldsOfPoland",
+    "Finland",
     "FrozenPass",
-    "Japan",
     "Karelia",
-    "Kurban",
-    "PortNovorossiysk",
-    "Serversk-13",
+    "MaginotLineDomination#1",
+    "MaginotLineDomination#1Winter",
+    "Mozdok#1",
+    "Mozdok#2",
+    "Normandy",
+    "Poland(winter)",
+    "Poland",
+    "SandsOfSinai",
+    "SecondBattleOfElAlameinConquest#1",
     "Sinai",
+    "Tunisia",
 ]
-whitelistedmap = desireds
+verified=[
+    "AbandonedFactory",
+]
+'''
+small maps enhance plane density
+low buildings, trees, mountains make view clear
+'''
+whitelistedmap = clearsky+verified
 specialmapdetectors = {}

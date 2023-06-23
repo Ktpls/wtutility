@@ -186,8 +186,6 @@ class nntracker_simple(torch.nn.Module):
         return m * out + (1 - out)
 
 
-
-
 class SelfAttention(torch.nn.Module):
 
     def __init__(self, dim, heads=8, dim_head=8, dropout=0.1):
@@ -199,7 +197,9 @@ class SelfAttention(torch.nn.Module):
         self.to_qkv = torch.nn.Linear(dim, 3 * dim_head * heads, bias=False)
         self.to_out = torch.nn.Linear(dim_head * heads, dim)
         self.dropout = torch.nn.Dropout(dropout)
-        #self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
+        self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
+        
+        super().register_buffer('scaleFactor', self.scale)
 
     def forward(self, x):
         #[batch size, sequence length, and feature dimensions]
@@ -208,11 +208,11 @@ class SelfAttention(torch.nn.Module):
                                      self.dim_head).permute(2, 0, 3, 1, 4)
         # [3, batch size, num_heads, sequence length, feature dimensions per head]
         q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) #/ self.scale
+        attn = (q @ k.transpose(-2, -1))  / self.get_buffer('scaleFactor')
         attn = attn.softmax(dim=-1)
         attn = self.dropout(attn)
-        out = (attn @ v).transpose(1, 2).permute(0, 2, 1, 3).reshape(
-            B, N, self.heads * self.dim_head)
+        out = (attn @ v).permute(0, 2, 1,
+                                 3).reshape(B, N, self.heads * self.dim_head)
         return self.to_out(out)
 
 
@@ -236,23 +236,53 @@ class PermuteModule(nn.Module):
         return x.permute(*self.arglist)
 
 
+def PositionalEmbedding2D(shape, depth):
+    assert depth % 2 == 0
+    depthalf = depth // 2
+    y = np.arange(0, shape[0]).reshape([shape[0], 1, 1])
+    x = np.arange(0, shape[1]).reshape([1, shape[1], 1])
+    d = np.arange(0, depth).reshape([1, 1, depth])
+    pe = np.zeros(shape + [depth], np.float32)
+    val = np.sin(x / 10000**(d / 128))
+    # np.putmask(pe, np.logical_and(d % 2 == 0, d < depthalf),
+    #            np.sin(x / 10000**(d / 128)))
+    # np.putmask(pe, np.logical_and(d % 2 == 1, d < depthalf),
+    #            np.cos(x / 10000**((d - 1) / 128)))
+    # np.putmask(pe, np.logical_and((d - depthalf) % 2 == 0, d >= depthalf),
+    #            np.sin(y / 10000**((d - depthalf) / 128)))
+    # np.putmask(pe, np.logical_and((d - depthalf) % 2 == 1, d >= depthalf),
+    #            np.cos(y / 10000**((d - depthalf - 1) / 128)))
+    mask = np.logical_and(d % 2 == 0, d < depthalf)[0, 0, :]
+    pe[:, :, mask] = np.sin(x / 10000**(d / 128))[:, :, mask]
+    mask = np.logical_and(d % 2 == 1, d < depthalf)[0, 0, :]
+    pe[:, :, mask] = np.cos(x / 10000**((d - 1) / 128))[:, :, mask]
+    mask = np.logical_and((d - depthalf) % 2 == 0, d >= depthalf)[0, 0, :]
+    pe[:, :, mask] = np.sin(y / 10000**((d - depthalf) / 128))[:, :, mask]
+    mask = np.logical_and((d - depthalf) % 2 == 1, d >= depthalf)[0, 0, :]
+    pe[:, :, mask] = np.cos(y / 10000**((d - depthalf - 1) / 128))[:, :, mask]
+    return pe
+
+
 class SelfAttentionOfConv(torch.nn.Module):
     #inshape:[C,H,W]
-    def __init__(self, dim, inshape):
+    def __init__(self, dim, inshape, subshape=[10,10]):
         super().__init__()
         self.inshape = inshape
-        self.sashape = [10, 10]
+        self.sashape = subshape
+        self.pe = torch.tensor(PositionalEmbedding2D(self.sashape, dim),dtype=torch.float32).permute(
+            2, 0, 1).reshape([1, dim] + self.sashape)
+        super().register_buffer('positionalEmbedding', self.pe)
         self.dim = dim
         self.sa = SelfAttention(dim)
 
     def forward(self, x):
         x = F.interpolate(x, self.sashape, mode='bilinear')
+        x = x + self.get_buffer('positionalEmbedding')
         x = x.view(-1, self.dim, np.prod(self.sashape)).permute(0, 2, 1)
         x = self.sa(x)
         x = x.view(-1, self.dim, *self.sashape)
-        x = F.interpolate(x, size=self.inshape, mode='nearest')
+        x = F.interpolate(x, size=self.inshape, mode='bilinear')
         return x
-
 
 
 class nntracker_yolo(torch.nn.Module):
@@ -262,6 +292,8 @@ class nntracker_yolo(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         picsurface = np.prod(nntracker_yolo.stdShape)
+        subshape1=nntracker_yolo.stdShape
+        subshape2=torch.tensor(nntracker_yolo.stdShape)//2
         self.comp = torch.nn.Sequential(
             cbrps(3, 4, 9, 9),
             res_through(
@@ -272,20 +304,11 @@ class nntracker_yolo(torch.nn.Module):
                 inception.even(4, 4),
                 SelfAttentionOfConv(4, nntracker_yolo.stdShape),
                 inception.even(4, 4),
-                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
-                inception.even(4, 4),
-                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
-                inception.even(4, 4),
-                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
-                inception.even(4, 4),
-                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
-                inception.even(4, 4),
-                SelfAttentionOfConv(4, nntracker_yolo.stdShape),
-            ),
+                SelfAttentionOfConv(4, nntracker_yolo.stdShape),),
             torch.nn.Conv2d(4, 1, 1, padding='same'),
             torch.nn.LeakyReLU(),
             torch.nn.Flatten(1, -1),
-            torch.nn.Linear(picsurface, 100),
+            torch.nn.Linear(np.prod(np.array(nntracker_yolo.stdShape)), 100),
             torch.nn.LeakyReLU(),
             torch.nn.Linear(100, 10),
             torch.nn.LeakyReLU(),
@@ -306,7 +329,8 @@ class nntracker_yolo(torch.nn.Module):
 
 
 def getmodel(modelpath):
-    model = setModel(nntracker_yolo(), device=device, path=modelpath).to(device=device)
+    model = setModel(nntracker_yolo(), device=device,
+                     path=modelpath).to(device=device)
     #print(model)
     return model
 

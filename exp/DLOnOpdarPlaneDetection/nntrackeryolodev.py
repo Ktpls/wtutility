@@ -22,20 +22,20 @@ writer = SummaryWriter(
 # dataset
 
 print('loading dataset')
-datasetname = 'largeEnoughToRecon'
-datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
+datasetname = 'LE2REnh'
+datasetroot = r'D:\File\code\prog\wtutility\exp\DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
     sel = r"LE2REnh/all.xlsx"
     datasettype = 'zip'
 elif datasetname == 'largeEnoughToRecon':
-    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
+    path = r"largeEnoughToRecon/largeEnoughToRecon"
     sel = r"largeEnoughToRecon/all.xlsx"
-    datasettype = 'zip'
+    datasettype = 'fld'
 elif datasetname == 'origins_nntracker':
-    path = r"origins_nntracker/origins_nntracker.zip"
+    path = r"origins_nntracker/origins_nntracker"
     sel = r"origins_nntracker/hardones.xlsx"
-    datasettype = 'zip'
+    datasettype = 'fld'
 
 train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
                                  datasettype, None, model.stdShape)
@@ -63,6 +63,7 @@ def calclose(lbl, aabbhat):
     confidence = aabb[:, 4:]
     coef = torch.repeat_interleave(confidence, 5, -1)
     coef[:, 4] = 1
+    
     loss = (coef * (aabbhat - aabb)**2).sum()
 
     return (loss)
