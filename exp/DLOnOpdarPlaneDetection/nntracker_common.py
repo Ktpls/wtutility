@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+
 
 RunOnWtUtilityEnviroment = True
 if RunOnWtUtilityEnviroment:
@@ -11,7 +11,7 @@ else:
     from utilkaggle import *
 from torchvision.transforms import ToTensor
 
-
+from torch.utils.data import Dataset
 def readImgInFolder(folder, pathlist):
     mlist = [os.path.join(folder, m) for m in pathlist]
     mlist = [cv.imread(m, 1) for m in mlist]
@@ -147,3 +147,14 @@ class yoloformdatafset(Dataset):
 
     def getname(self, rawidx):
         return self.names[rawidx]
+
+def AABBOf(lbl, noobjthresh=5):
+    assert (len(lbl.shape) == 2)
+    y, x = np.where(lbl > 0)
+    if len(y) < noobjthresh:
+        return (0, 0, 0, 0, 0)
+    x1, x2 = np.min(x), np.max(x)
+    y1, y2 = np.min(y), np.max(y)
+    #(x1, x2, y1, y2, c)
+
+    return (x1, y1, x2, y2, 1)

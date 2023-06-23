@@ -10,95 +10,98 @@ from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
 from nntracker import getmodel, device
-import torch.nn.functional as F
 # %%
 # nn def
-S = 7
-B = 1
-C = 0
-W = 448
-W0 = 100
-modelpath = r'yolotracker.pth'
-model = setModel(YOLOv1(C, B, S), path=modelpath).to(device)
+modelpath = r'nntracker.pth'
+model = getmodel(modelpath)
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
 )  # 存放log文件的目录
 
-# %%
+# %%\
 # dataset
-from nntracker_common import labeldataset, yoloformdatafset
+from nntracker_common import labeldataset
 
-train_data = yoloformdatafset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
-    32768, S, B, W, W0, 'zip', 'train')
-test_data = yoloformdatafset().init(
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\selallenhed.zip",
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed\AABBs.xlsx",
-    64, S, B, W, W0, 'zip', 'test')
+print('loading dataset')
+datasetname = 'origins_nntracker'
+datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
+if datasetname == 'LE2REnh':
+    path = r"LE2REnh/LE2REnh.zip"
+    sel = r"LE2REnh/all.xlsx"
+    datasettype = 'zip'
+elif datasetname == 'largeEnoughToRecon':
+    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
+    sel = r"largeEnoughToRecon/all.xlsx"
+    datasettype = 'zip'
+elif datasetname == 'origins_nntracker':
+    path = r"origins_nntracker/origins_nntracker.zip"
+    sel = r"origins_nntracker/hardones.xlsx"
+    datasettype = 'zip'
+
+train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
+                                 datasettype, None, model.stdShape)
+test_data = labeldataset().init(datasetroot + path, datasetroot + sel, 16,
+                                datasettype, None, model.stdShape)
+print('load finished')
 
 #%%
-# for easier modify batchsize without reload all samples
+# dataloader
+# for easier modify batchsize without reloading all samples
 batch_size = 4
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
+
 
 # %%
 # train
 
 
-def yolo_loss(pred, target, S, B, C, lambda_coord, lambda_noobj):
-    """
-    pred: (batch_size, S, S, Bx5+C)
-    target: (batch_size, S, S, Bx5+C)
-    S: int, grid size
-    B: int, number of boxes per grid cell
-    C: int, number of classes
-    lambda_coord: float, weight for coordinate loss
-    lambda_noobj: float, weight for no-object loss
-    """
-    # separate predictions for objectness, box coordinates, and class probabilities
-    pred_obj = pred[..., :B]
-    pred_box = pred[..., B:B * 5]
-    pred_class = pred[..., B * 5:]
+def calclose(lbl, lblhat):
+    X = torch.arange(lbl.shape[-1]).view(-1, 1, 1, lbl.shape[-1]).to(device)
+    Y = torch.arange(lbl.shape[-2]).view(-1, 1, lbl.shape[-2], 1).to(device)
+    lblsurface = (lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1)
+    meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True)
+    meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True)
+    dist2 = ((X - meanX)**2 + (Y - meanY)**2) / (lblsurface / torch.pi)
+    coef = (1 + 0.5 * (dist2 > 1))
+    coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
+    #[b,d,h,w]
+    loss= \
+    1*(
+        (
+            (coef*(lbl - lblhat)**2).sum(dim=[-1, -2, -3])
+                /
+            (lblsurface[:,0,0,0] + 0.01)
+        )#**2
+    ).sum()
 
-    # separate targets for objectness, box coordinates, and class probabilities
-    target_obj = target[..., :B]
-    target_box = target[..., B:B * 5]
-    target_class = target[..., B * 5:]
+    return (loss)
 
-    # calculate binary cross-entropy loss for objectness
-    obj_loss = F.binary_cross_entropy_with_logits(pred_obj,
-                                                  target_obj,
-                                                  reduction='none')
+    X, Y = torch.arange(lblhat.shape[-1]).to(device), torch.arange(
+        lblhat.shape[-2]).to(device)
+    X, Y = torch.meshgrid(X, Y)
+    X = X.reshape((1, 1) + X.shape)
+    Y = Y.reshape((1, 1) + Y.shape)
+    lblsurface = (lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1)
+    meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True) / lblsurface
+    meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True) / lblsurface
+    dist2 = ((X - meanX)**2 + (Y - meanY)**2) / (lblsurface / torch.pi)
+    coef = (1 + 0.5 * (dist2 > 1))
+    coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
+    #[b,d,h,w]
+    loss= \
+    1*(
+        (
+            (coef*(lbl - lblhat)**2).sum(dim=[-1, -2, -3])
+                /
+            (lblsurface[:,0,0,0] + 0.01)
+        )#**2
+    ).sum()
 
-    # calculate MSE loss for box coordinates
-    box_loss = F.mse_loss(pred_box, target_box, reduction='none')
-
-    # create mask for cells with object
-    obj_mask = target_obj > 0.5
-    obj_mask = torch.repeat_interleave(obj_mask, 4, 3)
-
-    # calculate coordinate loss only for cells with object
-    coord_loss = lambda_coord * torch.sum(box_loss[obj_mask])
-
-    # calculate no-object loss only for cells without object
-    noobj_mask = target_obj <= 0.5
-    noobj_loss = lambda_noobj * torch.sum(obj_loss[noobj_mask])
-
-    # calculate class loss
-    # class_loss = F.binary_cross_entropy_with_logits(pred_class,
-    #                                                 target_class,
-    #                                                 reduction='none')
-    class_loss = 0
-
-    # sum up all losses
-    total_loss = torch.sum(coord_loss + noobj_loss + class_loss)
-
-    return total_loss
+    return (loss)
 
 
-def viewLossOnTest(testbatch=3):
+def viewLossOnTest(testbatch=1):
 
     #    model.eval()
     losstotal = 0
@@ -106,16 +109,11 @@ def viewLossOnTest(testbatch=3):
     with torch.no_grad():
         for batch, datatuple in enumerate(test_dataloader):
 
-            (images, targets) = datatuple
-            outputs = model(images)
-            losstotal += yolo_loss(outputs,
-                                   targets,
-                                   S=S,
-                                   B=B,
-                                   C=C,
-                                   lambda_coord=5,
-                                   lambda_noobj=0.5).item()
-            samplenum += batchsizeof(images)
+            datatuple = [d.to(device) for d in datatuple]
+            src, lbl = datatuple
+            lblhat = model.forward(src)
+            losstotal += calclose(lbl, lblhat).item()
+            samplenum += batchsizeof(src)
             if batch >= testbatch:
                 break
     print(f" [testloss]")
@@ -128,7 +126,7 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
 
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=1e-4,
-                                  weight_decay=1e-2)
+                                  weight_decay=1e-1)
     epochs = epochnum
     start_time = time.time()
     for ep in range(epochs):
@@ -140,29 +138,25 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
 
             model.train()
             datatuple = [d.to(device) for d in datatuple]
-            (images, targets) = datatuple
+            src, lbl = datatuple
+            lblhat = model.forward(src)
+            # lblhat = model.forward(model.applyOutAsAtteMaskOnM(src, lblhat))
+            loss = calclose(lbl, lblhat)
             optimizer.zero_grad()
-            outputs = model(images)
-            loss = yolo_loss(outputs,
-                             targets,
-                             S=S,
-                             B=B,
-                             C=C,
-                             lambda_coord=5,
-                             lambda_noobj=0.5)
             loss.backward()
+            optimizer.step()
             if batch % outputperbatchnum == 0:
                 end_time = time.time()
                 print(f"Batch {batch}/{len(train_dataloader)}")
                 print(
                     f"Training speed: {outputperbatchnum/(end_time-start_time):>5f} batches per second"
                 )
-                aveloss = loss.item() / batchsizeof(images)
+                aveloss = loss.item() / batchsizeof(src)
                 print(f"Average loss: {aveloss:>7f}")
                 writer.add_scalar('trainloss', aveloss, batch)
                 start_time = time.time()
+                viewLossOnTest()
 
-        viewLossOnTest()
     #win32api.Beep(1000, 1000)
     print("Done!")
 
@@ -224,13 +218,15 @@ def viewmodel():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
 
-            lblhat = model.forward(src.reshape((1, ) + src.shape).to(device))
+            tsrc = src.reshape((1, ) + src.shape).to(device)
+            lblhat = model.forward(tsrc)
             lblhat = np.array(lblhat[0, :, :, :].cpu())
+            srcatte = model.applyOutAsAtteMaskOnM(src, lblhat)
             #to ndarray
 
-            datatuple = [src, lbl, lblhat]
+            datatuple = [src, lbl, lblhat, srcatte]
             datatuple = [tensorimg2ndarray(d) for d in datatuple]
-            src, lbl, lblhat = datatuple
+            src, lbl, lblhat, srcatte = datatuple
 
             npp.subplot(i, 0)
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
@@ -239,6 +235,8 @@ def viewmodel():
             plt.imshow(lblhat, **imshowconfig)
             npp.subplot(i, 2)
             plt.imshow(lbl, **imshowconfig)
+            npp.subplot(i, 3)
+            plt.imshow(cv.cvtColor(srcatte, cv.COLOR_BGR2RGB))
 
 
 viewmodel()

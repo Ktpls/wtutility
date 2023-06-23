@@ -34,7 +34,7 @@ class nestedPyPlot:
         return ax
 
 
-def setModel(model, path=None):
+def setModel(model, path=None, device='cpu'):
     import os
 
     if path is None:
@@ -45,7 +45,8 @@ def setModel(model, path=None):
         return model
     else:
         print(f'Loading existed nn {path}')
-        model.load_state_dict(torch.load(path))
+        model.load_state_dict(
+            torch.load(path, map_location=torch.device(device)))
         return model
 
 

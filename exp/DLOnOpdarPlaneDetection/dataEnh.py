@@ -1,13 +1,12 @@
-from utilref import *
 #%%
 # perform dataenh
+from utilref import *
 from nntracker_common import labeldataset
 
-
 train_data = labeldataset().init(
-    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon',
+    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip',
     r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx",
-    8192, 'fld')
+    8192, 'zip')
 
 
 def dataEnhance(src, lbl):
@@ -36,9 +35,10 @@ def dataEnhance(src, lbl):
         m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
         return m
 
-    the=np.random.uniform(-np.pi / 4,np.pi / 4)
+    the = np.random.uniform(-np.pi / 3, np.pi / 3)
     dttp = [rot(m, the) for m in dttp]
 
+    #zoom
     def zoom(m, rate):
         l0 = m.shape[0]
         X = np.arange(l0).reshape([1, l0]).astype(np.float32)
@@ -49,7 +49,7 @@ def dataEnhance(src, lbl):
         XY += l0 / 2
         return cv.remap(m, *XY, cv.INTER_LINEAR)
 
-    rate = np.random.uniform(0.8,1.2)
+    rate = np.random.uniform(0.8, 1.2)
     dttp = [zoom(m, rate) for m in dttp]
 
     #flip
@@ -63,13 +63,22 @@ def dataEnhance(src, lbl):
     dttp = [flip(m, reallyflip) for m in dttp]
     dttp = [np.ascontiguousarray(m) for m in dttp]
 
+    #mov
+    def mov(m, vec):
+        mattr = np.array([[1, 0, vec[0]], [0, 1, vec[1]]]).astype('float')
+        m = cv.warpAffine(m, mattr, np.flip(m.shape[0:2]))
+        return m
+
+    vec = np.random.uniform(-50, 50, size=2)
+    dttp = [mov(m, vec) for m in dttp]
+
     #give back channel dim
     dttp = [
         m if len(m.shape) == 3 else m.reshape(m.shape + (1, )) for m in dttp
     ]
     src, lbl = dttp
-    lbl[lbl<0.5]=0
-    lbl[lbl>=0.5]=1 #thresh
+    lbl[lbl < 0.5] = 0
+    lbl[lbl >= 0.5] = 1  #thresh
     return src, lbl
 
 
@@ -90,7 +99,7 @@ def makeSampleAndPrintProgress(size, cachepair, path):
         savemat(lbl * 255, name, rf'{path}/lbl')
 
 
-outpath = r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\selallenhed"
+outpath = r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
 
 
 def performDataEnh():
