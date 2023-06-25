@@ -22,7 +22,7 @@ writer = SummaryWriter(
 # dataset
 
 print('loading dataset')
-datasetname = 'LE2REnh'
+datasetname = 'largeEnoughToRecon'
 datasetroot = r'D:\File\code\prog\wtutility\exp\DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
@@ -139,6 +139,7 @@ if __name__ == '__main__':
 
 
 def drawAABB(img, aabb):
+    aabb=np.array(XYHM2XYXY(*aabb), np.int32)
     img = np.copy(img)
     img = cv.rectangle(img, [aabb[0], aabb[1]], [aabb[2], aabb[3]],
                        color=(1, 0, 0),

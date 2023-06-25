@@ -20,115 +20,9 @@ print(f"Using {device} device")
 # %%
 # nn def
 
+# %%
+# nn def
 
-class skiper(torch.nn.Module):
-
-    def __init__(self, component, n_i, n_o) -> None:
-        super().__init__()
-        self.component = component
-        self.combiner = torch.nn.Conv2d(n_i + n_o, n_o, 1)
-
-    def forward(self, m):
-        #[b,c,h,w]
-        processed = self.component.forward(m)
-        c = torch.concat([processed, m], dim=-3)
-        result = self.combiner.forward(c)
-        return result
-
-
-class cbrps(torch.nn.Module):
-    #input chan, output chan, convolve size, pooling size
-    #n_o should be like 2*n, cuz maxpool will be concated with former output
-    def __init__(self, n_i, n_o, n_c, n_p) -> None:
-        super().__init__()
-        self.component = \
-            torch.nn.Sequential(
-                torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
-                torch.nn.BatchNorm2d(n_o),
-                torch.nn.LeakyReLU(),
-                skiper(
-                    torch.nn.MaxPool2d(n_p, stride=1, padding=int(n_p / 2)),
-                    n_o, n_o)
-            )
-
-    def forward(self, m):
-        #[b,c,h,w]
-        return self.component.forward(m)
-
-
-class inception(torch.nn.Module):
-
-    def __init__(self,
-                 infeat,
-                 outfeat11,
-                 outfeatpool,
-                 outfeat33,
-                 outfeat55,
-                 bn=True) -> None:
-        super().__init__()
-        self.path11 = torch.nn.Sequential(
-            torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-        self.pathpool = torch.nn.Sequential(
-            torch.nn.MaxPool2d(3, stride=1, padding=1),
-            torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-        self.path33 = torch.nn.Sequential(
-            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(infeat, outfeat33, 3, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-        self.path55 = torch.nn.Sequential(
-            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(infeat, outfeat55, 3, padding='same'),
-            torch.nn.LeakyReLU(),
-            torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-        if bn is not None and bn:
-            self.bn = torch.nn.BatchNorm2d(outfeat11 + outfeatpool +
-                                           outfeat33 + outfeat55)
-        else:
-            self.bn = None
-
-    @staticmethod
-    def even(infeat, outfeat, bn=None):
-        assert outfeat % 4 == 0
-        outfeatby4 = int(outfeat / 4)
-        return inception(infeat, outfeatby4, outfeatby4, outfeatby4,
-                         outfeatby4, bn)
-
-    def forward(self, m):
-        o = torch.concat(
-            [self.path11(m),
-             self.pathpool(m),
-             self.path33(m),
-             self.path55(m)],
-            dim=-3)
-        if self.bn is not None:
-            o = self.bn(o)
-        return o  #channel
-
-
-class res_through(torch.nn.Module):
-
-    _modules = {}
-
-    def __init__(self, *components) -> None:
-        super().__init__()
-        self.components = components
-        for idx, module in enumerate(components):
-            self.add_module(str(idx), module)
-
-    def forward(self, m):
-        o = m
-        for l in self.components:
-            o = l(o) + o
-        return o
 
 
 class nntracker_simple(torch.nn.Module):
@@ -197,9 +91,8 @@ class SelfAttention(torch.nn.Module):
         self.to_qkv = torch.nn.Linear(dim, 3 * dim_head * heads, bias=False)
         self.to_out = torch.nn.Linear(dim_head * heads, dim)
         self.dropout = torch.nn.Dropout(dropout)
-        self.scale = torch.sqrt(torch.FloatTensor([dim_head]))
         
-        super().register_buffer('scaleFactor', self.scale)
+        super().register_buffer('scaleFactor', torch.sqrt(torch.FloatTensor([heads*dim_head]))) 
 
     def forward(self, x):
         #[batch size, sequence length, and feature dimensions]
@@ -253,13 +146,13 @@ def PositionalEmbedding2D(shape, depth):
     # np.putmask(pe, np.logical_and((d - depthalf) % 2 == 1, d >= depthalf),
     #            np.cos(y / 10000**((d - depthalf - 1) / 128)))
     mask = np.logical_and(d % 2 == 0, d < depthalf)[0, 0, :]
-    pe[:, :, mask] = np.sin(x / 10000**(d / 128))[:, :, mask]
+    pe[:, :, mask] = np.sin(2*np.pi*x / 10000**(d / shape[1]))[:, :, mask]
     mask = np.logical_and(d % 2 == 1, d < depthalf)[0, 0, :]
-    pe[:, :, mask] = np.cos(x / 10000**((d - 1) / 128))[:, :, mask]
+    pe[:, :, mask] = np.cos(2*np.pi*x / 10000**((d - 1) / shape[1]))[:, :, mask]
     mask = np.logical_and((d - depthalf) % 2 == 0, d >= depthalf)[0, 0, :]
-    pe[:, :, mask] = np.sin(y / 10000**((d - depthalf) / 128))[:, :, mask]
+    pe[:, :, mask] = np.sin(2*np.pi*y / 10000**((d - depthalf) / shape[0]))[:, :, mask]
     mask = np.logical_and((d - depthalf) % 2 == 1, d >= depthalf)[0, 0, :]
-    pe[:, :, mask] = np.cos(y / 10000**((d - depthalf - 1) / 128))[:, :, mask]
+    pe[:, :, mask] = np.cos(2*np.pi* y / 10000**((d - depthalf - 1) / shape[0]))[:, :, mask]
     return pe
 
 
@@ -269,9 +162,8 @@ class SelfAttentionOfConv(torch.nn.Module):
         super().__init__()
         self.inshape = inshape
         self.sashape = subshape
-        self.pe = torch.tensor(PositionalEmbedding2D(self.sashape, dim),dtype=torch.float32).permute(
-            2, 0, 1).reshape([1, dim] + self.sashape)
-        super().register_buffer('positionalEmbedding', self.pe)
+        super().register_buffer('positionalEmbedding', torch.tensor(PositionalEmbedding2D(self.sashape, dim),dtype=torch.float32).permute(
+            2, 0, 1).reshape([1, dim] + self.sashape))
         self.dim = dim
         self.sa = SelfAttention(dim)
 
@@ -320,10 +212,10 @@ class nntracker_yolo(torch.nn.Module):
         )
 
     def forward(self, m):
-        normalizeCoef = (nntracker_yolo.stdShape[0],
+        normalizeCoef = (nntracker_yolo.stdShape[1],
                          nntracker_yolo.stdShape[0],
                          nntracker_yolo.stdShape[1],
-                         nntracker_yolo.stdShape[1], 1)
+                         nntracker_yolo.stdShape[0], 1)
         out = self.comp(m) * torch.tensor(normalizeCoef).view(1, 5).to(device)
         return out
 

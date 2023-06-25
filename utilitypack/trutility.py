@@ -71,3 +71,114 @@ class kineticEnergyAccelerator:
         if mag < self.threshpow:
             self.mul *= 10
         return loss
+
+
+
+class skiper(torch.nn.Module):
+
+    def __init__(self, component, n_i, n_o) -> None:
+        super().__init__()
+        self.component = component
+        self.combiner = torch.nn.Conv2d(n_i + n_o, n_o, 1)
+
+    def forward(self, m):
+        #[b,c,h,w]
+        processed = self.component.forward(m)
+        c = torch.concat([processed, m], dim=-3)
+        result = self.combiner.forward(c)
+        return result
+
+
+class cbrps(torch.nn.Module):
+    #input chan, output chan, convolve size, pooling size
+    #n_o should be like 2*n, cuz maxpool will be concated with former output
+    def __init__(self, n_i, n_o, n_c, n_p) -> None:
+        super().__init__()
+        self.component = \
+            torch.nn.Sequential(
+                torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
+                torch.nn.BatchNorm2d(n_o),
+                torch.nn.LeakyReLU(),
+                skiper(
+                    torch.nn.MaxPool2d(n_p, stride=1, padding=int(n_p / 2)),
+                    n_o, n_o)
+            )
+
+    def forward(self, m):
+        #[b,c,h,w]
+        return self.component.forward(m)
+
+class inception(torch.nn.Module):
+
+    def __init__(self,
+                 infeat,
+                 outfeat11,
+                 outfeatpool,
+                 outfeat33,
+                 outfeat55,
+                 bn=True) -> None:
+        super().__init__()
+        self.path11 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.pathpool = torch.nn.Sequential(
+            torch.nn.MaxPool2d(3, stride=1, padding=1),
+            torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path33 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat33, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.path55 = torch.nn.Sequential(
+            torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(infeat, outfeat55, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        if bn is not None and bn:
+            self.bn = torch.nn.BatchNorm2d(outfeat11 + outfeatpool +
+                                           outfeat33 + outfeat55)
+        else:
+            self.bn = None
+
+    @staticmethod
+    def even(infeat, outfeat, bn=None):
+        assert outfeat % 4 == 0
+        outfeatby4 = int(outfeat / 4)
+        return inception(infeat, outfeatby4, outfeatby4, outfeatby4,
+                         outfeatby4, bn)
+
+    def forward(self, m):
+        o = torch.concat(
+            [self.path11(m),
+             self.pathpool(m),
+             self.path33(m),
+             self.path55(m)],
+            dim=-3)
+        if self.bn is not None:
+            o = self.bn(o)
+        return o  #channel
+
+
+
+class res_through(torch.nn.Module):
+
+    _modules = {}
+
+    def __init__(self, *components) -> None:
+        super().__init__()
+        self.components = components
+        for idx, module in enumerate(components):
+            self.add_module(str(idx), module)
+
+    def forward(self, m):
+        o = m
+        for i,l in enumerate(self.components):
+            o = l(o) + o
+        return o

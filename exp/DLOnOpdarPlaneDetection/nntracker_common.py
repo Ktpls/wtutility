@@ -148,6 +148,13 @@ class yoloformdatafset(Dataset):
     def getname(self, rawidx):
         return self.names[rawidx]
 
+
+def XYHM2XYXY(X, Y, H, W):
+    return (X - W / 2, Y - H / 2, X + W / 2, Y + H / 2)
+
+def XYXY2XYHM(x1, y1, x2, y2):
+    return (x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1
+
 def AABBOf(lbl, noobjthresh=5):
     assert (len(lbl.shape) == 2)
     y, x = np.where(lbl > 0)
@@ -157,4 +164,4 @@ def AABBOf(lbl, noobjthresh=5):
     y1, y2 = np.min(y), np.max(y)
     #(x1, x2, y1, y2, c)
 
-    return (x1, y1, x2, y2, 1)
+    return XYXY2XYHM(x1, y1, x2, y2)+(1,)

@@ -86,7 +86,7 @@ class labeldataset(Dataset):
             [0, 1, mov[0]],
         ])
         m = cv.warpAffine(m, matmov, np.flip(labeldataset.standardshape))
-        m=(m>0.5).astype(np.float32)
+        m = (m > 0.5).astype(np.float32)
 
         # set tmat
         tmat = np.zeros(labeldataset.standardshape + [
@@ -120,7 +120,7 @@ class labeldataset(Dataset):
         if enh_hairing:
             # grow some hair
             regsum = regionsum(m, [3, 3])
-            regionthresh=np.random.choice(np.arange(1,5))
+            regionthresh = np.random.choice(np.arange(1, 5))
             addups = np.logical_and((m < 0.1), (regsum == regionthresh))
             hairingrate = np.random.random() * 0.6 - 0.1
             addups = np.logical_and(addups,
@@ -137,7 +137,7 @@ class labeldataset(Dataset):
             #         rd[i] = m.shape[i]
             lt, rd = lt.astype('int'), rd.astype('int')
             m[lt[0]:rd[0], lt[1]:rd[1]] = 0
-            
+
         if enh_noiseline:
             # noise line
             for i in range(int(np.random.uniform(-2, 3))):
@@ -147,10 +147,11 @@ class labeldataset(Dataset):
 
         if enh_noisedot:
             # noise dot
-            noiseDotRate=np.random.uniform(-0.05, 0.1)
-            noiseDotMask=(np.random.random(m.shape)<noiseDotRate).astype(np.float32)
-            m+=noiseDotMask
-            m[m>1]=1
+            noiseDotRate = np.random.uniform(-0.05, 0.1)
+            noiseDotMask = (np.random.random(m.shape) < noiseDotRate).astype(
+                np.float32)
+            m += noiseDotMask
+            m[m > 1] = 1
 
         if enh_lineblocking:
             # black line
@@ -159,10 +160,9 @@ class labeldataset(Dataset):
                      np.flip([labeldataset.standardshape])).astype('int')
                 m = cv.line(m, p[0], p[1], color=0, thickness=1)
 
-
         if enh_dropout:
             # randomly set half of pixels in image m to 0
-            dropoutrate = np.random.uniform(0,0.3)
+            dropoutrate = np.random.uniform(0, 0.3)
             m = (np.random.random(m.shape) > dropoutrate) * m / (1 -
                                                                  dropoutrate)
 
@@ -233,8 +233,8 @@ class labeldataset(Dataset):
     def drawByType(self, t, ifrac):
         idx = int(ifrac * len(self.piclist[t]))
         return self.readSample(t, idx)
-    
-    def draw_SpecifiedType(self, ifrac, type:List):
+
+    def draw_SpecifiedType(self, ifrac, type: List):
         while (True):
             # to skip empty
             t = int(np.random.choice(type))
@@ -246,7 +246,7 @@ class labeldataset(Dataset):
 
 training_data = labeldataset(rf'..\dataset\charDataset\labeled')
 test_data = training_data
-batch_size = 32
+batch_size = 8
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
