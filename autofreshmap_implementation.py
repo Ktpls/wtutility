@@ -77,27 +77,32 @@ elif resolution == 'm1920x1080r1280x720':
         'OK': {
             'path': signName2Path('OK'),
             'lt': [896, 554],
-            'thresh':0.2
+            'thresh': 0.2
         }
     }
     standardMapLeftTopPoint = [292, 218]
     pointtemplatezoomrate = 1.5  #1920/1366
 
-if log2file:
-    logg = logger(
-        os.path.join(
-            assetroot,
-            rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log'
-        ))
+if dbglog:
+    if log2file:
+        logg = logger(
+            os.path.join(
+                assetroot,
+                rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log'
+            ))
 
-    def allchanneloutput(s):
-        logg(s)
-        print(s)
+        def allchanneloutput(s):
+            logg(s)
+            print(s)
+    else:
+        logg = None
+
+        def allchanneloutput(s):
+            print(s)
 else:
-    logg = None
 
     def allchanneloutput(s):
-        print(s)
+        pass
 
 
 class networkOperationImplementationSuite:
@@ -274,16 +279,16 @@ class matcher:
         return 0.5 * (self.pointlt + self.pointrd)
 
 
-
-
 def threshedmatchtemplate(src, temp, mask, simu):
-    matchresult = 1-cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    matchresult = 1 - cv.matchTemplate(
+        src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
     if dbglog:
         allchanneloutput(
             f'threshedmatchtemplate(): minval={minval}, simuthresh={simu}')
     return minloc if minval <= simu else None
+
 
 class matchTemplateClassWrapper:
 
@@ -308,7 +313,7 @@ class matchTemplateClassWrapper:
 
     def detect(self, mscr, specifiedThresh=None):
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
-        ret=threshedmatchtemplate(mscr,self.m,self.mask,thresh)
+        ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
         if dbglog:
             allchanneloutput(
                 f"{self.path} matchTemplateClassWrapper detecting, ret={ret}")
@@ -441,14 +446,18 @@ class mapdetector(detector):
         mapcut = cutmap(mscr)
 
         def detectMapShape(mtcid=0, thresh=None):
-            return self.mtc[mtcid].detect(mscr, thresh)
+            ret = self.mtc[mtcid].detect(mscr, thresh)
+            allchanneloutput(f'MapShapeResult={ret}')
+            return ret
 
         def distance(a, b):
             err = np.sqrt(((a - b)**2).sum())
+            allchanneloutput(f'dist={err}')
             return err
 
         def detectSpawn():
             center = getMapSpawnCenter(mapcut)
+            allchanneloutput(f'spawn={center}')
             return center
 
         def spawnAround(point, err=None):

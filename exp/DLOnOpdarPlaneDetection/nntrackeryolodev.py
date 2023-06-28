@@ -29,13 +29,13 @@ if datasetname == 'LE2REnh':
     sel = r"LE2REnh/all.xlsx"
     datasettype = 'zip'
 elif datasetname == 'largeEnoughToRecon':
-    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
+    path = r"largeEnoughToRecon/largeEnoughToRecon"
     sel = r"largeEnoughToRecon/all.xlsx"
-    datasettype = 'zip'
+    datasettype = 'fld'
 elif datasetname == 'origins_nntracker':
-    path = r"origins_nntracker/origins_nntracker.zip"
+    path = r"origins_nntracker/origins_nntracker"
     sel = r"origins_nntracker/hardones.xlsx"
-    datasettype = 'zip'
+    datasettype = 'fld'
 
 train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
                                  datasettype, None, model.stdShape)
@@ -63,6 +63,7 @@ def calclose(lbl, aabbhat):
     confidence = aabb[:, 4:]
     coef = torch.repeat_interleave(confidence, 5, -1)
     coef[:, 4] = 1
+    
     loss = (coef * (aabbhat - aabb)**2).sum()
 
     return (loss)
@@ -138,6 +139,7 @@ if __name__ == '__main__':
 
 
 def drawAABB(img, aabb):
+    aabb=np.array(XYHM2XYXY(*aabb), np.int32)
     img = np.copy(img)
     img = cv.rectangle(img, [aabb[0], aabb[1]], [aabb[2], aabb[3]],
                        color=(1, 0, 0),

@@ -31,12 +31,12 @@ highMobility=[
 ]
 
 # for normal tanks
-niceplain = [
+lowSurvivablitity = [
     'Sinai',
     #'Berlin',
 ]+highSurvivablity
 
-whitelistedmap = niceplain
+whitelistedmap = highSurvivablity+lowSurvivablitity
 
 specialmapdetectors = {
     "Sinai": {

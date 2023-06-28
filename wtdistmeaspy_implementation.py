@@ -324,12 +324,6 @@ uimask[uimask > 0.5] = 1
 uimask[uimask <= 0.5] = 0
 
 
-class BadCrossHairException(BaseException):
-
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
-
-
 def SetLineKernel():
     kernelLength = 21
     kernelHalfWidth = 3
@@ -401,7 +395,7 @@ def GetCrosshair(red_mask):
     crosshairSafeThresh = AdjustByZoomRate(300)
     if distOnX[crosshair[1]] < crosshairSafeThresh or distOnY[
             crosshair[0]] < crosshairSafeThresh:
-        raise BadCrossHairException(
+        raise BadCaliException(
             'AC_BAD_CRHR, maybe go try switch night mode or just not in snipping'
         )
     return crosshair
@@ -466,6 +460,7 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
         #not too bad, just more time on calibrating
         log('warning, gridlineHorInterval may be too bad to pass milDataErrorReq, check go it'
             )
+        raise BadCaliException('BadCaliTableException')
     else:
         gridlineHorInterval, _ = kickResult
         log('gridlineHorInterval, kicked out')
@@ -479,7 +474,7 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
 gridSearchWidth_unzoom = 10
 
 
-class BadCaliTableException(BaseException):
+class BadCaliException(BaseException):
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -500,7 +495,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     if len(gridlineVerPos) == 0:
         # so we are in snip scence, but no cali table found, maybe blocked by gui due to scope shaking
         log('bad gridlineVerPos')
-        raise BadCaliTableException()
+        raise BadCaliException()
     targetDistance = np.arange(len(gridlineVerPos)) * 200
     f = scipy.interpolate.interp1d(targetDistance,
                                    gridlineVerPos,
@@ -633,14 +628,11 @@ class loadCalibrationOperator:
                     caliresult = getNowCalibration(ss.shotbgr(), targetcali,
                                                    caliDbg, dbglogsavestep,
                                                    log)
-                except BadCrossHairException:
-                    self.result = "Bad crosshair detection"
+                except BadCaliException:
+                    self.result = "BadCaliException"
                     self.stopped = True
                     log(self.result)
                     return
-                except BadCaliTableException:
-                    log('catch BadCaliTableException, ignored and carry on')
-                    continue
 
                 targetpix, nowpix, mil = caliresult
                 log(f'targetpix{targetpix}, nowpix{nowpix}, mil{mil}')
