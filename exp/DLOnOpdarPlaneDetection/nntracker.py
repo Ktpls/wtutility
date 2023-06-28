@@ -131,61 +131,6 @@ class res_through(torch.nn.Module):
         return o
 
 
-class nntracker_simple(torch.nn.Module):
-
-    stdShape = np.array([100, 100])
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.preproc = torch.nn.Sequential(
-            cbrps(3, 8, 9, 9),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            torch.nn.Conv2d(8, 1, 1, padding='same'),
-            torch.nn.LeakyReLU(),
-        )
-        self.interferenceAtte = torch.nn.Sequential(
-            torch.nn.Flatten(1, -1),
-            torch.nn.Linear(np.prod(nntracker_simple.stdShape), 100),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(100, 10),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(10, 10),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(10, 10),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(10, 100),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(100, np.prod(nntracker_simple.stdShape)),
-            torch.nn.LeakyReLU(),
-        )
-        self.deco = torch.nn.Sequential(
-            inception.even(1, 8),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            inception.even(8, 8),
-            inception.even(8, 4),
-            torch.nn.Conv2d(4, 1, 1, padding='same'),
-            torch.nn.Sigmoid(),
-        )
-
-    def forward(self, m):
-        opp = self.preproc(m)
-        att = self.interferenceAtte(opp)
-        att = att.view(-1, 1, nntracker_simple.stdShape[1],
-                       nntracker_simple.stdShape[0])
-        attnorm = att / torch.sqrt((att**2 + 0.0001).sum())
-
-        out = self.deco(opp * attnorm)
-        return out
-
-    def applyOutAsAtteMaskOnM(self, m, out):
-        return m * out + (1 - out)
-
-
 
 
 class SelfAttention(torch.nn.Module):
@@ -243,14 +188,15 @@ class SelfAttentionOfConv(torch.nn.Module):
         self.inshape = inshape
         self.sashape = [10, 10]
         self.dim = dim
-        self.sa = SelfAttention(dim)
+        # self.sa = SelfAttention(dim)
+        self.sa = torch.nn.TransformerEncoderLayer(dim,2,64,0)
 
     def forward(self, x):
         x = F.interpolate(x, self.sashape, mode='bilinear')
         x = x.view(-1, self.dim, np.prod(self.sashape)).permute(0, 2, 1)
         x = self.sa(x)
         x = x.view(-1, self.dim, *self.sashape)
-        x = F.interpolate(x, size=self.inshape, mode='nearest')
+        x = F.interpolate(x, size=self.inshape, mode='bilinear')
         return x
 
 
@@ -303,6 +249,65 @@ class nntracker_yolo(torch.nn.Module):
                          nntracker_yolo.stdShape[1], 1)
         out = self.comp(m) * torch.tensor(normalizeCoef).view(1, 5).to(device)
         return out
+
+
+class nntracker_simple(torch.nn.Module):
+
+    stdShape = [100, 100]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.preproc = torch.nn.Sequential(
+            cbrps(3, 8, 9, 9),
+            # res_through(
+                inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
+            # ),
+            torch.nn.Conv2d(8, 1, 1, padding='same'),
+            torch.nn.LeakyReLU(),
+        )
+        self.interferenceAtte = torch.nn.Sequential(
+            torch.nn.Flatten(1, -1),
+            torch.nn.Linear(np.prod(nntracker_simple.stdShape), 100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 10),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(10, 100),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(100, np.prod(nntracker_simple.stdShape)),
+            torch.nn.LeakyReLU(),
+        )
+        self.deco = torch.nn.Sequential(
+            inception.even(1, 8),
+            # res_through(
+                inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
+            # ),
+            inception.even(8, 4),
+            torch.nn.Conv2d(4, 1, 1, padding='same'),
+            torch.nn.Sigmoid(),
+        )
+
+    def forward(self, m):
+        opp = self.preproc(m)
+        att = self.interferenceAtte(opp)
+        att = att.view(-1, 1, nntracker_simple.stdShape[1],
+                       nntracker_simple.stdShape[0])
+        attnorm = att / torch.sqrt((att**2 + 0.0001).sum())
+
+        out = self.deco(opp * attnorm)
+        return out
+
+    def applyOutAsAtteMaskOnM(self, m, out):
+        return m * out + (1 - out)
 
 
 def getmodel(modelpath):

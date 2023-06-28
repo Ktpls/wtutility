@@ -23,7 +23,7 @@ writer = SummaryWriter(
 from nntracker_common import labeldataset
 
 print('loading dataset')
-datasetname = 'origins_nntracker'
+datasetname = 'LE2REnh'
 datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
@@ -40,8 +40,7 @@ elif datasetname == 'origins_nntracker':
 
 train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
                                  datasettype, None, model.stdShape)
-test_data = labeldataset().init(datasetroot + path, datasetroot + sel, 16,
-                                datasettype, None, model.stdShape)
+test_data = train_data
 print('load finished')
 
 #%%
@@ -77,28 +76,6 @@ def calclose(lbl, lblhat):
 
     return (loss)
 
-    X, Y = torch.arange(lblhat.shape[-1]).to(device), torch.arange(
-        lblhat.shape[-2]).to(device)
-    X, Y = torch.meshgrid(X, Y)
-    X = X.reshape((1, 1) + X.shape)
-    Y = Y.reshape((1, 1) + Y.shape)
-    lblsurface = (lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1)
-    meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True) / lblsurface
-    meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True) / lblsurface
-    dist2 = ((X - meanX)**2 + (Y - meanY)**2) / (lblsurface / torch.pi)
-    coef = (1 + 0.5 * (dist2 > 1))
-    coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
-    #[b,d,h,w]
-    loss= \
-    1*(
-        (
-            (coef*(lbl - lblhat)**2).sum(dim=[-1, -2, -3])
-                /
-            (lblsurface[:,0,0,0] + 0.01)
-        )#**2
-    ).sum()
-
-    return (loss)
 
 
 def viewLossOnTest(testbatch=1):
@@ -155,7 +132,7 @@ def trainAnEpoch(epochnum=6, outputperbatchnum=100):
                 print(f"Average loss: {aveloss:>7f}")
                 writer.add_scalar('trainloss', aveloss, batch)
                 start_time = time.time()
-                viewLossOnTest()
+                # viewLossOnTest()
 
     #win32api.Beep(1000, 1000)
     print("Done!")

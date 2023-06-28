@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${cwd}/aio.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: Opdar",
@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "${cwd}/Opdar.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: Current File",

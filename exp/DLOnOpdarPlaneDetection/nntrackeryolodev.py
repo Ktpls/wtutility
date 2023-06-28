@@ -22,7 +22,7 @@ writer = SummaryWriter(
 # dataset
 
 print('loading dataset')
-datasetname = 'largeEnoughToRecon'
+datasetname = 'LE2REnh'
 datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
