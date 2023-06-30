@@ -11,6 +11,7 @@ train_data = labeldataset().init(
 
 def dataEnhance(src, lbl):
     dttp = [src, lbl]
+    backcolor = np.mean(src, axis=(0, 1), keepdims=True)
 
     #rot
     def rot(m, the):
@@ -77,33 +78,52 @@ def dataEnhance(src, lbl):
         m if len(m.shape) == 3 else m.reshape(m.shape + (1, )) for m in dttp
     ]
     src, lbl = dttp
+
     lbl[lbl < 0.5] = 0
     lbl[lbl >= 0.5] = 1  #thresh
+
+    black_pixels = np.where(np.sum(src, axis=2) < 0.1)
+    src[black_pixels] = backcolor
+
+    #rand line
+    def draw_random_line(image, n):
+        height, width, _ = image.shape
+        color = (0, 0, 0)  # Black color
+        for l in range(n):
+            start_point = (np.random.randint(0, width),
+                           np.random.randint(0, height))
+            end_point = (np.random.randint(0, width),
+                         np.random.randint(0, height))
+            cv.line(image, start_point, end_point, color, 1)
+        return image
+
+    src = draw_random_line(src, 5)
+
     return src, lbl
-
-
-def makeSample(cachepair):
-    # shape standardlize included
-    return dataEnhance(*cachepair[int(len(cachepair) * np.random.random())])
 
 
 def makeSampleAndPrintProgress(size, cachepair, path):
     percentage = 0
+    namelist = []
     for i in range(size):
         if i > (percentage + 1) * 0.01 * size:
             percentage = np.floor(i / size * 100)
             print(f'{percentage}%')
-        src, lbl = makeSample(cachepair)
+        src, lbl = dataEnhance(
+            *cachepair[int(len(cachepair) * np.random.random())])
         name = DataCollector.geneName()
         savemat(src * 255, name, rf'{path}/spl')
         savemat(lbl * 255, name, rf'{path}/lbl')
+        namelist.append(name + ".png")
+    save_list_to_xls(namelist, rf'{path}/all.xlsx')
+    print('Done')
 
 
 outpath = r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
 
 
 def performDataEnh():
-    makeSampleAndPrintProgress(8192, train_data.pairs, outpath)
+    makeSampleAndPrintProgress(2048, train_data.pairs, outpath)
 
 
 performDataEnh()

@@ -88,7 +88,19 @@ class skiper(torch.nn.Module):
         result = self.combiner.forward(c)
         return result
 
+class cbr(torch.nn.Module):
+    def __init__(self, n_i, n_o, n_c) -> None:
+        super().__init__()
+        self.component = \
+            torch.nn.Sequential(
+                torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
+                torch.nn.BatchNorm2d(n_o),
+                torch.nn.LeakyReLU(),
+            )
 
+    def forward(self, m):
+        #[b,c,h,w]
+        return self.component.forward(m)
 class cbrps(torch.nn.Module):
     #input chan, output chan, convolve size, pooling size
     #n_o should be like 2*n, cuz maxpool will be concated with former output
@@ -116,8 +128,14 @@ class inception(torch.nn.Module):
                  outfeatpool,
                  outfeat33,
                  outfeat55,
-                 bn=True) -> None:
+                 isbn=True) -> None:
         super().__init__()
+        self.infeat=infeat
+        self.outfeat11=outfeat11
+        self.outfeatpool=outfeatpool
+        self.outfeat33=outfeat33
+        self.outfeat55=outfeat55
+        self.isbn=isbn
         self.path11 = torch.nn.Sequential(
             torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
             torch.nn.LeakyReLU(),
@@ -141,7 +159,7 @@ class inception(torch.nn.Module):
             torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
             torch.nn.LeakyReLU(),
         )
-        if bn is not None and bn:
+        if isbn is not None and isbn:
             self.bn = torch.nn.BatchNorm2d(outfeat11 + outfeatpool +
                                            outfeat33 + outfeat55)
         else:
@@ -150,7 +168,7 @@ class inception(torch.nn.Module):
     @staticmethod
     def even(infeat, outfeat, bn=None):
         assert outfeat % 4 == 0
-        outfeatby4 = int(outfeat / 4)
+        outfeatby4 = outfeat // 4
         return inception(infeat, outfeatby4, outfeatby4, outfeatby4,
                          outfeatby4, bn)
 
@@ -180,5 +198,6 @@ class res_through(torch.nn.Module):
     def forward(self, m):
         o = m
         for i,l in enumerate(self.components):
-            o = l(o) + o
+            ret=l(o)
+            o = ret + o
         return o

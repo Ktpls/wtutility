@@ -46,10 +46,9 @@ print('load finished')
 #%%
 # dataloader
 # for easier modify batchsize without reloading all samples
-batch_size = 4
+batch_size = 2
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
-
 
 # %%
 # train
@@ -69,13 +68,12 @@ def calclose(lbl, lblhat):
     1*(
         (
             (coef*(lbl - lblhat)**2).sum(dim=[-1, -2, -3])
-                /
-            (lblsurface[:,0,0,0] + 0.01)
+            #     /
+            # (np.sqrt(lblsurface[:,0,0,0]) + 0.01) #emphasize large ons more
         )#**2
     ).sum()
 
     return (loss)
-
 
 
 def viewLossOnTest(testbatch=1):
@@ -191,14 +189,17 @@ def viewmodel():
     npp = nestedPyPlot([3, 4], [2, 2], plt.figure(figsize=(16, 16)))
     imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
     imshowconfignonnorm = {'cmap': 'gray'}
+    totalinferencetime = 0
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
 
             tsrc = src.reshape((1, ) + src.shape).to(device)
+            tstart = time.perf_counter()
             lblhat = model.forward(tsrc)
+            totalinferencetime += time.perf_counter() - tstart
             lblhat = np.array(lblhat[0, :, :, :].cpu())
-            srcatte = model.applyOutAsAtteMaskOnM(src, lblhat)
+            srcatte = np.zeros_like(src)
             #to ndarray
 
             datatuple = [src, lbl, lblhat, srcatte]
@@ -212,8 +213,9 @@ def viewmodel():
             plt.imshow(lblhat, **imshowconfig)
             npp.subplot(i, 2)
             plt.imshow(lbl, **imshowconfig)
-            npp.subplot(i, 3)
-            plt.imshow(cv.cvtColor(srcatte, cv.COLOR_BGR2RGB))
+            # npp.subplot(i, 3)
+            # plt.imshow(cv.cvtColor(srcatte, cv.COLOR_BGR2RGB))
+    print(f"average inferencetime={totalinferencetime / samplenum}")
 
 
 viewmodel()

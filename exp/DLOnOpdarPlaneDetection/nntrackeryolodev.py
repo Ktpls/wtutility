@@ -29,13 +29,13 @@ if datasetname == 'LE2REnh':
     sel = r"LE2REnh/all.xlsx"
     datasettype = 'zip'
 elif datasetname == 'largeEnoughToRecon':
-    path = r"largeEnoughToRecon/largeEnoughToRecon"
+    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
     sel = r"largeEnoughToRecon/all.xlsx"
-    datasettype = 'fld'
+    datasettype = 'zip'
 elif datasetname == 'origins_nntracker':
-    path = r"origins_nntracker/origins_nntracker"
+    path = r"origins_nntracker/origins_nntracker.zip"
     sel = r"origins_nntracker/hardones.xlsx"
-    datasettype = 'fld'
+    datasettype = 'zip'
 
 train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
                                  datasettype, None, model.stdShape)
@@ -63,10 +63,10 @@ def calclose(lbl, aabbhat):
     confidence = aabb[:, 4:]
     coef = torch.repeat_interleave(confidence, 5, -1)
     coef[:, 4] = 1
-    
+
     loss = (coef * (aabbhat - aabb)**2).sum()
 
-    return (loss)
+    return (loss)**2
 
 
 def viewLossOnTest(testbatch=1):
@@ -138,15 +138,6 @@ if __name__ == '__main__':
 # view effect
 
 
-def drawAABB(img, aabb):
-    aabb=np.array(XYHM2XYXY(*aabb), np.int32)
-    img = np.copy(img)
-    img = cv.rectangle(img, [aabb[0], aabb[1]], [aabb[2], aabb[3]],
-                       color=(1, 0, 0),
-                       thickness=1)
-    return img
-
-
 def regulate(x, a, b):
     if x < a:
         return a
@@ -154,6 +145,22 @@ def regulate(x, a, b):
         return b
     else:
         return x
+
+
+def drawAABB(img, aabbxywh):
+    aabb = np.array(XYWH2XYXY(*aabbxywh), np.int32)
+
+    aabb = np.array([
+        regulate(aabb[0], 0, img.shape[1]),
+        regulate(aabb[1], 0, img.shape[0]),
+        regulate(aabb[2], 0, img.shape[1]),
+        regulate(aabb[3], 0, img.shape[0]),
+    ]).astype(np.int32)
+    img = np.copy(img)
+    img = cv.rectangle(img, [aabb[0], aabb[1]], [aabb[2], aabb[3]],
+                       color=(1, 0, 0),
+                       thickness=1)
+    return img
 
 
 def viewmodel():
@@ -185,15 +192,8 @@ def viewmodel():
             npp.subplot(i, 2)
             plt.imshow(drawAABB(src, AABBOf(lbl[:, :, 0])[0:4]))
 
-            aabbhatreg = np.array([
-                regulate(aabbhat[0], 0, src.shape[1]),
-                regulate(aabbhat[1], 0, src.shape[0]),
-                regulate(aabbhat[2], 0, src.shape[1]),
-                regulate(aabbhat[3], 0, src.shape[0]),
-            ]).astype(np.int32)
-
             npp.subplot(i, 3)
-            plt.imshow(drawAABB(src, aabbhatreg[0:4]))
+            plt.imshow(drawAABB(src, aabbhat[0:4]))
             plt.title(f'{aabbhat[4]:>.2f}')
 
 
