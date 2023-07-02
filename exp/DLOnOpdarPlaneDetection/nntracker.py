@@ -3,16 +3,14 @@
 RunOnWtUtilityEnviroment = True
 # %%
 #basics
-if RunOnWtUtilityEnviroment:
-    if __package__ == '':
-        from utilref import *
-    else:
-        from .utilref import *
-    pass
+if __package__ == '':
+    from utilref import *
 else:
-    from utilkaggle import *
+    from .utilref import *
+pass
 from torch import nn
 import torch.nn.functional as F
+import functools
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
@@ -25,7 +23,7 @@ print(f"Using {device} device")
 
 
 class BaseModule4NNTracker:
-    stdShape = [100, 100]
+    stdShape = [128, 128]
 
 
 class SelfAttention(torch.nn.Module):
@@ -98,10 +96,10 @@ def PositionalEmbedding2D(shape, depth):
 
     mask_even = np.logical_and(d % 2 == 0, d < depth_half)[0, 0, :]
     mask_odd = np.logical_and(d % 2 == 1, d < depth_half)[0, 0, :]
-    mask_even_half = np.logical_and((d - depth_half) % 2 == 0, d
-                                    >= depth_half)[0, 0, :]
-    mask_odd_half = np.logical_and((d - depth_half) % 2 == 1, d
-                                   >= depth_half)[0, 0, :]
+    mask_even_half = np.logical_and((d - depth_half) % 2 == 0,
+                                    d >= depth_half)[0, 0, :]
+    mask_odd_half = np.logical_and((d - depth_half) % 2 == 1,
+                                   d >= depth_half)[0, 0, :]
 
     pe[:, :, mask_even] = np.sin(
         2 * np.pi * x / 10000**((d + 1) / depth_half))[:, :, mask_even]
@@ -177,6 +175,31 @@ class SelfAttentionOfConvCustomResampler(torch.nn.Module):
         x = x.view(-1, self.dim, *self.subshape)
         x = self.upsampler(x)
         return x
+
+
+class SemanticInjectionModule(torch.nn.Module):
+
+    def __init__(self, localdim, globaldim=None, outdim=None):
+        if globaldim is None:
+            globaldim = localdim
+        if outdim is None:
+            outdim = localdim
+        self.localdim = localdim
+        self.globaldim = globaldim
+        self.outdim = outdim
+        super().__init__()
+        self.local = nn.Sequential(nn.Conv2d(localdim, outdim, 1), )
+        self.global1 = nn.Sequential(
+            nn.Conv2d(globaldim, outdim, 1),
+            nn.Sigmoid(),
+        )
+        self.global2 = nn.Sequential(nn.Conv2d(globaldim, outdim, 1), )
+        self.bn = nn.BatchNorm2d(outdim)
+
+    def forward(self, local, globalsemantic):
+        x = self.local(local) * self.global1(globalsemantic) + self.global2(
+            globalsemantic)
+        return self.bn(x)
 
 
 class VGGNet(nn.Module):
@@ -291,37 +314,40 @@ class nntracker_simple(torch.nn.Module, BaseModule4NNTracker):
                 inception.even(8, 8),
                 inception.even(8, 8),
             ),
-            cbr(8,8,1),
         )
+        #downsampling 16x
         self.contentway = torch.nn.Sequential(
             inception.even(8, 8),
             res_through(
                 nn.Sequential(
-                    nn.MaxPool2d(5),
-                    #20
-                    inception.even(8, 8),
+                    nn.MaxPool2d(4),
+                    #32
+                    inception.even(8, 16),
                     res_through(
                         nn.Sequential(
-                            nn.MaxPool2d(2),
-                            #10
-                            inception.even(8, 8),
-                            inception.even(8, 8),
-                            nn.ConvTranspose2d(8, 8, 2, stride=2))),
-                    nn.ConvTranspose2d(8, 8, 5, stride=5),
-                )),
+                            nn.MaxPool2d(4),
+                            inception.even(16, 64),
+                            #8
+                            res_through(
+                                inception.even(64, 64),
+                                inception.even(64, 64),
+                            ),
+                            nn.ConvTranspose2d(64, 16, 4, stride=4),
+                        ),
+                        combiner=SemanticInjectionModule(16)),
+                    nn.ConvTranspose2d(16, 8, 4, stride=4),
+                ),
+                combiner=SemanticInjectionModule(8)),
             torch.nn.LeakyReLU(),
         )
         self.positionway = torch.nn.Sequential(
-            inception.even(8, 8),
             res_through(
                 inception.even(8, 8),
                 inception.even(8, 8),
                 inception.even(8, 8),
-            ),
-            cbr(8,8,1),
-        )
+            ), )
         self.deco = torch.nn.Sequential(
-            inception.even(2 * 8, 8),
+            inception.even(2 * 8 + 3, 8),
             res_through(
                 inception.even(8, 8),
                 inception.even(8, 8),
@@ -334,7 +360,7 @@ class nntracker_simple(torch.nn.Module, BaseModule4NNTracker):
         pp = self.preproc(m)
         cont = self.contentway(pp)
         pos = self.positionway(pp)
-        out = self.deco(torch.concat([cont, pos], dim=1))
+        out = self.deco(torch.concat([cont, pos, m], dim=1))
         return out
 
 
@@ -389,7 +415,8 @@ class unet(nn.Module, BaseModule4NNTracker):
 
 
 def getmodel(modelpath):
-    model = setModel(nntracker_simple(), device=device, path=modelpath).to(device=device)
+    model = setModel(nntracker_simple(), device=device,
+                     path=modelpath).to(device=device)
     #print(model)
     return model
 

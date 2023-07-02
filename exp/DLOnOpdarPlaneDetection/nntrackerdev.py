@@ -9,7 +9,6 @@ import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
-from nntracker import getmodel, device
 # %%
 # nn def
 modelpath = r'nntracker.pth'
@@ -24,22 +23,30 @@ from nntracker_common import labeldataset
 
 print('loading dataset')
 datasetname = 'LE2REnh'
-datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
+datasetroot = 'D:\File\code\prog/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
     sel = r"LE2REnh/all.xlsx"
+    datasettype = 'zip'
+if datasetname == 'LE2RAREnh':
+    path = r"LE2RAREnh/LE2RAREnh.zip"
+    sel = r"LE2RAREnh/all.xlsx"
     datasettype = 'zip'
 elif datasetname == 'largeEnoughToRecon':
     path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
     sel = r"largeEnoughToRecon/all.xlsx"
     datasettype = 'zip'
 elif datasetname == 'origins_nntracker':
-    path = r"origins_nntracker/origins_nntracker.zip"
+    path = r"origins_nntracker\origins_nntracker"
     sel = r"origins_nntracker/hardones.xlsx"
+    datasettype = 'fld'
+elif datasetname == 'withaimingring':
+    path = r"withaimingring/withaimingring.zip"
+    sel = r"withaimingring/xls.xlsx"
     datasettype = 'zip'
 
-train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 8192,
-                                 datasettype, None, model.stdShape)
+train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 2048,
+                                 datasettype, None, [96]*2)
 test_data = train_data
 print('load finished')
 
@@ -75,110 +82,64 @@ def calclose(lbl, lblhat):
 
     return (loss)
 
+def trainmainprogress(batch, datatuple):
+    model.train()
+    datatuple = [d.to(device) for d in datatuple]
+    src, lbl = datatuple
+    lblhat = model.forward(src)
+    loss = calclose(lbl, lblhat)
+    return loss
 
-def viewLossOnTest(testbatch=1):
+def onoutput(batch, aveerr):
+    writer.add_scalar('aveerr', aveerr, batch)
 
-    #    model.eval()
-    losstotal = 0
-    samplenum = 0
-    with torch.no_grad():
-        for batch, datatuple in enumerate(test_dataloader):
-
-            datatuple = [d.to(device) for d in datatuple]
-            src, lbl = datatuple
-            lblhat = model.forward(src)
-            losstotal += calclose(lbl, lblhat).item()
-            samplenum += batchsizeof(src)
-            if batch >= testbatch:
-                break
-    print(f" [testloss]")
-    loss2show = losstotal / samplenum
-    print(f" [loss={loss2show}]")
-    writer.add_scalar('testloss', (loss2show), 0)
-
-
-def trainAnEpoch(epochnum=6, outputperbatchnum=100):
-
-    optimizer = torch.optim.AdamW(model.parameters(),
-                                  lr=1e-4,
-                                  weight_decay=1e-1)
-    epochs = epochnum
-    start_time = time.time()
-    for ep in range(epochs):
-        print(f"Epoch {ep+1}")
-        print("-------------------------------")
-
-        # train
-        for batch, datatuple in enumerate(train_dataloader):
-
-            model.train()
-            datatuple = [d.to(device) for d in datatuple]
-            src, lbl = datatuple
-            lblhat = model.forward(src)
-            # lblhat = model.forward(model.applyOutAsAtteMaskOnM(src, lblhat))
-            loss = calclose(lbl, lblhat)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            if batch % outputperbatchnum == 0:
-                end_time = time.time()
-                print(f"Batch {batch}/{len(train_dataloader)}")
-                print(
-                    f"Training speed: {outputperbatchnum/(end_time-start_time):>5f} batches per second"
-                )
-                aveloss = loss.item() / batchsizeof(src)
-                print(f"Average loss: {aveloss:>7f}")
-                writer.add_scalar('trainloss', aveloss, batch)
-                start_time = time.time()
-                # viewLossOnTest()
-
-    #win32api.Beep(1000, 1000)
-    print("Done!")
-
-
-trainAnEpoch()
+trainpipe.train(train_dataloader,
+                torch.optim.AdamW(model.parameters(),
+                                  lr=1e-4,weight_decay=1e-2),
+                trainmainprogress,
+                customSubOnOutput=onoutput)
 
 #%%
 # all the continious running should only be applied on codes above! plz stop here
 if __name__ == '__main__':
     exit()
 
+
+
 # %%
 # view effect
 
 
-def viewModelOnPic():
+def evalOnAll(updateSampleList=False, errcriterion=200):
+    loss = 0
+    rawlength = train_data.rawlength()
+    nowpercentage = 0
+    totaltime = 0
+    model.eval()
+    wronglist=[]if updateSampleList else None
+    with torch.no_grad():
+        for pi in range(rawlength):
+            spl, lbl = train_data.rawgetitem(pi)
+            def dataPreperation(d):
+                return ToTensor()(d).to(device).unsqueeze(0)
+            spl = dataPreperation(spl)
+            lbl = dataPreperation(lbl)
+            starttime = time.time()
+            lblhat = model.forward(spl)
+            totaltime += time.time() - starttime
+            curloss=calclose(lbl, lblhat).item()
+            loss += curloss
+            if updateSampleList and curloss>errcriterion:
+                wronglist.append(pi)
+            if nowpercentage <= pi / rawlength * 100:
+                nowpercentage += 1
+                print(f'{nowpercentage}%')
+    print(f'average loss{loss/rawlength}')
+    print(f'inference time{totaltime/rawlength}')
+    if updateSampleList:
+        train_data.pairs=[train_data.pairs[i] for i in wronglist]
+        print(f'samplelist update done,wrong samples:{len(wronglist)}')
 
-    def viewModelOnAPic(m):
-        if type(m) is np.ndarray or type(m) is cv.Mat:
-            m = ToTensor()(m)
-        m = m.reshape((1, ) + m.shape)  #add batch
-        with torch.no_grad():
-            result = model.forward(m)
-        result = result[0, :, :, :]  #debatch
-        result = tensorimg2ndarray(result)
-        result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
-        return result
-
-    filelist = [
-        row[0] for row in Xls2ListList(
-            r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sampleNotIncluded.xlsx"
-        ) if row[0] is not None
-    ]
-
-    singleMapWidthHeightRatio = 2
-    pltwidth = np.ceil(np.sqrt(len(filelist) /
-                               singleMapWidthHeightRatio)).astype(np.int32)
-    pltheight = np.ceil(singleMapWidthHeightRatio * pltwidth).astype(np.int32)
-    npp = nestedPyPlot([pltheight, pltwidth], [1, 2],
-                       plt.figure(figsize=(16, 16)))
-    for i, p in enumerate(filelist):
-        m = cv.imread(p)
-        npp.subplot(i, 0)
-        plt.imshow(cv.cvtColor(m, cv.COLOR_BGR2RGB))
-        npp.subplot(i, 1)
-        result = viewModelOnAPic(m)
-        plt.imshow(result, **{'cmap': 'gray', 'vmin': 0, 'vmax': 1})
 
 
 def viewmodel():
@@ -190,6 +151,7 @@ def viewmodel():
     imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
     imshowconfignonnorm = {'cmap': 'gray'}
     totalinferencetime = 0
+    infecount=0
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
@@ -198,6 +160,7 @@ def viewmodel():
             tstart = time.perf_counter()
             lblhat = model.forward(tsrc)
             totalinferencetime += time.perf_counter() - tstart
+            infecount+=1
             lblhat = np.array(lblhat[0, :, :, :].cpu())
             srcatte = np.zeros_like(src)
             #to ndarray

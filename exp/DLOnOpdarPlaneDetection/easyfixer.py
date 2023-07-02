@@ -1,8 +1,8 @@
 from utilref import *
-listfile=r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\sample2fix.xlsx"
+listfile=r"D:\File\code\prog\wtutility\output\opdar_plane\xls.xlsx"
 PaintDotNet=r"C:\Program Files\paint.net\paintdotnet.exe"
-lblpath=r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all\lbl"
-splpath=r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\all\spl"
+lblpath=r"D:\File\code\prog\wtutility\output\opdar_plane\lbl"
+splpath=r"D:\File\code\prog\wtutility\output\opdar_plane\spl"
 
 items=[row[0] for row in Xls2ListList(listfile)]
 items=[i for i in items if i is not None]

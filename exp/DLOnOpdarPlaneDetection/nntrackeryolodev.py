@@ -23,7 +23,7 @@ writer = SummaryWriter(
 
 print('loading dataset')
 datasetname = 'LE2REnh'
-datasetroot = 'C:/file/code/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
+datasetroot = r'D:\File\code\prog/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
 if datasetname == 'LE2REnh':
     path = r"LE2REnh/LE2REnh.zip"
     sel = r"LE2REnh/all.xlsx"

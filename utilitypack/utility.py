@@ -823,7 +823,6 @@ class DataCollector:
         savemat(m, f'{name}', path=self.outputpath)
 
 
-
 def save_list_to_xls(data_list, filename, sheetname=None):
     # Create a new workbook
     wb = opx.Workbook()
@@ -836,10 +835,11 @@ def save_list_to_xls(data_list, filename, sheetname=None):
 
     # Iterate over the list and write each item to a new row
     for row, item in enumerate(data_list):
-        ws.cell(row=row+1, column=1, value=item)
+        ws.cell(row=row + 1, column=1, value=item)
 
     # Save the workbook to the specified filename
     wb.save(filename)
+
 
 def Xls2ListList(path=None, sheetname=None, killNones=True):
     if path is None:
@@ -854,6 +854,7 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
     if killNones:
         ret = [l for l in ret if any([e is not None for e in l])]
     return ret
+
 
 def AllFileIn(path, includeFileInSubDir=True):
     import os

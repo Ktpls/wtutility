@@ -4,9 +4,11 @@ from utilref import *
 from nntracker_common import labeldataset
 
 train_data = labeldataset().init(
-    r'C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip',
-    r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx",
-    8192, 'zip')
+    r'.\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip',
+    r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx",
+    8192,
+    'zip',
+    stdShape=[128, 128])
 
 
 def dataEnhance(src, lbl):
@@ -106,8 +108,8 @@ def makeSampleAndPrintProgress(size, cachepair, path):
     percentage = 0
     namelist = []
     for i in range(size):
-        if i > (percentage + 1) * 0.01 * size:
-            percentage = np.floor(i / size * 100)
+        if 100 * i // size > percentage:
+            percentage += 1
             print(f'{percentage}%')
         src, lbl = dataEnhance(
             *cachepair[int(len(cachepair) * np.random.random())])
@@ -119,7 +121,7 @@ def makeSampleAndPrintProgress(size, cachepair, path):
     print('Done')
 
 
-outpath = r"C:\file\code\wtutility\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
+outpath = r".\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
 
 
 def performDataEnh():
@@ -127,3 +129,4 @@ def performDataEnh():
 
 
 performDataEnh()
+# %%

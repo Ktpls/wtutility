@@ -107,11 +107,11 @@ def main():
 
     basicCmdControl = [
         ExecutableCommand.from_ptr_len(moduleBase + 0x3593E0, 4, hproc),  #subVitAndWrite
+        ExecutableCommand.from_ptr_len(moduleBase + 0x36DBD6, 2, hproc),  #decDoubleJumpAndWrite
         ExecutableCommand.from_ptr_len(moduleBase + 0x40CA8E, 4, hproc),  #subStamineAndWrite
         ExecutableCommand.from_ptr_len(moduleBase + 0x4103F7, 4, hproc),  #setAttackUpperLimit
-        ExecutableCommand.from_ptr_len(moduleBase + 0x4182D8, 4, hproc),  #consumingStamine
         ExecutableCommand.from_ptr_len(moduleBase + 0x414542, 6, hproc),  #poisonCountingDown
-        ExecutableCommand.from_ptr_len(moduleBase + 0x36DBD6, 2, hproc),  #decDoubleJumpAndWrite
+        ExecutableCommand.from_ptr_len(moduleBase + 0x4182D8, 4, hproc),  #consumingStamine
     ]
     [bcc.SetNop() for bcc in basicCmdControl]
 

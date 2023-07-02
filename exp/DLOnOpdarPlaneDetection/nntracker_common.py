@@ -71,9 +71,10 @@ class labeldataset(Dataset):
         return self.size
 
     def __getitem__(self, idx):
+        index = int(len(self.pairs) * np.random.random())
         return [
             ToTensor()(i)
-            for i in self.pairs[int(len(self.pairs) * np.random.random())]
+            for i in self.pairs[index]
         ]
 
     def rawlength(self):

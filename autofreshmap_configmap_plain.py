@@ -22,7 +22,7 @@ highSurvivablity = [
     'SandsOfTunisia',
     'SecondBattleOfElAlamein',
     'Tunisia',
-    'AshRiver',
+    #'AshRiver',
 ]
 
 highMobility=[

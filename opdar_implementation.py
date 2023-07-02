@@ -167,9 +167,12 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     # get region
     pul = (posref - searchrange).astype('int32')
     pbr = (posref + searchrange).astype('int32')
-    pul = point_legalize(pul, size)
-    pbr = point_legalize(pbr, size)
-    m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
+    pul_l = point_legalize(pul, size)
+    pbr_l = point_legalize(pbr, size)
+    if ((pul-pul_l)**2).sum()+((pbr-pbr_l)**2).sum() > 1:
+        # bad shape for nn
+        return None
+    m = m[pul_l[1]:pbr_l[1], pul_l[0]:pbr_l[0]]
     mndarray = m
     with torch.no_grad():
         from torchvision.transforms import ToTensor
@@ -199,8 +202,8 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
 
         clusterXdist = clusterbinary.sum(0)
         clusterYdist = clusterbinary.sum(1)
-        X = np.arange(pul[0], pbr[0])
-        Y = np.arange(pul[1], pbr[1])
+        X = np.arange(pul_l[0], pbr_l[0])
+        Y = np.arange(pul_l[1], pbr_l[1])
 
         info[c] = [(X * clusterXdist).sum() / (clusterXdist.sum() + 0.001),
                    (Y * clusterYdist).sum() / (clusterYdist.sum() + 0.001),
@@ -227,7 +230,7 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     # (posx, posy), wingspan, clustermax, pul, its score
     return info[maxscorecontourid,
                 0:2], info[maxscorecontourid,
-                           2], clustermax, pul, info[maxscorecontourid, 3]
+                           2], clustermax, pul_l, info[maxscorecontourid, 3]
 
 
 def planetrack(m, posref, wingspanref=-1, mask=None):
@@ -390,7 +393,7 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     return curr_pts, m
 
 
-from wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom, BadCrossHairException
+from wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom,BadCaliException
 
 
 def GetMilIntervalFromScrShot(m):
@@ -468,7 +471,7 @@ class tracker:
             if useThetaByPixCalcFromMil:
                 try:
                     thetabypix=(2*3.1415926/6000)/GetMilIntervalFromScrShot(curr)
-                except BadCrossHairException:
+                except BadCaliException:
                     pass
             
             if useNNTracker:
@@ -483,7 +486,6 @@ class tracker:
                 ponshot, wingspan, planemap, pul, maxscore = ret
                 # collecing for dl project
                 # ponshot is in x,y format
-                collectingPlaneSample
                 if collectingPlaneSample and np.random.random(
                 ) < collectingPlaneSampleRate:
                     name = DataCollector.geneName()
@@ -492,7 +494,7 @@ class tracker:
                                   int(ponshot[0]) -
                                   searchrange:int(ponshot[0]) + searchrange, :]
                     odc[0].save(m4coll, name)
-#                    odc[1].save(planemap * 255, name)
+                    odc[1].save(planemap * 255, name)
 
         pomega = (ponshot - plastinthisframe) / tdelta
 
