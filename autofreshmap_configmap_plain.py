@@ -22,7 +22,7 @@ highSurvivablity = [
     'SandsOfTunisia',
     'SecondBattleOfElAlamein',
     'Tunisia',
-    #'AshRiver',
+    'AshRiver',
 ]
 
 highMobility=[
@@ -36,7 +36,7 @@ lowSurvivablitity = [
     #'Berlin',
 ]+highSurvivablity
 
-whitelistedmap = highSurvivablity+lowSurvivablitity
+whitelistedmap = highSurvivablity
 
 specialmapdetectors = {
     "Sinai": {

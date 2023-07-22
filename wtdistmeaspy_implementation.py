@@ -167,9 +167,11 @@ def SolveMap_BottomRightSmallMap(isrc,
     dbglogsavestep(mcolorvalid * 255)
 
     mym = mcolored.copy()
-    mym = mym[:, :, 1:]
-    mym = np.average(mym, axis=2)  # yellow channel
-    mym = mym * mcolorvalid
+    mym=np.array(mym,dtype=np.float32)/255
+    mym=cv.cvtColor(mym,cv.COLOR_BGR2HSV)
+    hue = mym[:, :, 0]
+    yellowness=np.cos((hue-60)/180*np.pi)# yellow channel
+    mym = yellowness * mcolorvalid
     dbglogsavestep(mym)
 
     mym = cv.filter2D(mym, -1, kernelyellowmark)

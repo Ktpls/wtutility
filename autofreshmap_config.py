@@ -13,11 +13,11 @@ standardSpawnCenterError=200
 standardPointSelectorError=20
 
 standardMatchThreshold=0.3
-standardMapMatchThreshold=0.2
+standardMapMatchThreshold=0.23
 
 setonwifirecoverthresh=13
 
-detectpointsimilarity=0.05
+detectpointsimilarity=0.1
 
 minDelayAfterDisconnected=5
 
