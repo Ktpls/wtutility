@@ -2,10 +2,10 @@
 
 # %%
 if __package__ == '':
-    from utilref import setModel, torch, batchsizeof, cv, np
+    from utilref import *
     from defs import *
 else:
-    from .utilref import setModel, torch, batchsizeof, cv, np
+    from .utilref import *
     from .defs import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -35,7 +35,7 @@ tsizep1 = tsize + 1
 typeElse = tsizep1 - 1
 
 
-class cbrp(torch.nn.Module):
+class cbr(torch.nn.Module):
 
     def __init__(self, infeat, outfeat, convsize, poolsize) -> None:
         super().__init__()
@@ -94,13 +94,24 @@ class chardetector(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.comp = torch.nn.Sequential(
-            cbrp(1, 8, 9, 9),
-            inception(8, 4, 4, 4, 4),
-            torch.nn.BatchNorm2d(16),
+            cbr(1, 8, 9, 9),
+            res_through(
+                torch.nn.Sequential(
             inception(16, 8, 8, 8, 8),
             torch.nn.BatchNorm2d(32),
-            inception(32, 4, 4, 4, 4),
-            torch.nn.BatchNorm2d(16),
+            torch.nn.MaxPool2d(5,stride=1,padding=2),
+                    ),
+                torch.nn.Sequential(
+            inception(16, 8, 8, 8, 8),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.MaxPool2d(5,stride=1,padding=2),
+                    ),
+                torch.nn.Sequential(
+            inception(16, 8, 8, 8, 8),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.MaxPool2d(5,stride=1,padding=2),
+                    ),
+            ),
             torch.nn.Conv2d(16,
                             tsize, [charh, charw - 1],
                             padding=[0, int((charw - 1 - 1) / 2)]),
