@@ -1,0 +1,257 @@
+# warthunder distance measurement plotting scale optical character reconginization
+
+# generating sample and training as in real task
+
+# %%
+#basics
+from utilref import *
+from torch.utils.tensorboard import SummaryWriter
+import traceback
+from torch.utils.data import Dataset
+import itertools
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
+from wtdmpsocr import getmodel, tsize, tsizep1, typeElse, device
+from defs import *
+#torch.set_num_threads(12)
+
+# %%
+# nn def
+
+modelpath = 'wtdmpsocr.pth'
+model = getmodel(modelpath)
+#[os.remove(f) for f in AllFileIn('runs')]
+from datetime import datetime
+
+nowtimestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+writer = SummaryWriter(f"runs/{nowtimestamp}")  # 存放log文件的目录
+
+# %%
+# dataset
+
+
+class labeldataset(Dataset):
+
+    def __init__(self, path):
+
+        # we got dirs 0-10 in root, maybe some not exist cuz no sample under it
+        self.piclist = list(range(tsizep1))
+        for t in range(tsizep1):
+            rootoft = rf'{path}\{t}'
+            self.piclist[t] = AllFileIn(rootoft) if os.path.exists(
+                rootoft) else []
+
+        self.cache = [[
+            cv.imread(path)[:, :, 0].astype('float32') / 255
+            for path in self.piclist[t]
+        ] for t in range(tsizep1)]
+
+    def __len__(self):
+        return 65536
+
+    standardshape = [charh, 40]  #h,w
+
+    @staticmethod
+    def dataEnhance(m,
+                    enh_hairing=True,
+                    enh_dropout=True,
+                    enh_blocking=False,
+                    enh_noisedot=True,
+                    enh_noiseline=True,
+                    enh_lineblocking=True):
+
+        m = np.copy(m)
+
+        if enh_hairing:
+            # grow some hair
+            regsum = regionsum(m, [3, 3])
+            regionthresh = np.random.choice(np.arange(1, 5))
+            addups = np.logical_and((m < 0.1), (regsum == regionthresh))
+            hairingrate = np.random.random() * 0.6 - 0.1
+            addups = np.logical_and(addups,
+                                    (np.random.random(m.shape) < hairingrate))
+            m += addups
+
+        if enh_blocking:
+            # blocking
+            hw = np.random.rand(2) * [4, 10] + [-2, 2]
+            lt = np.random.rand(2) * (m.shape - hw)
+            rd = lt + hw
+            # for i in range(2):
+            #     if rd[i] >= m.shape[i]:
+            #         rd[i] = m.shape[i]
+            lt, rd = lt.astype('int'), rd.astype('int')
+            m[lt[0]:rd[0], lt[1]:rd[1]] = 0
+
+        if enh_noiseline:
+            # noise line
+            for i in range(int(np.random.uniform(-2, 3))):
+                p = (np.random.rand(2, 2) *
+                     np.flip([labeldataset.standardshape])).astype('int')
+                m = cv.line(m, p[0], p[1], color=1, thickness=1)
+
+        if enh_noisedot:
+            # noise dot
+            noiseDotRate = np.random.uniform(-0.05, 0.1)
+            noiseDotMask = (np.random.random(m.shape) < noiseDotRate).astype(
+                np.float32)
+            m += noiseDotMask
+            m[m > 1] = 1
+
+        if enh_lineblocking:
+            # black line
+            for i in range(int(np.random.uniform(-2, 3))):
+                p = (np.random.rand(2, 2) *
+                     np.flip([labeldataset.standardshape])).astype('int')
+                m = cv.line(m, p[0], p[1], color=0, thickness=1)
+
+        if enh_dropout:
+            # randomly set half of pixels in image m to 0
+            dropoutrate = np.random.uniform(0, 0.3)
+            m = (np.random.random(m.shape) > dropoutrate) * m / (1 -
+                                                                 dropoutrate)
+
+        return m
+
+
+    def readSample(self):
+        plottingscale=np.zeros(labeldataset.standardshape,np.float32)
+        label=np.zeros([tsize,labeldataset.standardshape[1]],np.float32)
+        bellWidth=5
+        bellLabel=np.exp(-(np.linspace(-3,3,bellWidth))**2)
+        for i in range(np.random.choice(np.arange(3,6))):
+            chartype=np.random.choice(tsizep1)
+            if len(self.cache[char])==0:
+                continue
+            char=np.copy(self.cache[chartype][np.random.choice(len(self.cache[char]))])
+            xpos=np.random.randint(0,labeldataset.standardshape[1]-charw+1)
+            
+            #vertical shake
+            vshake=np.random.randint(-3,3+1)
+            matmov = np.array([
+                [1, 0, 0],
+                [0, 1, vshake],
+            ])
+            char = (cv.warpAffine(char, matmov, [charw, charh]) > 0.5).astype(np.float32)
+            plottingscale[:,xpos:xpos+charw]+=char
+            if chartype != tsize:
+                # none char
+                label[chartype,xpos+(charw-bellWidth)//2:bellWidth]+=bellLabel
+        plottingscale=self.dataEnhance(plottingscale)
+        return torch.from_numpy(plottingscale),torch.from_numpy(label)
+    
+    def __get__(self, idx):
+        return self.readSample()
+
+
+training_data = labeldataset(rf'..\dataset\charDataset\labeled')
+test_data = training_data
+batch_size = 8
+train_dataloader = DataLoader(training_data, batch_size=batch_size)
+test_dataloader = DataLoader(test_data, batch_size=batch_size)
+
+# %%
+# train
+
+
+def trainAnEpoch():
+    optimizer = torch.optim.AdamW(model.parameters(),
+                                  lr=1e-4,
+                                  weight_decay=1e-4)
+    epochs = 6
+    outputperbatchnum = 100
+    for ep in range(epochs):
+        print(f"Epoch {ep+1}")
+        print("-------------------------------")
+
+        # train
+        model.train()
+        start_time = time.time()
+        for batch, (m, label) in enumerate(train_dataloader):
+
+            m, label = m.to(device), label.to(device)
+            labelhat = model.forward(m)
+            lose = model.lose(labelhat, label)
+            optimizer.zero_grad()
+            lose.backward()
+            optimizer.step()
+
+            if batch % outputperbatchnum == 0:
+                end_time = time.time()
+                batch_time = end_time - start_time
+                start_time = end_time
+                avg_loss = lose.item() / batchsizeof(m)
+                print(f"Batch {batch}/{len(train_dataloader)}")
+                print(f"Average Loss: {avg_loss}")
+                print(f"Training Speed: {outputperbatchnum/batch_time} b/s")
+                writer.add_scalar("Training Loss", avg_loss, batch)
+
+    win32api.Beep(1000, 1000)
+    print("Done!")
+
+
+trainAnEpoch()
+
+# %%
+# view model tmat
+
+
+def viewmodel():
+    datasetusing = test_data
+
+    npp = nestedPyPlot([3, 5], [1, 2], plt.figure(figsize=(16, 16)))
+
+    model.eval()
+    with torch.no_grad():
+        for i in range(tsizep1):
+            m, label = datasetusing[0]
+            labelhat = model.forward(m.reshape((1, ) + m.shape))[0, :, :]
+            def dechannel(m):
+                # and back to ndarray
+                return np.array(m)[0]
+            m ,label,labelhat = [dechannel(m) for m in [m,label,labelhat]]
+            
+            labelerr=np.abs(labelhat-label)
+            def extendLabel(l):
+                l=l.reshape((tsize,1,labeldataset.standardshape[1]))
+                return np.repeat(l, charh, axis=1)
+
+            nestedindex = 0
+
+            def setnppsubplot():
+                nonlocal nestedindex
+                npp.subplot(i, nestedindex)
+                nestedindex += 1
+
+            imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
+            # img
+            setnppsubplot()
+            plt.imshow(m, **imshowconfig)
+
+            # generated plotting scale
+            setnppsubplot()
+            plt.imshow(m,**imshowconfig)
+
+            # tmathat wrong
+            setnppsubplot()
+            plt.imshow(labelerr, **imshowconfig)
+
+
+viewmodel()
+
+# %%
+# save
+
+
+def savemodel(path):
+    torch.save(model.state_dict(), path)
+    print(f"Saved PyTorch Model State to {path}")
+
+
+savemodel(modelpath)
+
+# %%
+writer.close()
+
+# %%
+os.system("pause")
