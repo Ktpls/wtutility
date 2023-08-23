@@ -1,6 +1,6 @@
 # neural network tracker
 # %%
-#basics
+# basics
 
 from nntracker import *
 from torch.utils.tensorboard import SummaryWriter
@@ -9,9 +9,10 @@ import itertools
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
+
 # %%
 # nn def
-modelpath = r'nntracker.pth'
+modelpath = r"nntracker.pth"
 model = getmodel(modelpath)
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
@@ -21,36 +22,37 @@ writer = SummaryWriter(
 # dataset
 from nntracker_common import labeldataset
 
-print('loading dataset')
-datasetname = 'LE2REnh'
-datasetroot = 'D:\File\code\prog/wtutility/exp/DLOnOpdarPlaneDetection/dataset/'
-if datasetname == 'LE2REnh':
+print("loading dataset")
+datasetname = "LE2REnh"
+datasetroot = r"C:\file\code\wtutility/exp/DLOnOpdarPlaneDetection/dataset/"
+if datasetname == "LE2REnh":
     path = r"LE2REnh/LE2REnh.zip"
     sel = r"LE2REnh/all.xlsx"
-    datasettype = 'zip'
-if datasetname == 'LE2RAREnh':
+    datasettype = "zip"
+if datasetname == "LE2RAREnh":
     path = r"LE2RAREnh/LE2RAREnh.zip"
     sel = r"LE2RAREnh/all.xlsx"
-    datasettype = 'zip'
-elif datasetname == 'largeEnoughToRecon':
+    datasettype = "zip"
+elif datasetname == "largeEnoughToRecon":
     path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
     sel = r"largeEnoughToRecon/all.xlsx"
-    datasettype = 'zip'
-elif datasetname == 'origins_nntracker':
-    path = r"origins_nntracker\origins_nntracker"
+    datasettype = "zip"
+elif datasetname == "origins_nntracker":
+    path = r"origins_nntracker\origins_nntracker.zip"
     sel = r"origins_nntracker/hardones.xlsx"
-    datasettype = 'fld'
-elif datasetname == 'withaimingring':
+    datasettype = "zip"
+elif datasetname == "withaimingring":
     path = r"withaimingring/withaimingring.zip"
     sel = r"withaimingring/xls.xlsx"
-    datasettype = 'zip'
+    datasettype = "zip"
 
-train_data = labeldataset().init(datasetroot + path, datasetroot + sel, 2048,
-                                 datasettype, None, [96]*2)
+train_data = labeldataset().init(
+    datasetroot + path, datasetroot + sel, 2048, datasettype, None, [96] * 2
+)
 test_data = train_data
-print('load finished')
+print("load finished")
 
-#%%
+# %%
 # dataloader
 # for easier modify batchsize without reloading all samples
 batch_size = 2
@@ -64,23 +66,26 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 def calclose(lbl, lblhat):
     X = torch.arange(lbl.shape[-1]).view(-1, 1, 1, lbl.shape[-1]).to(device)
     Y = torch.arange(lbl.shape[-2]).view(-1, 1, lbl.shape[-2], 1).to(device)
-    lblsurface = (lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1)
+    lblsurface = lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1
     meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True)
     meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True)
-    dist2 = ((X - meanX)**2 + (Y - meanY)**2) / (lblsurface / torch.pi)
-    coef = (1 + 0.5 * (dist2 > 1))
-    coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
-    #[b,d,h,w]
-    loss= \
-    1*(
-        (
-            (coef*(lbl - lblhat)**2).sum(dim=[-1, -2, -3])
-            #     /
-            # (np.sqrt(lblsurface[:,0,0,0]) + 0.01) #emphasize large ons more
-        )#**2
-    ).sum()
+    radius = torch.sqrt(lblsurface / torch.pi)
+    dist2 = torch.sqrt((X - meanX) ** 2 + (Y - meanY) ** 2) / radius
+    coef = 1 + 0.5 * (dist2 > 1)  # /(radius)
+    # coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
+    # [b,d,h,w]
+    loss = (
+        1
+        * (
+            (
+                (coef * (lbl - lblhat) ** 2).sum(dim=[-1, -2, -3])
+                #     /
+                # (np.sqrt(lblsurface[:,0,0,0]) + 0.01) #emphasize large ons more
+            )  # **2
+        ).sum()
+    )
+    return loss
 
-    return (loss)
 
 def trainmainprogress(batch, datatuple):
     model.train()
@@ -90,56 +95,59 @@ def trainmainprogress(batch, datatuple):
     loss = calclose(lbl, lblhat)
     return loss
 
+
 def onoutput(batch, aveerr):
-    writer.add_scalar('aveerr', aveerr, batch)
+    writer.add_scalar("aveerr", aveerr, batch)
 
-trainpipe.train(train_dataloader,
-                torch.optim.AdamW(model.parameters(),
-                                  lr=1e-4,weight_decay=1e-2),
-                trainmainprogress,
-                customSubOnOutput=onoutput)
 
-#%%
+trainpipe.train(
+    train_dataloader,
+    torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2),
+    trainmainprogress,
+    customSubOnOutput=onoutput,
+)
+
+# %%
 # all the continious running should only be applied on codes above! plz stop here
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit()
-
 
 
 # %%
 # view effect
 
 
-def evalOnAll(updateSampleList=False, errcriterion=200):
-    loss = 0
+def evalOnAll(updateSampleList=False):
     rawlength = train_data.rawlength()
     nowpercentage = 0
     totaltime = 0
     model.eval()
-    wronglist=[]if updateSampleList else None
+    loss = []
     with torch.no_grad():
         for pi in range(rawlength):
             spl, lbl = train_data.rawgetitem(pi)
+
             def dataPreperation(d):
                 return ToTensor()(d).to(device).unsqueeze(0)
+
             spl = dataPreperation(spl)
             lbl = dataPreperation(lbl)
             starttime = time.time()
             lblhat = model.forward(spl)
             totaltime += time.time() - starttime
-            curloss=calclose(lbl, lblhat).item()
-            loss += curloss
-            if updateSampleList and curloss>errcriterion:
-                wronglist.append(pi)
+            curloss = calclose(lbl, lblhat).item()
+            loss.append(curloss)
             if nowpercentage <= pi / rawlength * 100:
                 nowpercentage += 1
-                print(f'{nowpercentage}%')
-    print(f'average loss{loss/rawlength}')
-    print(f'inference time{totaltime/rawlength}')
+                print(f"{nowpercentage}%")
+        aveloss = np.average(loss)
+    print(f"average loss{aveloss}")
+    print(f"inference time{totaltime/rawlength}")
     if updateSampleList:
-        train_data.pairs=[train_data.pairs[i] for i in wronglist]
-        print(f'samplelist update done,wrong samples:{len(wronglist)}')
-
+        train_data.pairs = [
+            train_data.pairs[i] for i, l in enumerate(loss) if l >= aveloss
+        ]
+        print(f"samplelist update done,wrong samples:{len(train_data.pairs)}")
 
 
 def viewmodel():
@@ -148,22 +156,22 @@ def viewmodel():
 
     samplenum = 3 * 4
     npp = nestedPyPlot([3, 4], [2, 2], plt.figure(figsize=(16, 16)))
-    imshowconfig = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
-    imshowconfignonnorm = {'cmap': 'gray'}
+    imshowconfig = {"cmap": "gray", "vmin": 0, "vmax": 1}
+    imshowconfignonnorm = {"cmap": "gray"}
     totalinferencetime = 0
-    infecount=0
+    infecount = 0
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl = datasetusing[0]
 
-            tsrc = src.reshape((1, ) + src.shape).to(device)
+            tsrc = src.reshape((1,) + src.shape).to(device)
             tstart = time.perf_counter()
             lblhat = model.forward(tsrc)
             totalinferencetime += time.perf_counter() - tstart
-            infecount+=1
+            infecount += 1
             lblhat = np.array(lblhat[0, :, :, :].cpu())
             srcatte = np.zeros_like(src)
-            #to ndarray
+            # to ndarray
 
             datatuple = [src, lbl, lblhat, srcatte]
             datatuple = [tensorimg2ndarray(d) for d in datatuple]

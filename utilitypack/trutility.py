@@ -10,7 +10,8 @@ def spectrumDecompose(s, psize):
     batchsize = s.shape[0]
     s = s.reshape((batchsize, 1))
     return torch.zeros([batchsize, psize], dtype=torch.float).scatter_(
-        dim=-1, index=s, src=torch.ones_like(s, dtype=torch.float))
+        dim=-1, index=s, src=torch.ones_like(s, dtype=torch.float)
+    )
 
 
 def batchsizeof(tensor):
@@ -18,7 +19,6 @@ def batchsizeof(tensor):
 
 
 class nestedPyPlot:
-
     def __init__(self, outtershape, innershape, fig) -> None:
         self.oshape = np.array(outtershape)
         self.ishape = np.array(innershape)
@@ -32,25 +32,24 @@ class nestedPyPlot:
         # plt.subplot(self.realsize[0], self.realsize[1], realcoor[0]
         #             * self.realsize[1]+realcoor[1]+1)
         ax = self.fig.add_subplot(
-            self.realsize[0], self.realsize[1],
-            realcoor[0] * self.realsize[1] + realcoor[1] + 1)
+            self.realsize[0],
+            self.realsize[1],
+            realcoor[0] * self.realsize[1] + realcoor[1] + 1,
+        )
         return ax
 
 
-def setModel(model, path=None, device='cpu'):
+def setModel(model, path=None, device="cpu"):
     import os
 
     if path is None:
-        print(f'Path==None')
-        return model
+        print(f"Path==None")
     elif not os.path.exists(path):
-        print(f'Warning: Path {path} not exist. Set model default')
-        return model
+        print(f"Warning: Path {path} not exist. Set model default")
     else:
-        print(f'Loading existed nn {path}')
-        model.load_state_dict(
-            torch.load(path, map_location=torch.device(device)))
-        return model
+        print(f"Loading existed nn {path}")
+        model.load_state_dict(torch.load(path, map_location=torch.device(device)))
+    return model.to(device)
 
 
 def tensorimg2ndarray(m):
@@ -60,14 +59,13 @@ def tensorimg2ndarray(m):
 
 
 class skiper(torch.nn.Module):
-
     def __init__(self, component, n_i, n_o) -> None:
         super().__init__()
         self.component = component
         self.combiner = torch.nn.Conv2d(n_i + n_o, n_o, 1)
 
     def forward(self, m):
-        #[b,c,h,w]
+        # [b,c,h,w]
         processed = self.component.forward(m)
         c = torch.concat([processed, m], dim=-3)
         result = self.combiner.forward(c)
@@ -75,50 +73,47 @@ class skiper(torch.nn.Module):
 
 
 class cbr(torch.nn.Module):
-
     def __init__(self, n_i, n_o, n_c) -> None:
         super().__init__()
-        self.component = \
-            torch.nn.Sequential(
-                torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
-                torch.nn.BatchNorm2d(n_o),
-                torch.nn.LeakyReLU(),
-            )
+        self.component = torch.nn.Sequential(
+            torch.nn.Conv2d(n_i, n_o, n_c, padding="same", bias=False),
+            torch.nn.BatchNorm2d(n_o),
+            torch.nn.LeakyReLU(),
+        )
 
     def forward(self, m):
-        #[b,c,h,w]
+        # [b,c,h,w]
         return self.component.forward(m)
 
 
 class cbrps(torch.nn.Module):
-    #input chan, output chan, convolve size, pooling size
-    #n_o should be like 2*n, cuz maxpool will be concated with former output
+    # input chan, output chan, convolve size, pooling size
+    # n_o should be like 2*n, cuz maxpool will be concated with former output
     def __init__(self, n_i, n_o, n_c, n_p) -> None:
         super().__init__()
-        self.component = \
-            torch.nn.Sequential(
-                torch.nn.Conv2d(n_i, n_o, n_c, padding='same', bias=False),
-                torch.nn.BatchNorm2d(n_o),
-                torch.nn.LeakyReLU(),
-                skiper(
-                    torch.nn.MaxPool2d(n_p, stride=1, padding=int(n_p / 2)),
-                    n_o, n_o)
-            )
+        self.component = torch.nn.Sequential(
+            torch.nn.Conv2d(n_i, n_o, n_c, padding="same", bias=False),
+            torch.nn.BatchNorm2d(n_o),
+            torch.nn.LeakyReLU(),
+            skiper(torch.nn.MaxPool2d(n_p, stride=1, padding=int(n_p / 2)), n_o, n_o),
+        )
 
     def forward(self, m):
-        #[b,c,h,w]
+        # [b,c,h,w]
         return self.component.forward(m)
 
 
 class inception(torch.nn.Module):
-
-    def __init__(self,
-                 infeat,
-                 outfeat11,
-                 outfeatpool,
-                 outfeat33,
-                 outfeat55,
-                 isbn=True, version='v2') -> None:
+    def __init__(
+        self,
+        infeat,
+        outfeat11,
+        outfeatpool,
+        outfeat33,
+        outfeat55,
+        isbn=True,
+        version="v2",
+    ) -> None:
         super().__init__()
         self.infeat = infeat
         self.outfeat11 = outfeat11
@@ -126,64 +121,65 @@ class inception(torch.nn.Module):
         self.outfeat33 = outfeat33
         self.outfeat55 = outfeat55
         self.isbn = isbn
-        self.version=version
-        if version=='v2':
+        self.version = version
+        if version == "v2":
             self.path11 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
+                torch.nn.Conv2d(infeat, outfeat11, 1, padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.pathpool = torch.nn.Sequential(
                 torch.nn.MaxPool2d(3, stride=1, padding=1),
-                torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
+                torch.nn.Conv2d(infeat, outfeatpool, 1, padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.path33 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat33, 3, padding='same'),
+                torch.nn.Conv2d(infeat, outfeat33, 3, padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.path55 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat55, 3, padding='same'),
+                torch.nn.Conv2d(infeat, outfeat55, 3, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(outfeat55, outfeat55, 3, padding='same'),
+                torch.nn.Conv2d(outfeat55, outfeat55, 3, padding="same"),
                 torch.nn.LeakyReLU(),
             )
-        elif version=='v3':
+        elif version == "v3":
             self.path11 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, outfeat11, 1, padding='same'),
+                torch.nn.Conv2d(infeat, outfeat11, 1, padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.pathpool = torch.nn.Sequential(
                 torch.nn.MaxPool2d(3, stride=1, padding=1),
-                torch.nn.Conv2d(infeat, outfeatpool, 1, padding='same'),
+                torch.nn.Conv2d(infeat, outfeatpool, 1, padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.path33 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat33, [1, 3], padding='same'),
+                torch.nn.Conv2d(infeat, outfeat33, [1, 3], padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(outfeat33, outfeat33, [3, 1], padding='same'),
+                torch.nn.Conv2d(outfeat33, outfeat33, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.path55 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding='same'),
+                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat55, [1, 3], padding='same'),
+                torch.nn.Conv2d(infeat, outfeat55, [1, 3], padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding='same'),
+                torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(outfeat55, outfeat55, [1, 3], padding='same'),
+                torch.nn.Conv2d(outfeat55, outfeat55, [1, 3], padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding='same'),
+                torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
             )
         if isbn is not None and isbn:
-            self.bn = torch.nn.BatchNorm2d(outfeat11 + outfeatpool +
-                                           outfeat33 + outfeat55)
+            self.bn = torch.nn.BatchNorm2d(
+                outfeat11 + outfeatpool + outfeat33 + outfeat55
+            )
         else:
             self.bn = None
 
@@ -191,23 +187,18 @@ class inception(torch.nn.Module):
     def even(infeat, outfeat, bn=None):
         assert outfeat % 4 == 0
         outfeatby4 = outfeat // 4
-        return inception(infeat, outfeatby4, outfeatby4, outfeatby4,
-                         outfeatby4, bn)
+        return inception(infeat, outfeatby4, outfeatby4, outfeatby4, outfeatby4, bn)
 
     def forward(self, m):
         o = torch.concat(
-            [self.path11(m),
-             self.pathpool(m),
-             self.path33(m),
-             self.path55(m)],
-            dim=-3)
+            [self.path11(m), self.pathpool(m), self.path33(m), self.path55(m)], dim=-3
+        )
         if self.bn is not None:
             o = self.bn(o)
-        return o  #channel
+        return o  # channel
 
 
 class res_through(torch.nn.Module):
-
     _modules = {}
 
     def __init__(self, *components, combiner=None) -> None:
@@ -231,19 +222,29 @@ class res_through(torch.nn.Module):
         return o
 
 
+class ModuleFunc(torch.nn.Module):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+
+    def forward(self, x):
+        return self.func(x)
+
+
 import time
 from typing import *
 
 
 class trainpipe:
-
     @staticmethod
-    def train(dataloader,
-              optimizer,
-              mainprogress,
-              epochnum=6,
-              outputperbatchnum=100,
-              customSubOnOutput=None):
+    def train(
+        dataloader,
+        optimizer,
+        mainprogress,
+        epochnum=6,
+        outputperbatchnum=100,
+        customSubOnOutput=None,
+    ):
         epochs = epochnum
         start_time = time.time()
         for ep in range(epochs):
@@ -268,6 +269,5 @@ class trainpipe:
                         customSubOnOutput(batch, aveloss)
                     start_time = time.time()
 
-        #win32api.Beep(1000, 1000)
+        # win32api.Beep(1000, 1000)
         print("Done!")
-        
