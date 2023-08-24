@@ -86,24 +86,19 @@ class cbr(torch.nn.Module):
 class chardetector(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
+        windowWidth = charw | 1
+        paddingWidth = charw // 2
         self.comp = torch.nn.Sequential(
             cbr(1, 8, 9, 9),
             res_through(
-                torch.nn.Sequential(
-                    inception.even(8, 8),
-                    torch.nn.MaxPool2d(5, stride=1, padding=2),
-                ),
-                torch.nn.Sequential(
-                    inception.even(8, 8),
-                    torch.nn.MaxPool2d(5, stride=1, padding=2),
-                ),
-                torch.nn.Sequential(
-                    inception.even(8, 8),
-                    torch.nn.MaxPool2d(5, stride=1, padding=2),
-                ),
+                inception.even(8, 8),
             ),
             torch.nn.Conv2d(
-                8, tsize, [charh, charw - 1], padding=[0, int((charw - 1 - 1) / 2)]
+                8,
+                tsize,
+                [charh, windowWidth],
+                stride=[charh, 1],
+                padding=[0, paddingWidth],
             ),
             torch.nn.LeakyReLU(),
         )
@@ -129,8 +124,8 @@ class chardetector(torch.nn.Module):
 
         # # and fine adjust
         # coef = coef * 2 + 1
-        
-        coef=1
+
+        coef = 1
         err = torch.sum(coef * (labelhat - label) ** 2)
         return err
 
@@ -154,20 +149,17 @@ class RisingEdgeTrigger:
 
 def wtdmpsocr(ps, model, resultthresh=0.5):
     assert type(ps) is np.ndarray and len(ps.shape) == 2
-    ps = ps.astype(np.float32).reshape((1, 1) + ps.shape) / 255
+    ps = ps.astype(np.float32).reshape((1,) + ps.shape) / 255
     # [batch,channel,h,w]
     ps = torch.tensor(ps)
     with torch.no_grad():
-        tmathat = model.forward(ps)[0, :, :, :]
-    tmathat = np.array(tmathat)
-    # [channel,h,w]
-    t = np.max(tmathat, axis=-2)
+        lblhat = np.array(model.forward(ps)[0, :, :])
     # [channel,w]
     # set t=argmax of type on this point,
     # if matchness of this type>thresh, else set type as else (tsizep1-1)
 
-    tmax = np.max(t, axis=-2)
-    targmax = np.argmax(t, axis=-2)
+    tmax = np.max(lblhat, axis=0)
+    targmax = np.argmax(lblhat, axis=0)
 
     class CharStateChangeDetector:
         def __init__(self, state0=typeElse) -> None:

@@ -48,7 +48,7 @@ class labeldataset(Dataset):
         ]
 
     def __len__(self):
-        return 65536
+        return 2**31
 
     standardshape = [charh, 100]  # h,w
 
@@ -56,11 +56,11 @@ class labeldataset(Dataset):
     def dataEnhance(
         m,
         enh_hairing=True,
-        enh_dropout=True,
         enh_blocking=False,
-        enh_noisedot=True,
-        enh_noiseline=True,
-        enh_lineblocking=True,
+        enh_whitedot=True,
+        enh_whiteline=False,
+        enh_blackdot=True,
+        enh_blackline=False,
     ):
         m = np.copy(m)
 
@@ -84,7 +84,7 @@ class labeldataset(Dataset):
             lt, rd = lt.astype("int"), rd.astype("int")
             m[lt[0] : rd[0], lt[1] : rd[1]] = 0
 
-        if enh_noiseline:
+        if enh_whiteline:
             # noise line
             for i in range(int(np.random.uniform(-2, 3))):
                 p = (
@@ -92,14 +92,14 @@ class labeldataset(Dataset):
                 ).astype("int")
                 m = cv.line(m, p[0], p[1], color=1, thickness=1)
 
-        if enh_noisedot:
+        if enh_whitedot:
             # noise dot
             noiseDotRate = np.random.uniform(-0.05, 0.1)
             noiseDotMask = (np.random.random(m.shape) < noiseDotRate).astype(np.float32)
             m += noiseDotMask
             m[m > 1] = 1
 
-        if enh_lineblocking:
+        if enh_blackline:
             # black line
             for i in range(int(np.random.uniform(-2, 3))):
                 p = (
@@ -107,29 +107,38 @@ class labeldataset(Dataset):
                 ).astype("int")
                 m = cv.line(m, p[0], p[1], color=0, thickness=1)
 
-        if enh_dropout:
+        if enh_blackdot:
             # randomly set half of pixels in image m to 0
-            dropoutrate = np.random.uniform(0, 0.3)
-            m = (np.random.random(m.shape) > dropoutrate) * m / (1 - dropoutrate)
+            dropoutrate = np.random.uniform(-0.1, 0.2)
+            m = (np.random.random(m.shape) > dropoutrate) * m
 
         return m
 
     def readSample(self):
         plottingscale = np.zeros(labeldataset.standardshape, np.float32)
         label = np.zeros([tsize, labeldataset.standardshape[1]], np.float32)
+        occupied = np.zeros([labeldataset.standardshape[1]], np.float32)
         bellWidth = 5
         bellLabel = np.exp(-((np.linspace(-2, 2, bellWidth)) ** 2))
-        for i in range(np.random.choice(np.arange(3, 6))):
+        charnum = np.random.choice(np.arange(3, 6))
+        i = 0
+        while True:
+            if i >= charnum:
+                break
             chartype = np.random.choice(tsizep1)
             if len(self.cache[chartype]) == 0:
                 continue
+            xpos = np.random.randint(0, labeldataset.standardshape[1] - charw + 1)
+            if np.sum(occupied[xpos : xpos + charw]) > 0:
+                continue
+            i += 1
+
             char = np.copy(
                 self.cache[chartype][np.random.choice(len(self.cache[chartype]))]
             )
-            xpos = np.random.randint(0, labeldataset.standardshape[1] - charw + 1)
 
             # vertical shake
-            vshake = np.random.randint(-2, 2 + 1)
+            vshake = np.random.uniform(-1.5, 1.5)
             matmov = np.array(
                 [
                     [1, 0, 0],
@@ -144,6 +153,8 @@ class labeldataset(Dataset):
                 # if is char
                 bellstart = xpos + (charw - bellWidth) // 2
                 label[chartype, bellstart : bellstart + bellWidth] += bellLabel
+                charstart = xpos
+                occupied[charstart : charstart + charw] = 1
         plottingscale = (plottingscale > 0).astype(np.float32)
         label[label > 1] = 1
         plottingscale = self.dataEnhance(plottingscale)
@@ -157,7 +168,7 @@ training_data = labeldataset(
     rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 16
+batch_size = 8
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -239,7 +250,6 @@ def viewmodel():
             setnppsubplot()
             plt.imshow(m, **imshowconfig)
 
-            
             # lblhat
             setnppsubplot()
             plt.imshow(viewLabel(labelhat), **imshowconfig)
