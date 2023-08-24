@@ -1,7 +1,7 @@
 from wtdistmeaspy import *
 def testground():
     scr=cv.imread(
-    r"C:\file\code\Opdar\asset\wtdistmeaspy\log\2022-12-15-10-47-39_OnSEC_DN\unnamed.png")
+    r"C:\prog\wtutility\asset\wtdistmeaspy\log\2023-08-24-18-23-04_NormalTrace\unnamed.png")
     ret=SolveMap_BottomRightSmallMap(scr,dbg=True,dbglogpath=r'./asset/wtdistmeaspy/log/{}/'.format(
         time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime())
         ))

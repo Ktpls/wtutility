@@ -5,13 +5,13 @@ textcolor=255*rgb2bgr(hsv2rgb((0,0,1)))
 outputpos=(100,500)
 
 plerrreq=10
-ymerrreq=0.45
+ymerrreq=0.30
 griderrreq=0.1
 plottingscalereqlower=100
 plottingscalerequpper=600
 
 plerrreqstrict=10
-ymerrreqstrict=0.5
+ymerrreqstrict=0.35
 griderrreqstrict=4
 plottingscalestrictlower=130
 plottingscalestrictupper=550
@@ -28,7 +28,7 @@ collectPlottingScale=False
 ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
-cnnresultthresh=0.3
+cnnresultthresh=0.5
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2

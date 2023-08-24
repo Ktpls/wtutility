@@ -5,9 +5,6 @@ import gameinput
 from wtdistmeaspy_config import *
 import scipy.interpolate
 
-yellowmarkpath = r"./asset/wtdistmeaspy/yellowmark.png"
-kernelyellowmark = cv.imread(yellowmarkpath)
-
 if ocrimpltype == 'tes':
     from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
 elif ocrimpltype == 'cnn':
@@ -16,24 +13,8 @@ elif ocrimpltype == 'cnn':
 ocrimpl.init()
 
 
-def pic2kernel(p: np.ndarray):
-    maque = p.copy()
-    maque[maque[:, :, 0] != maque[:, :, 2]] = [1, 1, 1]
-    maque[maque[:, :, 0] != maque[:, :, 1]] = [1, 1, 1]
-    maque = maque[:, :, 0]
-    maque[maque[:, :] != 1] = 0
-    mask = 1 - maque
-
-    p = (mask * cv.cvtColor(p, cv.COLOR_BGR2GRAY)).astype('float')
-    ave = p.sum() / mask.sum()
-    norm2 = (p**2).sum() - mask.sum() * ave**2
-    p = (p - ave) * mask  # -ave will lower masked pos, which is 0, to minus
-    return p / norm2
-
-    # return p
-
-
-kernelyellowmark = pic2kernel(kernelyellowmark)
+yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
+kernelyellowmark = cv.cvtColor(cv.imread(yellowmarkpath), cv.COLOR_BGR2GRAY).astype(np.float32)/255
 # screen
 w = 1920
 h = 1080
@@ -162,19 +143,11 @@ def SolveMap_BottomRightSmallMap(isrc,
     mcolorym = cv.cvtColor(mcolored, cv.COLOR_BGR2HSV)
     dbglogsavestep(mcolorym)
 
-    mcolorvalid = cv.inRange(mcolorym, hsv2opencv8bithsv([60 - 25, 80, 70]),
-                             hsv2opencv8bithsv([60 + 25, 100, 100])) / 255
-    dbglogsavestep(mcolorvalid * 255)
+    mym = cv.inRange(mcolorym, hsv2opencv8bithsv([60 - 25, 80, 70]),
+                             hsv2opencv8bithsv([60 + 25, 100, 100])).astype(np.float32) / 255
+    dbglogsavestep(mym * 255)
 
-    mym = mcolored.copy()
-    mym=np.array(mym,dtype=np.float32)/255
-    mym=cv.cvtColor(mym,cv.COLOR_BGR2HSV)
-    hue = mym[:, :, 0]
-    yellowness=np.cos((hue-60)/180*np.pi)# yellow channel
-    mym = yellowness * mcolorvalid
-    dbglogsavestep(mym)
-
-    mym = cv.filter2D(mym, -1, kernelyellowmark)
+    mym = cv.filter2D(mym*2-1, -1, kernelyellowmark*2-1)/np.prod(kernelyellowmark.shape)
     dbglogsavestep(mym, method='savematn')
     ympos = [mym.max(0).argmax(), mym.max(1).argmax()]
     ymerr = mym[ympos[1], ympos[0]]  # not real err. greater is better

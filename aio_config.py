@@ -1,5 +1,5 @@
-usingwtdistmeaspy=False
-usingtelescope=False
+usingwtdistmeaspy=True
+usingtelescope=True
 usingkeyshortcut=True
 usingeagleeye=False
 
