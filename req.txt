@@ -1,0 +1,9 @@
+opencv-python
+numpy
+scipy
+matplotlib
+torch
+torchvision
+openpyxl
+pyautogui
+pywin32
