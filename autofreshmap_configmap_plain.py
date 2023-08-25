@@ -36,7 +36,7 @@ lowSurvivablitity = [
     #'Berlin',
 ]+highSurvivablity
 
-whitelistedmap = highSurvivablity
+whitelistedmap = lowSurvivablitity
 
 specialmapdetectors = {
     "Sinai": {
