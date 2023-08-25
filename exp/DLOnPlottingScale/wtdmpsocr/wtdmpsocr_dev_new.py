@@ -66,12 +66,14 @@ class labeldataset(Dataset):
 
         if enh_hairing:
             # grow some hair
-            regsum = regionsum(m, [3, 3])
-            regionthresh = np.random.choice(np.arange(1, 5))
-            addups = np.logical_and((m < 0.1), (regsum == regionthresh))
-            hairingrate = np.random.random() * 0.6 - 0.1
-            addups = np.logical_and(addups, (np.random.random(m.shape) < hairingrate))
-            m += addups
+            hairdepth=int(np.random.uniform(-2,5))
+            for i in range(hairdepth):
+                regsum = regionsum(m, [3, 3])
+                addups = np.logical_and((m < 0.1), (regsum == 2))
+                hairingrate = np.random.uniform(-1,0.5)
+                addups = np.logical_and(addups, (np.random.random(m.shape) < hairingrate))
+                m += addups
+                m[m>1]=1
 
         if enh_blocking:
             # blocking
@@ -94,7 +96,7 @@ class labeldataset(Dataset):
 
         if enh_whitedot:
             # noise dot
-            noiseDotRate = np.random.uniform(-0.05, 0.1)
+            noiseDotRate = np.random.uniform(-0.025, 0.05)
             noiseDotMask = (np.random.random(m.shape) < noiseDotRate).astype(np.float32)
             m += noiseDotMask
             m[m > 1] = 1
@@ -109,7 +111,7 @@ class labeldataset(Dataset):
 
         if enh_blackdot:
             # randomly set half of pixels in image m to 0
-            dropoutrate = np.random.uniform(-0.1, 0.2)
+            dropoutrate = np.random.uniform(-0.05, 0.1)
             m = (np.random.random(m.shape) > dropoutrate) * m
 
         return m
@@ -138,7 +140,7 @@ class labeldataset(Dataset):
             )
 
             # vertical shake
-            vshake = np.random.uniform(-1.5, 1.5)
+            vshake = np.random.uniform(-1.5, 0.5)
             matmov = np.array(
                 [
                     [1, 0, 0],
@@ -168,7 +170,7 @@ training_data = labeldataset(
     rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 8
+batch_size = 32
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 

@@ -43,44 +43,10 @@ class cbr(torch.nn.Module):
             torch.nn.BatchNorm2d(outfeat),
             torch.nn.LeakyReLU(),
         )
-        # self.pool= torch.nn.AvgPool2d(poolsize,padding=int(poolsize/2),stride=1)
 
     def forward(self, m):
         mcbr = self.cbr(m)
-        return mcbr  # +self.pool(mcbr)
-
-
-# class inception(torch.nn.Module):
-#     def __init__(self, infeat, outfeat11, outfeatpool, outfeat33, outfeat55) -> None:
-#         super().__init__()
-#         self.path11 = torch.nn.Sequential(
-#             torch.nn.Conv2d(infeat, outfeat11, 1, padding="same"),
-#             torch.nn.LeakyReLU(),
-#         )
-#         self.pathpool = torch.nn.Sequential(
-#             torch.nn.MaxPool2d(3, stride=1, padding=1),
-#             torch.nn.Conv2d(infeat, outfeatpool, 1, padding="same"),
-#             torch.nn.LeakyReLU(),
-#         )
-#         self.path33 = torch.nn.Sequential(
-#             torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
-#             torch.nn.LeakyReLU(),
-#             torch.nn.Conv2d(infeat, outfeat33, 3, padding="same"),
-#             torch.nn.LeakyReLU(),
-#         )
-#         self.path55 = torch.nn.Sequential(
-#             torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
-#             torch.nn.LeakyReLU(),
-#             torch.nn.Conv2d(infeat, outfeat55, 3, padding="same"),
-#             torch.nn.LeakyReLU(),
-#             torch.nn.Conv2d(outfeat55, outfeat55, 3, padding="same"),
-#             torch.nn.LeakyReLU(),
-#         )
-
-#     def forward(self, m):
-#         return torch.concat(
-#             [self.path11(m), self.pathpool(m), self.path33(m), self.path55(m)], dim=-3
-#         )  # channel
+        return mcbr 
 
 
 class chardetector(torch.nn.Module):
@@ -93,6 +59,7 @@ class chardetector(torch.nn.Module):
             res_through(
                 inception.even(8, 8),
             ),
+            torch.nn.Dropout2d(0.25),
             torch.nn.Conv2d(
                 8,
                 tsize,
@@ -114,16 +81,6 @@ class chardetector(torch.nn.Module):
 
     def lose(self, label, labelhat):
         batchsize = batchsizeof(label)
-        # # type right = 0, wrong =1
-        # coef = torch.scatter(
-        #     torch.ones((batchsize, tsizep1), dtype=torch.float32),
-        #     -1,
-        #     t.reshape((batchsize, 1)),
-        #     torch.zeros((batchsize, 1)),
-        # )[:, :tsize].reshape((batchsize, tsize, 1, 1))
-
-        # # and fine adjust
-        # coef = coef * 2 + 1
 
         coef = 1
         err = torch.sum(coef * (labelhat - label) ** 2)
@@ -152,6 +109,7 @@ def wtdmpsocr(ps, model, resultthresh=0.5):
     ps = ps.astype(np.float32).reshape((1,) + ps.shape) / 255
     # [batch,channel,h,w]
     ps = torch.tensor(ps)
+    model.eval()
     with torch.no_grad():
         lblhat = np.array(model.forward(ps)[0, :, :])
     # [channel,w]
