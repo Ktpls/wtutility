@@ -66,12 +66,9 @@ class labeldataset(Dataset):
 
         if enh_hairing:
             # grow some hair
-            regsum = regionsum(m, [3, 3])
-            # regionthresh = np.random.choice(np.arange(1, 5))
-            
-            # addups = np.logical_and((m < 0.1), (regsum == regionthresh))
-            
-            for i in range(5):
+            hairdepth=int(np.random.uniform(-2,5))
+            for i in range(hairdepth):
+                regsum = regionsum(m, [3, 3])
                 addups = np.logical_and((m < 0.1), (regsum == 2))
                 hairingrate = np.random.uniform(-1,0.5)
                 addups = np.logical_and(addups, (np.random.random(m.shape) < hairingrate))
@@ -173,7 +170,7 @@ training_data = labeldataset(
     rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 8
+batch_size = 32
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
