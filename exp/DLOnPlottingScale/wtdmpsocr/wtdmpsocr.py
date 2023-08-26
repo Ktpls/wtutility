@@ -30,7 +30,7 @@ use rising edge trigger to tell where should type be output
 """
 
 # 0123456789E
-tsize = 10
+tsize = tsizep1
 tsizep1 = tsize + 1
 typeElse = tsizep1 - 1
 
