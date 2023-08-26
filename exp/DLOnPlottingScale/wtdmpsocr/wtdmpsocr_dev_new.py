@@ -47,6 +47,20 @@ class labeldataset(Dataset):
             for t in range(tsizep1)
         ]
 
+        self.charsamplerate = {
+            0: 1,
+            1: 1,
+            2: 1,
+            3: 1,
+            4: 1,
+            5: 1,
+            6: 1,
+            7: 1,
+            8: 1,
+            9: 1,
+            10: 1,
+        }
+
     def __len__(self):
         return 2**31
 
@@ -66,14 +80,16 @@ class labeldataset(Dataset):
 
         if enh_hairing:
             # grow some hair
-            hairdepth=int(np.random.uniform(-2,5))
+            hairdepth = int(np.random.uniform(-2, 5))
             for i in range(hairdepth):
                 regsum = regionsum(m, [3, 3])
                 addups = np.logical_and((m < 0.1), (regsum == 2))
-                hairingrate = np.random.uniform(-1,0.5)
-                addups = np.logical_and(addups, (np.random.random(m.shape) < hairingrate))
+                hairingrate = np.random.uniform(-1, 0.5)
+                addups = np.logical_and(
+                    addups, (np.random.random(m.shape) < hairingrate)
+                )
                 m += addups
-                m[m>1]=1
+                m[m > 1] = 1
 
         if enh_blocking:
             # blocking
@@ -127,7 +143,7 @@ class labeldataset(Dataset):
         while True:
             if i >= charnum:
                 break
-            chartype = np.random.choice(tsizep1)
+            chartype = np.random.choice(np.arange(tsizep1),[self.charsamplerate[t] for t in range(tsizep1)])
             if len(self.cache[chartype]) == 0:
                 continue
             xpos = np.random.randint(0, labeldataset.standardshape[1] - charw + 1)
