@@ -256,16 +256,16 @@ def SolveMap_BottomRightSmallMap(isrc,
     dbglogsavestep(relblack)
 
     # be both really black and relatively black
-    black = np.logical_and(darkgraypoints, relblack).astype('float') * 255
+    black = np.logical_and(darkgraypoints, relblack).astype('float')
     # black=np.logical_and(black,relinsat).astype('float')*255
-    dbglogsavestep(black)
+    dbglogsavestep(black * 255)
 
     charw, charh = 10, 20
 
     # padding for ease of recongnization by tesseract, at least in the past
     # but our cnn using data collected from tesseract daily use uses the standard 20x10 char pic
     black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
-    dbglogsavestep(black)
+    dbglogsavestep(black * 255)
     plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
     if plottingscale > plottingscalerequpper or plottingscale < plottingscalereqlower:  #bad
         if prev.plottingscale is None:
