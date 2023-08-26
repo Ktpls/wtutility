@@ -4,7 +4,7 @@ from utilref import *
 sys.path.append("..")
 from wtdistmeaspy_ocrimpl import implCNN
 
-with open(r"C:\prog\wtutility\test\wtdmpocrtestxlsx.xlsx", "r") as inputfile:
+with open(r"C:\prog\wtutility\test\wtdmpocrtest\wtdmpocrtestxlsx.xlsx", "r") as inputfile:
     filelist = inputfile.read().split("\n")
 widthheightratio = 3
 

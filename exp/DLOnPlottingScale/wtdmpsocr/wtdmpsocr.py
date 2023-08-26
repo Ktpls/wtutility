@@ -30,7 +30,7 @@ use rising edge trigger to tell where should type be output
 """
 
 # 0123456789E
-tsize = tsizep1
+tsize = 10
 tsizep1 = tsize + 1
 typeElse = tsizep1 - 1
 
@@ -58,8 +58,11 @@ class chardetector(torch.nn.Module):
             cbr(1, 8, 9, 9),
             res_through(
                 inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
+                inception.even(8, 8),
             ),
-            torch.nn.Dropout2d(0.25),
+            torch.nn.Dropout2d(0.3),
             torch.nn.Conv2d(
                 8,
                 tsize,
