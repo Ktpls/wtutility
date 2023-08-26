@@ -15,7 +15,7 @@ drawSightMask:b=yes
 crosshairColor:c=255, 0, 0, 255
 crosshairLightColor:c=0, 0, 0, 0
 crosshairDistHorSizeMain:p2=0.03, 0.02
-crosshairDistHorSizeAdditional:p2=0.01, 0.005
+crosshairDistHorSizeAdditional:p2=0.01, 0.0085
 distanceCorrectionPos:p2=-0.26, -0.05
 drawDistanceCorrection:b=yes
 matchExpClass {

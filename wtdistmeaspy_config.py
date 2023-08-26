@@ -23,12 +23,12 @@ measdelay=0.25
 retryOnFailure=7
 retryDelay=0.25
 keepEveryMeasInRecord=False
-collectFailDebugOutput=False
-collectPlottingScale=False
+collectFailDebugOutput=True
+collectPlottingScale=True
 ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
-cnnresultthresh=0.5
+cnnresultthresh=0.3
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2

@@ -1,4 +1,4 @@
-from telescope import *
+from utilref import *
 
 def gridmap():
     XY=[np.arange(i) for i in sizescopefar]
