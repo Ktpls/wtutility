@@ -13,21 +13,7 @@ print(f"Using {device} device")
 
 # %%
 # nn def
-"""
-idea is,
-given charh x charw img,
-use conv to find features
-conv to combine features to tell char prob dist at this point
-its like 10 channeled matchtemplate()
-in final usage,
-find max along height
-find max along type(channel)
-if maxtype>thresh, type is max type
-else type is nothing here
-content on that scan line along x axis can be told
-we got classification along x axis
-use rising edge trigger to tell where should type be output
-"""
+
 
 # 0123456789E
 tsize = 10
@@ -57,7 +43,10 @@ class chardetector(torch.nn.Module):
         self.comp = torch.nn.Sequential(
             cbr(1, 8, 9, 9),
             res_through(
-                inception.even(8, 8),
+                inception.even(8, 8,version='v3'),
+                inception.even(8, 8,version='v3'),
+                inception.even(8, 8,version='v3'),
+                inception.even(8, 8,version='v3'),
             ),
             torch.nn.Dropout2d(0.25),
             torch.nn.Conv2d(
@@ -88,7 +77,7 @@ class chardetector(torch.nn.Module):
 
 
 def getmodel(modelpath):
-    model = setModel(chardetector(), path=modelpath).to(device)
+    model = setModule(chardetector(), path=modelpath).to(device)
     # print(model)
     return model
 

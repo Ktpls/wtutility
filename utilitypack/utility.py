@@ -20,7 +20,7 @@ from typing import Dict, List, Callable, Iterable
 import cv2 as cv
 import numpy as np
 
-np.seterr(all='raise')
+np.seterr(all="raise")
 
 
 def deduplicate(l: List):
@@ -28,18 +28,17 @@ def deduplicate(l: List):
 
 
 class logger:
-
     def __init__(self, path):
         self.path = path
         # wont fail
         dir = os.path.dirname(path)
         if not os.path.exists(dir):
             os.makedirs(dir)
-        self.f = open(path, 'wb+')
+        self.f = open(path, "wb+")
 
     def log(self, content):
-        self.f.write((content + '\n').encode('utf8'))
-        #self.f.flush()
+        self.f.write((content + "\n").encode("utf8"))
+        # self.f.flush()
 
     def __del__(self):
         self.f.close()
@@ -48,11 +47,11 @@ class logger:
         self.log(content)
 
 
-def savemat(m, name=None, path=None, suffix='.png', autorename=True):
+def savemat(m, name=None, path=None, suffix=".png", autorename=True):
     if name is None:
-        name = 'unnamed'
+        name = "unnamed"
     if path is None:
-        path = r'./output/'
+        path = r"./output/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -60,15 +59,15 @@ def savemat(m, name=None, path=None, suffix='.png', autorename=True):
     # find suitable name
     if autorename and os.path.exists(totalpath):
         suffix_idx = 0
-        while (True):
+        while True:
             suffix_idx += 1
-            newname = '{}-{}'.format(name, suffix_idx)
+            newname = "{}-{}".format(name, suffix_idx)
             totalpath = os.path.join(path, newname + suffix)
             if not os.path.exists(totalpath):
                 break
 
     if not cv.imwrite(totalpath, m):
-        raise IOError(f'Bad write {totalpath}')
+        raise IOError(f"Bad write {totalpath}")
 
 
 def savematn(m: np.ndarray, name=None, path=None):
@@ -84,8 +83,8 @@ def savematflt(m, multiplier=255, name=None, path=None):
 def forceviewmaxmin(m):
     ma = m.max()
     mi = m.min()
-    print('ma', ma)
-    print('mi', mi)
+    print("ma", ma)
+    print("mi", mi)
     pass
 
 
@@ -95,9 +94,8 @@ def regionsum(m, size, mask=None):
     if mask is not None:
         mask[mask > 0] = 1
     if len(m.shape) > 2 and mask is not None:  # with channel dim
-        mask = mask.reshape(mask.shape + (1, ))
-    return cv.filter2D(m if mask is None else m * mask, -1,
-                       np.ones(size, np.float32))
+        mask = mask.reshape(mask.shape + (1,))
+    return cv.filter2D(m if mask is None else m * mask, -1, np.ones(size, np.float32))
 
 
 def regionave(m, size, mask=None, notConsiderMaskInDenominator=True):
@@ -115,14 +113,14 @@ def regionave(m, size, mask=None, notConsiderMaskInDenominator=True):
     if mask is None or notConsiderMaskInDenominator:
         denominator = size[0] * size[1]
     else:
-        denominator = (regionsum(mask, size) + 0.01)
+        denominator = regionsum(mask, size) + 0.01
         if len(m.shape) > 2:  # m with channel dim
-            denominator = denominator.reshape(denominator.shape + (1, ))
+            denominator = denominator.reshape(denominator.shape + (1,))
     return regionsum(m, size, mask) / denominator
 
 
 def density(p, size):
-    return regionave(p.astype('float'), size)
+    return regionave(p.astype("float"), size)
 
 
 def densityfilter(p, size, thresh):
@@ -132,9 +130,9 @@ def densityfilter(p, size, thresh):
 
 
 def getWTHwnd():
-    ret = win32gui.FindWindow('DagorWClass', None)
+    ret = win32gui.FindWindow("DagorWClass", None)
     if ret == win32con.NULL:
-        raise Exception('FindWindow() failed')
+        raise Exception("FindWindow() failed")
     return ret
 
 
@@ -150,7 +148,8 @@ class screenshoter:
         self.wtdc = windll.user32.GetDC(self.wthwnd)
         self.mydc = windll.gdi32.CreateCompatibleDC(self.wtdc)
         self.mybitmap = windll.gdi32.CreateCompatibleBitmap(
-            self.wtdc, self.res[0], self.res[1])
+            self.wtdc, self.res[0], self.res[1]
+        )
         windll.gdi32.SelectObject(self.mydc, self.mybitmap)
 
     def __del__(self):
@@ -159,19 +158,31 @@ class screenshoter:
         windll.user32.ReleaseDC(self.wthwnd, self.wtdc)
 
     def shot(self):
-        if windll.gdi32.BitBlt(self.mydc, 0, 0, self.res[0], self.res[1],
-                               self.wtdc, 0, 0, win32con.SRCCOPY) == 0:
-            raise BaseException('bad shot, {}'.format(
-                windll.kernel32.GetLastError()))
+        if (
+            windll.gdi32.BitBlt(
+                self.mydc,
+                0,
+                0,
+                self.res[0],
+                self.res[1],
+                self.wtdc,
+                0,
+                0,
+                win32con.SRCCOPY,
+            )
+            == 0
+        ):
+            raise BaseException("bad shot, {}".format(windll.kernel32.GetLastError()))
         # 截图是BGRA排列，因此总元素个数需要乘以4
         total_bytes = self.res[0] * self.res[1] * 4
         buffer = bytearray(total_bytes)
         byte_array = c_ubyte * total_bytes
-        windll.gdi32.GetBitmapBits(self.mybitmap, total_bytes,
-                                   byte_array.from_buffer(buffer))
-        return np.frombuffer(buffer,
-                             dtype=np.uint8).reshape(self.res[1], self.res[0],
-                                                     4)
+        windll.gdi32.GetBitmapBits(
+            self.mybitmap, total_bytes, byte_array.from_buffer(buffer)
+        )
+        return np.frombuffer(buffer, dtype=np.uint8).reshape(
+            self.res[1], self.res[0], 4
+        )
 
     def shotbgr(self):
         return self.shot()[:, :, :3]
@@ -182,18 +193,25 @@ class screenshoter:
 
 def activeWindow(hwnd):  # 窗口置顶
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
-                          win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+    win32gui.SetWindowPos(
+        hwnd,
+        win32con.HWND_TOP,
+        0,
+        0,
+        0,
+        0,
+        win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+    )
     win32gui.SetForegroundWindow(hwnd)
 
 
 def sleepuntil(con: Callable, dt=0.01):
-    while (not con()):
+    while not con():
         time.sleep(dt)
 
 
 class fullScrHUD:
-    '''
+    """
     #init
     hud=fullScrHUD()
     hud.setup()
@@ -215,7 +233,7 @@ class fullScrHUD:
     ...
     #on exit
     hud.stop()
-    '''
+    """
 
     def __init__(self) -> None:
         self.resolution = [1080, 1920]
@@ -226,7 +244,6 @@ class fullScrHUD:
         # set m2draw
 
     def setup(self):
-
         def WndProc(hwnd, msg, wParam, lParam):
             if msg == win32con.WM_PAINT:
                 rect = win32gui.GetClientRect(hwnd)
@@ -242,13 +259,15 @@ class fullScrHUD:
                 hcdc = mfcDC.CreateCompatibleDC()
                 BitMap = win32ui.CreateBitmap()
                 BitMap.CreateCompatibleBitmap(mfcDC, w, h)
-                ctypes.WinDLL('gdi32.dll').SetBitmapBits(
-                    BitMap.GetHandle(), w * h * 4, self.m2show.tobytes())
+                ctypes.WinDLL("gdi32.dll").SetBitmapBits(
+                    BitMap.GetHandle(), w * h * 4, self.m2show.tobytes()
+                )
                 hcdc.SelectObject(BitMap)
                 # myblendfunc=(win32con.AC_SRC_OVER,0,255,win32con.AC_SRC_ALPHA)
                 # win32gui.AlphaBlend(hdc,0,0,w, h , hcdc.GetHandleAttrib(), 0,0,w, h,myblendfunc)
-                win32gui.BitBlt(hdc, 0, 0, w, h, hcdc.GetHandleAttrib(), 0, 0,
-                                win32con.SRCCOPY)
+                win32gui.BitBlt(
+                    hdc, 0, 0, w, h, hcdc.GetHandleAttrib(), 0, 0, win32con.SRCCOPY
+                )
                 win32gui.DeleteObject(BitMap.GetHandle())
                 hcdc.DeleteDC()
                 win32gui.EndPaint(hwnd, ps)
@@ -268,24 +287,42 @@ class fullScrHUD:
             wc.lpfnWndProc = WndProc
             reg = win32gui.RegisterClass(wc)
 
-            hwnd = win32gui.CreateWindow(reg, 'Python', win32con.WS_POPUP, 0,
-                                         0, self.resolution[1],
-                                         self.resolution[0], 0, 0, 0, None)
+            hwnd = win32gui.CreateWindow(
+                reg,
+                "Python",
+                win32con.WS_POPUP,
+                0,
+                0,
+                self.resolution[1],
+                self.resolution[0],
+                0,
+                0,
+                0,
+                None,
+            )
             win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
             win32gui.UpdateWindow(hwnd)
 
             win32gui.SetWindowLong(
-                hwnd, win32con.GWL_EXSTYLE,
-                win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) +
-                win32con.WS_EX_LAYERED + win32con.WS_EX_NOACTIVATE)
-            win32gui.SetLayeredWindowAttributes(hwnd, 0, 0,
-                                                win32con.LWA_COLORKEY)
+                hwnd,
+                win32con.GWL_EXSTYLE,
+                win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+                + win32con.WS_EX_LAYERED
+                + win32con.WS_EX_NOACTIVATE,
+            )
+            win32gui.SetLayeredWindowAttributes(hwnd, 0, 0, win32con.LWA_COLORKEY)
             win32gui.SetWindowPos(
-                hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                win32con.SWP_SHOWWINDOW + win32con.SWP_NOSIZE +
-                win32con.SWP_NOMOVE)
+                hwnd,
+                win32con.HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                win32con.SWP_SHOWWINDOW + win32con.SWP_NOSIZE + win32con.SWP_NOMOVE,
+            )
             windll.user32.SetWindowDisplayAffinity(
-                hwnd, 0x11)  # WDA_EXCLUDEDFROMCAPUTURE
+                hwnd, 0x11
+            )  # WDA_EXCLUDEDFROMCAPUTURE
             # can not use WDA_MONITOR, or get totally black screen
 
             self.hwnd = hwnd
@@ -296,21 +333,32 @@ class fullScrHUD:
         time.sleep(1)
 
     def writecontent(self, lt, content):
-        self.m2draw[lt[0]:lt[0] + content.shape[0], lt[1]:lt[1] +
-                    content.shape[1], :content.shape[2]] = content
+        self.m2draw[
+            lt[0] : lt[0] + content.shape[0],
+            lt[1] : lt[1] + content.shape[1],
+            : content.shape[2],
+        ] = content
 
     def clear(self):
         self.m2draw[:, :, :] = 0
 
     def getblankscreen(self):
-        return np.zeros(self.resolution + [
-            3,
-        ], np.uint8)
+        return np.zeros(
+            self.resolution
+            + [
+                3,
+            ],
+            np.uint8,
+        )
 
     def getblankscreenwithalfa(self):
-        return np.zeros(self.resolution + [
-            4,
-        ], np.uint8)
+        return np.zeros(
+            self.resolution
+            + [
+                4,
+            ],
+            np.uint8,
+        )
 
     def addcontentwithalfa(self, m):
         self.m2draw += m
@@ -342,7 +390,6 @@ def isKBDown(k):
 
 
 class perf_statistic:
-
     def __init__(self, startnow=False):
         self.clear()
         if startnow:
@@ -366,8 +413,7 @@ class perf_statistic:
         self._starttime = None
 
     def aveTime(self):
-        return self._timeCurrentlyCounting(
-        ) / self._cycle if self._cycle > 0 else 0
+        return self._timeCurrentlyCounting() / self._cycle if self._cycle > 0 else 0
 
     def _timeCurrentlyCounting(self):
         return time.perf_counter() - self._starttime
@@ -384,25 +430,26 @@ def convolve_norm(m, k):
 
 
 class fpsmanager:
-
     def __init__(self, fps=60):
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
     def WaitUntilNextFrame(self):
-        sleepuntil(lambda: time.perf_counter() - self.lt > self.frametime,
-                   dt=0.5 * self.frametime)
+        sleepuntil(
+            lambda: time.perf_counter() - self.lt > self.frametime,
+            dt=0.5 * self.frametime,
+        )
         self.SetToNextFrame()
 
     def CheckIfTimeToDoNextFrame(self) -> bool:
-        '''
+        """
         usage
         if fpsmanager.CheckIfTimeToDoNextFrame():
             fpsmanager.SetToNextFrame()
             do your task here
         used in doing stuff peroidically, but in another loop with different peroid
         so have to check if it is time to do it
-        '''
+        """
         result = time.perf_counter() - self.lt > self.frametime
         return result
 
@@ -415,9 +462,7 @@ class hotkeymanager:
     # responde no c after doing ctrl+c
 
     class hotkeytask:
-
-        def __init__(self, key: int | Iterable, foo: Callable[[],
-                                                              None]) -> None:
+        def __init__(self, key: int | Iterable, foo: Callable[[], None]) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
 
@@ -430,9 +475,7 @@ class hotkeymanager:
         self.hktl = hotkeytasklist
 
         def piorered(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
-
-            def include(a: hotkeymanager.hotkeytask,
-                        b: hotkeymanager.hotkeytask):
+            def include(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
                 for k in b.key:
                     if k not in a.key:
                         return False
@@ -441,10 +484,14 @@ class hotkeymanager:
             # a>b and b<a, not equal
             return include(a, b) and not include(b, a)
 
-        self.piorinfo = [[
-            aidx for aidx, a in enumerate(hotkeytasklist)
-            if aidx != bidx and piorered(a, b)
-        ] for bidx, b in enumerate(hotkeytasklist)]
+        self.piorinfo = [
+            [
+                aidx
+                for aidx, a in enumerate(hotkeytasklist)
+                if aidx != bidx and piorered(a, b)
+            ]
+            for bidx, b in enumerate(hotkeytasklist)
+        ]
 
     def decideAllHotKey(self) -> List[bool]:
         keysts = {k: isKBDown(k) for k in self.kc}
@@ -464,18 +511,17 @@ class hotkeymanager:
 
             # all key pressed
             if all([keysts[k] for k in self.hktl[i].key]):
-
                 # didnt check piored, check it
                 [
-                    decideRespondState(p) for p in self.piorinfo[i]
+                    decideRespondState(p)
+                    for p in self.piorinfo[i]
                     if respondtable[p] == respondstate.unknown
                 ]
 
                 # no piored responded
-                if all([
-                        respondtable[p] == respondstate.false
-                        for p in self.piorinfo[i]
-                ]):
+                if all(
+                    [respondtable[p] == respondstate.false for p in self.piorinfo[i]]
+                ):
                     respondtable[i] = respondstate.true
                 else:
                     respondtable[i] = respondstate.false
@@ -486,7 +532,7 @@ class hotkeymanager:
         for hkidx, hk in enumerate(self.hktl):
             decideRespondState(hkidx)
 
-        assert (all([rt != respondstate.unknown for rt in respondtable]))
+        assert all([rt != respondstate.unknown for rt in respondtable])
 
         return [
             respondtable[hkidx] == respondstate.true
@@ -505,20 +551,25 @@ class hotkeymanager:
                         traceback.print_exc()
 
 
-rgb2hsvmat = np.array([
-    [[np.cos(0), np.cos(2 / 3 * np.pi),
-      np.cos(4 / 3 * np.pi)],
-     [np.sin(0), np.sin(2 / 3 * np.pi),
-      np.sin(4 / 3 * np.pi)], [1, 0, 0]],
-    [[np.cos(0), np.cos(2 / 3 * np.pi),
-      np.cos(4 / 3 * np.pi)],
-     [np.sin(0), np.sin(2 / 3 * np.pi),
-      np.sin(4 / 3 * np.pi)], [0, 1, 0]],
-    [[np.cos(0), np.cos(2 / 3 * np.pi),
-      np.cos(4 / 3 * np.pi)],
-     [np.sin(0), np.sin(2 / 3 * np.pi),
-      np.sin(4 / 3 * np.pi)], [0, 0, 1]],
-])
+rgb2hsvmat = np.array(
+    [
+        [
+            [np.cos(0), np.cos(2 / 3 * np.pi), np.cos(4 / 3 * np.pi)],
+            [np.sin(0), np.sin(2 / 3 * np.pi), np.sin(4 / 3 * np.pi)],
+            [1, 0, 0],
+        ],
+        [
+            [np.cos(0), np.cos(2 / 3 * np.pi), np.cos(4 / 3 * np.pi)],
+            [np.sin(0), np.sin(2 / 3 * np.pi), np.sin(4 / 3 * np.pi)],
+            [0, 1, 0],
+        ],
+        [
+            [np.cos(0), np.cos(2 / 3 * np.pi), np.cos(4 / 3 * np.pi)],
+            [np.sin(0), np.sin(2 / 3 * np.pi), np.sin(4 / 3 * np.pi)],
+            [0, 0, 1],
+        ],
+    ]
+)
 hsv2rgbmat = [np.linalg.inv(m) for m in rgb2hsvmat]
 
 
@@ -533,7 +584,7 @@ def hsv2rgb(hsv):
         if np.argmax(rgb) == c:
             return rgb
 
-    #not possible, theoretically
+    # not possible, theoretically
     return np.array((0, 0, 0))
 
     # to view all solutions
@@ -582,7 +633,7 @@ def hsv2opencv8bithsv(hsv):
 
 
 def digitsof(s: str):
-    return ''.join(list(filter(str.isdigit, list(s))))
+    return "".join(list(filter(str.isdigit, list(s))))
 
 
 def numinstr(s: str):
@@ -618,7 +669,7 @@ def quickSummonCard(inteprob):
             else:
                 return -1
 
-    while (True):
+    while True:
         mid = int((section[1] + section[0]) * 0.5)
         compresult = compare(mid)
         if compresult == 1:
@@ -633,32 +684,29 @@ class toast:
     messagelist = []
 
     def sendmessage(self, content, peroid):
-        self.messagelist.append({
-            'ctt': content,
-            'st': time.perf_counter(),
-            'per': peroid
-        })
+        self.messagelist.append(
+            {"ctt": content, "st": time.perf_counter(), "per": peroid}
+        )
 
     def updatemsglist(self):
         nowtime = time.perf_counter()
 
         def filterfoo(m):
-            return m['per'] > m['ctt'] - nowtime
+            return m["per"] > m["ctt"] - nowtime
 
         messagelist = [m for m in messagelist if filterfoo(m)]
-        msgs = [m['ctt'] for m in messagelist]
+        msgs = [m["ctt"] for m in messagelist]
 
     def getallmsg(self):
         self.updatemsglist()
-        return '\n'.join(self.messagelist)
+        return "\n".join(self.messagelist)
 
 
 class bulletinBoard:
-
     # new msg covers the lasts
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
-        self.content = ''
+        self.content = ""
         self.overduetime = time.perf_counter()
 
     def putup(self, content, timeout):
@@ -674,22 +722,23 @@ class bulletinBoard:
 
 def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
     m = m.copy()
-    line = content.split('\n')
+    line = content.split("\n")
     for i, l in enumerate(line):
-        cv.putText(m, l,
-                   pos.astype('int32') + [0, i * lineheight],
-                   cv.FONT_HERSHEY_SIMPLEX, 1, textcolor)
+        cv.putText(
+            m,
+            l,
+            pos.astype("int32") + [0, i * lineheight],
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            textcolor,
+        )
     return m
 
 
-def outputlines2mat2(m,
-                     pos,
-                     content,
-                     textcolor=[255, 255, 255],
-                     lineinterval=10):
+def outputlines2mat2(m, pos, content, textcolor=[255, 255, 255], lineinterval=10):
     # different impl., ret with content bounding box
-    pos = np.array(pos).astype('int')
-    line = content.split('\n')
+    pos = np.array(pos).astype("int")
+    line = content.split("\n")
     yoffset = 0
     xmax = 0
     fontFace = cv.FONT_HERSHEY_DUPLEX
@@ -700,28 +749,32 @@ def outputlines2mat2(m,
         yoffset += size[1] + lineinterval if i != 0 else size[1]
         if xmax < size[0]:
             xmax = size[0]
-        m = cv.putText(m,
-                       l,
-                       pos + [0, yoffset],
-                       fontFace,
-                       fontScale,
-                       textcolor,
-                       thickness=thickness)
+        m = cv.putText(
+            m,
+            l,
+            pos + [0, yoffset],
+            fontFace,
+            fontScale,
+            textcolor,
+            thickness=thickness,
+        )
     box = [pos, pos + [xmax, yoffset]]
     return m, box
 
 
-def aPicWithText(content,
-                 maxsize=[1080, 1920],
-                 textcolor=[255, 255, 255],
-                 lineinterval=10):
-    m = np.zeros(maxsize + [
-        3,
-    ], np.uint8)
-    m, bbox = outputlines2mat2(m, np.array([0, 0]), content, textcolor,
-                               lineinterval)
+def aPicWithText(
+    content, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10
+):
+    m = np.zeros(
+        maxsize
+        + [
+            3,
+        ],
+        np.uint8,
+    )
+    m, bbox = outputlines2mat2(m, np.array([0, 0]), content, textcolor, lineinterval)
     mshape = np.array(bbox[1]) + [0, 8]  # ret wrong for unknown reason
-    m = m[:mshape[1], :mshape[0]]
+    m = m[: mshape[1], : mshape[0]]
     m = addShadow2HUD(m)
     return m
 
@@ -738,19 +791,19 @@ def addShadow2HUD(m, thickness=2, color=50):
     # ])
     edge = cv.filter2D(gray, -1, edgekernel)
     edge = cv.threshold(edge, 0, 1, cv.THRESH_BINARY)[1]
-    edge = edge.reshape(edge.shape + (1, ))
+    edge = edge.reshape(edge.shape + (1,))
     return m + edge * color
 
 
 def bootAsAdmin(file):
     # pass in __file__
     quotedpy = '"' + file + '"'
-    ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable,
-                                              quotedpy, None, 1)
+    ret = ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable, quotedpy, None, 1
+    )
 
 
 def setadmin(file):
-
     def is_admin():
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
@@ -763,18 +816,19 @@ def setadmin(file):
 
 
 class ZFunc:
-    '''
+    """
     x1x2 at any order
-    '''
+    """
 
     def __init__(self, x1, y1, x2, y2) -> None:
         if x1 < x2:
-            #[lower or higher, x or y]
+            # [lower or higher, x or y]
             self.pt = np.array([[x1, y1], [x2, y2]])
         else:
             self.pt = np.array([[x2, y2], [x1, y1]])
-        self.slope = (self.pt[1, 1] - self.pt[0, 1]) / (self.pt[1, 0] -
-                                                        self.pt[0, 0] + 0.0001)
+        self.slope = (self.pt[1, 1] - self.pt[0, 1]) / (
+            self.pt[1, 0] - self.pt[0, 0] + 0.0001
+        )
         self.bias = self.pt[0, 1] - self.pt[0, 0] * self.slope
 
     def __CallOnNDArray(self, x: np.ndarray):
@@ -800,10 +854,12 @@ class ZFunc:
 
 
 def randomString(charset, length):
-    return ''.join([
-        charset[i]
-        for i in np.random.choice(range(len(charset)), length, replace=True)
-    ])
+    return "".join(
+        [
+            charset[i]
+            for i in np.random.choice(range(len(charset)), length, replace=True)
+        ]
+    )
 
 
 class DataCollector:
@@ -814,13 +870,13 @@ class DataCollector:
 
     @staticmethod
     def geneName():
-        charSet4RandomString = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        charSet4RandomString = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         return randomString(charSet4RandomString, DataCollector.randNameLen)
 
     def save(self, m, name=None):
         if name is None:
             name = DataCollector.geneName()
-        savemat(m, f'{name}', path=self.outputpath)
+        savemat(m, f"{name}", path=self.outputpath)
 
 
 def save_list_to_xls(data_list, filename, sheetname=None):
@@ -843,7 +899,7 @@ def save_list_to_xls(data_list, filename, sheetname=None):
 
 def Xls2ListList(path=None, sheetname=None, killNones=True):
     if path is None:
-        path = r'eles.in.xlsx'
+        path = r"eles.in.xlsx"
     xls = opx.load_workbook(path)
     if sheetname is None:
         sheet = xls.active
@@ -858,6 +914,7 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
 
 def AllFileIn(path, includeFileInSubDir=True):
     import os
+
     ret = []
     for dirpath, dir, file in os.walk(path):
         if not includeFileInSubDir and dirpath != path:
@@ -870,9 +927,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class StoppableThread:
-    '''
+    """
     derivate from it and override foo()
-    '''
+    """
 
     def __init__(self, pool=None) -> None:
         self.running = False
@@ -891,10 +948,10 @@ class StoppableThread:
         self.running = True
 
         def call():
-            '''
+            """
             wrapper so can call the passed "self"'s foo
             if not, can never know which overwritten foo should be called
-            '''
+            """
             self.foo()
 
         self.submit = self.pool.submit(call)

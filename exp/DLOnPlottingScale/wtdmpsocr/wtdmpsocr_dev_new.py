@@ -143,7 +143,11 @@ class labeldataset(Dataset):
         while True:
             if i >= charnum:
                 break
-            chartype = np.random.choice(np.arange(tsizep1),[self.charsamplerate[t] for t in range(tsizep1)])
+            chartype = int(
+                np.random.choice(
+                    np.arange(tsizep1), [self.charsamplerate[t] for t in range(tsizep1)]
+                )
+            )
             if len(self.cache[chartype]) == 0:
                 continue
             xpos = np.random.randint(0, labeldataset.standardshape[1] - charw + 1)
@@ -186,7 +190,7 @@ training_data = labeldataset(
     rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 32
+batch_size = 8
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
