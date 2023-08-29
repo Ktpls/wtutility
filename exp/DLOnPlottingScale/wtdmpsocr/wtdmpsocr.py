@@ -95,7 +95,7 @@ class RisingEdgeTrigger:
 
 def wtdmpsocr(ps, model, resultthresh=0.5):
     assert type(ps) is np.ndarray and len(ps.shape) == 2
-    ps = ps.astype(np.float32).reshape((1,) + ps.shape) / 255
+    ps = ps.astype(np.float32).reshape((1,) + ps.shape)
     # [batch,channel,h,w]
     ps = torch.tensor(ps)
     model.eval()
