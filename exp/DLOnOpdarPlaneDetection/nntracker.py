@@ -411,7 +411,7 @@ class unet(nn.Module, BaseModule4NNTracker):
 
 
 def getmodel(modelpath):
-    model = setModel(nntracker_simple(), path=modelpath, device=device)
+    model = setModule(nntracker_simple(), path=modelpath, device=device)
     # print(model)
     return model
 

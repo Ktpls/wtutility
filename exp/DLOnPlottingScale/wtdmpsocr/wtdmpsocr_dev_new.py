@@ -145,9 +145,10 @@ class labeldataset(Dataset):
         while True:
             if i >= charnum:
                 break
-            chartype = np.random.choice(
-                a=np.arange(tsizep1),
-                p=[self.charsamplerate.get(t, 0) for t in range(tsizep1)],
+            chartype = int(
+                np.random.choice(
+                    a=np.arange(tsizep1), p=[self.charsamplerate[t] for t in range(tsizep1)]
+                )
             )
             if len(self.cache[chartype]) == 0:
                 continue

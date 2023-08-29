@@ -39,8 +39,11 @@ class nestedPyPlot:
         return ax
 
 
-def setModel(model, path=None, device="cpu"):
+def setModule(model, path=None, device=None):
     import os
+
+    if device is None:
+        device = "cpu"
 
     if path is None:
         print(f"Path==None")
@@ -112,7 +115,7 @@ class inception(torch.nn.Module):
         outfeat33,
         outfeat55,
         isbn=True,
-        version="v2",
+        version=None,
     ) -> None:
         super().__init__()
         self.infeat = infeat
@@ -121,6 +124,8 @@ class inception(torch.nn.Module):
         self.outfeat33 = outfeat33
         self.outfeat55 = outfeat55
         self.isbn = isbn
+        if version is None:
+            version = "v2"
         self.version = version
         if version == "v2":
             self.path11 = torch.nn.Sequential(
@@ -184,10 +189,12 @@ class inception(torch.nn.Module):
             self.bn = None
 
     @staticmethod
-    def even(infeat, outfeat, bn=None):
+    def even(infeat, outfeat, bn=None, version=None):
         assert outfeat % 4 == 0
         outfeatby4 = outfeat // 4
-        return inception(infeat, outfeatby4, outfeatby4, outfeatby4, outfeatby4, bn)
+        return inception(
+            infeat, outfeatby4, outfeatby4, outfeatby4, outfeatby4, bn, version
+        )
 
     def forward(self, m):
         o = torch.concat(
@@ -231,6 +238,39 @@ class ModuleFunc(torch.nn.Module):
         return self.func(x)
 
 
+from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
+
+
+# only use this as most outside layer module
+class ModuleExtra(torch.nn.Module):
+    def __init__(self, module: torch.nn.Module):
+        self.module = module
+        self.step = 0
+        nowtimestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.writer = SummaryWriter(f"runs/{nowtimestamp}")
+
+    def stepplusplus(self):
+        self.step += 1
+
+    def forward(self, **arg):
+        return self.module.forward(**arg)
+
+    def getmodule(self):
+        return self.module
+
+    def setModule(self, path, device):
+        return setModule(self, path, device)
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+        print(f"Saved PyTorch Model State to {path}")
+
+
+def ToModuleExtra(mod: torch.nn.Module):
+    return ModuleExtra(mod)
+
+
 import time
 from typing import *
 
@@ -240,7 +280,7 @@ class trainpipe:
     def train(
         dataloader,
         optimizer,
-        mainprogress,
+        calcLossFoo,
         epochnum=6,
         outputperbatchnum=100,
         customSubOnOutput=None,
@@ -253,7 +293,7 @@ class trainpipe:
 
             # train
             for batch, datatuple in enumerate(dataloader):
-                loss = mainprogress(batch, datatuple)
+                loss = calcLossFoo(batch, datatuple)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -267,6 +307,43 @@ class trainpipe:
                     print(f"Average loss: {aveloss:>7f}")
                     if customSubOnOutput is not None:
                         customSubOnOutput(batch, aveloss)
+                    start_time = time.time()
+
+        # win32api.Beep(1000, 1000)
+        print("Done!")
+
+    @staticmethod
+    def trainWithModExt(
+        dataloader,
+        optimizer,
+        calcLossFoo,
+        module: ModuleExtra,
+        epochnum=6,
+        outputperbatchnum=100,
+    ):
+        epochs = epochnum
+        start_time = time.time()
+        for ep in range(epochs):
+            print(f"Epoch {ep+1}")
+            print("-------------------------------")
+
+            # train
+            for batch, datatuple in enumerate(dataloader):
+                loss = calcLossFoo(batch, datatuple)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                module.stepplusplus()
+                if batch % outputperbatchnum == 0:
+                    end_time = time.time()
+                    print(f"Batch {batch}/{len(dataloader)}")
+                    print(
+                        f"Training speed: {outputperbatchnum/(end_time-start_time):>5f} batches per second"
+                    )
+                    aveloss = loss.item() / batchsizeof(datatuple[0])
+                    print(f"Average loss: {aveloss:>7f}")
+
+                    module.writer.add_scalar("Training Loss", aveloss, module.step)
                     start_time = time.time()
 
         # win32api.Beep(1000, 1000)

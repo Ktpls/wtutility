@@ -76,7 +76,7 @@ class locator(torch.nn.Module):
 
 
 modelpath = 'locator.pth'
-model = setModel(locator(), path=modelpath).to(device)
+model = setModule(locator(), path=modelpath).to(device)
 print(model)
 
 
