@@ -162,17 +162,17 @@ class inception(torch.nn.Module):
                 torch.nn.LeakyReLU(),
             )
             self.path33 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
+                torch.nn.Conv2d(infeat, outfeat55, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat33, [1, 3], padding="same"),
+                torch.nn.Conv2d(outfeat55, outfeat33, [1, 3], padding="same"),
                 torch.nn.LeakyReLU(),
                 torch.nn.Conv2d(outfeat33, outfeat33, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
             )
             self.path55 = torch.nn.Sequential(
-                torch.nn.Conv2d(infeat, infeat, 1, padding="same"),
+                torch.nn.Conv2d(infeat, outfeat55, 1, padding="same"),
                 torch.nn.LeakyReLU(),
-                torch.nn.Conv2d(infeat, outfeat55, [1, 3], padding="same"),
+                torch.nn.Conv2d(outfeat55, outfeat55, [1, 3], padding="same"),
                 torch.nn.LeakyReLU(),
                 torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
