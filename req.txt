@@ -7,3 +7,4 @@ torchvision
 openpyxl
 pyautogui
 pywin32
+tensorboard

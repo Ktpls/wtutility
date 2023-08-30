@@ -60,6 +60,8 @@ class labeldataset(Dataset):
             9: 1,
             10: 1,
         }
+        csrsum = sum(self.charsamplerate.values())
+        self.charsamplerate = {k: v / csrsum for k, v in self.charsamplerate.items()}
 
     def __len__(self):
         return 2**31
@@ -72,7 +74,7 @@ class labeldataset(Dataset):
         enh_hairing=True,
         enh_blocking=False,
         enh_whitedot=True,
-        enh_whiteline=False,
+        enh_whiteline=True,
         enh_blackdot=True,
         enh_blackline=False,
     ):
@@ -80,7 +82,7 @@ class labeldataset(Dataset):
 
         if enh_hairing:
             # grow some hair
-            hairdepth = int(np.random.uniform(-2, 5))
+            hairdepth = int(np.random.uniform(-2, 2))
             for i in range(hairdepth):
                 regsum = regionsum(m, [3, 3])
                 addups = np.logical_and((m < 0.1), (regsum == 2))
@@ -127,7 +129,7 @@ class labeldataset(Dataset):
 
         if enh_blackdot:
             # randomly set half of pixels in image m to 0
-            dropoutrate = np.random.uniform(-0.05, 0.1)
+            dropoutrate = np.random.uniform(-0.025, 0.05)
             m = (np.random.random(m.shape) > dropoutrate) * m
 
         return m
@@ -145,7 +147,7 @@ class labeldataset(Dataset):
                 break
             chartype = int(
                 np.random.choice(
-                    np.arange(tsizep1), [self.charsamplerate[t] for t in range(tsizep1)]
+                    a=np.arange(tsizep1), p=[self.charsamplerate[t] for t in range(tsizep1)]
                 )
             )
             if len(self.cache[chartype]) == 0:
@@ -160,23 +162,23 @@ class labeldataset(Dataset):
             )
 
             # vertical shake
-            vshake = np.random.uniform(-1.5, 0.5)
-            matmov = np.array(
-                [
-                    [1, 0, 0],
-                    [0, 1, vshake],
-                ],
-                dtype=np.float32,
-            )
-            char = cv.warpAffine(char, matmov, [charw, charh])
-            char = (char > 0.5).astype(np.float32)
+            # vshake = np.random.uniform(-1.5, 0.5)
+            # matmov = np.array(
+            #     [
+            #         [1, 0, 0],
+            #         [0, 1, vshake],
+            #     ],
+            #     dtype=np.float32,
+            # )
+            # char = cv.warpAffine(char, matmov, [charw, charh])
+            # char = (char > 0.5).astype(np.float32)
             plottingscale[:, xpos : xpos + charw] += char
             if chartype != tsize:
                 # if is char
                 bellstart = xpos + (charw - bellWidth) // 2
                 label[chartype, bellstart : bellstart + bellWidth] += bellLabel
-                charstart = xpos
-                occupied[charstart : charstart + charw] = 1
+            charstart = xpos
+            occupied[charstart : charstart + charw] = 1
         plottingscale = (plottingscale > 0).astype(np.float32)
         label[label > 1] = 1
         plottingscale = self.dataEnhance(plottingscale)

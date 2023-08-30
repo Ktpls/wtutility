@@ -251,7 +251,7 @@ def SolveMap_BottomRightSmallMap(isrc,
     # filter adaptive value(lightness)
     mpsgray = mpshsv[:, :, 2]
     mpsgray = mpsgray.astype('float')
-    relblack = cv.threshold((mpsgray - (regionave(mpsgray, [5, 5]) - 5)), 0,
+    relblack = cv.threshold((mpsgray - regionave(mpsgray, [5, 5])), 2.5,
                             255, cv.THRESH_BINARY_INV)[1]
     dbglogsavestep(relblack)
 

@@ -48,7 +48,7 @@ class chardetector(torch.nn.Module):
                 inception.even(8, 8,version='v3'),
                 inception.even(8, 8,version='v3'),
             ),
-            torch.nn.Dropout2d(0.25),
+            torch.nn.Dropout2d(0.3),
             torch.nn.Conv2d(
                 8,
                 tsize,
@@ -127,3 +127,4 @@ def wtdmpsocr(ps, model, resultthresh=0.5):
         if cscd.input(targmax[x] if tmax[x] > resultthresh else typeElse):
             result += f"{targmax[x]}"
     return result
+
