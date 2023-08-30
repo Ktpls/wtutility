@@ -187,10 +187,11 @@ class labeldataset(Dataset):
 
 
 training_data = labeldataset(
-    rf"C:\prog\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
+    #rf"C:\prog\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
+    rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 8
+batch_size = 2
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
