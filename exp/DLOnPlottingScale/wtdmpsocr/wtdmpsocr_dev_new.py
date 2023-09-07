@@ -147,7 +147,8 @@ class labeldataset(Dataset):
                 break
             chartype = int(
                 np.random.choice(
-                    a=np.arange(tsizep1), p=[self.charsamplerate[t] for t in range(tsizep1)]
+                    a=np.arange(tsizep1),
+                    p=[self.charsamplerate[t] for t in range(tsizep1)],
                 )
             )
             if len(self.cache[chartype]) == 0:
@@ -189,11 +190,11 @@ class labeldataset(Dataset):
 
 
 training_data = labeldataset(
-    #rf"C:\prog\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
+    # rf"C:\prog\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
     rf"C:\file\code\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
 )
 test_data = training_data
-batch_size = 2
+batch_size = 8
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -258,8 +259,7 @@ def viewmodel():
             # labelerr = label
 
             def viewLabel(l):
-                l = np.max(l, axis=0)
-                l = l.reshape((1, labeldataset.standardshape[1]))
+                l = np.max(l, axis=0, keepdims=True)
                 return np.repeat(l, charh, axis=0)
 
             nestedindex = 0
