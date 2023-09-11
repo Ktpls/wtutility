@@ -48,6 +48,7 @@ def mainlogic():
             plottingscale,
             msgExtra,
         ) = ret
+        dbglogreason.extend(msgExtra)
 
         # calc
         ympos = np.array(ympos)
@@ -61,7 +62,7 @@ def mainlogic():
 
         prompt = ""
         prompt += "%s" % (state) + "".join([", " + me for me in msgExtra]) + "\n"
-        prompt += "dist=%d\n" % (dist)
+        prompt += "dist=%.2f\n" % (dist)
 
         def strictErrCheck():
             err = []

@@ -131,7 +131,7 @@ def SolveMap_BottomRightSmallMap(isrc,
         _, playerpos, playererr = afterprocessresult
         if playererr > plerrreq:
             if prev.playerpos is None:
-                errormsg = "PL_2GREAT_ERR %5f" % playererr
+                errormsg = "PL_2GREAT_ERR %5.3f" % playererr
                 return [errormsg]
             else:
                 msgExtra.append('using last playerpos')
@@ -155,7 +155,7 @@ def SolveMap_BottomRightSmallMap(isrc,
 
     if ymerr < ymerrreq:
         #should not use last ym
-        errormsg = "YM_2LESS_PROD %5f" % ymerr
+        errormsg = "YM_2LESS_PROD %5.3f" % ymerr
         return [errormsg]
 
     # find grid
@@ -245,13 +245,13 @@ def SolveMap_BottomRightSmallMap(isrc,
     # filter absolute color
     mpshsv = cv.cvtColor(mps, cv.COLOR_BGR2HSV)
     darkgraypoints = cv.inRange(mpshsv, hsv2opencv8bithsv([0, 0, 0]),
-                                hsv2opencv8bithsv([360, 56, 30]))
+                                hsv2opencv8bithsv([360, 56, 40]))
     dbglogsavestep(darkgraypoints)
 
     # filter adaptive value(lightness)
     mpsgray = mpshsv[:, :, 2]
     mpsgray = mpsgray.astype('float')
-    relblack = cv.threshold((mpsgray - regionave(mpsgray, [5, 5])), 2.5,
+    relblack = cv.threshold((mpsgray - regionave(mpsgray, [5, 5])), -2.5,
                             255, cv.THRESH_BINARY_INV)[1]
     dbglogsavestep(relblack)
 

@@ -189,7 +189,7 @@ class labeldataset(Dataset):
 
 
 training_data = labeldataset(
-    rf"C:\prog\wtutility\exp\DLOnPlottingScale\dataset\charDataset\labeled"
+    rf"C:\prog\wtutility\asset\dataset\wtdmpocr\charDataset\labeled"
 )
 test_data = training_data
 batch_size = 8

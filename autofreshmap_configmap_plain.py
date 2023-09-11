@@ -23,6 +23,7 @@ highSurvivablity = [
     'SecondBattleOfElAlamein',
     'Tunisia',
     'AshRiver',
+    '38thParallel'
 ]
 
 highMobility=[
@@ -156,5 +157,11 @@ specialmapdetectors = {
         # born at upper, better vision around up right spawn
         "foo":
         'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([219, 87]))'
+    },
+    "38thParallel": {
+        "mapreq": '38thParallel',
+        # born at upper, better vision around up right spawn
+        "foo":
+        'ret(detectMapShape() and spawnAround([371, 114]))'
     },
 }

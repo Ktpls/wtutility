@@ -11,7 +11,7 @@ plottingscalereqlower=100
 plottingscalerequpper=600
 
 plerrreqstrict=10
-ymerrreqstrict=0.35
+ymerrreqstrict=0.33
 griderrreqstrict=4
 plottingscalestrictlower=130
 plottingscalestrictupper=550
