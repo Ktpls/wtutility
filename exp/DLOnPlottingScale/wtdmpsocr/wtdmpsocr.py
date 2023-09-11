@@ -43,10 +43,10 @@ class chardetector(torch.nn.Module):
         self.comp = torch.nn.Sequential(
             cbr(1, 8, 9, 9),
             res_through(
-                inception.even(8, 8,version='v3'),
-                inception.even(8, 8,version='v3'),
-                inception.even(8, 8,version='v3'),
-                inception.even(8, 8,version='v3'),
+                inception.even(8, 8, version="v3"),
+                inception.even(8, 8, version="v3"),
+                inception.even(8, 8, version="v3"),
+                inception.even(8, 8, version="v3"),
             ),
             torch.nn.Dropout2d(0.3),
             torch.nn.Conv2d(
@@ -70,10 +70,10 @@ class chardetector(torch.nn.Module):
 
     def lose(self, label, labelhat):
         batchsize = batchsizeof(label)
-
-        coef = 1
-        err = torch.sum(coef * (labelhat - label) ** 2)
-        return err
+        # batch, type, width
+        err = (labelhat - label) ** 2
+        loss = torch.sum(err)
+        return loss
 
 
 def getmodel(modelpath):
@@ -127,4 +127,3 @@ def wtdmpsocr(ps, model, resultthresh=0.5):
         if cscd.input(targmax[x] if tmax[x] > resultthresh else typeElse):
             result += f"{targmax[x]}"
     return result
-
