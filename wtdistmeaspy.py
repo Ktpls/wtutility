@@ -2,7 +2,7 @@ from wtdistmeaspy_implementation import *
 
 caliOperator = loadCalibrationOperator()
 
-lastDistMeasResultStaged = ElementsOfBRMap(None, None, None, None, None)
+lastDistMeasResultStaged = ElementsOfMap(None, None, None, None, None)
 
 
 def mainlogic():

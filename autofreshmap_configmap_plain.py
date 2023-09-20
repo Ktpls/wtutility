@@ -23,11 +23,11 @@ highSurvivablity = [
     'SecondBattleOfElAlamein',
     'Tunisia',
     'AshRiver',
-    '38thParallel'
+    '38thParallel',
+    'Carpathians',
 ]
 
 highMobility=[
-    'Carpathians',
     'Normandy',
 ]
 
@@ -163,5 +163,11 @@ specialmapdetectors = {
         # born at upper, better vision around up right spawn
         "foo":
         'ret(detectMapShape() and spawnAround([371, 114]))'
+    },
+    "Carpathians": {
+        "mapreq": 'Carpathians',
+        # born at lower, better vision around A on mount
+        "foo":
+        'ret(detectMapShape() and spawnAround([222, 529]))'
     },
 }
