@@ -30,12 +30,14 @@ def mainlogic():
             break
         sleep(retryDelay)
 
-    dbglogreason = []
+    exception: List[SMException] = []
     prompt = ""
     if not didSolveMapSucceed(ret):
         # still failed
-        prompt = ret[0]
-        dbglogreason = [ret[0]]
+        # break with fatal exception
+        exception = ret[1]
+        prompt += "Failed\n"
+        prompt += ",".join(exception)
     else:
         (
             state,
@@ -48,7 +50,7 @@ def mainlogic():
             plottingscale,
             msgExtra,
         ) = ret
-        dbglogreason.extend(msgExtra)
+        exception.extend(msgExtra)
 
         # calc
         ympos = np.array(ympos)
@@ -68,17 +70,17 @@ def mainlogic():
             err = []
 
             if playererr > plerrreqstrict:
-                err.append("SEC_PE")
+                err.append(SMException(SMException.SMEType.SEC_PE))
             else:
                 lastDistMeasResultStaged.playerpos = playerpos
 
             if ymerr < ymerrreqstrict:
-                err.append("SEC_YE")
+                err.append(SMException(SMException.SMEType.SEC_YE))
             else:
                 lastDistMeasResultStaged.ympos = ympos
 
             if griderr > griderrreqstrict:
-                err.append("SEC_GE")
+                err.append(SMException(SMException.SMEType.SEC_GE))
             else:
                 lastDistMeasResultStaged.gridave = gridave
 
@@ -88,21 +90,20 @@ def mainlogic():
             ):
                 # something going wrong, either not found or digits lost,
                 # if less than 100 or more than 500
-                err.append("SEC_PS")
+                err.append(SMException(SMException.SMEType.SEC_PS))
             else:
                 lastDistMeasResultStaged.plottingscale = plottingscale
 
             return err  # keep dbglog unneeded
 
-        dbglogreason += strictErrCheck()
-        if len(dbglogreason) > 0:
+        exception += strictErrCheck()
+        if len(exception) > 0:
             # not usable
-            prompt += "but {}. \n".format(",".join(dbglogreason))
+            prompt += "but {}. \n".format(",".join(exception))
             prompt += "Not recommended to use, better try again\n"
-        else:
-            # everything goes great.
-            # stage result
-            lastDistMeasResultStaged.result = dist
+        # got here anyway avoiding all the fatal ones
+        # commit result
+        lastDistMeasResultStaged.result = dist
 
         i = 0
         while i < len(refresult):
@@ -119,13 +120,14 @@ def mainlogic():
             ymerr,
             griderr,
         )
-    if len(dbglogreason)>0 and collectFailDebugOutput:
+    if len(exception) > 0 and collectFailDebugOutput:
         # resolve with debug config
         ret = SolveMap_BottomRightSmallMap(
             scr,
             dbg=True,
             dbglogpath=r"./asset/wtdistmeaspy/log/{}_On{}/".format(
-                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), ', '.join(dbglogreason)
+                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()),
+                ", ".join(exception),
             ),
         )
 
