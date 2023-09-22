@@ -29,6 +29,7 @@ ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
 cnnresultthresh=0.3
+plottingscale_rel_darkness=-2.5
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2

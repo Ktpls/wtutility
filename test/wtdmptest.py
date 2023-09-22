@@ -6,7 +6,7 @@ print(os.getcwd())
 from wtdistmeaspy_implementation import *
 
 scr = cv.imread(
-    r"C:\prog\wtutility\asset\wtdistmeaspy\log\2023-08-29-23-18-54_Onusing last ps\unnamed.png"
+    r"C:\prog\wtutility\asset\wtdistmeaspy\log\2023-09-21-01-46-42_Onusing last ps\unnamed.png"
 )
 # scr = cutBottomRightMap(scr)
 ret = SolveMap_BottomRightSmallMap(

@@ -30,6 +30,11 @@ def mainlogic():
             break
         sleep(retryDelay)
 
+    def exception2str(exc, spliter=None):
+        if spliter is None:
+            spliter = "\n"
+        return spliter.join([e.__repr__() for e in exc])
+
     exception: List[SMException] = []
     prompt = ""
     if not didSolveMapSucceed(ret):
@@ -37,7 +42,7 @@ def mainlogic():
         # break with fatal exception
         exception = ret[1]
         prompt += "Failed\n"
-        prompt += ",".join(exception)
+        prompt += exception2str(exception)
     else:
         (
             state,
@@ -63,7 +68,11 @@ def mainlogic():
         refresult = ["%3d: %5d" % (r, int(distingrid * r + 0.5)) for r in reflist]
 
         prompt = ""
-        prompt += "%s" % (state) + "".join([", " + me for me in msgExtra]) + "\n"
+        prompt += (
+            "%s\n" % (state)
+            + exception2str(exception)
+            + ("\n" if len(exception) > 0 else "")
+        )
         prompt += "dist=%.2f\n" % (dist)
 
         def strictErrCheck():
@@ -99,7 +108,7 @@ def mainlogic():
         exception += strictErrCheck()
         if len(exception) > 0:
             # not usable
-            prompt += "but {}. \n".format(",".join(exception))
+            prompt += "but {}. \n".format(exception2str(exception))
             prompt += "Not recommended to use, better try again\n"
         # got here anyway avoiding all the fatal ones
         # commit result
@@ -127,7 +136,7 @@ def mainlogic():
             dbg=True,
             dbglogpath=r"./asset/wtdistmeaspy/log/{}_On{}/".format(
                 time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()),
-                ", ".join(exception),
+                exception2str(exception, ", "),
             ),
         )
 

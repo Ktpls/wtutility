@@ -307,7 +307,7 @@ def SolveMap_BottomRightSmallMap(isrc,
     mpsgray = mpshsv[:, :, 2]
     mpsgray = mpsgray.astype("float")
     relblack = cv.threshold(
-        (mpsgray - regionave(mpsgray, [5, 5])), -2.5, 255, cv.THRESH_BINARY_INV
+        (mpsgray - regionave(mpsgray, [5, 5])), plottingscale_rel_darkness, 255, cv.THRESH_BINARY_INV
     )[1]
     dbglogsavestep(relblack)
 
@@ -342,7 +342,7 @@ def SolveMap_BottomRightSmallMap(isrc,
             path="./output/wtdmp_noised_scale_collection_project/",
         )
 
-    return 'OK', playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale, msgExtra
+    return SolveMapState.OK, playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale, msgExtra
 
 
 def cutBottomRightMap(m):
