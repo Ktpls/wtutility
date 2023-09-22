@@ -642,7 +642,7 @@ class loadCalibrationOperator:
         self.stopped = True
         self.result = ""
 
-    def start(self, targetcali):
+    def start(self, targetcali, dbglogpath=None):
         if not self.stopped:
             # no running again
             return
@@ -651,13 +651,15 @@ class loadCalibrationOperator:
         self.result = ""
 
         def loadCalibration(targetcali, errAllowed):
+            nonlocal dbglogpath
             pid = PIDController(caliP, 0, caliD)
             ss = screenshoter()
             if caliDbg:
-                # same as in solve
-                dbglogpath = r"./asset/wtdistmeaspy/log/{}_GetCali/".format(
-                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                )
+                if dbglogpath is None:
+                    # same as in solve
+                    dbglogpath = r"./asset/wtdistmeaspy/log/{}_GetCali/".format(
+                        time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                    )
 
                 def dbglogsavestep(m, name="unnamed", method="savemat"):
                     nonlocal dbglogpath

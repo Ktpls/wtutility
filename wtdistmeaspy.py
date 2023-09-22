@@ -105,6 +105,8 @@ def mainlogic():
         # commit result
         lastDistMeasResultStaged.result = dist
 
+        # todo: considering if i should automaticly calibrate
+
         i = 0
         while i < len(refresult):
             for j in range(3):
