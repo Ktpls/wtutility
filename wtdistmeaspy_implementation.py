@@ -618,6 +618,9 @@ def adjustCaliberation(pidoutput):
     # if control<0.5:
     #     control=2*control**2 # make it more precise
 
+    #try if get improvement in the case of no response
+    gameinput.keyup(keycode2press)
+    
     gameinput.keydown(keycode2press)
     PreciseSleep(control)
     gameinput.keyup(keycode2press)

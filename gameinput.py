@@ -1,6 +1,6 @@
 import time
 
-import keycode
+import keycodeWinCode as keycode
 from ctypes import POINTER, c_ulong, Structure, c_ushort, c_short, c_long, byref, windll, pointer, sizeof, Union
 
 SendInput = windll.user32.SendInput
@@ -46,6 +46,14 @@ def keyup(hexKeyCode):
     ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
+
+import pyautogui
+# def keydown(keycode):
+#     pyautogui.keyDown(keycode)
+
+
+# def keyup(keycode):
+#     pyautogui.keyUp(keycode)
 
 def press(k):
     keydown(k)

@@ -34,7 +34,7 @@ plottingscale_rel_darkness=-2.5
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
 plottingscalePosOffset=-2
 
-caliDbg=False
+caliDbg=True
 caliP=1
 caliD=0
 caliControlMul=0.125  # for 30%
