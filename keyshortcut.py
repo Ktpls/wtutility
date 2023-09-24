@@ -8,7 +8,7 @@ def holdMouseLeft():
 
 
 def holdC():
-    keydown(keycodeWinCode.key_C)
+    keydown(keycode.key_C)
 
 
 def move_mouse(Direction, MoveDelta=1):
