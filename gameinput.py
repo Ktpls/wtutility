@@ -1,15 +1,32 @@
 import time
 
 import keycodeWinCode as keycode
-from ctypes import POINTER, c_ulong, Structure, c_ushort, c_short, c_long, byref, windll, pointer, sizeof, Union
+from ctypes import (
+    POINTER,
+    c_ulong,
+    Structure,
+    c_ushort,
+    c_short,
+    c_long,
+    byref,
+    windll,
+    pointer,
+    sizeof,
+    Union,
+)
 
 SendInput = windll.user32.SendInput
 PUL = POINTER(c_ulong)
 
 
 class KeyBdInput(Structure):
-    _fields_ = [("wVk", c_ushort), ("wScan", c_ushort), ("dwFlags", c_ulong),
-                ("time", c_ulong), ("dwExtraInfo", PUL)]
+    _fields_ = [
+        ("wVk", c_ushort),
+        ("wScan", c_ushort),
+        ("dwFlags", c_ulong),
+        ("time", c_ulong),
+        ("dwExtraInfo", PUL),
+    ]
 
 
 class HardwareInput(Structure):
@@ -17,8 +34,14 @@ class HardwareInput(Structure):
 
 
 class MouseInput(Structure):
-    _fields_ = [("dx", c_long), ("dy", c_long), ("mouseData", c_ulong),
-                ("dwFlags", c_ulong), ("time", c_ulong), ("dwExtraInfo", PUL)]
+    _fields_ = [
+        ("dx", c_long),
+        ("dy", c_long),
+        ("mouseData", c_ulong),
+        ("dwFlags", c_ulong),
+        ("time", c_ulong),
+        ("dwExtraInfo", PUL),
+    ]
 
 
 class Input_I(Union):
@@ -47,7 +70,9 @@ def keyup(hexKeyCode):
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
+
 import pyautogui
+
 # def keydown(keycode):
 #     pyautogui.keyDown(keycode)
 
@@ -55,11 +80,13 @@ import pyautogui
 # def keyup(keycode):
 #     pyautogui.keyUp(keycode)
 
+
 def press(k):
     keydown(k)
     time.sleep(0.1)
     keyup(k)
     time.sleep(0.4)
+
 
 def hold(k, t):
     keydown(k)
@@ -84,24 +111,28 @@ def wtpress(k):
     keyup(k)
     time.sleep(2)
 
+
 def moveto(p):
     windll.user32.SetCursorPos(int(p[0]), int(p[1]))
 
+
 import win32con
+
+
 class mouse:
-    __downk2f={
-        0:win32con.MOUSEEVENTF_LEFTDOWN,
-        1:win32con.MOUSEEVENTF_RIGHTDOWN,
-        2:win32con.MOUSEEVENTF_MIDDLEDOWN 
+    __downk2f = {
+        0: win32con.MOUSEEVENTF_LEFTDOWN,
+        1: win32con.MOUSEEVENTF_RIGHTDOWN,
+        2: win32con.MOUSEEVENTF_MIDDLEDOWN,
     }
-    __upk2f={
-        0:win32con.MOUSEEVENTF_LEFTUP,
-        1:win32con.MOUSEEVENTF_RIGHTUP,
-        2:win32con.MOUSEEVENTF_MIDDLEUP 
+    __upk2f = {
+        0: win32con.MOUSEEVENTF_LEFTUP,
+        1: win32con.MOUSEEVENTF_RIGHTUP,
+        2: win32con.MOUSEEVENTF_MIDDLEUP,
     }
-    
+
     @staticmethod
-    def __callevent(dwflags,x=0,y=0):
+    def __callevent(dwflags, x=0, y=0):
         windll.user32.mouse_event(dwflags, x, y, 0, 0)
 
     @staticmethod
@@ -111,20 +142,31 @@ class mouse:
     @staticmethod
     def up(key):
         mouse.__callevent(mouse.__upk2f[key])
-    
+
     @staticmethod
-    def mov(x,y):
-        mouse.__callevent(win32con.MOUSEEVENTF_MOVE+win32con.MOUSEEVENTF_ABSOLUTE,x,y)
-    
+    def click(key, interval=0.1):
+        mouse.down(key)
+        time.sleep(interval)
+        mouse.up(key)
+
     @staticmethod
-    def movr(x,y):
-        mouse.__callevent(win32con.MOUSEEVENTF_MOVE,x,y)
+    def mov(x, y):
+        mouse.__callevent(
+            win32con.MOUSEEVENTF_MOVE + win32con.MOUSEEVENTF_ABSOLUTE, x, y
+        )
+
+    @staticmethod
+    def movr(x, y):
+        mouse.__callevent(win32con.MOUSEEVENTF_MOVE, x, y)
+
 
 def mouseup():
     windll.user32.mouse_event(4, 0, 0, 0, 0)
 
+
 def mousedown():
     windll.user32.mouse_event(2, 0, 0, 0, 0)
+
 
 def click(p):
     moveto(p)

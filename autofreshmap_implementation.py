@@ -855,4 +855,8 @@ A-10
         press(keycode.key_Enter)
         time.sleep(1)
 
+        # exit settlement screen
+        press(keycode.key_Esc)
+        time.sleep(1)
+
         longDelay(8 * 60)
