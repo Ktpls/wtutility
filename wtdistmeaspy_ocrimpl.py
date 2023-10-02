@@ -22,8 +22,8 @@ class implTesseract(implocr):
     @staticmethod
     def ocr(black,dbglogsavestep,log):
         log('using implTesseract.ocr()')
-        import pytesseract.pytesseract as ptact
-        ptact.tesseract_cmd = tesseractpath
+        import pytesseract.pytesseract as pytesseract
+        pytesseract.tesseract_cmd = tesseractpath
 
         # filter density to remove noise points
         for i in range(2):
@@ -43,7 +43,7 @@ class implTesseract(implocr):
                 black[:, int(x+0.5*charw+0.5)] = 0
         dbglogsavestep(black)
 
-        plottingscalestr = ptact.image_to_string(
+        plottingscalestr = pytesseract.image_to_string(
             black.astype('uint8'), lang='eng', config='--psm 7')
         log(f'plottingscalestr={plottingscalestr}')
 

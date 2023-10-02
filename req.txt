@@ -8,3 +8,4 @@ openpyxl
 pyautogui
 pywin32
 tensorboard
+pytesseract

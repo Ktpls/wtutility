@@ -81,11 +81,11 @@ import pyautogui
 #     pyautogui.keyUp(keycode)
 
 
-def press(k):
+def press(k, interval=0.1):
     keydown(k)
-    time.sleep(0.1)
+    time.sleep(interval)
     keyup(k)
-    time.sleep(0.4)
+    # time.sleep(0.4)
 
 
 def hold(k, t):

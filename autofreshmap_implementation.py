@@ -694,7 +694,59 @@ class ApproximateStandardizationGuide:
         return s
 
 
-def FreshBr():
+@dataclass
+class VehicleInfo:
+    name: str
+    pattern: re.Pattern
+
+    @staticmethod
+    def compile(
+        sourceCode: str, asg: ApproximateStandardizationGuide
+    ) -> List["VehicleInfo"]:
+        ret = []
+        for t in sourceCode.split("\n"):
+            if len(t) == 0:
+                continue
+            if t.startswith("//"):
+                continue
+            ret.append(VehicleInfo(t, re.compile(asg.do(t))))
+        return ret
+
+    @dataclass
+    class MatchResult:
+        line: int
+        playerVehicle: str
+        vehicleInfo: str
+
+    @staticmethod
+    def matchPlayerVehicleListAndVehicleInfoList(players: str, vi: List["VehicleInfo"]):
+        ret: List[VehicleInfo.MatchResult] = []
+        for l, p in enumerate(players):
+            for v in vi:
+                if re.match(v.pattern, p) is not None:
+                    ret.append(VehicleInfo.MatchResult(l, p, v.name))
+        return ret
+
+    @staticmethod
+    def detectAnyInOutputOfTesseract(
+        players: str, vi: List["VehicleInfo"], asg: ApproximateStandardizationGuide
+    ):
+        players = [asg.do(t) for t in players.split("\n")]
+        ret = VehicleInfo.matchPlayerVehicleListAndVehicleInfoList(players, vi)
+        if len(ret) == 0:
+            print("nothing matched")
+        else:
+            print(
+                "\n".join(
+                    [f"line {r.line}\t{r.playerVehicle}\t{r.vehicleInfo}" for r in ret]
+                )
+            )
+        return len(ret) != 0
+
+
+def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
+    # cant distinguish MiG-17 AS with MiG-17 mentioned in source code
+    # and wanted vehicles may be brought by some players as squad
     # init
     import pytesseract.pytesseract as pytesseract
 
@@ -713,19 +765,19 @@ def FreshBr():
 
     def moveMouseAway():
         moveto((0, 0))
+        mouse.click(0)
 
     loadAssetsNeeded4FreshAMap()
 
     ss = screenshoter(0)
     asg = ApproximateStandardizationGuide(
         r"""
-//confused
+//confusing
 [A4]->A
 [Ss5]->S
 [0Oo]->O
 [Cc]->C
-[Ili1]->I
-[Jj]->J
+[Ili1Jj7T]->I
 [Kk]->K
 [Mm]->M
 [Pp]->P
@@ -733,53 +785,20 @@ def FreshBr():
 [Ww]->W
 [Xx]->X
 [Zz]->Z
-//unexpected
-[^A-Za-z0-9\(\)\n]->
 //nation marks
 ^O->
+^#->
+//unexpected
+[^A-Za-z0-9\(\)\n]->
 """[
             1:-1
-        ]
+        ],
     )
 
-    IDontWannaSeeThem = """
-MiG21SMT
-Su17M2
-MiG21MF
-A-5C
-Su-25
-A-10
-"""[
-        1:-1
-    ]
-
-    @dataclass
-    class VehicleInfo:
-        name: str
-        pattern: re.Pattern
-
-        # empty line and remark not supported
-        @staticmethod
-        def compile(sourceCode: str) -> List["VehicleInfo"]:
-            return [
-                VehicleInfo(t, re.compile(f".*{asg.do(t)}.*"))
-                for t in sourceCode.split("\n")
-            ]
-
-        @staticmethod
-        def detectAnyInOutputOfTesseract(players: str, vi: List["VehicleInfo"]):
-            for l, p in enumerate(players):
-                for v in IDontWannaSeeThem:
-                    if re.match(v.pattern, p) is not None:
-                        print(f"found {v.name} at line {l}")
-                        return True
-            return False
-
-    IDontWannaSeeThem = VehicleInfo.compile(IDontWannaSeeThem)
+    IDontWannaSeeThem = VehicleInfo.compile(BannedVehicleInfoSourceCode, asg)
+    IWannaSeeThem = VehicleInfo.compile(WantedVehicleInfoSourceCode, asg)
 
     while True:
-        moveMouseAway()
-
         """
         try start matching
         may found crew locked
@@ -802,61 +821,129 @@ A-10
                 press(keycode.key_Enter)
                 return False
             if stateDetector["OK"].detect(scr):
-                press(keycode.key_Enter)
-                longDelay(10)
+                press(keycode.key_Esc)
+                longDelay(15)
                 return False
             return False
 
+        moveMouseAway()
         keepdetecting(detectStartMatch, sleeptime=10)
 
-        longDelay(40)
-        moveMouseAway()
-        # 400,330 -> 600,700
-        playerlistLeftTop = [400, 330]
-        playerlistRightDown = [600, 700]
-        scr = shot()
-        # actually player vehicles
-        players = scr[
-            playerlistLeftTop[1] : playerlistRightDown[1],
-            playerlistLeftTop[0] : playerlistRightDown[0],
-        ]
-        players = pytesseract.image_to_string(players)
-        print(players)
+        class DetectPlayerVehicleResult(Enum):
+            unset = 0
+            good = 1
+            bad = 2
+            timeout = 3
 
-        if not VehicleInfo.detectAnyInOutputOfTesseract(players, IDontWannaSeeThem):
+        detectPlayerVehicleResult = DetectPlayerVehicleResult.unset
+        timer = perf_statistic(startnow=True)
+
+        def detectPlayerVehicleList(scr):
+            nonlocal detectPlayerVehicleResult, timer
+            # 400,330 -> 600,700
+            playerlistLeftTop = [400, 330]
+            playerlistRightDown = [600, 700]
+            # actually player vehicles
+            players = scr[
+                playerlistLeftTop[1] : playerlistRightDown[1],
+                playerlistLeftTop[0] : playerlistRightDown[0],
+            ]
+            players = pytesseract.image_to_string(players)
+            print(players)
+            print("bads")
+            bads = VehicleInfo.detectAnyInOutputOfTesseract(
+                players, IDontWannaSeeThem, asg
+            )
+            print("goods")
+            goods = VehicleInfo.detectAnyInOutputOfTesseract(
+                players, IWannaSeeThem, asg
+            )
+            # bads priored
+            if bads:
+                detectPlayerVehicleResult = DetectPlayerVehicleResult.bad
+                return True
+            if goods:
+                detectPlayerVehicleResult = DetectPlayerVehicleResult.good
+                return True
+            if timer.time() >= AFM_FRESHBR_VEHICLE_LIST_TIMEOUT:
+                detectPlayerVehicleResult = DetectPlayerVehicleResult.timeout
+                return True
+
+            return False
+
+        moveMouseAway()
+        keepdetecting(detectPlayerVehicleList, sleeptime=5)
+
+        if detectPlayerVehicleResult == DetectPlayerVehicleResult.good:
             # good
             win32api.Beep(1000, 100)
             win32api.Beep(500, 100)
             win32api.Beep(1000, 100)
-            break
+            import subprocess
 
+            files = AllFileIn(musicPath)
+            files = [
+                f
+                for f in files
+                if (
+                    (extpos := str.rfind(f, ".")) != -1
+                    and f[extpos + 1 :] in ["mp3", "flac"]
+                )
+            ]
+            f = files[np.random.choice(len(files))]
+            print(f)
+            subprocess.call([player, f])
+            break
+        elif (
+            detectPlayerVehicleResult == DetectPlayerVehicleResult.bad
+            or detectPlayerVehicleResult == DetectPlayerVehicleResult.timeout
+        ):
+            # bad
+            win32api.Beep(500, 100)
+            win32api.Beep(500, 100)
+            win32api.Beep(500, 100)
+        elif detectPlayerVehicleResult == DetectPlayerVehicleResult.unset:
+            raise Exception("detectPlayerVehicleResult is unset")
+
+        KEY_OP_INTERVAL = 0.3
         # bad
         # exit statistics
         press(keycode.key_Esc)
-        time.sleep(1)
+        time.sleep(KEY_OP_INTERVAL)
 
         # to menu
         press(keycode.key_Esc)
-        time.sleep(1)
+        time.sleep(KEY_OP_INTERVAL)
+
+        moveto((0, 0))
 
         # select return to hanger
-        press(keycode.key_Up)
-        time.sleep(1)
+        for i in range(5):
+            press(keycode.key_Down)
+            time.sleep(KEY_OP_INTERVAL)
 
         # click it
         press(keycode.key_Enter)
-        time.sleep(1)
+        time.sleep(KEY_OP_INTERVAL)
 
         # select yes
         press(keycode.key_Left)
-        time.sleep(1)
+        time.sleep(KEY_OP_INTERVAL)
 
         # click
         press(keycode.key_Enter)
-        time.sleep(1)
+        time.sleep(KEY_OP_INTERVAL)
+
+        moveMouseAway()
+        mouse.click(0)
 
         # exit settlement screen
-        press(keycode.key_Esc)
-        time.sleep(1)
+        def detectStartMatch(scr):
+            if stateDetector["MissionCanceled"].detect(scr):
+                press(keycode.key_Esc)
+                return True
+            return False
 
-        longDelay(8 * 60)
+        keepdetecting(detectStartMatch)
+
+        longDelay(5 * 60)

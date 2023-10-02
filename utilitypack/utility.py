@@ -15,7 +15,7 @@ import time
 from time import sleep
 import random
 import threading
-from typing import Dict, List, Callable, Iterable
+from typing import Dict, List, Callable, Iterable, Any
 
 import cv2 as cv
 import numpy as np
@@ -927,7 +927,7 @@ def AllFileIn(path, includeFileInSubDir=True):
     return ret
 
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 
 class StoppableThread:
@@ -935,23 +935,25 @@ class StoppableThread:
     derivate from it and override foo()
     """
 
-    def __init__(self, pool=None) -> None:
-        self.running = False
-        self.pool = ThreadPoolExecutor() if pool is None else pool
+    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+        self.running: bool = False
+        self.pool: ThreadPoolExecutor = (
+            pool if pool is not None else ThreadPoolExecutor()
+        )
         self.submit = None
 
-    def foo(self):
+    def foo(self) -> None:
         pass
 
-    def getRunning(self):
+    def getRunning(self) -> bool:
         return self.running
 
-    def go(self):
-        if self.running or self.submit is not None:
+    def go(self) -> None:
+        if self.submit is not None:
             return
         self.running = True
 
-        def call():
+        def call() -> None:
             """
             wrapper so can call the passed "self"'s foo
             if not, can never know which overwritten foo should be called
@@ -960,9 +962,97 @@ class StoppableThread:
 
         self.submit = self.pool.submit(call)
 
-    def stop(self):
-        if not self.running or self.submit is None:
+    def stop(self) -> None:
+        if self.submit is None:
             return
         self.running = False
-        as_completed(self.submit)
+        self.submit.result()
         self.submit = None
+
+
+def ReadTextFile(path):
+    with open(path, "r") as f:
+        return f.read()
+
+
+def WriteTextFile(path, text):
+    with open(path, "w") as f:
+        f.write(text)
+
+
+def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    A decorator that wraps a function and returns a new function that calls the original function
+    and returns the instance it was called on.
+
+    Args:
+        f: The function to wrap.
+
+    Returns:
+        The wrapped function.
+    """
+
+    def f2(self, *args: Any, **kwargs: Any) -> Any:
+        f(self, *args, **kwargs)
+        return self
+
+    return f2
+
+
+class Pipe:
+    value: Any = None
+
+    def __init__(self, initValue: Any = None, printStep: bool = False) -> None:
+        """
+        Initializes a Pipe object.
+
+        Args:
+            initValue: The initial value of the Pipe.
+            printStep: Whether to print the value after setting it.
+        """
+        self.printStep = printStep
+        self.set(initValue)
+
+    def get(self) -> Any:
+        """
+        Returns the value of the Pipe.
+
+        Returns:
+            The value of the Pipe.
+        """
+        return self.value
+
+    @FunctionalWrapper
+    def set(self, val: Any) -> None:
+        """
+        Sets the value of the Pipe.
+
+        Args:
+            val: The value to set.
+        """
+        self.value = val
+        if self.printStep:
+            print(self.value)
+
+    @FunctionalWrapper
+    def do(self, foo: Callable[[Any], Any]) -> "Pipe":
+        """
+        Applies a function to the value of the Pipe and sets the result as the new value.
+
+        Args:
+            foo: The function to apply.
+
+        Returns:
+            The modified Pipe object.
+        """
+        self.set(foo(self.get()))
+        return self
+
+    def __repr__(self) -> str:
+        """
+        Returns the string representation of the Pipe.
+
+        Returns:
+            The string representation of the Pipe.
+        """
+        return self.get().__repr__()

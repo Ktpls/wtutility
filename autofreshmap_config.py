@@ -1,30 +1,34 @@
+from autofreshmap_configmap_plain import whitelistedmap, specialmapdetectors
 
-from autofreshmap_configmap_plain import whitelistedmap,specialmapdetectors
+singlechanneleddetection = False
+subsampleddetection = True
+subsampleddetectionrate = 0.1
 
-singlechanneleddetection=False
-subsampleddetection=True
-subsampleddetectionrate=0.1
+log2file = False
+dbglog = True
+waitaftergoodmap = False
 
-log2file=False
-dbglog=True
-waitaftergoodmap=False
+standardSpawnCenterError = 200
+standardPointSelectorError = 20
 
-standardSpawnCenterError=200
-standardPointSelectorError=20
+standardMatchThreshold = 0.3
+standardMapMatchThreshold = 0.25
 
-standardMatchThreshold=0.3
-standardMapMatchThreshold=0.25
+setonwifirecoverthresh = 13
 
-setonwifirecoverthresh=13
+detectpointsimilarity = 0.1
 
-detectpointsimilarity=0.1
+minDelayAfterDisconnected = 5
 
-minDelayAfterDisconnected=5
+throwerringetdetector = False
+throwerrinmain = False
 
-throwerringetdetector=False
-throwerrinmain=False
+resolution = "m1920x1080r1280x720"
 
-resolution='m1920x1080r1280x720'
+wlanname4netshinterface = "WLAN"
+wlanname4netshwlan = ["ChinaNet-pHmm", "as20"][0]
 
-wlanname4netshinterface='WLAN'
-wlanname4netshwlan=['ChinaNet-pHmm','as20'][0]
+AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
+
+musicPath = r"C:\CloudMusic"
+player=r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
