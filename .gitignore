@@ -1,7 +1,7 @@
 .git/
 __pycache__/
 #.vscode/
-#exp/achieved/
+#exp/
 output/
 *.7z
 log/

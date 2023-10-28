@@ -27,7 +27,7 @@ collectFailDebugOutput=True
 collectPlottingScale=True
 ocrimpltype='cnn'
 tesseractpath = r'D:\Program Files\Tesseract-OCR\tesseract.exe'
-modelpath = r'.\exp\DLOnPlottingScale\wtdmpsocr\wtdmpsocr.pth'
+modelpath = r'.asset\wtdistmeaspy\wtdmpsocr.pth'
 cnnresultthresh=0.3
 plottingscale_rel_darkness=-2.5
 
