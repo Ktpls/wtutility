@@ -11,6 +11,8 @@ if ocrimpltype == "tes":
     from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
 elif ocrimpltype == "cnn":
     from wtdistmeaspy_ocrimpl import implCNN as ocrimpl
+elif ocrimpltype == "psb":
+    from wtdistmeaspy_ocrimpl import implPassby as ocrimpl
 
 ocrimpl.init()
 
