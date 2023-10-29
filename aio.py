@@ -116,6 +116,12 @@ def main():
         import wtdistmeaspy
 
         wtdmp = wtdistmeaspy.wtdistmeaspy()
+        """
+        VK_OEM_3=0xC0
+        Used for miscellaneous characters; it can vary by keyboard.
+        For the US standard keyboard, the '`~' key
+        """
+        OEM3 = 0xC0
 
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
@@ -133,12 +139,6 @@ def main():
         def hkcallWTDistMeas():
             bulletin.putup(wtdmp.solveMapMainLogic())
 
-        """
-        VK_OEM_3=0xC0
-        Used for miscellaneous characters; it can vary by keyboard.
-        For the US standard keyboard, the '`~' key
-        """
-        OEM3 = 0xC0
         hotkeyaction.append(hotkeymanager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
         def startCali():
