@@ -25,14 +25,14 @@ retryDelay=0.25
 keepEveryMeasInRecord=False
 collectFailDebugOutput=True
 collectPlottingScale=True
-ocrimpltype='psb'
+ocrimpltype='tes'
 tesseractpath = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 modelpath = r'.asset\wtdistmeaspy\wtdmpsocr.pth'
 cnnresultthresh=0.3
 plottingscale_rel_darkness=-2.5
 
 # plottingscalePosOffset, negative for upwards, -2 for 1280x720
-plottingscalePosOffset=-2
+plottingscalePosOffset=0
 
 caliDbg=True
 caliP=1

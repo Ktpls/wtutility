@@ -129,8 +129,7 @@ def density(p, size):
 
 def densityfilter(p, size, thresh):
     dence = density(p, size)
-    dence[dence < thresh] = 0
-    return np.logical_and(p, dence)
+    return np.logical_and(p, dence >= thresh)
 
 
 def getWTHwnd():
@@ -826,7 +825,7 @@ class ZFunc:
 
     def __init__(self, x1, y1, x2, y2) -> None:
         if x1 < x2:
-            # [lower or higher, x or y]
+            # [lower on x or higher on x, x or y]
             self.pt = np.array([[x1, y1], [x2, y2]])
         else:
             self.pt = np.array([[x2, y2], [x1, y1]])
@@ -1056,3 +1055,11 @@ class Pipe:
             The string representation of the Pipe.
         """
         return self.get().__repr__()
+
+
+def getDemonstrationImg():
+    x = np.linspace(0, 5 * 2 * np.pi, 100, dtype=np.float32).reshape(1, -1)
+    y = x.T
+    demo = np.sin(x + y)
+    demo = ZFunc(0, 0.25, 0, 0.75)(demo) * 255
+    return demo

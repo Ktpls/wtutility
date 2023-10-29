@@ -23,10 +23,10 @@ minDelayAfterDisconnected = 5
 throwerringetdetector = False
 throwerrinmain = False
 
-resolution = "m1920x1080r1280x720"
+resolution = "m1920x1080r1920x1080"
 
-wlanname4netshinterface = "WLAN"
-wlanname4netshwlan = ["ChinaNet-pHmm", "as20"][0]
+wlanname4netshinterface = "WLAN2"
+wlanname4netshwlan = ["ChinaNet-pHmm", "as20"][1]
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 

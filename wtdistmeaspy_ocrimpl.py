@@ -10,6 +10,7 @@ class implocr:
 
     @staticmethod
     def ocr(ps, dbglogsavestep, log):
+        # ps in float within 0~1
         ...
 
 
@@ -20,6 +21,7 @@ class implPassby:
 
     @staticmethod
     def ocr(ps, dbglogsavestep, log):
+        log("using implPassby.ocr()")
         # a possible value so wont trigger secure check
         return 200
 
@@ -38,8 +40,8 @@ class implTesseract(implocr):
 
         # filter density to remove noise points
         for i in range(2):
-            black = densityfilter(black / 255, [5, 5], 3 / 25).astype("float") * 255
-            dbglogsavestep(black)
+            black = densityfilter(black, [5, 5], 3 / 25).astype("float")
+            dbglogsavestep(black * 255)
 
         charw, charh = 10, 20
         # filter density in single char region
@@ -47,12 +49,13 @@ class implTesseract(implocr):
         black = cv.copyMakeBorder(
             black, 0, 0, charw, charw, cv.BORDER_CONSTANT, value=0
         )
-        density = black.astype("float").sum(axis=0) / 255
+        density = black.astype("float").sum(axis=0)
         density = np.correlate(density, np.ones(10))
         density /= charw * charh
         for x in range(len(density)):
             if density[x] < 0.05:
                 black[:, int(x + 0.5 * charw + 0.5)] = 0
+        dbglogsavestep(getDemonstrationImg())
         dbglogsavestep(black)
 
         plottingscalestr = pytesseract.image_to_string(
