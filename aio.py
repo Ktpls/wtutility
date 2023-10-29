@@ -40,12 +40,23 @@ class InputSession:
 
         def procKey(k):
             self.content += KeyIndexed.get(k, "?")
-            self.bulletin.putup(self.content, 3)
+            self.bulletin.putup(self.content, 10)
 
         HotkeyReg = [
             hotkeymanager.hotkeytask(key=[k.key], foo=functools.partial(procKey, k.key))
             for k in AllKeyMapping
         ]
+
+        def backSpace():
+            self.content = self.content[:-1]
+            self.bulletin.putup(self.content, 10)
+
+        HotkeyReg.append(
+            hotkeymanager.hotkeytask(
+                key=[win32con.VK_BACK],
+                foo=backSpace,
+            )
+        )
 
         def OutFromSession(endType: InputSession.InputResultType):
             self.FooSessionDoneCallback(self.content, endType)
