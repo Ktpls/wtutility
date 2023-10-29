@@ -20,7 +20,7 @@ from typing import Dict, List, Callable, Iterable, Any
 import cv2 as cv
 import numpy as np
 from enum import Enum
-from dataclasses import dataclass
+import dataclasses
 import re
 import math
 
@@ -712,7 +712,7 @@ class bulletinBoard:
         self.content = ""
         self.overduetime = time.perf_counter()
 
-    def putup(self, content, timeout):
+    def putup(self, content, timeout=10):
         self.content = content
         self.overduetime = time.perf_counter() + timeout
 

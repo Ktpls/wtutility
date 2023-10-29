@@ -636,7 +636,7 @@ def longDelay(t, interval=0.5):
 
 
 class ApproximateStandardizationGuide:
-    @dataclass
+    @dataclasses.dataclass
     class GuideItem:
         pattern: str | re.Pattern
         replacement: str
@@ -694,7 +694,7 @@ class ApproximateStandardizationGuide:
         return s
 
 
-@dataclass
+@dataclasses.dataclass
 class VehicleInfo:
     name: str
     pattern: re.Pattern
@@ -712,7 +712,7 @@ class VehicleInfo:
             ret.append(VehicleInfo(t, re.compile(asg.do(t))))
         return ret
 
-    @dataclass
+    @dataclasses.dataclass
     class MatchResult:
         line: int
         playerVehicle: str

@@ -47,18 +47,16 @@ def kickOutWrongItemInUniformData(l, sqrErrReq):
     return l, err
 
 
+@dataclasses.dataclass
 class ElementsOfMap:
-    def __init__(self, playerpos, ympos, gridave, plottingscale, result) -> None:
-        self.playerpos, self.ympos, self.gridave, self.plottingscale, self.result = (
-            playerpos,
-            ympos,
-            gridave,
-            plottingscale,
-            result,
-        )
+    playerpos: np.ndarray
+    ympos: np.ndarray
+    gridave: float
+    plottingscale: float
+    result: float
 
 
-@dataclass
+@dataclasses.dataclass
 class SMException:
     class SMEType(Enum):
         PL_NOT_FOUND = "PL_NOT_FOUND"
@@ -72,6 +70,7 @@ class SMException:
         SEC_YE = "SEC_YE"
         SEC_GE = "SEC_GE"
         SEC_PS = "SEC_PS"
+        SEC_PSLOCK = "SEC_PSLOCK"
 
     smetype: SMEType
     msg: str = "NOMSG"
@@ -79,15 +78,15 @@ class SMException:
     def __repr__(self) -> str:
         return "{}-{}".format(self.smetype.name, self.msg)
 
+
 class SolveMapState(Enum):
     OK = 0
     ERROR = 1
 
 
-def SolveMap_BottomRightSmallMap(isrc,
-                                 prev: ElementsOfMap = None,
-                                 dbg: bool = False,
-                                 dbglogpath: str = ''):
+def SolveMap_BottomRightSmallMap(
+    isrc, prev: ElementsOfMap = None, dbg: bool = False, dbglogpath: str = ""
+):
     if prev is None:
         prev = ElementsOfMap(None, None, None, None, None)
     if dbg:
@@ -309,7 +308,10 @@ def SolveMap_BottomRightSmallMap(isrc,
     mpsgray = mpshsv[:, :, 2]
     mpsgray = mpsgray.astype("float")
     relblack = cv.threshold(
-        (mpsgray - regionave(mpsgray, [5, 5])), plottingscale_rel_darkness, 255, cv.THRESH_BINARY_INV
+        (mpsgray - regionave(mpsgray, [5, 5])),
+        plottingscale_rel_darkness,
+        255,
+        cv.THRESH_BINARY_INV,
     )[1]
     dbglogsavestep(relblack)
 
@@ -344,7 +346,17 @@ def SolveMap_BottomRightSmallMap(isrc,
             path="./output/wtdmp_noised_scale_collection_project/",
         )
 
-    return SolveMapState.OK, playerpos, playererr, ympos, ymerr, gridave, griderr, plottingscale, msgExtra
+    return (
+        SolveMapState.OK,
+        playerpos,
+        playererr,
+        ympos,
+        ymerr,
+        gridave,
+        griderr,
+        plottingscale,
+        msgExtra,
+    )
 
 
 def cutBottomRightMap(m):
@@ -620,9 +632,9 @@ def adjustCaliberation(pidoutput):
     # if control<0.5:
     #     control=2*control**2 # make it more precise
 
-    #try if get improvement in the case of no response
+    # try if get improvement in the case of no response
     gameinput.keyup(keycode2press)
-    
+
     gameinput.keydown(keycode2press)
     PreciseSleep(control)
     gameinput.keyup(keycode2press)
