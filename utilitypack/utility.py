@@ -461,8 +461,12 @@ class fpsmanager:
 
 
 class hotkeymanager:
-    # to piorer ctrl+c than c
-    # responde no c after doing ctrl+c
+    '''
+    to piorer ctrl+c than c
+    responde no c after doing ctrl+c
+    
+    TODO: avoid key pression overlapping between two checking frames
+    '''
 
     class hotkeytask:
         def __init__(self, key: int | Iterable, foo: Callable[[], None]) -> None:
@@ -497,7 +501,7 @@ class hotkeymanager:
         ]
 
     def decideAllHotKey(self) -> List[bool]:
-        keysts = {k: isKBDown(k) for k in self.kc}
+        keystate = {k: isKBDown(k) for k in self.kc}
         from enum import Enum
 
         class respondstate(Enum):
@@ -513,7 +517,7 @@ class hotkeymanager:
                 return
 
             # all key pressed
-            if all([keysts[k] for k in self.hktl[i].key]):
+            if all([keystate[k] for k in self.hktl[i].key]):
                 # didnt check piored, check it
                 [
                     decideRespondState(p)

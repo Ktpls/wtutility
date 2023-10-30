@@ -15,17 +15,33 @@ def beepOnErr():
 
 @dataclasses.dataclass
 class InputSession:
-    class InputResultType(Enum):
-        OK = 0
-        CANCEL = 1
+    @dataclasses.dataclass
+    class SessionInstance:
+        class SessionEndType(Enum):
+            UNSPECIFIED = 0
+            OK = 1
+            CANCEL = 2
 
-    # foo that sets hkm and returens older hkm
+        content: str = ""
+        sessionEndType: SessionEndType = SessionEndType.UNSPECIFIED
+
+        def append(self, extraContent: str):
+            self.content += extraContent
+
+        def backSpace(self):
+            self.content = self.content[:-1]
+
+        def putup(self, bulletin: bulletinBoard):
+            bulletin.putup(self.content)
+
+    # foo that sets hkm and returns older hkm
     FooSwapHKM: Callable[[hotkeymanager], hotkeymanager]
     bulletin: bulletinBoard
-
-    content: str = ""
+    RunningSessionInstance: SessionInstance = dataclasses.field(
+        default_factory=SessionInstance
+    )
     hotkeymanagerStack: List[hotkeymanager] = dataclasses.field(default_factory=list)
-    FooSessionDoneCallback: Callable[[str, InputResultType], None] = dataclasses.field(
+    FooSessionDoneCallback: Callable[[SessionInstance], None] = dataclasses.field(
         init=False
     )
 
@@ -39,8 +55,8 @@ class InputSession:
         KeyIndexed = {k.key: k.char for k in AllKeyMapping}
 
         def procKey(k):
-            self.content += KeyIndexed.get(k, "?")
-            self.bulletin.putup(self.content, 10)
+            self.RunningSessionInstance.append(KeyIndexed.get(k, "?"))
+            self.RunningSessionInstance.putup(self.bulletin)
 
         HotkeyReg = [
             hotkeymanager.hotkeytask(key=[k.key], foo=functools.partial(procKey, k.key))
@@ -48,8 +64,8 @@ class InputSession:
         ]
 
         def backSpace():
-            self.content = self.content[:-1]
-            self.bulletin.putup(self.content, 10)
+            self.RunningSessionInstance.backSpace()
+            self.RunningSessionInstance.putup(self.bulletin)
 
         HotkeyReg.append(
             hotkeymanager.hotkeytask(
@@ -58,8 +74,9 @@ class InputSession:
             )
         )
 
-        def OutFromSession(endType: InputSession.InputResultType):
-            self.FooSessionDoneCallback(self.content, endType)
+        def OutFromSession(endType: InputSession.SessionInstance.SessionEndType):
+            self.RunningSessionInstance.sessionEndType = endType
+            self.FooSessionDoneCallback(self.RunningSessionInstance)
             old = self.hotkeymanagerStack.pop()
             inputer = self.FooSwapHKM(old)
 
@@ -68,13 +85,14 @@ class InputSession:
                 hotkeymanager.hotkeytask(
                     key=[win32con.VK_ESCAPE],
                     foo=functools.partial(
-                        OutFromSession, InputSession.InputResultType.CANCEL
+                        OutFromSession,
+                        InputSession.SessionInstance.SessionEndType.CANCEL,
                     ),
                 ),
                 hotkeymanager.hotkeytask(
                     key=[win32con.VK_RETURN],
                     foo=functools.partial(
-                        OutFromSession, InputSession.InputResultType.OK
+                        OutFromSession, InputSession.SessionInstance.SessionEndType.OK
                     ),
                 ),
             ]
@@ -83,7 +101,7 @@ class InputSession:
         return HotkeyReg
 
     def IntoSession(self, callback):
-        self.content = ""
+        self.RunningSessionInstance=InputSession.SessionInstance()
         self.FooSessionDoneCallback = callback
         inputer = hotkeymanager(self.__GetHotkeyReg())
         old = self.FooSwapHKM(inputer)
@@ -177,13 +195,19 @@ def main():
             nonlocal inputSession
             bulletin.putup("input plotting scale")
 
-            def SetPlottingScaleLock(content, sessionType):
-                if sessionType == InputSession.InputResultType.OK:
+            def SetPlottingScaleLock(session: InputSession.SessionInstance):
+                if (
+                    session.sessionEndType
+                    == InputSession.SessionInstance.SessionEndType.OK
+                ):
                     nonlocal wtdmp
                     wtdmp.psLocked = True
-                    wtdmp.lastDistMeasResultStaged.plottingscale = int(content)
-                    bulletin.putup(f"plotting scale locked at {content}")
-                elif sessionType == InputSession.InputResultType.CANCEL:
+                    wtdmp.lastDistMeasResultStaged.plottingscale = int(session.content)
+                    bulletin.putup(f"plotting scale locked at {session.content}")
+                elif (
+                    session.sessionEndType
+                    == InputSession.SessionInstance.SessionEndType.CANCEL
+                ):
                     bulletin.putup("plotting scale canceled")
 
             inputSession.IntoSession(SetPlottingScaleLock)
