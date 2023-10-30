@@ -26,10 +26,6 @@ w = 1920
 h = 1080
 
 
-def didSolveMapSucceed(solvemapret):
-    return solvemapret[0] == SolveMapState.OK
-
-
 def kickOutWrongItemInUniformData(l, sqrErrReq):
     l = np.copy(l)
     while True:
@@ -58,11 +54,13 @@ class ElementsOfMap:
 
 @dataclasses.dataclass
 class SMException:
-    class SMEType(Enum):
+    class SolveMapResultType(Enum):
+        NO_ERR = "NO_ERR"
         PL_NOT_FOUND = "PL_NOT_FOUND"
         PL_2GREAT_ERR = "PL_2GREAT_ERR"
         YM_2LESS_PROD = "YM_2LESS_PROD"
         GD_BAD_INTE = "GD_BAD_INTE"
+        PS_BAD_OCR = "PS_BAD_OCR"
         using_last_playerpos = "using_last_playerpos"
         using_last_grid = "using_last_grid"
         using_last_ps = "using_last_ps"
@@ -72,23 +70,43 @@ class SMException:
         SEC_PS = "SEC_PS"
         SEC_PSLOCK = "SEC_PSLOCK"
 
-    smetype: SMEType
+    smetype: SolveMapResultType
     msg: str = "NOMSG"
 
     def __repr__(self) -> str:
         return "{}-{}".format(self.smetype.name, self.msg)
 
+    def IsExceptionSafeToPass(self) -> bool:
+        return self.smetype in [
+            SMException.SolveMapResultType.NO_ERR,
+            SMException.SolveMapResultType.PS_BAD_OCR,
+            SMException.SolveMapResultType.using_last_playerpos,
+            SMException.SolveMapResultType.using_last_grid,
+            SMException.SolveMapResultType.using_last_ps,
+            SMException.SolveMapResultType.SEC_PE,
+            SMException.SolveMapResultType.SEC_YE,
+            SMException.SolveMapResultType.SEC_GE,
+            SMException.SolveMapResultType.SEC_PS,
+            SMException.SolveMapResultType.SEC_PSLOCK,
+        ]
 
-class SolveMapState(Enum):
-    OK = 0
-    ERROR = 1
+
+@dataclasses.dataclass
+class SolveMapResultItem:
+    state: SMException
+    result: Any
+    err: float = 0
 
 
-def SolveMap_BottomRightSmallMap(
-    isrc, prev: ElementsOfMap = None, dbg: bool = False, dbglogpath: str = ""
-):
-    if prev is None:
-        prev = ElementsOfMap(None, None, None, None, None)
+@dataclasses.dataclass
+class SolveMapResult:
+    playerpos: SolveMapResultItem
+    ym: SolveMapResultItem
+    grid: SolveMapResultItem
+    plottingscale: SolveMapResultItem
+
+
+def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ""):
     if dbg:
 
         def dbglogsavestep(m, name="unnamed", method="savemat"):
@@ -109,8 +127,6 @@ def SolveMap_BottomRightSmallMap(
 
         def log(s):
             pass
-
-    msgExtra = []  # any beyond main ok or error message
 
     mcolored = isrc
     dbglogsavestep(mcolored)
@@ -148,7 +164,7 @@ def SolveMap_BottomRightSmallMap(
         X, Y = np.meshgrid(X, Y)
         mplysum = mply.sum()
         if mplysum < 1:
-            return [False]
+            return [False, None, None]
 
         playerpos = [(X * mply).sum() / mplysum, (Y * mply).sum() / mplysum]
         playererr = (
@@ -159,25 +175,17 @@ def SolveMap_BottomRightSmallMap(
 
     afterprocessresult = playerfinder_gaussiandensity_method(mply)
     if not afterprocessresult[0]:
-        if prev.playerpos is None:
-            msgExtra.append(SMException(SMException.SMEType.PL_NOT_FOUND))
-            return (SolveMapState.ERROR, msgExtra)
-        else:
-            msgExtra.append(SMException(SMException.SMEType.using_last_playerpos))
-            playerpos = prev.playerpos
-            playererr = 0
+        playerpos = None
+        playererr = 0
+        playerstate = SMException(SMException.SolveMapResultType.PL_NOT_FOUND)
     else:
         _, playerpos, playererr = afterprocessresult
-        if playererr > plerrreq:
-            if prev.playerpos is None:
-                msgExtra.append(
-                    SMException(SMException.SMEType.PL_2GREAT_ERR, "%5.3f" % playererr)
-                )
-                return (SolveMapState.ERROR, msgExtra)
-            else:
-                msgExtra.append(SMException(SMException.SMEType.using_last_playerpos))
-                playerpos = prev.playerpos
-                playererr = 0
+        if playererr < plerrreq:
+            playerstate = SMException(SMException.SolveMapResultType.NO_ERR)
+        else:
+            playerstate = SMException(
+                SMException.SolveMapResultType.PL_2GREAT_ERR, "%5.3f" % playererr
+            )
     # try deleting too wrong points like did in grid processing
 
     # find yellow mark
@@ -204,8 +212,11 @@ def SolveMap_BottomRightSmallMap(
 
     if ymerr < ymerrreq:
         # should not use last ym
-        msgExtra.append(SMException(SMException.SMEType.YM_2LESS_PROD, "%5.3f" % ymerr))
-        return (SolveMapState.ERROR, msgExtra)
+        ymstate = SMException(
+            SMException.SolveMapResultType.YM_2LESS_PROD, "%5.3f" % ymerr
+        )
+    else:
+        ymstate = SMException(SMException.SolveMapResultType.NO_ERR)
 
     # find grid
     mgrd = 255 - mgray
@@ -261,15 +272,9 @@ def SolveMap_BottomRightSmallMap(
 
     kickoutresult = kickOutWrongItemInUniformData(interval, griderrreq)
     if type(kickoutresult) is bool and not kickoutresult:
-        if prev.gridave is None:
-            msgExtra.append(SMException(SMException.SMEType.GD_BAD_INTE))
-            errormsg = "GD_BAD_INTE"
-            log(errormsg)
-            return (SolveMapState.ERROR, msgExtra)
-        else:
-            msgExtra.append(SMException(SMException.SMEType.using_last_grid))
-            gridave = prev.gridave
-            griderr = 0
+        gridave = 0
+        griderr = 0
+        gridstate = SMException(SMException.SolveMapResultType.GD_BAD_INTE)
     else:
         interval, err = kickoutresult
         log(
@@ -281,6 +286,7 @@ def SolveMap_BottomRightSmallMap(
 
         gridave = interval.mean()
         griderr = interval.var()
+        gridstate = SMException(SMException.SolveMapResultType.NO_ERR)
 
     log("g=%3f,ge=%5f.3f" % (gridave, griderr))
 
@@ -330,13 +336,9 @@ def SolveMap_BottomRightSmallMap(
     if (
         plottingscale > plottingscalerequpper or plottingscale < plottingscalereqlower
     ):  # bad
-        if prev.plottingscale is None:
-            pass
-        else:
-            msgExtra.append(SMException(SMException.SMEType.using_last_ps))
-            plottingscale = prev.plottingscale
+        plottingscalestate = SMException(SMException.SolveMapResultType.PS_BAD_OCR)
     else:
-        pass  # just show it
+        plottingscalestate = SMException(SMException.SolveMapResultType.NO_ERR)
 
     # im collecting samples on dl prac
     if collectPlottingScale:
@@ -346,16 +348,11 @@ def SolveMap_BottomRightSmallMap(
             path="./output/wtdmp_noised_scale_collection_project/",
         )
 
-    return (
-        SolveMapState.OK,
-        playerpos,
-        playererr,
-        ympos,
-        ymerr,
-        gridave,
-        griderr,
-        plottingscale,
-        msgExtra,
+    return SolveMapResult(
+        playerpos=SolveMapResultItem(playerstate, playerpos, playererr),
+        ympos=SolveMapResultItem(ympos, ymerr, ymstate),
+        grid=SolveMapResultItem(gridave, griderr, gridstate),
+        plottingscale=SolveMapResultItem(plottingscale, plottingscalestate),
     )
 
 

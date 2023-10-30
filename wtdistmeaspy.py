@@ -2,6 +2,11 @@ from wtdistmeaspy_implementation import *
 
 
 class wtdistmeaspy:
+    """
+    TODO
+    reconstruct logic to make it of specificity
+    """
+
     caliOperator = loadCalibrationOperator()
 
     lastDistMeasResultStaged = ElementsOfMap(None, None, None, None, None)
@@ -20,87 +25,92 @@ class wtdistmeaspy:
             if keepEveryMeasInRecord:
                 ret = SolveMap_BottomRightSmallMap(
                     scr,
-                    self.lastDistMeasResultStaged,
                     dbg=True,
                     dbglogpath=r"./asset/wtdistmeaspy/log/{}_NormalTrace/".format(
-                        time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()),
+                        GetTimeString(),
                     ),
                 )
             else:
-                ret = SolveMap_BottomRightSmallMap(scr, self.lastDistMeasResultStaged)
+                ret = SolveMap_BottomRightSmallMap(scr)
 
-            if didSolveMapSucceed(ret):
+            # not found
+            if ret.ym.state == SMException.SolveMapResultType.NO_ERR:
                 break
             sleep(retryDelay)
 
-        def exception2str(exc, spliter=None):
+        def exceptionlist2str(el, spliter=None):
             if spliter is None:
                 spliter = "\n"
-            return spliter.join([e.__repr__() for e in exc])
+            return spliter.join([e.__repr__() for e in el])
 
         exception: List[SMException] = []
         prompt = ""
-        if not didSolveMapSucceed(ret):
-            # still failed
-            # break with fatal exception
-            exception = ret[1]
-            prompt += "Failed\n"
-            prompt += exception2str(exception)
+
+        # check if fall back to last result
+        def CheckAndReplaceIfNeeded(
+            resultitem: SolveMapResultItem,
+            val2replace: Any,
+            exceptionOnReplace: SMException,
+        ):
+            if resultitem.state != SMException.SolveMapResultType.NO_ERR:
+                if val2replace is not None:
+                    resultitem.result = val2replace
+                    resultitem.err = 0
+                    exception.append(exceptionOnReplace)
+                else:
+                    exception.append(resultitem.state)
+
+        # ym is special, dont use staged one
+        if ret.ym.state != SMException.SolveMapResultType.NO_ERR:
+            exception.append(ret.ym.state)
+        CheckAndReplaceIfNeeded(
+            ret.playerpos,
+            self.lastDistMeasResultStaged.playerpos,
+            SMException(SMException.SolveMapResultType.using_last_playerpos),
+        )
+        CheckAndReplaceIfNeeded(
+            ret.grid,
+            self.lastDistMeasResultStaged.gridave,
+            SMException(SMException.SolveMapResultType.using_last_grid),
+        )
+        # lock is priored than normally check and replace
+        if self.psLocked:
+            if self.lastDistMeasResultStaged.plottingscale is not None:
+                ret.plottingscale = self.lastDistMeasResultStaged.plottingscale
+                # hint in exception will be done in secure check
+            else:
+                raise BaseException("ps locked but no last ps")
         else:
-            (
-                state,
-                playerpos,
-                playererr,
-                ympos,
-                ymerr,
-                gridave,
-                griderr,
-                plottingscale,
-                msgExtra,
-            ) = ret
-            exception.extend(msgExtra)
-
-            if self.psLocked:
-                plottingscale = self.lastDistMeasResultStaged.plottingscale
-
-            # calc
-            ympos = np.array(ympos)
-            playerpos = np.array(playerpos)
-            distingrid = (
-                np.sqrt(((ympos - playerpos) ** 2).sum()) / gridave
-            )  # using unit in grid
-            dist = distingrid * plottingscale
-
-            refresult = ["%3d: %5d" % (r, int(distingrid * r + 0.5)) for r in reflist]
-
-            prompt = ""
-            prompt += (
-                "%s\n" % (state)
-                + exception2str(exception)
-                + ("\n" if len(exception) > 0 else "")
+            CheckAndReplaceIfNeeded(
+                ret.plottingscale,
+                self.lastDistMeasResultStaged.plottingscale,
+                SMException(SMException.SolveMapResultType.using_last_ps),
             )
-            prompt += "dist=%.2f\n" % (dist)
 
+        if all([e.IsExceptionSafeToPass() for e in exception]):
+            # able to go on
+
+            # u wont need to strictly check if anything fatal, will u?
             def strictErrCheck():
                 err = []
 
-                if playererr > plerrreqstrict:
-                    err.append(SMException(SMException.SMEType.SEC_PE))
+                if ret.playerpos.err > plerrreqstrict:
+                    err.append(SMException(SMException.SolveMapResultType.SEC_PE))
                 else:
                     self.lastDistMeasResultStaged.playerpos = playerpos
 
-                if ymerr < ymerrreqstrict:
-                    err.append(SMException(SMException.SMEType.SEC_YE))
+                if ret.ym.err < ymerrreqstrict:
+                    err.append(SMException(SMException.SolveMapResultType.SEC_YE))
                 else:
                     self.lastDistMeasResultStaged.ympos = ympos
 
-                if griderr > griderrreqstrict:
-                    err.append(SMException(SMException.SMEType.SEC_GE))
+                if ret.grid.err > griderrreqstrict:
+                    err.append(SMException(SMException.SolveMapResultType.SEC_GE))
                 else:
                     self.lastDistMeasResultStaged.gridave = gridave
 
                 if self.psLocked:
-                    err.append(SMException(SMException.SMEType.SEC_PSLOCK))
+                    err.append(SMException(SMException.SolveMapResultType.SEC_PSLOCK))
                 else:
                     if (
                         plottingscale < plottingscalestrictlower
@@ -108,17 +118,31 @@ class wtdistmeaspy:
                     ):
                         # something going wrong, either not found or digits lost,
                         # if less than 100 or more than 500
-                        err.append(SMException(SMException.SMEType.SEC_PS))
+                        err.append(SMException(SMException.SolveMapResultType.SEC_PS))
                     else:
                         self.lastDistMeasResultStaged.plottingscale = plottingscale
 
                 return err  # keep dbglog unneeded
 
             exception += strictErrCheck()
-            if len(exception) > 0:
-                # not usable
-                prompt += "but {}. \n".format(exception2str(exception))
-                prompt += "Not recommended to use, better try again\n"
+
+            # calc
+            ympos = np.array(ret.ym.result)
+            playerpos = np.array(ret.playerpos.result)
+            gridave = ret.grid.result
+            plottingscale = ret.plottingscale.result
+            distingrid = (
+                np.sqrt(((ympos - playerpos) ** 2).sum()) / gridave
+            )  # using unit in grid
+            dist = distingrid * plottingscale
+
+            refresult = ["%3d: %5d" % (r, int(distingrid * r + 0.5)) for r in reflist]
+
+            prompt += "OK\n" + (
+                exceptionlist2str(exception) if len(exception) != 0 else ""
+            )
+            prompt += "dist=%.2f\n" % (dist)
+
             # got here anyway avoiding all the fatal ones
             # commit result
             self.lastDistMeasResultStaged.result = dist
@@ -136,19 +160,24 @@ class wtdistmeaspy:
             prompt += "dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n" % (
                 distingrid,
                 plottingscale,
-                playererr,
-                ymerr,
-                griderr,
+                ret.playerpos.err,
+                ret.ym.err,
+                ret.grid.err,
             )
-        if len(exception) > 0 and collectFailDebugOutput:
-            # resolve with debug config
-            ret = SolveMap_BottomRightSmallMap(
-                scr,
-                dbg=True,
-                dbglogpath=r"./asset/wtdistmeaspy/log/{}_On{}/".format(
-                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()),
-                    exception2str(exception, ", "),
-                ),
-            )
+        else:
+            # fatal happended
+            prompt += "Failed\n"
+            prompt += exceptionlist2str(exception)
+
+            if collectFailDebugOutput:
+                # resolve with debug config
+                ret = SolveMap_BottomRightSmallMap(
+                    scr,
+                    dbg=True,
+                    dbglogpath=r"./asset/wtdistmeaspy/log/{}_On{}/".format(
+                        GetTimeString(),
+                        exceptionlist2str(exception, ", "),
+                    ),
+                )
 
         return prompt

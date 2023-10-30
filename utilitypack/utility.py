@@ -15,6 +15,7 @@ import time
 from time import sleep
 import random
 import threading
+import typing
 from typing import Dict, List, Callable, Iterable, Any
 
 import cv2 as cv
@@ -461,12 +462,12 @@ class fpsmanager:
 
 
 class hotkeymanager:
-    '''
+    """
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
-    
+
     TODO: avoid key pression overlapping between two checking frames
-    '''
+    """
 
     class hotkeytask:
         def __init__(self, key: int | Iterable, foo: Callable[[], None]) -> None:
@@ -1067,3 +1068,7 @@ def getDemonstrationImg():
     demo = np.sin(x + y)
     demo = ZFunc(0, 0.25, 0, 0.75)(demo) * 255
     return demo
+
+
+def GetTimeString():
+    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
