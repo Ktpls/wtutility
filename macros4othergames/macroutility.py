@@ -1,4 +1,4 @@
-from utilref import fpsmanager, hotkeymanager, deduplicate
+from utilref import fpsmanager, HotkeyManager, deduplicate
 from gameinput import *
 from time import sleep
 import traceback
@@ -7,7 +7,7 @@ import traceback
 def mainloop(fps, hotkeyactionlist):
     fps = fpsmanager(fps)
     #main loop
-    hkm = hotkeymanager(hotkeyactionlist)
+    hkm = HotkeyManager(hotkeyactionlist)
 
     while (True):
         fps.WaitUntilNextFrame()

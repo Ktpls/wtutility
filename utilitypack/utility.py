@@ -465,7 +465,7 @@ class fpsmanager:
         self.lt = time.perf_counter()
 
 
-class hotkeymanager:
+class HotkeyManager:
     """
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
@@ -473,24 +473,52 @@ class hotkeymanager:
     TODO: avoid key pression overlapping between two checking frames
     """
 
+    class ContiniousCallHandler:
+        """
+        TODO:
+        give countinious press with long enough time ability to repeat key
+        now two presses within update period will be counted as continious one
+        """
+
+        prevState = False
+
+        def readKey(self, newState):
+            toResponde = False
+            if not self.prevState and newState:
+                toResponde = True
+            self.prevState = newState
+            return toResponde
+
     class hotkeytask:
         def __init__(self, key: int | Iterable, foo: Callable[[], None]) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
+            self.handler = HotkeyManager.ContiniousCallHandler()
+
+        def update(self, respond: bool):
+            if self.handler.readKey(respond):
+                self.foo()
+
+    @dataclasses.dataclass
+    class Key:
+        code: int
+
+        def GetKeyDown(self):
+            return isKBDown(self.code)
 
     def __init__(self, hotkeytasklist: List[hotkeytask]):
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = list(deduplicate(keyconcerned))
-        self.kc = keyconcerned
+        self.kc = [HotkeyManager.Key(k) for k in keyconcerned]
 
         # clear all previous state
-        [isKBDown(k) for k in self.kc]
+        [k.GetKeyDown() for k in self.kc]
 
         self.hktl = hotkeytasklist
 
-        def piorered(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
-            def include(a: hotkeymanager.hotkeytask, b: hotkeymanager.hotkeytask):
+        def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
+            def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
                 for k in b.key:
                     if k not in a.key:
                         return False
@@ -509,8 +537,7 @@ class hotkeymanager:
         ]
 
     def decideAllHotKey(self) -> List[bool]:
-        keystate = {k: isKBDown(k) for k in self.kc}
-        from enum import Enum
+        keystate = {k.code: k.GetKeyDown() for k in self.kc}
 
         class respondstate(Enum):
             false = 0
@@ -556,14 +583,13 @@ class hotkeymanager:
 
     def doAllDecidedKey(self, decideresult, throwonerr=False):
         for i in range(len(decideresult)):
-            if decideresult[i]:
-                try:
-                    self.hktl[i].foo()
-                except Exception as e:
-                    if throwonerr:
-                        raise e
-                    else:
-                        traceback.print_exc()
+            try:
+                self.hktl[i].update(decideresult[i])
+            except Exception as e:
+                if throwonerr:
+                    raise e
+                else:
+                    traceback.print_exc()
 
 
 rgb2hsvmat = np.array(

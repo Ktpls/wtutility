@@ -35,12 +35,12 @@ class InputSession:
             bulletin.putup(self.content)
 
     # foo that sets hkm and returns older hkm
-    FooSwapHKM: Callable[[hotkeymanager], hotkeymanager]
+    FooSwapHKM: Callable[[HotkeyManager], HotkeyManager]
     bulletin: bulletinBoard
     RunningSessionInstance: SessionInstance = dataclasses.field(
         default_factory=SessionInstance
     )
-    hotkeymanagerStack: List[hotkeymanager] = dataclasses.field(default_factory=list)
+    hotkeymanagerStack: List[HotkeyManager] = dataclasses.field(default_factory=list)
     FooSessionDoneCallback: Callable[[SessionInstance], None] = dataclasses.field(
         init=False
     )
@@ -59,7 +59,7 @@ class InputSession:
             self.RunningSessionInstance.putup(self.bulletin)
 
         HotkeyReg = [
-            hotkeymanager.hotkeytask(key=[k.key], foo=functools.partial(procKey, k.key))
+            HotkeyManager.hotkeytask(key=[k.key], foo=functools.partial(procKey, k.key))
             for k in AllKeyMapping
         ]
 
@@ -68,7 +68,7 @@ class InputSession:
             self.RunningSessionInstance.putup(self.bulletin)
 
         HotkeyReg.append(
-            hotkeymanager.hotkeytask(
+            HotkeyManager.hotkeytask(
                 key=[win32con.VK_BACK],
                 foo=backSpace,
             )
@@ -82,14 +82,14 @@ class InputSession:
 
         HotkeyReg.extend(
             [
-                hotkeymanager.hotkeytask(
+                HotkeyManager.hotkeytask(
                     key=[win32con.VK_ESCAPE],
                     foo=functools.partial(
                         OutFromSession,
                         InputSession.SessionInstance.SessionEndType.CANCEL,
                     ),
                 ),
-                hotkeymanager.hotkeytask(
+                HotkeyManager.hotkeytask(
                     key=[win32con.VK_RETURN],
                     foo=functools.partial(
                         OutFromSession, InputSession.SessionInstance.SessionEndType.OK
@@ -103,7 +103,7 @@ class InputSession:
     def IntoSession(self, callback):
         self.RunningSessionInstance=InputSession.SessionInstance()
         self.FooSessionDoneCallback = callback
-        inputer = hotkeymanager(self.__GetHotkeyReg())
+        inputer = HotkeyManager(self.__GetHotkeyReg())
         old = self.FooSwapHKM(inputer)
         self.hotkeymanagerStack.append(old)
 
@@ -160,7 +160,7 @@ def main():
                 bulletin.putup("plotting scale unlocked")
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(
+            HotkeyManager.hotkeytask(
                 key=[win32con.VK_SHIFT, OEM3], foo=SwitchPlottingScaleLock
             )
         )
@@ -168,7 +168,7 @@ def main():
         def hkcallWTDistMeas():
             bulletin.putup(wtdmp.solveMapMainLogic())
 
-        hotkeyaction.append(hotkeymanager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
+        hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
@@ -179,7 +179,7 @@ def main():
             bulletin.putup(f"caliberating to {lastStaged}")
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=[win32con.VK_CONTROL, OEM3], foo=startCali)
+            HotkeyManager.hotkeytask(key=[win32con.VK_CONTROL, OEM3], foo=startCali)
         )
 
         def stopCali():
@@ -213,7 +213,7 @@ def main():
             inputSession.IntoSession(SetPlottingScaleLock)
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(
+            HotkeyManager.hotkeytask(
                 key=[win32con.VK_CONTROL, win32con.VK_SHIFT, OEM3],
                 foo=SetPlottingScale,
             )
@@ -238,7 +238,7 @@ def main():
             tele.enabled = not tele.enabled
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=win32con.VK_F12, foo=switchtele)
+            HotkeyManager.hotkeytask(key=win32con.VK_F12, foo=switchtele)
         )
 
     # key shortcuts
@@ -251,7 +251,7 @@ def main():
             bulletin.putup("LeftHolding", 1)
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=win32con.VK_F10, foo=holdLeftAndTell)
+            HotkeyManager.hotkeytask(key=win32con.VK_F10, foo=holdLeftAndTell)
         )
 
         def holdCAndTell():
@@ -259,7 +259,7 @@ def main():
             bulletin.putup("CHolding", 1)
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell)
+            HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell)
         )
 
         keylist = [
@@ -272,7 +272,7 @@ def main():
         kd = zip(keylist, direction)
         for pair in kd:
             hotkeyaction.append(
-                hotkeymanager.hotkeytask(
+                HotkeyManager.hotkeytask(
                     key=[win32con.VK_CONTROL, pair[0]],
                     foo=functools.partial(keyshortcut.move_mouse, pair[1]),
                 )
@@ -295,7 +295,7 @@ def main():
                 bulletin.putup("eedc on", 1)
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=win32con.VK_F8, foo=eedcswitch)
+            HotkeyManager.hotkeytask(key=win32con.VK_F8, foo=eedcswitch)
         )
 
         def eedcOnClickWithSwitch():
@@ -303,7 +303,7 @@ def main():
                 eagleeye.onClick()
 
         hotkeyaction.append(
-            hotkeymanager.hotkeytask(key=win32con.VK_LBUTTON, foo=eedcOnClickWithSwitch)
+            HotkeyManager.hotkeytask(key=win32con.VK_LBUTTON, foo=eedcOnClickWithSwitch)
         )
         business.append(eagleeye.onFrame)
 
@@ -318,7 +318,7 @@ def main():
         sys.exit()
 
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(
+        HotkeyManager.hotkeytask(
             key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12], foo=rebootfoo
         )
     )
@@ -332,7 +332,7 @@ def main():
         inputSession.IntoSession(callback)
 
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(
+        HotkeyManager.hotkeytask(
             key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11], foo=TestInput
         )
     )
@@ -340,7 +340,7 @@ def main():
     hud = fullScrHUD()
     hud.setup()
     fps = fpsmanager(aiofps)
-    hkm = hotkeymanager(hotkeyaction)
+    hkm = HotkeyManager(hotkeyaction)
 
     def swapHKM(newHkm):
         nonlocal hkm

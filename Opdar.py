@@ -22,14 +22,14 @@ def main():
         nonlocal tracking
         tracking = True
 
-    hklist.append(hotkeymanager.hotkeytask([win32con.VK_F10], turnon))
+    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], turnon))
 
     def turnoff():
         nonlocal tracking
         tracking = False
         win32api.Beep(500, 100)
 
-    hklist.append(hotkeymanager.hotkeytask([win32con.VK_F11], turnoff))
+    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F11], turnoff))
     
     # key shortcuts
     import keyshortcut
@@ -37,11 +37,11 @@ def main():
     def holdCAndTell():
         keyshortcut.holdC()
         win32api.Beep(1000,100)
-    hklist.append(hotkeymanager.hotkeytask(
+    hklist.append(HotkeyManager.hotkeytask(
         key=win32con.VK_F12,
         foo=holdCAndTell
     ))
-    hkm = hotkeymanager(hklist)
+    hkm = HotkeyManager(hklist)
 
     while (True):
         sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps,

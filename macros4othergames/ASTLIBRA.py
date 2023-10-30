@@ -35,7 +35,7 @@ def main():
     # no falling
     nofalling = ExecutableCommand.from_ptr_len(moduleBase + 0x37A301, 4, hproc)
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F1,
+        HotkeyManager.hotkeytask(key=win32con.VK_F1,
                                  foo=functools.partial(
                                      ExecutableCommand.autoSwitch, nofalling)))
 
@@ -45,19 +45,19 @@ def main():
         key_down(keycode.key_P)
 
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F2, foo=KeepRushing))
+        HotkeyManager.hotkeytask(key=win32con.VK_F2, foo=KeepRushing))
 
     # keep pressing x, c
 
     xpress = KeyPressRepeater(keycode.key_X, 0.2)
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F3,
+        HotkeyManager.hotkeytask(key=win32con.VK_F3,
                                  foo=functools.partial(
                                      KeyPressRepeater.autoSwitch, xpress)))
 
     cpress = KeyPressRepeater(keycode.key_C, 1)
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F4,
+        HotkeyManager.hotkeytask(key=win32con.VK_F4,
                                  foo=functools.partial(
                                      KeyPressRepeater.autoSwitch, cpress)))
 
@@ -68,7 +68,7 @@ def main():
         exit()
 
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F12, foo=beepexit))
+        HotkeyManager.hotkeytask(key=win32con.VK_F12, foo=beepexit))
 
     print('init finished')
     print(f'hwnd={hwnd:X}')

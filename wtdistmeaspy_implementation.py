@@ -350,9 +350,9 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ""):
 
     return SolveMapResult(
         playerpos=SolveMapResultItem(playerstate, playerpos, playererr),
-        ym=SolveMapResultItem(ympos, ymerr, ymstate),
-        grid=SolveMapResultItem(gridave, griderr, gridstate),
-        plottingscale=SolveMapResultItem(plottingscale, plottingscalestate),
+        ym=SolveMapResultItem(ymstate, ympos, ymerr),
+        grid=SolveMapResultItem(gridstate, gridave, griderr),
+        plottingscale=SolveMapResultItem(plottingscalestate, plottingscale),
     )
 
 

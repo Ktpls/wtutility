@@ -23,12 +23,12 @@ def main():
 
     #short
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F1,
+        HotkeyManager.hotkeytask(key=win32con.VK_F1,
                                  foo=functools.partial(swing, t=11)))
 
     #long
     hotkeyaction.append(
-        hotkeymanager.hotkeytask(key=win32con.VK_F2,
+        HotkeyManager.hotkeytask(key=win32con.VK_F2,
                                  foo=functools.partial(swing, t=30)))
 
     mainloop(10, hotkeyaction)
