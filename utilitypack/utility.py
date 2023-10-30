@@ -471,27 +471,40 @@ class HotkeyManager:
     responde no c after doing ctrl+c
     """
 
+    @dataclasses.dataclass
     class ContiniousCallHandler:
-        """
-        TODO:
-        give countinious press with long enough time ability to repeat key
-        now two presses within update period will be counted as continious one
-        """
-
-        prevState = False
+        prevState: bool = False
+        countiousPressTime: int = 0
+        startRepeatPeriod: int = 10
+        useControlOnContiniousPress: bool = True
 
         def readKey(self, newState):
+            if not self.useControlOnContiniousPress:
+                return newState
             toResponde = False
             if not self.prevState and newState:
+                toResponde = True
+            if self.prevState and newState:
+                self.countiousPressTime += 1
+            if self.prevState and not newState:
+                self.countiousPressTime = 0
+            if self.countiousPressTime > self.startRepeatPeriod:
                 toResponde = True
             self.prevState = newState
             return toResponde
 
     class hotkeytask:
-        def __init__(self, key: int | Iterable, foo: Callable[[], None]) -> None:
+        def __init__(
+            self,
+            key: int | Iterable,
+            foo: Callable[[], None],
+            handler: typing.Union[
+                typing.Type["HotkeyManager.ContiniousCallHandler"], None
+            ],
+        ) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo
-            self.handler = HotkeyManager.ContiniousCallHandler()
+            self.handler = handler if handler else HotkeyManager.ContiniousCallHandler()
 
         def update(self, respond: bool):
             if self.handler.readKey(respond):
