@@ -469,8 +469,6 @@ class HotkeyManager:
     """
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
-
-    TODO: avoid key pression overlapping between two checking frames
     """
 
     class ContiniousCallHandler:
@@ -581,15 +579,15 @@ class HotkeyManager:
             for hkidx, hk in enumerate(self.hktl)
         ]
 
-    def doAllDecidedKey(self, decideresult, throwonerr=False):
+    def doAllDecidedKey(self, decideresult, throwonerr=False, printonerr=False):
         for i in range(len(decideresult)):
             try:
                 self.hktl[i].update(decideresult[i])
             except Exception as e:
+                if printonerr:
+                    traceback.print_exc()
                 if throwonerr:
                     raise e
-                else:
-                    traceback.print_exc()
 
 
 rgb2hsvmat = np.array(

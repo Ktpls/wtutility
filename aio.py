@@ -101,7 +101,7 @@ class InputSession:
         return HotkeyReg
 
     def IntoSession(self, callback):
-        self.RunningSessionInstance=InputSession.SessionInstance()
+        self.RunningSessionInstance = InputSession.SessionInstance()
         self.FooSessionDoneCallback = callback
         inputer = HotkeyManager(self.__GetHotkeyReg())
         old = self.FooSwapHKM(inputer)
@@ -202,8 +202,9 @@ def main():
                 ):
                     nonlocal wtdmp
                     wtdmp.psLocked = True
-                    wtdmp.lastDistMeasResultStaged.plottingscale = int(session.content)
-                    bulletin.putup(f"plotting scale locked at {session.content}")
+                    result = numinstr(session.content)
+                    wtdmp.lastDistMeasResultStaged.plottingscale = result
+                    bulletin.putup(f"plotting scale locked at {result}")
                 elif (
                     session.sessionEndType
                     == InputSession.SessionInstance.SessionEndType.CANCEL
@@ -323,20 +324,6 @@ def main():
         )
     )
 
-    def TestInput():
-        def callback(content, sessionType):
-            print(sessionType)
-            print(content)
-
-        nonlocal inputSession
-        inputSession.IntoSession(callback)
-
-    hotkeyaction.append(
-        HotkeyManager.hotkeytask(
-            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11], foo=TestInput
-        )
-    )
-
     hud = fullScrHUD()
     hud.setup()
     fps = fpsmanager(aiofps)
@@ -356,19 +343,18 @@ def main():
         hud.clear()
 
         decideresult = hkm.decideAllHotKey()
-        for i in range(len(decideresult)):
-            if decideresult[i]:
-                try:
-                    hkm.hktl[i].foo()
-                except SystemExit as e:
-                    raise e
-                except Exception as e:
-                    beepOnErr()
-                    print("#" * 10)
-                    traceback.print_exc()
-                    print("#" * 10)
-                    if throwErrorInHotkey:
-                        raise e
+
+        try:
+            hkm.doAllDecidedKey(decideresult, True, False)
+        except SystemExit as e:
+            raise e
+        except Exception as e:
+            beepOnErr()
+            print("#" * 10)
+            traceback.print_exc()
+            print("#" * 10)
+            if throwErrorInHotkey:
+                raise e
 
         for bus in business:
             try:
