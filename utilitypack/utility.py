@@ -393,6 +393,10 @@ def isKBDown(k):
     return win32api.GetAsyncKeyState(k) and 0x1
 
 
+def isKBDownNow(k):
+    return win32api.GetAsyncKeyState(k) and 0x8000
+
+
 class perf_statistic:
     def __init__(self, startnow=False):
         self.clear()
@@ -479,6 +483,9 @@ class hotkeymanager:
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = list(deduplicate(keyconcerned))
         self.kc = keyconcerned
+
+        # clear all previous state
+        [isKBDown(k) for k in self.kc]
 
         self.hktl = hotkeytasklist
 
