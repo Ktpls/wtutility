@@ -104,12 +104,15 @@ def regionsum(m, size, mask=None):
 
 
 def regionave(m, size, mask=None, notConsiderMaskInDenominator=True):
-    # if notConsiderMaskInDenominator:
-    # denominator will not consider mask and boundary and be size[0]*size[1]
-    # else:
-    # denominator will be #pix nearby on mask
-    # u may ask mask==None does the same as notConsiderMaskInDenominator==True
-    # but if u want to use mask and dont want to be constrained by boundary. unimplemented though
+    """
+    if notConsiderMaskInDenominator:
+    denominator will not consider mask and boundary and be size[0]*size[1]
+    else:
+    denominator will be #pix nearby on mask
+    u may ask mask==None does the same as notConsiderMaskInDenominator==True
+    but if u want to use mask and dont want to be constrained by boundary. unimplemented though
+    """
+
     if m.size <= 0:
         return m
     if mask is not None:
@@ -500,7 +503,7 @@ class HotkeyManager:
             foo: Callable[[], None],
             handler: typing.Union[
                 typing.Type["HotkeyManager.ContiniousCallHandler"], None
-            ],
+            ] = None,
         ) -> None:
             self.key = [key] if type(key) is int else key
             self.foo = foo

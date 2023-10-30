@@ -22,6 +22,9 @@ class InputSession:
             OK = 1
             CANCEL = 2
 
+        FooSessionDoneCallback: Callable[
+            [typing.Type["InputSession.SessionInstance"]], None
+        ] = None
         content: str = ""
         sessionEndType: SessionEndType = SessionEndType.UNSPECIFIED
 
@@ -41,9 +44,6 @@ class InputSession:
         default_factory=SessionInstance
     )
     hotkeymanagerStack: List[HotkeyManager] = dataclasses.field(default_factory=list)
-    FooSessionDoneCallback: Callable[[SessionInstance], None] = dataclasses.field(
-        init=False
-    )
 
     def __GetHotkeyReg(self):
         @dataclasses.dataclass
@@ -76,7 +76,7 @@ class InputSession:
 
         def OutFromSession(endType: InputSession.SessionInstance.SessionEndType):
             self.RunningSessionInstance.sessionEndType = endType
-            self.FooSessionDoneCallback(self.RunningSessionInstance)
+            self.RunningSessionInstance.FooSessionDoneCallback(self.RunningSessionInstance)
             old = self.hotkeymanagerStack.pop()
             inputer = self.FooSwapHKM(old)
 
@@ -101,8 +101,7 @@ class InputSession:
         return HotkeyReg
 
     def IntoSession(self, callback):
-        self.RunningSessionInstance = InputSession.SessionInstance()
-        self.FooSessionDoneCallback = callback
+        self.RunningSessionInstance = InputSession.SessionInstance(callback)
         inputer = HotkeyManager(self.__GetHotkeyReg())
         old = self.FooSwapHKM(inputer)
         self.hotkeymanagerStack.append(old)
@@ -173,7 +172,7 @@ def main():
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
-                bulletin.putup("no staged dist result")
+                bulletin.putup("no staged dist result to cali")
                 return
             wtdmp.caliOperator.start(lastStaged)
             bulletin.putup(f"caliberating to {lastStaged}")
