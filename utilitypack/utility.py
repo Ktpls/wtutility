@@ -28,8 +28,8 @@ import math
 np.seterr(all="raise")
 
 
-def deduplicate(l: List):
-    yield from dict.fromkeys(l)
+def deduplicate(l: typing.List):
+    return list(set(l))
 
 
 class logger:
@@ -523,7 +523,7 @@ class HotkeyManager:
     def __init__(self, hotkeytasklist: List[hotkeytask]):
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
-        keyconcerned = list(deduplicate(keyconcerned))
+        keyconcerned = deduplicate(keyconcerned)
         self.kc = [HotkeyManager.Key(k) for k in keyconcerned]
 
         # clear all previous state
@@ -994,7 +994,7 @@ class StoppableThread:
         self.submit = None
 
     def foo(self) -> None:
-        pass
+        raise NotImplementedError("should never run without overriding foo")
 
     def getRunning(self) -> bool:
         return self.running
