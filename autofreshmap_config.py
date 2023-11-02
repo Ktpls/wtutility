@@ -26,7 +26,7 @@ throwerrinmain = False
 resolution = "m1920x1080r1920x1080"
 
 wlanname4netshinterface = "WLAN2"
-wlanname4netshwlan = ["ChinaNet-pHmm", "as20"][1]
+wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305"][2]
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 

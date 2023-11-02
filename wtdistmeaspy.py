@@ -32,9 +32,9 @@ class wtdistmeaspy:
                 )
             else:
                 ret = SolveMap_BottomRightSmallMap(scr)
-
+            print(ret)
             # not found
-            if ret.ym.state == SMException.SolveMapResultType.NO_ERR:
+            if ret.ym.state.smetype == SMException.SolveMapResultType.NO_ERR:
                 break
             sleep(retryDelay)
 
@@ -76,7 +76,8 @@ class wtdistmeaspy:
         # lock is priored than normally check and replace
         if self.psLocked:
             if self.lastDistMeasResultStaged.plottingscale is not None:
-                ret.plottingscale = self.lastDistMeasResultStaged.plottingscale
+                ret.plottingscale.result = self.lastDistMeasResultStaged.plottingscale
+                ret.plottingscale.err = 0
                 # hint in exception will be done in secure check
             else:
                 raise BaseException("ps locked but no last ps")
@@ -97,30 +98,32 @@ class wtdistmeaspy:
                 if ret.playerpos.err > plerrreqstrict:
                     err.append(SMException(SMException.SolveMapResultType.SEC_PE))
                 else:
-                    self.lastDistMeasResultStaged.playerpos = playerpos
+                    self.lastDistMeasResultStaged.playerpos = ret.playerpos.result
 
                 if ret.ym.err < ymerrreqstrict:
                     err.append(SMException(SMException.SolveMapResultType.SEC_YE))
                 else:
-                    self.lastDistMeasResultStaged.ympos = ympos
+                    self.lastDistMeasResultStaged.ympos = ret.ym.result
 
                 if ret.grid.err > griderrreqstrict:
                     err.append(SMException(SMException.SolveMapResultType.SEC_GE))
                 else:
-                    self.lastDistMeasResultStaged.gridave = gridave
+                    self.lastDistMeasResultStaged.gridave = ret.grid.result
 
                 if self.psLocked:
                     err.append(SMException(SMException.SolveMapResultType.SEC_PSLOCK))
                 else:
                     if (
-                        plottingscale < plottingscalestrictlower
-                        or plottingscale > plottingscalestrictupper
+                        ret.plottingscale.result < plottingscalestrictlower
+                        or ret.plottingscale.result > plottingscalestrictupper
                     ):
                         # something going wrong, either not found or digits lost,
                         # if less than 100 or more than 500
                         err.append(SMException(SMException.SolveMapResultType.SEC_PS))
                     else:
-                        self.lastDistMeasResultStaged.plottingscale = plottingscale
+                        self.lastDistMeasResultStaged.plottingscale = (
+                            ret.plottingscale.result
+                        )
 
                 return err  # keep dbglog unneeded
 

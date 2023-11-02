@@ -1,29 +1,29 @@
-import openpyxl as opx
-import traceback
-import itertools
-import sys
-from ctypes.wintypes import RECT, HWND
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from ctypes import windll, byref, c_ubyte
+from ctypes.wintypes import RECT, HWND
+from enum import Enum
+from time import sleep
+from typing import Dict, List, Callable, Iterable, Any
+import ctypes
+import cv2 as cv
+import dataclasses
+import itertools
+import math
+import numpy as np
+import openpyxl as opx
+import os
+import random
+import re
+import sys
+import threading
+import time
+import traceback
+import typing
 import win32api
 import win32con
-import win32ui
 import win32gui
-from copy import deepcopy
-import os
-import ctypes
-import time
-from time import sleep
-import random
-import threading
-import typing
-from typing import Dict, List, Callable, Iterable, Any
-
-import cv2 as cv
-import numpy as np
-from enum import Enum
-import dataclasses
-import re
-import math
+import win32ui
 
 np.seterr(all="raise")
 
@@ -968,17 +968,12 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
 
 
 def AllFileIn(path, includeFileInSubDir=True):
-    import os
-
     ret = []
     for dirpath, dir, file in os.walk(path):
         if not includeFileInSubDir and dirpath != path:
             continue
         ret.extend([os.path.join(dirpath, f) for f in file])
     return ret
-
-
-from concurrent.futures import ThreadPoolExecutor
 
 
 class StoppableThread:
@@ -1119,3 +1114,22 @@ def getDemonstrationImg():
 
 def GetTimeString():
     time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+
+
+def UnfinishedWrapper(msg=None) -> Callable[..., Any]:
+    if callable(msg):
+        # calling without parens, works both on a class and a function
+        foo = msg
+        return UnfinishedWrapper()(foo)
+
+    default_msg = "Unfinished"
+    if msg is None:
+        msg = default_msg
+
+    def f2(foo):
+        def f3(*args: Any, **kwargs: Any) -> Any:
+            raise NotImplementedError(msg)
+
+        return f3
+
+    return f2
