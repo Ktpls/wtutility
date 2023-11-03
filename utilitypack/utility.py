@@ -424,10 +424,10 @@ class perf_statistic:
         self._starttime = None
 
     def aveTime(self):
-        return self._timeCurrentlyCounting() / self._cycle if self._cycle > 0 else 0
+        return self.time() / self._cycle if self._cycle > 0 else 0
 
     def _timeCurrentlyCounting(self):
-        return time.perf_counter() - self._starttime
+        return time.perf_counter() - self._starttime if self._starttime is not None else 0
 
     def time(self):
         return self._stagedtime + self._timeCurrentlyCounting()

@@ -29,10 +29,13 @@ class wtdistmeaspy:
                     dbglogpath=r"./asset/wtdistmeaspy/log/{}_NormalTrace/".format(
                         GetTimeString(),
                     ),
+                    dontGetPlottingScale=self.psLocked,
                 )
             else:
-                ret = SolveMap_BottomRightSmallMap(scr)
-            print(ret)
+                ret = SolveMap_BottomRightSmallMap(
+                    scr,
+                    dontGetPlottingScale=self.psLocked,
+                )
             # not found
             if ret.ym.state.smetype == SMException.SolveMapResultType.NO_ERR:
                 break

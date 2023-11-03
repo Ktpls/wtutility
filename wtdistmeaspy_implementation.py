@@ -106,7 +106,9 @@ class SolveMapResult:
     plottingscale: SolveMapResultItem
 
 
-def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ""):
+def SolveMap_BottomRightSmallMap(
+    isrc, dbg: bool = False, dbglogpath: str = "", dontGetPlottingScale: bool = False
+):
     if dbg:
 
         def dbglogsavestep(m, name="unnamed", method="savemat"):
@@ -291,62 +293,71 @@ def SolveMap_BottomRightSmallMap(isrc, dbg: bool = False, dbglogpath: str = ""):
     log("g=%3f,ge=%5f.3f" % (gridave, griderr))
 
     # find plotting scale
-    # standard: all bivalue map must be presented in [0,255] form
-    psfindrange = int(2.5 * gridave)
-    # cut region and del the "scale"
-    # 3 is height of scale, 14 is height of text, 1 is gap between scale and text
-    # text is a little bit out of range between two vertical lines,
-    # so 2x interval is with slight possibility losing char pixel
-    # but 2.5x interval is quite enough
-    base = -3 - 1 + plottingscalePosOffset
-    mps = np.copy(mcolored[base - 14 : base, -psfindrange:, :])
-    dbglogsavestep(mps)
-    # consider cut map in the last step, for using as more region info in detection as possible
-
-    # filter absolute color
-    mpshsv = cv.cvtColor(mps, cv.COLOR_BGR2HSV)
-    darkgraypoints = cv.inRange(
-        mpshsv, hsv2opencv8bithsv([0, 0, 0]), hsv2opencv8bithsv([360, 56, 40])
-    )
-    dbglogsavestep(darkgraypoints)
-
-    # filter adaptive value(lightness)
-    mpsgray = mpshsv[:, :, 2]
-    mpsgray = mpsgray.astype("float")
-    relblack = cv.threshold(
-        (mpsgray - regionave(mpsgray, [5, 5])),
-        plottingscale_rel_darkness,
-        255,
-        cv.THRESH_BINARY_INV,
-    )[1]
-    dbglogsavestep(relblack)
-
-    # be both really black and relatively black
-    black = np.logical_and(darkgraypoints, relblack).astype("float")
-    # black=np.logical_and(black,relinsat).astype('float')*255
-    dbglogsavestep(black * 255)
-
-    charw, charh = 10, 20
-
-    # padding for ease of recongnization by tesseract, at least in the past
-    # but our cnn using data collected from tesseract daily use uses the standard 20x10 char pic
-    black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
-    dbglogsavestep(black * 255)
-    plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
-    if (
-        plottingscale > plottingscalerequpper or plottingscale < plottingscalereqlower
-    ):  # bad
-        plottingscalestate = SMException(SMException.SolveMapResultType.PS_BAD_OCR)
-    else:
-        plottingscalestate = SMException(SMException.SolveMapResultType.NO_ERR)
-
-    # im collecting samples on dl prac
-    if collectPlottingScale:
-        savemat(
-            black,
-            f"black4CNN_{plottingscale}",
-            path="./output/wtdmp_noised_scale_collection_project/",
+    if dontGetPlottingScale:
+        # skip this if ps locked
+        # cuz implTesseract is really slow
+        plottingscalestate, plottingscale = (
+            SMException(SMException.SolveMapResultType.NO_ERR),
+            0,
         )
+    else:
+        # standard: all bivalue map must be presented in [0,255] form
+        psfindrange = int(2.5 * gridave)
+        # cut region and del the "scale"
+        # 3 is height of scale, 14 is height of text, 1 is gap between scale and text
+        # text is a little bit out of range between two vertical lines,
+        # so 2x interval is with slight possibility losing char pixel
+        # but 2.5x interval is quite enough
+        base = -3 - 1 + plottingscalePosOffset
+        mps = np.copy(mcolored[base - 14 : base, -psfindrange:, :])
+        dbglogsavestep(mps)
+        # consider cut map in the last step, for using as more region info in detection as possible
+
+        # filter absolute color
+        mpshsv = cv.cvtColor(mps, cv.COLOR_BGR2HSV)
+        darkgraypoints = cv.inRange(
+            mpshsv, hsv2opencv8bithsv([0, 0, 0]), hsv2opencv8bithsv([360, 56, 40])
+        )
+        dbglogsavestep(darkgraypoints)
+
+        # filter adaptive value(lightness)
+        mpsgray = mpshsv[:, :, 2]
+        mpsgray = mpsgray.astype("float")
+        relblack = cv.threshold(
+            (mpsgray - regionave(mpsgray, [5, 5])),
+            plottingscale_rel_darkness,
+            255,
+            cv.THRESH_BINARY_INV,
+        )[1]
+        dbglogsavestep(relblack)
+
+        # be both really black and relatively black
+        black = np.logical_and(darkgraypoints, relblack).astype("float")
+        # black=np.logical_and(black,relinsat).astype('float')*255
+        dbglogsavestep(black * 255)
+
+        charw, charh = 10, 20
+
+        # padding for ease of recongnization by tesseract, at least in the past
+        # but our cnn using data collected from tesseract daily use uses the standard 20x10 char pic
+        black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
+        dbglogsavestep(black * 255)
+        plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
+        if (
+            plottingscale > plottingscalerequpper
+            or plottingscale < plottingscalereqlower
+        ):  # bad
+            plottingscalestate = SMException(SMException.SolveMapResultType.PS_BAD_OCR)
+        else:
+            plottingscalestate = SMException(SMException.SolveMapResultType.NO_ERR)
+
+        # im collecting samples on dl prac
+        if collectPlottingScale:
+            savemat(
+                black,
+                f"black4CNN_{plottingscale}",
+                path="./output/wtdmp_noised_scale_collection_project/",
+            )
 
     return SolveMapResult(
         playerpos=SolveMapResultItem(playerstate, playerpos, playererr),
