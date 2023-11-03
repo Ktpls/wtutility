@@ -1,6 +1,12 @@
 from wtdistmeaspy_implementation import *
 
 
+@dataclasses.dataclass
+class WtdmpMainLogicResult:
+    prompt: str
+    succeed: bool
+
+
 class wtdistmeaspy:
     """
     TODO
@@ -170,6 +176,7 @@ class wtdistmeaspy:
                 ret.ym.err,
                 ret.grid.err,
             )
+            solveSummary = True
         else:
             # fatal happended
             prompt += "Failed\n"
@@ -185,5 +192,6 @@ class wtdistmeaspy:
                         exceptionlist2str(exception, ", "),
                     ),
                 )
+            solveSummary = False
 
-        return prompt
+        return WtdmpMainLogicResult(prompt, solveSummary)

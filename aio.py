@@ -76,7 +76,9 @@ class InputSession:
 
         def OutFromSession(endType: InputSession.SessionInstance.SessionEndType):
             self.RunningSessionInstance.sessionEndType = endType
-            self.RunningSessionInstance.FooSessionDoneCallback(self.RunningSessionInstance)
+            self.RunningSessionInstance.FooSessionDoneCallback(
+                self.RunningSessionInstance
+            )
             old = self.hotkeymanagerStack.pop()
             inputer = self.FooSwapHKM(old)
 
@@ -165,7 +167,11 @@ def main():
         )
 
         def hkcallWTDistMeas():
-            bulletin.putup(wtdmp.solveMapMainLogic())
+            result = wtdmp.solveMapMainLogic()
+            bulletin.putup(result.prompt)
+            # if result.succeed:
+            #     lastStaged = wtdmp.lastDistMeasResultStaged.result
+            #     wtdmp.caliOperator.start(lastStaged)
 
         hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
@@ -275,6 +281,9 @@ def main():
                 HotkeyManager.hotkeytask(
                     key=[win32con.VK_CONTROL, pair[0]],
                     foo=functools.partial(keyshortcut.move_mouse, pair[1]),
+                    handler=HotkeyManager.ContiniousCallHandler(
+                        useControlOnContiniousPress=False
+                    ),
                 )
             )
 
