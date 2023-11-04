@@ -26,6 +26,7 @@ class wtdistmeaspy:
         for i in range(retryOnFailure):
             scr = screenshoter().shotbgr()
             scr = cutBottomRightMap(scr)
+            scr=cv.imread(r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-11-05-00-46-33_NormalTrace\unnamed.png")
 
             # keep collecting
             if keepEveryMeasInRecord:
@@ -61,7 +62,7 @@ class wtdistmeaspy:
             val2replace: Any,
             exceptionOnReplace: SMException,
         ):
-            if resultitem.state != SMException.SolveMapResultType.NO_ERR:
+            if resultitem.state.smetype != SMException.SolveMapResultType.NO_ERR:
                 if val2replace is not None:
                     resultitem.result = val2replace
                     resultitem.err = 0
@@ -70,7 +71,7 @@ class wtdistmeaspy:
                     exception.append(resultitem.state)
 
         # ym is special, dont use staged one
-        if ret.ym.state != SMException.SolveMapResultType.NO_ERR:
+        if ret.ym.state.smetype != SMException.SolveMapResultType.NO_ERR:
             exception.append(ret.ym.state)
         CheckAndReplaceIfNeeded(
             ret.playerpos,

@@ -1,4 +1,4 @@
-usingwtdistmeaspy=False
+usingwtdistmeaspy=True
 usingtelescope=True
 usingkeyshortcut=True
 usingeagleeye=False

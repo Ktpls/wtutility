@@ -169,9 +169,9 @@ def main():
         def hkcallWTDistMeas():
             result = wtdmp.solveMapMainLogic()
             bulletin.putup(result.prompt)
-            # if result.succeed:
-            #     lastStaged = wtdmp.lastDistMeasResultStaged.result
-            #     wtdmp.caliOperator.start(lastStaged)
+            if result.succeed:
+                lastStaged = wtdmp.lastDistMeasResultStaged.result
+                wtdmp.caliOperator.start(lastStaged)
 
         hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
