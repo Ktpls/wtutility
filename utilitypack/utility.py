@@ -1113,7 +1113,7 @@ def getDemonstrationImg():
 
 
 def GetTimeString():
-    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+    return time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
 
 def UnfinishedWrapper(msg=None) -> Callable[..., Any]:

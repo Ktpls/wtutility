@@ -19,10 +19,10 @@ plottingscalestrictupper=550
 shadowthickness=2
 shadowcolor=50
 
-measdelay=0.3 # nencessary for covering last yellow mark with new one
+measdelay=0.4 # nencessary for covering last yellow mark with new one
 retryOnFailure=7
-retryDelay=0.05
-keepEveryMeasInRecord=False
+retryDelay=0.1
+keepEveryMeasInRecord=True
 collectFailDebugOutput=True
 collectPlottingScale=True
 ocrimpltype='tes'

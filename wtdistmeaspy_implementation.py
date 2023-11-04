@@ -158,7 +158,7 @@ def SolveMap_BottomRightSmallMap(
         b = cv.GaussianBlur(m, [5, 5], None)
         dbglogsavestep(b)
 
-        mply = (m * (b > 255 * 5 / 25)).astype("int")
+        mply = (m * (b > 255 * 7 / 25)).astype("int")
         dbglogsavestep(mply)
 
         X = np.arange(mply.shape[1])
