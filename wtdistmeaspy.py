@@ -26,7 +26,7 @@ class wtdistmeaspy:
         for i in range(retryOnFailure):
             scr = screenshoter().shotbgr()
             scr = cutBottomRightMap(scr)
-            scr=cv.imread(r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-11-05-00-46-33_NormalTrace\unnamed.png")
+            # scr=cv.imread(r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-11-05-00-46-33_NormalTrace\unnamed.png")
 
             # keep collecting
             if keepEveryMeasInRecord:
