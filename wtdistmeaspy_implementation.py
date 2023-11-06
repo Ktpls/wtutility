@@ -538,7 +538,7 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
     return gridlineHor, rangeHor, mil
 
 
-gridSearchWidth_unzoom = 10
+gridSearchWidth_unzoom = 8
 
 
 class BadCaliException(BaseException):

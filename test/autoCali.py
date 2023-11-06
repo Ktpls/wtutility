@@ -3,8 +3,10 @@ import wtdistmeaspy
 activeWindow(getWTHwnd())
 win32api.Beep(1000,100)
 sleep(2)
-wtdistmeaspy.caliOperator.start(1200)
+wtdmp=wtdistmeaspy.wtdistmeaspy()
+wtdmp.caliOperator.start(1200)
 while(True):
-    if wtdistmeaspy.caliOperator.stopped:
+    if wtdmp.caliOperator.stopped:
         break
+    time.sleep(0.33)
 win32api.Beep(1000,100)

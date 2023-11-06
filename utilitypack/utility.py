@@ -52,11 +52,17 @@ class logger:
         self.log(content)
 
 
-def savemat(m, name=None, path=None, suffix=".png", autorename=True):
-    if name is None:
-        name = "unnamed"
+def savemat(m, name=None, path=None, autorename=True):
     if path is None:
         path = r"./output/"
+    defaultName = "unnamed"
+    defaultSuffix = ".png"
+    if name is None:
+        name = defaultName + defaultSuffix
+    namesplit=os.path.splitext(name)
+    name, suffix = str(namesplit[0]),str(namesplit[1])
+    if len(suffix) == 0:
+        suffix = defaultSuffix
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -427,7 +433,9 @@ class perf_statistic:
         return self.time() / self._cycle if self._cycle > 0 else 0
 
     def _timeCurrentlyCounting(self):
-        return time.perf_counter() - self._starttime if self._starttime is not None else 0
+        return (
+            time.perf_counter() - self._starttime if self._starttime is not None else 0
+        )
 
     def time(self):
         return self._stagedtime + self._timeCurrentlyCounting()

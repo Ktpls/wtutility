@@ -530,9 +530,16 @@ def freshAMap():
     ss = screenshoter(0)
 
     def shot():
+        shot = ss.shotbgr()
+        if saveScreenShot:
+            if random.uniform(0, 1) < saveRate:
+                savemat(
+                    shot, name=GetTimeString(), path="./asset/autofreshmap/log/screen/"
+                )
         return ss.shotbgr()
 
     while True:
+        allchanneloutput(str("detecting to battle"))
 
         def detectToBattle(scr):
             # ret in each path so no interference between them
@@ -554,6 +561,8 @@ def freshAMap():
 
         # detect loading map
         loadingscreen = None
+
+        allchanneloutput(str("detecting loading map"))
 
         def detectLoadingMap(scr):
             if stateDetector["LoadingMap"].detect(scr):

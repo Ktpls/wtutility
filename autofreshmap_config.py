@@ -23,6 +23,9 @@ minDelayAfterDisconnected = 5
 throwerringetdetector = False
 throwerrinmain = False
 
+saveScreenShot=True
+saveRate=0.1
+
 resolution = "m1920x1080r1920x1080"
 
 wlanname4netshinterface = "WLAN2"
