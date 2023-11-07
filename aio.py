@@ -108,9 +108,6 @@ class InputSession:
         old = self.FooSwapHKM(inputer)
         self.hotkeymanagerStack.append(old)
 
-    def GetContent(self):
-        return self.content
-
 
 def main():
     # 告示板

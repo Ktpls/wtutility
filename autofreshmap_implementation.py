@@ -539,25 +539,7 @@ def freshAMap():
         return ss.shotbgr()
 
     while True:
-        allchanneloutput(str("detecting to battle"))
-
-        def detectToBattle(scr):
-            # ret in each path so no interference between them
-            if stateDetector["OK"].detect(scr):
-                press(keycode.key_Enter)
-                return False
-            if stateDetector["hanger"].detect(scr):
-                press(keycode.key_Enter)
-                return True
-            if stateDetector["MissionCanceled"].detect(scr):
-                press(keycode.key_Enter)
-                return True
-            return False
-
-        if not keepdetecting(detectToBattle):
-            return
-        win32api.Beep(500, 100)
-        allchanneloutput("matching")
+        allchanneloutput("try matching")
 
         # detect loading map
         loadingscreen = None
