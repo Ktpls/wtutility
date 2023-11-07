@@ -17,7 +17,7 @@ def beepOnErr():
 class InputSession:
     @dataclasses.dataclass
     class SessionInstance:
-        class SessionEndType(Enum):
+        class SessionEndType(enum.Enum):
             UNSPECIFIED = 0
             OK = 1
             CANCEL = 2

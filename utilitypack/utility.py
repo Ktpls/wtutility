@@ -104,36 +104,38 @@ class toast:
 
 
 class bulletinBoard:
-    # new msg covers the lasts
+    @dataclasses.dataclass
+    class Poster:
+        content: str
+        starttime: float
+        timeout: float
+        overduetime: float
+
+        def __init__(self, content, timeout=10):
+            self.content = content
+            self.starttime = time.perf_counter()
+            self.timeout = timeout
+            self.overduetime = time.perf_counter() + timeout
+
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
-        self.content = ""
-        self.overduetime = time.perf_counter()
+        self.content: typing.List["bulletinBoard.Poster"] = []
 
-    def putup(self, content, timeout=10):
-        self.content = content
-        self.overduetime = time.perf_counter() + timeout
+    def putup(self, poster: typing.Union[Poster, str]):
+        if type(poster) == str:
+            poster = bulletinBoard.Poster(poster)
+        self.content.append(poster)
 
     def read(self):
-        if time.perf_counter() < self.overduetime:
-            return self.content
+        self.content = [c for c in self.content if c.overduetime > time.perf_counter()]
+        rctt = list(range(len(self.content)))
+        rctt.reverse()
+        if len(self.content):
+            return ("\n" + "-" * 10 + "\n").join(
+                [self.content[c].content for c in rctt]
+            )
         else:
             return self.idlecontent
-
-
-def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
-    m = m.copy()
-    line = content.split("\n")
-    for i, l in enumerate(line):
-        cv.putText(
-            m,
-            l,
-            pos.astype("int32") + [0, i * lineheight],
-            cv.FONT_HERSHEY_SIMPLEX,
-            1,
-            textcolor,
-        )
-    return m
 
 
 class HotkeyManager:
@@ -316,23 +318,6 @@ class HotkeyManager:
                     raise e
 
 
-class DataCollector:
-    randNameLen = 10
-
-    def __init__(self, outputpath) -> None:
-        self.outputpath = outputpath
-
-    @staticmethod
-    def geneName():
-        charSet4RandomString = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        return randomString(charSet4RandomString, DataCollector.randNameLen)
-
-    def save(self, m, name=None):
-        if name is None:
-            name = DataCollector.geneName()
-        savemat(m, f"{name}", path=self.outputpath)
-
-
 def AllFileIn(path, includeFileInSubDir=True):
     ret = []
     for dirpath, dir, file in os.walk(path):
@@ -499,9 +484,7 @@ class expparser:
     numlike
         tensor support
         string support
-            almost done
-            considering impl operator on this type
-    add type conversion func
+        considering impl operator on those types
     """
 
     class TokenType(enum.Enum):
@@ -613,8 +596,6 @@ class expparser:
     class ParseException(BaseException):
         pass
 
-    BasicConstantLib = {"e": np.e, "pi": np.pi, "true": True, "false": False}
-
     @staticmethod
     def unpackParaArray(f):
         def f2(a):
@@ -639,21 +620,20 @@ class expparser:
             return [a]
 
     BasicFunctionLib = {
-        "sin": unpackParaArray(np.sin),
-        "cos": unpackParaArray(np.cos),
-        "tan": unpackParaArray(np.tan),
-        "asin": unpackParaArray(np.arcsin),
-        "acos": unpackParaArray(np.arccos),
-        "atan": unpackParaArray(np.arctan),
-        "atan2": unpackParaArray(np.arctan),
-        "exp": unpackParaArray(np.exp),
-        "log": unpackParaArray(np.log),
-        "sqrt": unpackParaArray(np.sqrt),
-        "abs": unpackParaArray(np.abs),
-        "sign": unpackParaArray(np.sign),
-        "floor": unpackParaArray(np.floor),
-        "ceil": unpackParaArray(np.ceil),
-        "round": unpackParaArray(np.round),
+        "sin": unpackParaArray(math.sin),
+        "cos": unpackParaArray(math.cos),
+        "tan": unpackParaArray(math.tan),
+        "asin": unpackParaArray(math.asin),
+        "acos": unpackParaArray(math.acos),
+        "atan": unpackParaArray(math.atan),
+        "atan2": unpackParaArray(math.atan2),
+        "exp": unpackParaArray(math.exp),
+        "log": unpackParaArray(math.log),
+        "sqrt": unpackParaArray(math.sqrt),
+        "abs": unpackParaArray(abs),
+        "sign": unpackParaArray(lambda x: 1 if x > 0 else -1 if x < 0 else 0),
+        "floor": unpackParaArray(math.floor),
+        "ceil": unpackParaArray(math.ceil),
         "neg": unpackParaArray(lambda x: -x),
         "iif": unpackParaArray(
             lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y
@@ -667,6 +647,7 @@ class expparser:
         "CList": unpackParaArray(CList),
         "WrapSingle": lambda a: [a],
     }
+    BasicConstantLib = {"e": math.e, "pi": math.pi, "true": True, "false": False}
 
     class OprException(BaseException):
         pass
@@ -1921,6 +1902,21 @@ def getDemonstrationImg():
     return demo
 
 
+def outputlines2mat(m, pos, content, lineheight=25, textcolor=[255, 255, 255]):
+    m = m.copy()
+    line = content.split("\n")
+    for i, l in enumerate(line):
+        cv.putText(
+            m,
+            l,
+            pos.astype("int32") + [0, i * lineheight],
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            textcolor,
+        )
+    return m
+
+
 """
 xls
 """
@@ -1959,3 +1955,20 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
     if killNones:
         ret = [l for l in ret if any([e is not None for e in l])]
     return ret
+
+
+class DataCollector:
+    randNameLen = 10
+
+    def __init__(self, outputpath) -> None:
+        self.outputpath = outputpath
+
+    @staticmethod
+    def geneName():
+        charSet4RandomString = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        return randomString(charSet4RandomString, DataCollector.randNameLen)
+
+    def save(self, m, name=None):
+        if name is None:
+            name = DataCollector.geneName()
+        savemat(m, f"{name}", path=self.outputpath)
