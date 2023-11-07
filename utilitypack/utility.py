@@ -399,7 +399,7 @@ class fullScrHUD:
 
 
 def isKBDown(k):
-    return win32api.GetAsyncKeyState(k) and 0x1
+    return bool(win32api.GetAsyncKeyState(k) and 0x1)
 
 
 def isKBDownNow(k):
@@ -481,32 +481,36 @@ class HotkeyManager:
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
     issue:
-        [[ctrl,a],[ctrl,b]] and [[ctrl,b],[ctrl,c]]
-            finishing ctrl+b will start ctrl+b
-            severe especially when dealing with [[ctrl,a],[ctrl,a]] and [[ctrl,a],[ctrl,b]]
     """
 
     @dataclasses.dataclass
     class ContiniousCallHandler:
-        prevState: bool = False
+        prevState: typing.List[bool] = dataclasses.field(default_factory=list)
         countiousPressTime: int = 0
         startRepeatPeriod: int = 10
         useControlOnContiniousPress: bool = True
 
+        @staticmethod
+        def __dictEq(a: typing.Dict[int,bool], b: typing.Dict[int,bool]):
+            if len(a)!=len(b):
+                return False
+            for k in a.keys():
+                if k not in b.keys():
+                    return False
+                if a[k] != b[k]:
+                    return False
+            return True
+
         def updateState(self, newState):
-            if not self.useControlOnContiniousPress:
-                return newState
-            toResponde = False
-            if not self.prevState and newState:
-                toResponde = True
-            if self.prevState and newState:
+            if HotkeyManager.ContiniousCallHandler.__dictEq(
+                self.prevState, newState
+            ):
                 self.countiousPressTime += 1
-            if self.prevState and not newState:
+                return self.countiousPressTime >= self.startRepeatPeriod
+            else:
                 self.countiousPressTime = 0
-            if self.countiousPressTime > self.startRepeatPeriod:
-                toResponde = True
-            self.prevState = newState
-            return toResponde
+                self.prevState = newState
+                return True
 
     class hotkeytask:
         key: List[List[int]]
@@ -515,9 +519,7 @@ class HotkeyManager:
             self,
             key: int | Iterable,
             foo: Callable[[], None],
-            handler: typing.Union[
-                typing.Type["HotkeyManager.ContiniousCallHandler"], None
-            ] = None,
+            continiousPress: bool = False,
         ) -> None:
             if not isinstance(key, Iterable):
                 self.key = [[key]]
@@ -527,11 +529,8 @@ class HotkeyManager:
                 self.key = key
             # self.key is like [keyset1=[key1, key2], keyset2=[key3, key4]]
             self.foo = foo
-            self.handler = handler if handler else HotkeyManager.ContiniousCallHandler()
+            self.continiousPress = continiousPress
             self.stage = 0
-
-        def updateContiniousCallHandler(self, keymatched):
-            return self.handler.updateState(keymatched)
 
         def tryRespond(self, respond: bool, anyRespondingExceptThis: bool):
             if respond:
@@ -565,16 +564,23 @@ class HotkeyManager:
         [k.GetKeyDown() for k in self.kc]
 
         self.hktl = hotkeytasklist
+        self.cch = HotkeyManager.ContiniousCallHandler()
 
     def decideAllHotKey(self) -> List[bool]:
         keystate = {k.code: k.GetKeyDown() for k in self.kc}
+        cchblocked = not self.cch.updateState(keystate)
 
         class respondstate(Enum):
             false = 0
             true = 1
             unknown = 2
 
-        respondtable = [respondstate.unknown for hk in self.hktl]
+        respondtable = [
+            respondstate.unknown
+            if not cchblocked or hk.continiousPress
+            else respondstate.false
+            for hk in self.hktl
+        ]
 
         def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
             def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
@@ -633,17 +639,13 @@ class HotkeyManager:
         ]
 
     def doAllDecidedKey(self, decideresult, throwonerr=False, printonerr=False):
-        respondresult = [
-            self.hktl[i].updateContiniousCallHandler(dr)
-            for i, dr in enumerate(decideresult)
-        ]
         AnyRespondingExceptThis = [
-            any([(rb if i != j else False) for j, rb in enumerate(respondresult)])
-            for i, ra in enumerate(respondresult)
+            any([(rb if i != j else False) for j, rb in enumerate(decideresult)])
+            for i, ra in enumerate(decideresult)
         ]
-        for i in range(len(respondresult)):
+        for i in range(len(decideresult)):
             try:
-                self.hktl[i].tryRespond(respondresult[i], AnyRespondingExceptThis[i])
+                self.hktl[i].tryRespond(decideresult[i], AnyRespondingExceptThis[i])
             except Exception as e:
                 if printonerr:
                     traceback.print_exc()
