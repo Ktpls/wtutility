@@ -59,8 +59,8 @@ def savemat(m, name=None, path=None, autorename=True):
     defaultSuffix = ".png"
     if name is None:
         name = defaultName + defaultSuffix
-    namesplit=os.path.splitext(name)
-    name, suffix = str(namesplit[0]),str(namesplit[1])
+    namesplit = os.path.splitext(name)
+    name, suffix = str(namesplit[0]), str(namesplit[1])
     if len(suffix) == 0:
         suffix = defaultSuffix
 
@@ -480,6 +480,10 @@ class HotkeyManager:
     """
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
+    issue:
+        [[ctrl,a],[ctrl,b]] and [[ctrl,b],[ctrl,c]]
+            finishing ctrl+b will start ctrl+b
+            severe especially when dealing with [[ctrl,a],[ctrl,a]] and [[ctrl,a],[ctrl,b]]
     """
 
     @dataclasses.dataclass
@@ -489,7 +493,7 @@ class HotkeyManager:
         startRepeatPeriod: int = 10
         useControlOnContiniousPress: bool = True
 
-        def readKey(self, newState):
+        def updateState(self, newState):
             if not self.useControlOnContiniousPress:
                 return newState
             toResponde = False
@@ -505,6 +509,8 @@ class HotkeyManager:
             return toResponde
 
     class hotkeytask:
+        key: List[List[int]]
+
         def __init__(
             self,
             key: int | Iterable,
@@ -513,13 +519,33 @@ class HotkeyManager:
                 typing.Type["HotkeyManager.ContiniousCallHandler"], None
             ] = None,
         ) -> None:
-            self.key = [key] if type(key) is int else key
+            if not isinstance(key, Iterable):
+                self.key = [[key]]
+            elif not isinstance(key[0], Iterable):
+                self.key = [key]
+            else:
+                self.key = key
+            # self.key is like [keyset1=[key1, key2], keyset2=[key3, key4]]
             self.foo = foo
             self.handler = handler if handler else HotkeyManager.ContiniousCallHandler()
+            self.stage = 0
 
-        def update(self, respond: bool):
-            if self.handler.readKey(respond):
-                self.foo()
+        def updateContiniousCallHandler(self, keymatched):
+            return self.handler.updateState(keymatched)
+
+        def tryRespond(self, respond: bool, anyRespondingExceptThis: bool):
+            if respond:
+                if self.stage == len(self.key) - 1:
+                    # progress completed
+                    self.stage = 0
+                    self.foo()
+                else:
+                    self.stage += 1
+            elif anyRespondingExceptThis:
+                self.stage = 0
+
+        def GetNowKey(self):
+            return self.key[self.stage]
 
     @dataclasses.dataclass
     class Key:
@@ -531,6 +557,7 @@ class HotkeyManager:
     def __init__(self, hotkeytasklist: List[hotkeytask]):
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
+        keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = deduplicate(keyconcerned)
         self.kc = [HotkeyManager.Key(k) for k in keyconcerned]
 
@@ -538,25 +565,6 @@ class HotkeyManager:
         [k.GetKeyDown() for k in self.kc]
 
         self.hktl = hotkeytasklist
-
-        def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
-            def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
-                for k in b.key:
-                    if k not in a.key:
-                        return False
-                return True
-
-            # a>b and b<a, not equal
-            return include(a, b) and not include(b, a)
-
-        self.piorinfo = [
-            [
-                aidx
-                for aidx, a in enumerate(hotkeytasklist)
-                if aidx != bidx and piorered(a, b)
-            ]
-            for bidx, b in enumerate(hotkeytasklist)
-        ]
 
     def decideAllHotKey(self) -> List[bool]:
         keystate = {k.code: k.GetKeyDown() for k in self.kc}
@@ -568,24 +576,42 @@ class HotkeyManager:
 
         respondtable = [respondstate.unknown for hk in self.hktl]
 
+        def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
+            def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
+                for k in b.GetNowKey():
+                    if k not in a.GetNowKey():
+                        return False
+                return True
+
+            # a>b and b<a, not equal
+            return include(a, b) and not include(b, a)
+
+        # costly
+        piorinfo = [
+            [
+                aidx
+                for aidx, a in enumerate(self.hktl)
+                if aidx != bidx and piorered(a, b)
+            ]
+            for bidx, b in enumerate(self.hktl)
+        ]
+
         def decideRespondState(i):
             # checked
             if respondtable[i] != respondstate.unknown:
                 return
 
             # all key pressed
-            if all([keystate[k] for k in self.hktl[i].key]):
+            if all([keystate[k] for k in self.hktl[i].GetNowKey()]):
                 # didnt check piored, check it
                 [
                     decideRespondState(p)
-                    for p in self.piorinfo[i]
+                    for p in piorinfo[i]
                     if respondtable[p] == respondstate.unknown
                 ]
 
                 # no piored responded
-                if all(
-                    [respondtable[p] == respondstate.false for p in self.piorinfo[i]]
-                ):
+                if all([respondtable[p] == respondstate.false for p in piorinfo[i]]):
                     respondtable[i] = respondstate.true
                 else:
                     respondtable[i] = respondstate.false
@@ -597,16 +623,27 @@ class HotkeyManager:
             decideRespondState(hkidx)
 
         assert all([rt != respondstate.unknown for rt in respondtable])
-
+        r = [
+            respondtable[hkidx] == respondstate.true
+            for hkidx, hk in enumerate(self.hktl)
+        ]
         return [
             respondtable[hkidx] == respondstate.true
             for hkidx, hk in enumerate(self.hktl)
         ]
 
     def doAllDecidedKey(self, decideresult, throwonerr=False, printonerr=False):
-        for i in range(len(decideresult)):
+        respondresult = [
+            self.hktl[i].updateContiniousCallHandler(dr)
+            for i, dr in enumerate(decideresult)
+        ]
+        AnyRespondingExceptThis = [
+            any([(rb if i != j else False) for j, rb in enumerate(respondresult)])
+            for i, ra in enumerate(respondresult)
+        ]
+        for i in range(len(respondresult)):
             try:
-                self.hktl[i].update(decideresult[i])
+                self.hktl[i].tryRespond(respondresult[i], AnyRespondingExceptThis[i])
             except Exception as e:
                 if printonerr:
                     traceback.print_exc()

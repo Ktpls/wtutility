@@ -1,13 +1,31 @@
-from utilref import *
 import time
 
+ta = time.perf_counter()
+from utilref import *
 
-def foo():
-    print("calling foo")
+tb = time.perf_counter()
+print(f"loading util costs {tb-ta}")
 
 
-hotkeyaction = [HotkeyManager.hotkeytask(key=[win32con.VK_F1], foo=foo)]
+def promptCalling(name):
+    def f2():
+        print(f"calling {name}")
+
+    return f2
+
+
+hotkeyaction = [
+    HotkeyManager.hotkeytask(
+        key=[[win32con.VK_CONTROL, ord("A")], [win32con.VK_CONTROL, ord("A")]],
+        foo=promptCalling("AA"),
+    ),
+    HotkeyManager.hotkeytask(
+        key=[[win32con.VK_CONTROL, ord("A")], [win32con.VK_CONTROL, ord("S")]],
+        foo=promptCalling("AS"),
+    ),
+]
 hkm = HotkeyManager(hotkeyaction)
+print("loaded")
 while True:
     decideresult = hkm.decideAllHotKey()
     hkm.doAllDecidedKey(decideresult, True, False)
