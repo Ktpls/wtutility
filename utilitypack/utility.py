@@ -491,8 +491,8 @@ class HotkeyManager:
         useControlOnContiniousPress: bool = True
 
         @staticmethod
-        def __dictEq(a: typing.Dict[int,bool], b: typing.Dict[int,bool]):
-            if len(a)!=len(b):
+        def __dictEq(a: typing.Dict[int, bool], b: typing.Dict[int, bool]):
+            if len(a) != len(b):
                 return False
             for k in a.keys():
                 if k not in b.keys():
@@ -502,9 +502,7 @@ class HotkeyManager:
             return True
 
         def updateState(self, newState):
-            if HotkeyManager.ContiniousCallHandler.__dictEq(
-                self.prevState, newState
-            ):
+            if HotkeyManager.ContiniousCallHandler.__dictEq(self.prevState, newState):
                 self.countiousPressTime += 1
                 return self.countiousPressTime >= self.startRepeatPeriod
             else:
