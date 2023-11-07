@@ -481,6 +481,11 @@ class HotkeyManager:
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
     issue:
+    1. ctrl+a,ctrl+a and ctrl+a,ctrl+s
+        fastly press ctrl+a, and ctrl+s, could cause slightly overlap whose key state is [ctrl,a,s] physically
+        that is, [ctrl,a]->[ctrl,a,s]->[ctrl,s]
+        so at the second state, both [ctrl+a,ctrl+a] and [ctrl+a,ctrl+s] are triggered
+        not severe problem
     """
 
     @dataclasses.dataclass
