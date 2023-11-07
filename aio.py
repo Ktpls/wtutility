@@ -278,9 +278,7 @@ def main():
                 HotkeyManager.hotkeytask(
                     key=[win32con.VK_CONTROL, pair[0]],
                     foo=functools.partial(keyshortcut.move_mouse, pair[1]),
-                    handler=HotkeyManager.ContiniousCallHandler(
-                        useControlOnContiniousPress=False
-                    ),
+                    continiousPress=True,
                 )
             )
 
