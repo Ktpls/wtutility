@@ -251,7 +251,7 @@ def main():
 
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
-            bulletin.putup("LeftHolding", 1)
+            bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(key=win32con.VK_F10, foo=holdLeftAndTell)
@@ -259,7 +259,7 @@ def main():
 
         def holdCAndTell():
             keyshortcut.holdC()
-            bulletin.putup("CHolding", 1)
+            bulletin.putup(bulletinBoard.Poster("CHolding", 1))
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell)
@@ -293,10 +293,10 @@ def main():
             if eedcstate:
                 eagleeye.cachedShots = []
                 eedcstate = False
-                bulletin.putup("eedc off", 1)
+                bulletin.putup(bulletinBoard.Poster("eedc off", 1))
             else:
                 eedcstate = True
-                bulletin.putup("eedc on", 1)
+                bulletin.putup(bulletinBoard.Poster("eedc on", 1))
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(key=win32con.VK_F8, foo=eedcswitch)
