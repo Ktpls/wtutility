@@ -541,7 +541,7 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
 gridSearchWidth_unzoom = 8
 
 
-class BadCaliException(BaseException):
+class BadCaliException(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 

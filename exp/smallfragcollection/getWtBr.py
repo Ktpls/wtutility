@@ -25,7 +25,7 @@ def myget(url):
             time.sleep(1)
             response = requests.get(url)
             break
-        except BaseException as e:
+        except Exception as e:
             traceback.print_exc()
     return response
 

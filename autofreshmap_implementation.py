@@ -193,7 +193,7 @@ class matcher:
         path = assetpath2realpath(info["path"])
         m = cv.imread(path)
         if m.size == 0:
-            raise BaseException("loading matcher failed in {}".format(path))
+            raise Exception("loading matcher failed in {}".format(path))
         self.pointlt = np.array(info["lt"])
         self.pointrd = self.pointlt + np.flip(m.shape[:2])
         self.m = matcher.imagepreprocess(m)
@@ -260,7 +260,7 @@ class matchTemplateClassWrapper:
         path = assetpath2realpath(info["path"])
         m = cv.imread(path)
         if m.size == 0:
-            raise BaseException("loading matcher failed in {}".format(path))
+            raise Exception("loading matcher failed in {}".format(path))
         self.m = m
         self.thresh = info.get(
             "thresh", None
@@ -479,7 +479,7 @@ class mapdetector(detector):
         try:
             exec(self.foo)
             return retVal
-        except BaseException as e:
+        except Exception as e:
             traceback.print_exc()
             raise e
 

@@ -19,7 +19,7 @@ def doOne(i):
             print(f'done into {o}')
         else:
             print(f'failed {o}')
-    except BaseException as err:
+    except Exception as err:
         print(err)
 
 def main():

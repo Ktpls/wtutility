@@ -14,7 +14,7 @@ def main():
         i = sys.argv[1]
         m = cv.imread(i)
         if m.size == 0:
-            raise BaseException('load img failed in {}'.format(i))
+            raise Exception('load img failed in {}'.format(i))
 
         #spawn
         for c in ['blue', 'red']:
@@ -33,7 +33,7 @@ def main():
             else:
                 print(f'{p} point at {nicelyformatarraylike(result)}')
 
-    except BaseException as err:
+    except Exception as err:
         print(err)
     finally:
         os.system('pause')

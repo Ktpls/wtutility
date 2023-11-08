@@ -90,7 +90,7 @@ class wtdistmeaspy:
                 ret.plottingscale.err = 0
                 # hint in exception will be done in secure check
             else:
-                raise BaseException("ps locked but no last ps")
+                raise Exception("ps locked but no last ps")
         else:
             CheckAndReplaceIfNeeded(
                 ret.plottingscale,

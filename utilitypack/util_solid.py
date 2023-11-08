@@ -353,7 +353,7 @@ class expparser:
         priafter: int
 
     class NumLikeUnionUtil:
-        class NumLikeException(BaseException):
+        class NumLikeException(Exception):
             pass
 
         class NumLikeType(enum.Enum):
@@ -429,7 +429,7 @@ class expparser:
             else:
                 raise expparser.NumLikeUnionUtil.NumLikeException()
 
-    class ParseException(BaseException):
+    class ParseException(Exception):
         pass
 
     @staticmethod
@@ -485,7 +485,7 @@ class expparser:
     }
     BasicConstantLib = {"e": math.e, "pi": math.pi, "true": True, "false": False}
 
-    class OprException(BaseException):
+    class OprException(Exception):
         pass
 
     class _OprType(enum.Enum):

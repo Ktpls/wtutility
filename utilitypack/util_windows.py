@@ -57,7 +57,7 @@ class screenshoter:
             )
             == 0
         ):
-            raise BaseException("bad shot, {}".format(windll.kernel32.GetLastError()))
+            raise Exception("bad shot, {}".format(windll.kernel32.GetLastError()))
         # 截图是BGRA排列，因此总元素个数需要乘以4
         total_bytes = self.res[0] * self.res[1] * 4
         buffer = bytearray(total_bytes)

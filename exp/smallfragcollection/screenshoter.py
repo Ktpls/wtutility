@@ -36,7 +36,7 @@ def window_capture_nomfc():
     windll.gdi32.SelectObject(mydc, mybitmap)
     #if windll.gdi32.BitBlt(mydc, 0, 0, resolution[0], resolution[1], wtdc, 0, 0, win32con.SRCCOPY) == 0:
     if win32gui.BitBlt(mydc,0,0,resolution[0], resolution[1],wtdc,0,0,win32con.SRCCOPY)==0:
-        raise BaseException('bad shot, {}'.format(
+        raise Exception('bad shot, {}'.format(
             windll.kernel32.GetLastError()))
     total_bytes = resolution[0]*resolution[1]*4
     buffer = bytearray(total_bytes)

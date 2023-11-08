@@ -11,5 +11,5 @@ try:
     obj=eval(src)
     print(obj)
     print(obj.p)
-except BaseException as err:
+except Exception as err:
     print('unknown type, {}'.format(err))
