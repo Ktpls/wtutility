@@ -312,19 +312,8 @@ class HotkeyManager:
         startRepeatPeriod: int = 10
         useControlOnContiniousPress: bool = True
 
-        @staticmethod
-        def __dictEq(a: typing.Dict[int, bool], b: typing.Dict[int, bool]):
-            if len(a) != len(b):
-                return False
-            for k in a.keys():
-                if k not in b.keys():
-                    return False
-                if a[k] != b[k]:
-                    return False
-            return True
-
         def updateState(self, newState):
-            if HotkeyManager.ContiniousCallHandler.__dictEq(self.prevState, newState):
+            if DictEq(self.prevState, newState):
                 self.countiousPressTime += 1
                 return self.countiousPressTime >= self.startRepeatPeriod
             else:
@@ -351,8 +340,17 @@ class HotkeyManager:
             self.foo = foo
             self.continiousPress = continiousPress
             self.stage = 0
+            self.keyChangeOnStageChange = [
+                ListEq(self.key[i], self.key[i - 1])
+                if i != 0
+                else ListEq(self.key[0], self.key[-1])
+                for i, k in enumerate(self.key)
+            ]
 
-        def tryRespond(self, respond: bool, anyRespondingExceptThis: bool):
+        def tryRespond(self, respond: bool, anyRespondingExceptThis: bool) -> bool:
+            """
+            ret: if key changed
+            """
             if respond:
                 if self.stage == len(self.key) - 1:
                     # progress completed
@@ -362,6 +360,7 @@ class HotkeyManager:
                     self.stage += 1
             elif anyRespondingExceptThis:
                 self.stage = 0
+            return self.keyChangeOnStageChange[self.stage]
 
         def GetNowKey(self):
             return self.key[self.stage]
@@ -385,6 +384,32 @@ class HotkeyManager:
 
         self.hktl = hotkeytasklist
         self.cch = HotkeyManager.ContiniousCallHandler()
+        self.calcPriorInfo()
+
+    def calcPriorInfo(self):
+        """
+        costly!!!
+        at m^2n^2, where m is #hotkeytask, n is #key of hotkeytask
+        """
+
+        def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
+            def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
+                for k in b.GetNowKey():
+                    if k not in a.GetNowKey():
+                        return False
+                return True
+
+            # a>b and b<a, not equal
+            return include(a, b) and not include(b, a)
+
+        self.piorinfo = [
+            [
+                aidx
+                for aidx, a in enumerate(self.hktl)
+                if aidx != bidx and piorered(a, b)
+            ]
+            for bidx, b in enumerate(self.hktl)
+        ]
 
     def decideAllHotKey(self) -> List[bool]:
         keystate = {k.code: k.GetKeyDown() for k in self.kc}
@@ -402,26 +427,6 @@ class HotkeyManager:
             for hk in self.hktl
         ]
 
-        def piorered(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
-            def include(a: HotkeyManager.hotkeytask, b: HotkeyManager.hotkeytask):
-                for k in b.GetNowKey():
-                    if k not in a.GetNowKey():
-                        return False
-                return True
-
-            # a>b and b<a, not equal
-            return include(a, b) and not include(b, a)
-
-        # costly
-        piorinfo = [
-            [
-                aidx
-                for aidx, a in enumerate(self.hktl)
-                if aidx != bidx and piorered(a, b)
-            ]
-            for bidx, b in enumerate(self.hktl)
-        ]
-
         def decideRespondState(i):
             # checked
             if respondtable[i] != respondstate.unknown:
@@ -432,12 +437,14 @@ class HotkeyManager:
                 # didnt check piored, check it
                 [
                     decideRespondState(p)
-                    for p in piorinfo[i]
+                    for p in self.piorinfo[i]
                     if respondtable[p] == respondstate.unknown
                 ]
 
                 # no piored responded
-                if all([respondtable[p] == respondstate.false for p in piorinfo[i]]):
+                if all(
+                    [respondtable[p] == respondstate.false for p in self.piorinfo[i]]
+                ):
                     respondtable[i] = respondstate.true
                 else:
                     respondtable[i] = respondstate.false
@@ -463,14 +470,155 @@ class HotkeyManager:
             any([(rb if i != j else False) for j, rb in enumerate(decideresult)])
             for i, ra in enumerate(decideresult)
         ]
+        anyKeyChanged = False
         for i in range(len(decideresult)):
             try:
-                self.hktl[i].tryRespond(decideresult[i], AnyRespondingExceptThis[i])
+                thisKeyChanged = self.hktl[i].tryRespond(
+                    decideresult[i], AnyRespondingExceptThis[i]
+                )
+                anyKeyChanged = anyKeyChanged or thisKeyChanged
             except Exception as e:
                 if printonerr:
                     traceback.print_exc()
                 if throwonerr:
                     raise e
+        if anyKeyChanged:
+            self.calcPriorInfo()
+
+    @dataclasses.dataclass
+    class InputSession:
+        @dataclasses.dataclass
+        class SessionInstance:
+            class SessionEndType(enum.Enum):
+                UNSPECIFIED = 0
+                OK = 1
+                CANCEL = 2
+
+            FooSessionDoneCallback: Callable[
+                [typing.Type["HotkeyManager.InputSession.SessionInstance"]], None
+            ] = None
+            content: str = ""
+            sessionEndType: SessionEndType = SessionEndType.UNSPECIFIED
+
+            def append(self, extraContent: str):
+                self.content += extraContent
+
+            def backSpace(self):
+                self.content = self.content[:-1]
+
+            def putup(self, bulletin: bulletinBoard):
+                bulletin.putup(self.content)
+
+        # foo that sets hkm and returns older hkm
+        FooSwapHKM: Callable[["HotkeyManager"], "HotkeyManager"]
+        bulletin: bulletinBoard
+        RunningSessionInstance: SessionInstance = dataclasses.field(
+            default_factory=SessionInstance
+        )
+        hotkeymanagerStack: List["HotkeyManager"] = dataclasses.field(
+            default_factory=list
+        )
+
+        class InputTypeEnabled(enum.Enum):
+            NUMBER = 0
+            LETTER = 1
+
+        def __GetHotkeyReg(self, ite: typing.List[InputTypeEnabled]):
+            @dataclasses.dataclass
+            class KeyMapping:
+                char: str
+                key: typing.Tuple[int]
+
+            AllKeyMapping = [
+                *(
+                    [KeyMapping(k, (ord(k),)) for i, k in enumerate("0123456789")]
+                    if HotkeyManager.InputSession.InputTypeEnabled.NUMBER in ite
+                    else []
+                ),
+                *(
+                    [
+                        *[
+                            KeyMapping(k, (ord(k.upper()),))
+                            for i, k in enumerate("abcdefghijklmnopqrstuvwxyz")
+                        ],
+                        *[
+                            KeyMapping(k, (win32con.VK_SHIFT, ord(k.upper())))
+                            for i, k in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                        ],
+                    ]
+                    if HotkeyManager.InputSession.InputTypeEnabled.LETTER in ite
+                    else []
+                ),
+            ]
+            KeyIndexed = {k.key: k.char for k in AllKeyMapping}
+
+            def procKey(k):
+                self.RunningSessionInstance.append(KeyIndexed.get(k, "?"))
+                self.RunningSessionInstance.putup(self.bulletin)
+
+            HotkeyReg = [
+                HotkeyManager.hotkeytask(
+                    key=[k.key], foo=functools.partial(procKey, k.key)
+                )
+                for k in AllKeyMapping
+            ]
+
+            def backSpace():
+                self.RunningSessionInstance.backSpace()
+                self.RunningSessionInstance.putup(self.bulletin)
+
+            HotkeyReg.append(
+                HotkeyManager.hotkeytask(
+                    key=[win32con.VK_BACK],
+                    foo=backSpace,
+                )
+            )
+
+            def OutFromSession(
+                endType: HotkeyManager.InputSession.SessionInstance.SessionEndType,
+            ):
+                self.RunningSessionInstance.sessionEndType = endType
+                self.RunningSessionInstance.FooSessionDoneCallback(
+                    self.RunningSessionInstance
+                )
+                old = self.hotkeymanagerStack.pop()
+                inputer = self.FooSwapHKM(old)
+
+            HotkeyReg.extend(
+                [
+                    HotkeyManager.hotkeytask(
+                        key=[win32con.VK_ESCAPE],
+                        foo=functools.partial(
+                            OutFromSession,
+                            HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL,
+                        ),
+                    ),
+                    HotkeyManager.hotkeytask(
+                        key=[win32con.VK_RETURN],
+                        foo=functools.partial(
+                            OutFromSession,
+                            HotkeyManager.InputSession.SessionInstance.SessionEndType.OK,
+                        ),
+                    ),
+                ]
+            )
+
+            return HotkeyReg
+
+        def IntoSession(
+            self, callback, allowedInputType: typing.List[InputTypeEnabled] = None
+        ):
+            self.RunningSessionInstance = HotkeyManager.InputSession.SessionInstance(
+                callback
+            )
+            if not allowedInputType:
+                allowedInputType = [
+                    HotkeyManager.InputSession.InputTypeEnabled.NUMBER,
+                    HotkeyManager.InputSession.InputTypeEnabled.LETTER,
+                ]
+            inputer = HotkeyManager(self.__GetHotkeyReg(allowedInputType))
+            old = self.FooSwapHKM(inputer)
+            self.hotkeymanagerStack.append(old)
 
 
 """

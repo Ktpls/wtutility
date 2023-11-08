@@ -6,6 +6,7 @@ from typing import Dict, List, Callable, Iterable, Any
 import ctypes
 import dataclasses
 import itertools
+import functools
 import math
 import os
 import random
@@ -19,6 +20,26 @@ import typing
 """
 solid
 """
+
+
+def DictEq(a: typing.Dict, b: typing.Dict):
+    if len(a) != len(b):
+        return False
+    for k in a.keys():
+        if k not in b.keys():
+            return False
+        if a[k] != b[k]:
+            return False
+    return True
+
+
+def ListEq(a: typing.List, b: typing.List):
+    if len(a) != len(b):
+        return False
+    for i in range(len(a)):
+        if a[i] != b[i]:
+            return False
+    return True
 
 
 def deduplicate(l: typing.List):
@@ -79,28 +100,6 @@ def quickSummonCard(inteprob):
             section[1] = mid
         else:  # compresult==0
             return mid
-
-
-class toast:
-    messagelist = []
-
-    def sendmessage(self, content, peroid):
-        self.messagelist.append(
-            {"ctt": content, "st": time.perf_counter(), "per": peroid}
-        )
-
-    def updatemsglist(self):
-        nowtime = time.perf_counter()
-
-        def filterfoo(m):
-            return m["per"] > m["ctt"] - nowtime
-
-        messagelist = [m for m in messagelist if filterfoo(m)]
-        msgs = [m["ctt"] for m in messagelist]
-
-    def getallmsg(self):
-        self.updatemsglist()
-        return "\n".join(self.messagelist)
 
 
 class bulletinBoard:
@@ -187,14 +186,31 @@ class StoppableThread:
         self.submit = None
 
 
-def ReadTextFile(path):
-    with open(path, "r") as f:
+def ReadFile(path):
+    with open(path, "rb") as f:
         return f.read()
 
 
-def WriteTextFile(path, text):
-    with open(path, "w") as f:
-        f.write(text)
+def ensure_directory_exists(file_path):
+    directory = os.path.dirname(file_path)
+    if len(directory) == 0:
+        return
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def WriteFile(path, content):
+    ensure_directory_exists(path)
+    with open(path, "wb+") as f:
+        f.write(content.encode("utf-8"))
+
+
+def ReadTextFile(path: str) -> str:
+    return ReadFile(path).decode("utf-8")
+
+
+def WriteTextFile(path: str, text: str):
+    WriteFile(path, text.encode("utf-8"))
 
 
 def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
