@@ -57,7 +57,9 @@ def main():
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
-                bulletin.putup("plotting scale locked")
+                bulletin.putup(
+                    f"plotting scale locked, now is {wtdmp.lastDistMeasResultStaged.plottingscale}"
+                )
             else:
                 bulletin.putup("plotting scale unlocked")
 
@@ -238,7 +240,7 @@ def main():
 
     hud = fullScrHUD()
     hud.setup()
-    fps = fpsmanager(aiofps)
+    fpsm = fpsmanager(aiofps)
     hkm = HotkeyManager(hotkeyaction)
 
     def swapHKM(newHkm):
@@ -251,7 +253,7 @@ def main():
 
     # main loop
     while True:
-        fps.WaitUntilNextFrame()
+        fpsm.WaitUntilNextFrame()
         hud.clear()
 
         decideresult = hkm.decideAllHotKey()

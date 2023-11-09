@@ -3,9 +3,11 @@
 # %%
 if __package__ == "":
     from utilref import *
+    from utilitypack.util_torch import *
     from defs import *
 else:
     from .utilref import *
+    from utilitypack.util_torch import *
     from .defs import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"

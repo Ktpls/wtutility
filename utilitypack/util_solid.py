@@ -214,17 +214,6 @@ def WriteTextFile(path: str, text: str):
 
 
 def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    A decorator that wraps a function and returns a new function that calls the original function
-    and returns the instance it was called on.
-
-    Args:
-        f: The function to wrap.
-
-    Returns:
-        The wrapped function.
-    """
-
     def f2(self, *args: Any, **kwargs: Any) -> Any:
         f(self, *args, **kwargs)
         return self
@@ -236,58 +225,24 @@ class Pipe:
     value: Any = None
 
     def __init__(self, initValue: Any = None, printStep: bool = False) -> None:
-        """
-        Initializes a Pipe object.
-
-        Args:
-            initValue: The initial value of the Pipe.
-            printStep: Whether to print the value after setting it.
-        """
         self.printStep = printStep
         self.set(initValue)
 
     def get(self) -> Any:
-        """
-        Returns the value of the Pipe.
-
-        Returns:
-            The value of the Pipe.
-        """
         return self.value
 
     @FunctionalWrapper
     def set(self, val: Any) -> None:
-        """
-        Sets the value of the Pipe.
-
-        Args:
-            val: The value to set.
-        """
         self.value = val
         if self.printStep:
             print(self.value)
 
     @FunctionalWrapper
     def do(self, foo: Callable[[Any], Any]) -> "Pipe":
-        """
-        Applies a function to the value of the Pipe and sets the result as the new value.
-
-        Args:
-            foo: The function to apply.
-
-        Returns:
-            The modified Pipe object.
-        """
         self.set(foo(self.get()))
         return self
 
     def __repr__(self) -> str:
-        """
-        Returns the string representation of the Pipe.
-
-        Returns:
-            The string representation of the Pipe.
-        """
         return self.get().__repr__()
 
 
@@ -1086,16 +1041,16 @@ class perf_statistic:
         self._stagedtime += self._timeCurrentlyCounting()
         self._starttime = None
 
+    def time(self):
+        return self._stagedtime + self._timeCurrentlyCounting()
+
     def aveTime(self):
-        return self.time() / self._cycle if self._cycle > 0 else 0
+        return self.time() / (self._cycle if self._cycle > 0 else 1)
 
     def _timeCurrentlyCounting(self):
         return (
             time.perf_counter() - self._starttime if self._starttime is not None else 0
         )
-
-    def time(self):
-        return self._stagedtime + self._timeCurrentlyCounting()
 
 
 class fpsmanager:

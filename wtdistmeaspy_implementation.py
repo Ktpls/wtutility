@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Iterable, Mapping
 import matplotlib as mpl
 from utilitypack.utility import *
@@ -54,7 +53,7 @@ class ElementsOfMap:
 
 @dataclasses.dataclass
 class SMException:
-    class SolveMapResultType(Enum):
+    class SolveMapResultType(enum.Enum):
         NO_ERR = "NO_ERR"
         PL_NOT_FOUND = "PL_NOT_FOUND"
         PL_2GREAT_ERR = "PL_2GREAT_ERR"

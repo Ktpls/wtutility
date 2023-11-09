@@ -820,7 +820,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         moveMouseAway()
         keepdetecting(detectStartMatch, sleeptime=10)
 
-        class DetectPlayerVehicleResult(Enum):
+        class DetectPlayerVehicleResult(enum.Enum):
             unset = 0
             good = 1
             bad = 2
