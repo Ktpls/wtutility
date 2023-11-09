@@ -151,10 +151,9 @@ class wtdistmeaspy:
 
             refresult = ["%3d: %5d" % (r, int(distingrid * r + 0.5)) for r in reflist]
 
-            prompt += "OK\n" + (
-                exceptionlist2str(exception) if len(exception) != 0 else ""
-            )
-            prompt += "dist=%.2f\n" % (dist)
+            prompt += "OK, dist=%.2f\n" % (dist)
+            if len(exception) != 0:
+                prompt += exceptionlist2str(exception, ",") + "\n"
 
             # got here anyway avoiding all the fatal ones
             # commit result
@@ -181,7 +180,7 @@ class wtdistmeaspy:
         else:
             # fatal happended
             prompt += "Failed\n"
-            prompt += exceptionlist2str(exception)
+            prompt += exceptionlist2str(exception) + "\n"
 
             if collectFailDebugOutput:
                 # resolve with debug config
