@@ -648,90 +648,63 @@ def adjustCaliberation(pidoutput):
     return control
 
 
-class loadCalibrationOperator:
-    def __init__(self) -> None:
-        self.stopsignal = True
-        self.stopped = True
-        self.result = ""
+class loadCalibrationOperator(StoppableThread):
+    def foo(self, targetcali, errAllowed, dbglogpath=None):
+        pid = PIDController(caliP, 0, caliD)
+        ss = screenshoter()
+        if caliDbg:
+            if dbglogpath is None:
+                # same as in solve
+                dbglogpath = r"./asset/wtdistmeaspy/log/{}_GetCali/".format(
+                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                )
 
-    def start(self, targetcali, dbglogpath=None):
-        if not self.stopped:
-            # no running again
-            return
-        self.stopsignal = False
-        self.stopped = False
-        self.result = ""
+            def dbglogsavestep(m, name="unnamed", method="savemat"):
+                nonlocal dbglogpath
+                exec("{}(m,path=dbglogpath,name=name)".format(method))
 
-        def loadCalibration(targetcali, errAllowed):
-            nonlocal dbglogpath
-            pid = PIDController(caliP, 0, caliD)
-            ss = screenshoter()
-            if caliDbg:
-                if dbglogpath is None:
-                    # same as in solve
-                    dbglogpath = r"./asset/wtdistmeaspy/log/{}_GetCali/".format(
-                        time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                    )
+            logg = logger(os.path.join(dbglogpath, "log.log"))
 
-                def dbglogsavestep(m, name="unnamed", method="savemat"):
-                    nonlocal dbglogpath
-                    exec("{}(m,path=dbglogpath,name=name)".format(method))
+            def log(s):
+                logg(s)
 
-                logg = logger(os.path.join(dbglogpath, "log.log"))
+        else:
 
-                def log(s):
-                    logg(s)
+            def dbglogsavestep(m, name=None, method="savemat"):
+                pass
 
-            else:
+            logg = None
 
-                def dbglogsavestep(m, name=None, method="savemat"):
-                    pass
+            def log(s):
+                pass
 
-                logg = None
-
-                def log(s):
-                    pass
-
-            while True:
-                if self.stopsignal:
-                    # forced stop
-                    self.result = "Stoped"
-                    self.stopped = True
-                    log(self.result)
-                    return
-                try:
-                    # cali err in pixel
-                    caliresult = getNowCalibration(
-                        ss.shotbgr(), targetcali, caliDbg, dbglogsavestep, log
-                    )
-                except BadCaliException:
-                    self.result = "BadCaliException"
-                    self.stopped = True
-                    log(self.result)
-                    return
-
-                targetpix, nowpix, mil = caliresult
-                log(f"targetpix{targetpix}, nowpix{nowpix}, mil{mil}")
-                # print(targetpix,nowpix)
-                if np.abs(targetpix - nowpix) <= errAllowed:
-                    self.result = "Great"
-                    self.stopped = True
-                    log(self.result)
-                    return
-                control = pid.update(targetpix, nowpix) * caliControlMul / mil
-                log(f"control {control}")
-                # get the real control, but without direction
-                control = adjustCaliberation(control)
-                sleep(delayEveryCali)
-
-        threading.Thread(target=loadCalibration, args=(targetcali, autoCaliErr)).start()
-
-    def stop(self):
-        if self.stopped:
-            return
-        self.stopsignal = True
         while True:
-            if self.stopped:
-                break
-            sleep(0.5)
-        return self.result
+            if self.stopsignal():
+                # forced stop
+                log(self.result)
+                return
+
+            try:
+                # cali err in pixel
+                caliresult = getNowCalibration(
+                    ss.shotbgr(), targetcali, caliDbg, dbglogsavestep, log
+                )
+            except BadCaliException:
+                self.result = "BadCaliException"
+                self.stopped = True
+                log(self.result)
+                return
+
+            targetpix, nowpix, mil = caliresult
+            log(f"targetpix{targetpix}, nowpix{nowpix}, mil{mil}")
+            # print(targetpix,nowpix)
+            if np.abs(targetpix - nowpix) <= errAllowed:
+                self.result = "Great"
+                self.stopped = True
+                log(self.result)
+                return
+            control = pid.update(targetpix, nowpix) * caliControlMul / mil
+            log(f"control {control}")
+            # get the real control, but without direction
+            control = adjustCaliberation(control)
+            sleep(delayEveryCali)

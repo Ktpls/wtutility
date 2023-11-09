@@ -153,12 +153,14 @@ class StoppableThread:
 
     def __init__(self, pool: ThreadPoolExecutor = None) -> None:
         self.running: bool = False
+        self.stopsignal: bool = True
         self.pool: ThreadPoolExecutor = (
             pool if pool is not None else ThreadPoolExecutor()
         )
         self.submit = None
+        self.result = None
 
-    def foo(self) -> None:
+    def foo(self, *arg, **kw) -> None:
         raise NotImplementedError("should never run without overriding foo")
 
     def getRunning(self) -> bool:
@@ -168,21 +170,24 @@ class StoppableThread:
         if self.submit is not None:
             return
         self.running = True
+        self.stopsignal = False
 
         def call() -> None:
             """
             wrapper so can call the passed "self"'s foo
             if not, can never know which overwritten foo should be called
+            check if self.stopsignal when any place to break
             """
-            self.foo()
+            self.result = self.foo()
 
         self.submit = self.pool.submit(call)
 
     def stop(self) -> None:
         if self.submit is None:
             return
-        self.running = False
+        self.stopsignal = True
         self.submit.result()
+        self.running = False
         self.submit = None
 
 

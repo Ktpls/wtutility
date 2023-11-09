@@ -40,6 +40,7 @@ def main():
     business = []
     # 热键
     hotkeyaction = []
+    threadpool = ThreadPoolExecutor()
 
     # wtdistmeas
     if usingwtdistmeaspy:
@@ -70,11 +71,16 @@ def main():
         )
 
         def hkcallWTDistMeas():
-            result = wtdmp.solveMapMainLogic()
-            bulletin.putup(result.prompt)
-            if result.succeed:
-                lastStaged = wtdmp.lastDistMeasResultStaged.result
-                wtdmp.caliOperator.start(lastStaged)
+            class GoMeasureAndCali(StoppableThread):
+                def foo(self, *args, **kwargs):
+                    result = wtdmp.solveMapMainLogic()
+                    bulletin.putup(result.prompt)
+                    if result.succeed:
+                        lastStaged = wtdmp.lastDistMeasResultStaged.result
+                        wtdmp.caliOperator.start(lastStaged)
+
+            bulletin.putup("measuring")
+            GoMeasureAndCali(threadpool).go()
 
         hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
