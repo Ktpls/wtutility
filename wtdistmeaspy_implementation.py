@@ -649,7 +649,7 @@ def adjustCaliberation(pidoutput):
 
 
 class loadCalibrationOperator(StoppableThread):
-    def foo(self, targetcali, errAllowed, dbglogpath=None):
+    def foo(self, targetcali, dbglogpath=None):
         pid = PIDController(caliP, 0, caliD)
         ss = screenshoter()
         if caliDbg:
@@ -679,7 +679,7 @@ class loadCalibrationOperator(StoppableThread):
                 pass
 
         while True:
-            if self.stopsignal():
+            if self.stopsignal:
                 # forced stop
                 log(self.result)
                 return
@@ -698,7 +698,7 @@ class loadCalibrationOperator(StoppableThread):
             targetpix, nowpix, mil = caliresult
             log(f"targetpix{targetpix}, nowpix{nowpix}, mil{mil}")
             # print(targetpix,nowpix)
-            if np.abs(targetpix - nowpix) <= errAllowed:
+            if np.abs(targetpix - nowpix) <= autoCaliErr:
                 self.result = "Great"
                 self.stopped = True
                 log(self.result)

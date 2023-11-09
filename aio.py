@@ -77,7 +77,7 @@ def main():
                     bulletin.putup(result.prompt)
                     if result.succeed:
                         lastStaged = wtdmp.lastDistMeasResultStaged.result
-                        wtdmp.caliOperator.start(lastStaged)
+                        wtdistmeaspy.loadCalibrationOperator(threadpool).go(lastStaged)
 
             bulletin.putup("measuring")
             GoMeasureAndCali(threadpool).go()
@@ -89,7 +89,7 @@ def main():
             if lastStaged is None:
                 bulletin.putup("no staged dist result to cali")
                 return
-            wtdmp.caliOperator.start(lastStaged)
+            wtdistmeaspy.loadCalibrationOperator(threadpool).go(lastStaged)
             bulletin.putup(f"caliberating to {lastStaged}")
 
         hotkeyaction.append(

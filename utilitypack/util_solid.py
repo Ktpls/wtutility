@@ -166,7 +166,7 @@ class StoppableThread:
     def getRunning(self) -> bool:
         return self.running
 
-    def go(self) -> None:
+    def go(self, *arg, **kw) -> None:
         if self.submit is not None:
             return
         self.running = True
@@ -178,7 +178,10 @@ class StoppableThread:
             if not, can never know which overwritten foo should be called
             check if self.stopsignal when any place to break
             """
-            self.result = self.foo()
+            try:
+                self.result = self.foo(*arg, **kw)
+            except Exception as e:
+                traceback.print_exc()
 
         self.submit = self.pool.submit(call)
 
