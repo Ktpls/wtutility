@@ -169,7 +169,7 @@ class wtdistmeaspy:
                     if i >= len(refresult):
                         break
                 prompt += "\n"
-            prompt += "dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f\n" % (
+            prompt += "dg=%.2f,ps=%d,pe=%.2f,ye=%.2f,ge=%.2f" % (
                 distingrid,
                 plottingscale,
                 ret.playerpos.err,

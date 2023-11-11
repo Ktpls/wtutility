@@ -23,15 +23,15 @@ minDelayAfterDisconnected = 5
 throwerringetdetector = False
 throwerrinmain = False
 
-saveScreenShot=True
-saveRate=0.1
+saveScreenShot = True
+saveRate = 0.1
 
 resolution = "m1920x1080r1920x1080"
 
 wlanname4netshinterface = "WLAN2"
-wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305"][2]
+wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305", "HUAZHU-Hanting"][3]
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 
 musicPath = r"C:\CloudMusic"
-player=r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
+player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"

@@ -647,6 +647,21 @@ def adjustCaliberation(pidoutput):
     gameinput.keyup(keycode2press)
     return control
 
+def adjustCaliberation_PyAutoGUI(pidoutput):
+    keycode2press = (
+        "pageup"
+        if pidoutput > 0
+        else "pagedown"
+    )
+
+    control = np.abs(pidoutput)
+    gameinput.pyautogui.keyUp(keycode2press)
+
+    gameinput.pyautogui.keyDown(keycode2press)
+    PreciseSleep(control)
+    gameinput.pyautogui.keyUp(keycode2press)
+    return control
+
 
 class loadCalibrationOperator(StoppableThread):
     def foo(self, targetcali, dbglogpath=None):

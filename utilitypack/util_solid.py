@@ -46,6 +46,16 @@ def deduplicate(l: typing.List):
     return list(set(l))
 
 
+def flatten(iterable):
+    result = []
+    for item in iterable:
+        if isinstance(item, (list, tuple)):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+
+
 def digitsof(s: str):
     return "".join(list(filter(str.isdigit, list(s))))
 
@@ -182,6 +192,7 @@ class StoppableThread:
                 self.result = self.foo(*arg, **kw)
             except Exception as e:
                 traceback.print_exc()
+            self.running = False
 
         self.submit = self.pool.submit(call)
 
