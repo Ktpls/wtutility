@@ -143,6 +143,7 @@ class fullScrHUD:
         self.m2draw = self.getblankscreenwithalfa()
         # set m2draw
 
+    @FunctionalWrapper
     def setup(self):
         def WndProc(hwnd, msg, wParam, lParam):
             if msg == win32con.WM_PAINT:
@@ -232,6 +233,7 @@ class fullScrHUD:
         t1.start()
         time.sleep(1)
 
+    @FunctionalWrapper
     def writecontent(self, lt, content):
         self.m2draw[
             lt[0] : lt[0] + content.shape[0],
@@ -239,6 +241,7 @@ class fullScrHUD:
             : content.shape[2],
         ] = content
 
+    @FunctionalWrapper
     def clear(self):
         self.m2draw[:, :, :] = 0
 
@@ -260,13 +263,16 @@ class fullScrHUD:
             np.uint8,
         )
 
+    @FunctionalWrapper
     def addcontentwithalfa(self, m):
         self.m2draw += m
 
+    @FunctionalWrapper
     def addcontent(self, m):
         alp = 255 * np.ones_like(m[:, :, 0:1])
         self.m2draw += np.concatenate((m, alp), 2)
 
+    @FunctionalWrapper
     def update(self):
         # swap
         tmp = self.m2show
@@ -276,6 +282,7 @@ class fullScrHUD:
         # needless to clear cuz entire screen will be set
         win32gui.InvalidateRect(self.hwnd, None, False)
 
+    @FunctionalWrapper
     def stop(self):
         self.terminate = True
         self.update()
@@ -384,9 +391,9 @@ class HotkeyManager:
 
         self.hktl = hotkeytasklist
         self.cch = HotkeyManager.ContiniousCallHandler()
-        self.calcPriorInfo()
+        self.__calcPriorInfo()
 
-    def calcPriorInfo(self):
+    def __calcPriorInfo(self):
         """
         costly!!!
         at m^2n^2, where m is #hotkeytask, n is #key of hotkeytask
@@ -483,7 +490,7 @@ class HotkeyManager:
                 if throwonerr:
                     raise e
         if anyKeyChanged:
-            self.calcPriorInfo()
+            self.__calcPriorInfo()
 
     @dataclasses.dataclass
     class InputSession:

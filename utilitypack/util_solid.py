@@ -66,6 +66,33 @@ def numinstr(s: str):
     return int(s) if len(s) > 0 else 0
 
 
+def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
+    def f2(self, *args: Any, **kwargs: Any) -> Any:
+        f(self, *args, **kwargs)
+        return self
+
+    return f2
+
+
+def UnfinishedWrapper(msg=None) -> Callable[..., Any]:
+    if callable(msg):
+        # calling without parens, works both on a class and a function
+        foo = msg
+        return UnfinishedWrapper()(foo)
+
+    default_msg = "Unfinished"
+    if msg is None:
+        msg = default_msg
+
+    def f2(foo):
+        def f3(*args: Any, **kwargs: Any) -> Any:
+            raise NotImplementedError(msg)
+
+        return f3
+
+    return f2
+
+
 class logger:
     def __init__(self, path):
         self.path = path
@@ -75,6 +102,7 @@ class logger:
             os.makedirs(dir)
         self.f = open(path, "wb+")
 
+    @FunctionalWrapper
     def log(self, content):
         self.f.write((content + "\n").encode("utf8"))
         # self.f.flush()
@@ -130,6 +158,7 @@ class bulletinBoard:
         self.idlecontent = idlecontent
         self.content: typing.List["bulletinBoard.Poster"] = []
 
+    @FunctionalWrapper
     def putup(self, poster: typing.Union[Poster, str]):
         if type(poster) == str:
             poster = bulletinBoard.Poster(poster)
@@ -176,6 +205,7 @@ class StoppableThread:
     def getRunning(self) -> bool:
         return self.running
 
+    @FunctionalWrapper
     def go(self, *arg, **kw) -> None:
         if self.submit is not None:
             return
@@ -196,6 +226,7 @@ class StoppableThread:
 
         self.submit = self.pool.submit(call)
 
+    @FunctionalWrapper
     def stop(self) -> None:
         if self.submit is None:
             return
@@ -232,14 +263,6 @@ def WriteTextFile(path: str, text: str):
     WriteFile(path, text.encode("utf-8"))
 
 
-def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
-    def f2(self, *args: Any, **kwargs: Any) -> Any:
-        f(self, *args, **kwargs)
-        return self
-
-    return f2
-
-
 class Pipe:
     value: Any = None
 
@@ -267,25 +290,6 @@ class Pipe:
 
 def GetTimeString():
     return time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-
-
-def UnfinishedWrapper(msg=None) -> Callable[..., Any]:
-    if callable(msg):
-        # calling without parens, works both on a class and a function
-        foo = msg
-        return UnfinishedWrapper()(foo)
-
-    default_msg = "Unfinished"
-    if msg is None:
-        msg = default_msg
-
-    def f2(foo):
-        def f3(*args: Any, **kwargs: Any) -> Any:
-            raise NotImplementedError(msg)
-
-        return f3
-
-    return f2
 
 
 class expparser:
@@ -1043,17 +1047,21 @@ class perf_statistic:
         if startnow:
             self.start()
 
+    @FunctionalWrapper
     def clear(self):
         self._starttime = None
         self._stagedtime = 0
         self._cycle = 0
 
+    @FunctionalWrapper
     def start(self):
         self._starttime = time.perf_counter()
 
+    @FunctionalWrapper
     def countcycle(self):
         self._cycle += 1
 
+    @FunctionalWrapper
     def stop(self):
         if self._starttime is None:
             return
@@ -1077,6 +1085,7 @@ class fpsmanager:
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
+    @FunctionalWrapper
     def WaitUntilNextFrame(self):
         sleepuntil(
             lambda: time.perf_counter() - self.lt > self.frametime,
@@ -1084,6 +1093,7 @@ class fpsmanager:
         )
         self.SetToNextFrame()
 
+    @FunctionalWrapper
     def CheckIfTimeToDoNextFrame(self) -> bool:
         """
         usage
@@ -1096,5 +1106,6 @@ class fpsmanager:
         result = time.perf_counter() - self.lt > self.frametime
         return result
 
+    @FunctionalWrapper
     def SetToNextFrame(self):
         self.lt = time.perf_counter()

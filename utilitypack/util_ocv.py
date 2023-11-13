@@ -250,6 +250,7 @@ class DataCollector:
         charSet4RandomString = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         return randomString(charSet4RandomString, DataCollector.randNameLen)
 
+    @FunctionalWrapper
     def save(self, m, name=None):
         if name is None:
             name = DataCollector.geneName()
