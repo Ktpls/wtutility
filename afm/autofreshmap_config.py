@@ -23,7 +23,7 @@ minDelayAfterDisconnected = 5
 throwerringetdetector = False
 throwerrinmain = False
 
-saveScreenShot = True
+saveScreenShot = False
 saveRate = 0.1
 
 resolution = "m1920x1080r1920x1080"

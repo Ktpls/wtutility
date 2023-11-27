@@ -19,6 +19,8 @@ class wtdistmeaspy:
 
     psLocked = False
 
+    smallMapCollector = DataCollector(r"./asset/wtdistmeaspy/smallMapCollection")
+
     def solveMapMainLogic(self):
         sleep(measdelay)  # for network delay
 
@@ -47,6 +49,9 @@ class wtdistmeaspy:
             if ret.ym.state.smetype == SMException.SolveMapResultType.NO_ERR:
                 break
             sleep(retryDelay)
+
+        if collectingSmallMap:
+            self.smallMapCollector.save(scr)
 
         def exceptionlist2str(el, spliter=None):
             if spliter is None:
