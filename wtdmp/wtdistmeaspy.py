@@ -50,9 +50,6 @@ class wtdistmeaspy:
                 break
             sleep(retryDelay)
 
-        if collectingSmallMap:
-            self.smallMapCollector.save(scr)
-
         def exceptionlist2str(el, spliter=None):
             if spliter is None:
                 spliter = "\n"
@@ -199,4 +196,6 @@ class wtdistmeaspy:
                 )
             solveSummary = False
 
+        if collectingSmallMap:
+            self.smallMapCollector.save(scr)
         return WtdmpMainLogicResult(prompt, solveSummary)
