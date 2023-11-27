@@ -205,7 +205,7 @@ class wtdistmeaspy:
         scr = cutBottomRightMap(scr)
         ret = SolveMap_BottomRightSmallMap(
             scr,
-            dontGetPlottingScale=self.psLocked,
+            dontGetPlottingScale=False,
         )
         if ret.plottingscale.state == SMException.SolveMapResultType.NO_ERR:
             self.lastDistMeasResultStaged.plottingscale = ret.plottingscale.result

@@ -139,6 +139,18 @@ def main():
             )
         )
 
+        def freshPlottingScale():
+            nonlocal wtdmp
+            bulletin.putup(wtdmp.freshPlottingScale())
+            wtdmp.psLocked = True
+
+        hotkeyaction.append(
+            HotkeyManager.hotkeytask(
+                key=[win32con.VK_CONTROL, ord("K"), OEM3],
+                foo=freshPlottingScale,
+            )
+        )
+
     # telescope
     if usingtelescope:
         print("telescope activated")
