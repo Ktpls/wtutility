@@ -1,6 +1,6 @@
 import time
 
-import keycodeWinCode as keycode
+import keyshortcut.keycodeWinCode as keycode
 from ctypes import (
     POINTER,
     c_ulong,

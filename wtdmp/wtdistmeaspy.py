@@ -1,4 +1,4 @@
-from wtdistmeaspy_implementation import *
+from .wtdistmeaspy_implementation import *
 
 
 @dataclasses.dataclass

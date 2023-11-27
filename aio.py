@@ -45,7 +45,7 @@ def main():
     # wtdistmeas
     if usingwtdistmeaspy:
         print("wtdistmeaspy activated")
-        import wtdistmeaspy
+        import wtdmp.wtdistmeaspy as wtdistmeaspy
 
         wtdmp = wtdistmeaspy.wtdistmeaspy()
         """
@@ -142,7 +142,7 @@ def main():
     # telescope
     if usingtelescope:
         print("telescope activated")
-        import telescope
+        import telescope.telescope as telescope
 
         tele = telescope.telescope()
 
@@ -164,7 +164,7 @@ def main():
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        import keyshortcut
+        import keyshortcut.keyshortcut as keyshortcut
 
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()

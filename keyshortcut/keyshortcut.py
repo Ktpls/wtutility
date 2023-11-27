@@ -1,4 +1,4 @@
-from gameinput import *
+from .gameinput import *
 
 from utilitypack import *
 

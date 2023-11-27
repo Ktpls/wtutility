@@ -1,4 +1,4 @@
-from telescope_implementation import *
+from .telescope_implementation import *
 class telescope:
     def __init__(self) -> None:
         self.enabled=False

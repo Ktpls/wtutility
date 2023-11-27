@@ -2,16 +2,16 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 import matplotlib as mpl
 from utilitypack.utility import *
-import gameinput
-from wtdistmeaspy_config import *
+import keyshortcut.gameinput as gameinput
+from .wtdistmeaspy_config import *
 import scipy.interpolate
 
 if ocrimpltype == "tes":
-    from wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
+    from .wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
 elif ocrimpltype == "cnn":
-    from wtdistmeaspy_ocrimpl import implCNN as ocrimpl
+    from .wtdistmeaspy_ocrimpl import implCNN as ocrimpl
 elif ocrimpltype == "psb":
-    from wtdistmeaspy_ocrimpl import implPassby as ocrimpl
+    from .wtdistmeaspy_ocrimpl import implPassby as ocrimpl
 
 ocrimpl.init()
 

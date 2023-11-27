@@ -1,5 +1,5 @@
 from utilitypack import *
-from telescope_config import *
+from .telescope_config import *
 
 sizelen = np.array(sizelen)
 availtransformation = {}

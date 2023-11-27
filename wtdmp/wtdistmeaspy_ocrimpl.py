@@ -1,6 +1,6 @@
 from utilitypack import *
 
-from wtdistmeaspy_config import *
+from .wtdistmeaspy_config import *
 
 
 class implocr:
