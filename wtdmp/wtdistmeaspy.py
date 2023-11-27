@@ -19,7 +19,7 @@ class wtdistmeaspy:
 
     psLocked = False
 
-    smallMapCollector = DataCollector(r"./asset/wtdistmeaspy/smallMapCollection")
+    smallMapCollector = DataCollector(datacoll_smallmappath)
 
     def solveMapMainLogic(self):
         sleep(measdelay)  # for network delay
@@ -28,15 +28,15 @@ class wtdistmeaspy:
         for i in range(retryOnFailure):
             scr = screenshoter().shotbgr()
             scr = cutBottomRightMap(scr)
-            # scr=cv.imread(r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-11-05-00-46-33_NormalTrace\unnamed.png")
 
             # keep collecting
             if keepEveryMeasInRecord:
                 ret = SolveMap_BottomRightSmallMap(
                     scr,
                     dbg=True,
-                    dbglogpath=r"./asset/wtdistmeaspy/log/{}_NormalTrace/".format(
+                    dbglogpath=wtdmplogpath.format(
                         GetTimeString(),
+                        "NormalTrace",
                     ),
                     dontGetPlottingScale=self.psLocked,
                 )
@@ -189,7 +189,7 @@ class wtdistmeaspy:
                 ret = SolveMap_BottomRightSmallMap(
                     scr,
                     dbg=True,
-                    dbglogpath=r"./asset/wtdistmeaspy/log/{}_On{}/".format(
+                    dbglogpath=wtdmplogpath.format(
                         GetTimeString(),
                         exceptionlist2str(exception, ", "),
                     ),
@@ -199,3 +199,17 @@ class wtdistmeaspy:
         if collectingSmallMap:
             self.smallMapCollector.save(scr)
         return WtdmpMainLogicResult(prompt, solveSummary)
+
+    def freshPlottingScale(self):
+        scr = screenshoter().shotbgr()
+        scr = cutBottomRightMap(scr)
+        ret = SolveMap_BottomRightSmallMap(
+            scr,
+            dontGetPlottingScale=self.psLocked,
+        )
+        if ret.plottingscale.state == SMException.SolveMapResultType.NO_ERR:
+            self.lastDistMeasResultStaged.plottingscale = ret.plottingscale.result
+            prompt = "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
+        else:
+            prompt = "Failed for %s" % ret.plottingscale.state
+        return prompt

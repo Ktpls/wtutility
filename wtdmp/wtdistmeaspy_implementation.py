@@ -16,7 +16,6 @@ elif ocrimpltype == "psb":
 ocrimpl.init()
 
 
-yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
 kernelyellowmark = (
     cv.cvtColor(cv.imread(yellowmarkpath), cv.COLOR_BGR2GRAY).astype(np.float32) / 255
 )
@@ -647,12 +646,9 @@ def adjustCaliberation(pidoutput):
     gameinput.keyup(keycode2press)
     return control
 
+
 def adjustCaliberation_PyAutoGUI(pidoutput):
-    keycode2press = (
-        "pageup"
-        if pidoutput > 0
-        else "pagedown"
-    )
+    keycode2press = "pageup" if pidoutput > 0 else "pagedown"
 
     control = np.abs(pidoutput)
     gameinput.pyautogui.keyUp(keycode2press)
@@ -670,8 +666,8 @@ class loadCalibrationOperator(StoppableThread):
         if caliDbg:
             if dbglogpath is None:
                 # same as in solve
-                dbglogpath = r"./asset/wtdistmeaspy/log/{}_GetCali/".format(
-                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                dbglogpath = wtdmplogpath.format(
+                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), "GetCali"
                 )
 
             def dbglogsavestep(m, name="unnamed", method="savemat"):

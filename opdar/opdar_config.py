@@ -55,3 +55,7 @@ textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
 #datacollecting
 collectingPlaneSample = False
 collectingPlaneSampleRate = 0.1
+
+uimaskPath = r"./asset/opdar/UIMASK.png"
+datacoll_samplepath = './output/opdar_plane/spl'
+datacoll_labelpath = './output/opdar_plane/lbl'

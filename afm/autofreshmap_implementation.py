@@ -1,10 +1,9 @@
 from logging import exception
 
 from utilitypack import *
-from gameinput import *
+from keyshortcut.gameinput import *
 from autofreshmap_config import *
 
-assetroot = "./asset/autofreshmap/"
 
 
 def signName2Path(name):
@@ -43,7 +42,7 @@ if dbglog:
     if log2file:
         logg = logger(
             os.path.join(
-                assetroot,
+                afmassetroot,
                 rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log',
             )
         )
@@ -159,7 +158,7 @@ info like:{
 
 
 def assetpath2realpath(ap):
-    return os.path.join(assetroot, ap)
+    return os.path.join(afmassetroot, ap)
 
 
 zfoo4matcher = ZFunc(10, 0, 20, 1)
@@ -534,7 +533,7 @@ def freshAMap():
         if saveScreenShot:
             if random.uniform(0, 1) < saveRate:
                 savemat(
-                    shot, name=GetTimeString(), path="./asset/autofreshmap/log/screen/"
+                    shot, name=GetTimeString(), path=logscreenpath
                 )
         return ss.shotbgr()
 

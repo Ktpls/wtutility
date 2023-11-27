@@ -35,3 +35,6 @@ AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 
 musicPath = r"C:\CloudMusic"
 player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
+
+afmassetroot = "./asset/autofreshmap/"
+logscreenpath = "./asset/autofreshmap/log/screen/"

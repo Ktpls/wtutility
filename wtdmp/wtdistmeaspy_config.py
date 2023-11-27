@@ -27,7 +27,7 @@ collectFailDebugOutput = True
 collectPlottingScale = True
 ocrimpltype = "tes"
 tesseractpath = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-modelpath = r".asset\wtdistmeaspy\wtdmpsocr.pth"
+modelpath = r".\asset\wtdistmeaspy\wtdmpsocr.pth"
 cnnresultthresh = 0.3
 plottingscale_rel_darkness = -2.5
 
@@ -46,3 +46,7 @@ milGridIntervalMin = 5
 autoCaliErr = 1
 
 collectingSmallMap = True
+
+yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
+datacoll_smallmappath = r"./asset/wtdistmeaspy/smallMapCollection"
+wtdmplogpath = r"./asset/wtdistmeaspy/log/{}_{}/"

@@ -1,11 +1,11 @@
 from utilitypack import *
-from opdar_config import *
+from .opdar_config import *
 
-uimask = cv.imread(r"./asset/opdar/UIMASK.png")
+uimask = cv.imread(uimaskPath)
 uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
 odc = [
-    DataCollector('./output/opdar_plane/spl'),
-    DataCollector('./output/opdar_plane/lbl'),
+    DataCollector(datacoll_samplepath),
+    DataCollector(datacoll_labelpath),
 ]
 
 
@@ -393,7 +393,7 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     return curr_pts, m
 
 
-from wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom,BadCaliException
+from wtdmp.wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom,BadCaliException
 
 
 def GetMilIntervalFromScrShot(m):
