@@ -140,9 +140,14 @@ def main():
         )
 
         def freshPlottingScale():
-            nonlocal wtdmp
-            bulletin.putup(wtdmp.freshPlottingScale())
-            wtdmp.psLocked = True
+            class ThFreshPs(StoppableThread):
+                def foo(self, *args, **kwargs):
+                    nonlocal wtdmp
+                    bulletin.putup(wtdmp.freshPlottingScale())
+                    wtdmp.psLocked = True
+
+            bulletin.putup("freshing")
+            ThFreshPs(threadpool).go()
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(

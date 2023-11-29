@@ -211,5 +211,5 @@ class wtdistmeaspy:
             self.lastDistMeasResultStaged.plottingscale = ret.plottingscale.result
             prompt = "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
         else:
-            prompt = "Failed for %s" % ret.plottingscale.state
+            prompt = "bad fresh %s" % ret.plottingscale.state
         return prompt
