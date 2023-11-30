@@ -207,7 +207,7 @@ class wtdistmeaspy:
             scr,
             dontGetPlottingScale=False,
         )
-        if ret.plottingscale.state == SMException.SolveMapResultType.NO_ERR:
+        if ret.plottingscale.state.smetype == SMException.SolveMapResultType.NO_ERR:
             self.lastDistMeasResultStaged.plottingscale = ret.plottingscale.result
             prompt = "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
         else:
