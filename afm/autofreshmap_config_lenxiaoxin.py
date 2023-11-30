@@ -1,0 +1,1 @@
+resolution = "m1920x1080r1280x720"

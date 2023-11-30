@@ -1,4 +1,5 @@
-from autofreshmap_configmap_plain import whitelistedmap, specialmapdetectors
+from .autofreshmap_configmap_plain import whitelistedmap, specialmapdetectors
+from .autofreshmap_config_lenxiaoxin import *
 
 singlechanneleddetection = False
 subsampleddetection = True
@@ -26,7 +27,6 @@ throwerrinmain = False
 saveScreenShot = False
 saveRate = 0.1
 
-resolution = "m1920x1080r1920x1080"
 
 wlanname4netshinterface = "WLAN2"
 wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305", "HUAZHU-Hanting"][0]
