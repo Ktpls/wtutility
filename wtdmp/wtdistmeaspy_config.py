@@ -1,5 +1,5 @@
 from utilitypack.utility import rgb2bgr, hsv2rgb
-from .wtdistmeaspy_config_lenxiaoxin import *
+from .wtdistmeaspy_config_dell import *
 
 reflist = [140, 180, 200, 225, 275, 350, 450]
 textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))

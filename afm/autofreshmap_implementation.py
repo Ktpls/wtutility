@@ -1,6 +1,6 @@
 from logging import exception
 
-from utilitypack import *
+from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from autofreshmap_config import *
 

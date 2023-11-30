@@ -1,4 +1,7 @@
 
+import sys
+import os
+sys.path.append(".")
 from os import system
 from autofreshmap_implementation import *
 import traceback

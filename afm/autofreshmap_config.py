@@ -1,5 +1,5 @@
-from .autofreshmap_configmap_plain import whitelistedmap, specialmapdetectors
-from .autofreshmap_config_lenxiaoxin import *
+from autofreshmap_configmap_plain import whitelistedmap, specialmapdetectors
+from autofreshmap_config_dell import *
 
 singlechanneleddetection = False
 subsampleddetection = True
