@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: AFM",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/afm/autofreshmap.py",
+            "console": "integratedTerminal",
+        },
+        {
             "name": "Python: AIO",
             "type": "python",
             "request": "launch",

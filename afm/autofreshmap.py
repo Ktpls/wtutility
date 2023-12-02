@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(".")
 from os import system
-from autofreshmap_implementation import *
+from .autofreshmap_implementation import *
 import traceback
 
 def main():
@@ -37,7 +37,7 @@ def test():
     sleep(1)
     press(keycode.key_Enter)
 
-main()
+
 
 
 

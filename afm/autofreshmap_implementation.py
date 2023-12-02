@@ -2,7 +2,7 @@ from logging import exception
 
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
-from autofreshmap_config import *
+from .autofreshmap_config import *
 
 
 
