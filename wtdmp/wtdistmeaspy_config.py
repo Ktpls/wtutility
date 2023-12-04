@@ -35,14 +35,15 @@ plottingscale_rel_darkness = -2.5
 
 caliDbg = False
 caliP = 1
-caliD = 0
-caliControlMul = 0.125  # for 30%
-# caliControlMul=0.27 #for 20%
+caliD = 0.05
+# caliControlMul = 0.125  # for 30%
+caliControlMul=0.27 #for 20%
 delayEveryCali = 0.05
 caliTableDetectionZoomRate = 1.0
 milDataErrorReq = 0.1
 milGridIntervalMin = 5
-autoCaliErr = 1
+autoCaliErr = 2
+lineFilterThresh = 0.5
 
 collectingSmallMap = True
 

@@ -87,14 +87,12 @@ def main():
 
         hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
 
-        loadCalibrationOperator = wtdistmeaspy.LoadCalibrationOperator(threadpool)
-
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
                 bulletin.putup("no staged dist result to cali")
                 return
-            loadCalibrationOperator.go(lastStaged)
+            wtdmp.caliOperator.go(lastStaged)
             bulletin.putup(f"caliberating to {lastStaged}")
 
         hotkeyaction.append(

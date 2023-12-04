@@ -1,15 +1,14 @@
 from utilref import *
-import wtdistmeaspy
-import gameinput
+import wtdmp.wtdistmeaspy
 
 activeWindow(getWTHwnd())
 sleep(2)
 win32api.Beep(1000, 100)
 
-wtdmp = wtdistmeaspy.wtdistmeaspy()
-wtdmp.caliOperator.go(1200)
+wtdmpv = wtdmp.wtdistmeaspy.wtdistmeaspy()
+wtdmpv.caliOperator.go(1200)
 while True:
-    if not wtdmp.caliOperator.getRunning():
+    if not wtdmpv.caliOperator.getRunning():
         break
     time.sleep(0.33)
 

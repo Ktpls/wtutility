@@ -380,7 +380,7 @@ uimask[uimask <= 0.5] = 0
 
 
 def SetLineKernel():
-    kernelLength = 21
+    kernelLength = 17
     kernelHalfWidth = 3
     lineHalfWidth = 1.5  # could be float, cuz its soft kernel
     alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth, kernelHalfWidth * 2 + 1)
@@ -427,20 +427,37 @@ def SnipScencePreProcess(m, dbg, dbglogsavestep, log):
     hsv_image[hsv_image[:, :, 0] > huemax, 0] -= huemax
     lower_red = hsv2opencv8bithsv((0, 35, 60))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
-    red_mask = cv.inRange(hsv_image, lower_red, upper_red) / 255
-    dbglogsavestep(red_mask * 255)
+    redpart = cv.inRange(hsv_image, lower_red, upper_red) / 255
+    dbglogsavestep(redpart * 255)
     #  apply ui mask here
-    red_mask = red_mask * uimask
-    dbglogsavestep(red_mask * 255)
+    redpart = redpart * uimask
+    dbglogsavestep(redpart * 255)
 
-    FilterThresh = 0.5
-    LineFilteredVer = cv.filter2D(red_mask, -1, LineKernel) > FilterThresh
-    LineFilteredHor = cv.filter2D(red_mask, -1, LineKernel.T) > FilterThresh
-    LineFiltered = np.logical_or(LineFilteredHor, LineFilteredVer)
-    red_mask = np.logical_and(LineFiltered, red_mask > 0.5).astype(np.float32)
+    LineFilteredVer = cv.filter2D(redpart, -1, LineKernel) > lineFilterThresh
+    dbglogsavestep(LineFilteredVer * 255)
+    LineFilteredHor = cv.filter2D(redpart, -1, LineKernel.T) > lineFilterThresh
+    dbglogsavestep(LineFilteredHor * 255)
+    
+    # do it again to eliminate noise from each other
+    LineFilteredVer2 = (
+        cv.filter2D(
+            np.logical_and(redpart, np.logical_not(LineFilteredHor)).astype(np.float32), -1, LineKernel
+        )
+        > lineFilterThresh
+    )
+    dbglogsavestep(LineFilteredVer2 * 255)
+    LineFilteredHor2 = (
+        cv.filter2D(
+            np.logical_and(redpart, np.logical_not(LineFilteredVer)).astype(np.float32), -1, LineKernel.T
+        )
+        > lineFilterThresh
+    )
+    dbglogsavestep(LineFilteredHor2 * 255)
+    LineFiltered = np.logical_or(LineFilteredHor2, LineFilteredVer2)
+    redpart = np.logical_and(LineFiltered, redpart > 0.5).astype(np.float32)
     dbglogsavestep(LineFiltered * 255)
-    dbglogsavestep(red_mask * 255)
-    return red_mask
+    dbglogsavestep(redpart * 255)
+    return redpart
 
 
 def AdjustByZoomRate(degenWindow):
