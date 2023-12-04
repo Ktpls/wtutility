@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from utilitypack.utility import *
 from aio_config import *
 import traceback
@@ -65,31 +66,35 @@ def main():
                 bulletin.putup("plotting scale unlocked")
 
         hotkeyaction.append(
-            HotkeyManager.hotkeytask(
-                key=[win32con.VK_SHIFT, OEM3], foo=SwitchPlottingScaleLock
-            )
+            HotkeyManager.hotkeytask(key=[ord("L"), OEM3], foo=SwitchPlottingScaleLock)
+        )
+
+        class GoMeasureAndCali(StoppableThread):
+            def foo(self, *args, **kwargs):
+                result = wtdmp.solveMapMainLogic()
+                bulletin.putup(result.prompt)
+                if result.succeed:
+                    lastStaged = wtdmp.lastDistMeasResultStaged.result
+                    wtdistmeaspy.LoadCalibrationOperator(threadpool).go(lastStaged)
+
+        goMeasureAndCali = GoMeasureAndCali(
+            StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun, threadpool
         )
 
         def hkcallWTDistMeas():
-            class GoMeasureAndCali(StoppableThread):
-                def foo(self, *args, **kwargs):
-                    result = wtdmp.solveMapMainLogic()
-                    bulletin.putup(result.prompt)
-                    if result.succeed:
-                        lastStaged = wtdmp.lastDistMeasResultStaged.result
-                        wtdistmeaspy.loadCalibrationOperator(threadpool).go(lastStaged)
-
             bulletin.putup("measuring")
-            GoMeasureAndCali(threadpool).go()
+            goMeasureAndCali.go()
 
         hotkeyaction.append(HotkeyManager.hotkeytask(key=OEM3, foo=hkcallWTDistMeas))
+
+        loadCalibrationOperator = wtdistmeaspy.LoadCalibrationOperator(threadpool)
 
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
                 bulletin.putup("no staged dist result to cali")
                 return
-            wtdistmeaspy.loadCalibrationOperator(threadpool).go(lastStaged)
+            loadCalibrationOperator.go(lastStaged)
             bulletin.putup(f"caliberating to {lastStaged}")
 
         hotkeyaction.append(
@@ -141,6 +146,15 @@ def main():
 
         def freshPlottingScale():
             class ThFreshPs(StoppableThread):
+                def __init__(
+                    self,
+                    pool: ThreadPoolExecutor,
+                ) -> None:
+                    super().__init__(
+                        StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun,
+                        pool,
+                    )
+
                 def foo(self, *args, **kwargs):
                     nonlocal wtdmp
                     bulletin.putup(wtdmp.freshPlottingScale())
@@ -151,7 +165,7 @@ def main():
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(
-                key=[win32con.VK_CONTROL, ord("K"), OEM3],
+                key=[ord("L"), ord("K"), OEM3],
                 foo=freshPlottingScale,
             )
         )

@@ -635,10 +635,11 @@ def adjustCaliberation(pidoutput):
     )
 
     control = np.abs(pidoutput)
-    # if control<0.5:
-    #     control=2*control**2 # make it more precise
+    if control < 0.25:
+        control = 4 * control**2  # make it more precise
 
     # try if get improvement in the case of no response
+    gameinput.keydown(keycode2press)
     gameinput.keyup(keycode2press)
 
     gameinput.keydown(keycode2press)
@@ -659,7 +660,7 @@ def adjustCaliberation_PyAutoGUI(pidoutput):
     return control
 
 
-class loadCalibrationOperator(StoppableThread):
+class LoadCalibrationOperator(StoppableThread):
     def foo(self, targetcali, dbglogpath=None):
         pid = PIDController(caliP, 0, caliD)
         ss = screenshoter()

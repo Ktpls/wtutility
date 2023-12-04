@@ -190,7 +190,17 @@ class StoppableThread:
     derivate from it and override foo()
     """
 
-    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+    class BehaviorOnTryingRuningWhenRunning(enum.Enum):
+        # ignore = 0
+        raise_error = 1
+        stop_and_rerun = 2
+        skip_and_return = 3
+
+    def __init__(
+        self,
+        behavior_run_on_running: "StoppableThread.BehaviorOnTryingRuningWhenRunning" = BehaviorOnTryingRuningWhenRunning.raise_error,
+        pool: ThreadPoolExecutor = None,
+    ) -> None:
         self.running: bool = False
         self.stopsignal: bool = True
         self.pool: ThreadPoolExecutor = (
@@ -198,6 +208,7 @@ class StoppableThread:
         )
         self.submit = None
         self.result = None
+        self.behavior_run_on_running = behavior_run_on_running
 
     def foo(self, *arg, **kw) -> None:
         raise NotImplementedError("should never run without overriding foo")
@@ -208,7 +219,12 @@ class StoppableThread:
     @FunctionalWrapper
     def go(self, *arg, **kw) -> None:
         if self.submit is not None:
-            return
+            if self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.raise_error:
+                raise RuntimeError("already running")
+            elif self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun:
+                self.stop()
+            elif self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.skip_and_return:
+                return
         self.running = True
         self.stopsignal = False
 

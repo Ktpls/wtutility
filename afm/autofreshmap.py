@@ -7,7 +7,6 @@ from .autofreshmap_implementation import *
 import traceback
 
 def main():
-    setadmin(__file__)
     
     
     try:

@@ -24,8 +24,8 @@ measdelay = 0.4  # nencessary for covering last yellow mark with new one
 retryOnFailure = 7
 retryDelay = 0.1
 keepEveryMeasInRecord = False
-collectFailDebugOutput = True
-collectPlottingScale = True
+collectFailDebugOutput = False
+collectPlottingScale = False
 ocrimpltype = "tes"
 tesseractpath = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 modelpath = r".\asset\wtdistmeaspy\wtdmpsocr.pth"
@@ -33,7 +33,7 @@ cnnresultthresh = 0.3
 plottingscale_rel_darkness = -2.5
 
 
-caliDbg = True
+caliDbg = False
 caliP = 1
 caliD = 0
 caliControlMul = 0.125  # for 30%

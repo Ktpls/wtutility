@@ -13,7 +13,7 @@ class wtdistmeaspy:
     reconstruct logic to make it of specificity
     """
 
-    caliOperator = loadCalibrationOperator()
+    caliOperator = LoadCalibrationOperator()
 
     lastDistMeasResultStaged = ElementsOfMap(None, None, None, None, None)
 
