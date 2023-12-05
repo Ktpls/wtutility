@@ -75,7 +75,7 @@ def main():
                 bulletin.putup(result.prompt)
                 if result.succeed:
                     lastStaged = wtdmp.lastDistMeasResultStaged.result
-                    wtdistmeaspy.LoadCalibrationOperator(threadpool).go(lastStaged)
+                    wtdmp.caliOperator.go(lastStaged)
 
         goMeasureAndCali = GoMeasureAndCali(
             StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun, threadpool
@@ -137,7 +137,7 @@ def main():
 
         hotkeyaction.append(
             HotkeyManager.hotkeytask(
-                key=[win32con.VK_CONTROL, win32con.VK_SHIFT, OEM3],
+                key=[win32con.VK_CONTROL, win32con.VK_MENU, OEM3],
                 foo=SetPlottingScale,
             )
         )

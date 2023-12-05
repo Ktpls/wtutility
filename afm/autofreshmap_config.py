@@ -19,7 +19,7 @@ setonwifirecoverthresh = 13
 
 detectpointsimilarity = 0.1
 
-minDelayAfterDisconnected = 5
+minDelayAfterDisconnected = 2
 
 throwerringetdetector = False
 throwerrinmain = False
