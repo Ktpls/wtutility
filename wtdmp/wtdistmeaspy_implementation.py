@@ -652,8 +652,8 @@ def adjustCaliberation(pidoutput):
     )
 
     control = np.abs(pidoutput)
-    if control < 0.25:
-        control = 4 * control**2  # make it more precise
+    if control < nonlinearCaliStart:
+        control = 1/nonlinearCaliStart * control**2  # make it more precise
 
     # try if get improvement in the case of no response
     gameinput.keydown(keycode2press)

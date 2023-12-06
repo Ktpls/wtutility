@@ -37,13 +37,14 @@ caliDbg = False
 caliP = 1
 caliD = 0.05
 # caliControlMul = 0.125  # for 30%
-caliControlMul=0.27 #for 20%
+caliControlMul = 0.27  # for 20%
 delayEveryCali = 0.05
 caliTableDetectionZoomRate = 1.0
 milDataErrorReq = 0.1
 milGridIntervalMin = 5
-autoCaliErr = 2
+autoCaliErr = 1.5
 lineFilterThresh = 0.5
+nonlinearCaliStart = 0
 
 collectingSmallMap = True
 
