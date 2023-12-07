@@ -36,7 +36,7 @@ SAAB-105
                 1:-1
             ],
         )
-        if waitaftergoodmap:
+        if waitafterdone:
             os.system("pause")
 
     except Exception as err:

@@ -5,7 +5,6 @@ from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 
 
-
 def signName2Path(name):
     return r"statesign/{}.png".format(name)
 
@@ -513,76 +512,90 @@ def leaveButton():
     moveto([0, 0])
 
 
-def freshAMap():
-    # foo: bool(*foo)(Mat& screen), with return of if detected
-    # ret: if matched and continue to next freshmap process step
-    def keepdetecting(foo: Callable[[np.ndarray], bool], sleeptime=0.5) -> bool:
+class freshAMap(StoppableThread):
+    def foo(self):
+        """
+        successCond: bool(*foo)(Mat& screen), with return of if detected
+        cancelCond: same but return true if cancel detection
+        ret: true if successCond else false on cancelCond
+        """
+
+        def KeepDetecting(
+            successCond: Callable[[np.ndarray], bool],
+            cancelCond: Callable[[np.ndarray], bool] = None,
+            sleeptime=0.5,
+        ) -> bool:
+            while True:
+                scr = shot()
+                if successCond(scr):
+                    return True
+                if cancelCond and cancelCond(scr):
+                    return False
+                sleep(sleeptime)
+
+        # init
+        loadAssetsNeeded4FreshAMap()
+
+        ss = screenshoter(0)
+
+        def shot():
+            shot = ss.shotbgr()
+            if saveScreenShot:
+                if random.uniform(0, 1) < saveRate:
+                    savemat(shot, name=GetTimeString(), path=logscreenpath)
+            return ss.shotbgr()
+
         while True:
-            scr = shot()
-            if foo(scr):
-                return True
-            sleep(sleeptime)
+            allchanneloutput("try matching")
 
-    # init
-    loadAssetsNeeded4FreshAMap()
+            # detect loading map
+            loadingscreen = None
 
-    ss = screenshoter(0)
+            allchanneloutput(str("detecting loading map"))
 
-    def shot():
-        shot = ss.shotbgr()
-        if saveScreenShot:
-            if random.uniform(0, 1) < saveRate:
-                savemat(
-                    shot, name=GetTimeString(), path=logscreenpath
-                )
-        return ss.shotbgr()
-
-    while True:
-        allchanneloutput("try matching")
-
-        # detect loading map
-        loadingscreen = None
-
-        allchanneloutput(str("detecting loading map"))
-
-        def detectLoadingMap(scr):
-            if stateDetector["LoadingMap"].detect(scr):
-                nonlocal loadingscreen
-                loadingscreen = scr
-                return True
-            if stateDetector["hanger"].detect(scr):  # for click not succeed
-                press(keycode.key_Enter)
+            def detectLoadingMap(scr):
+                if stateDetector["LoadingMap"].detect(scr):
+                    nonlocal loadingscreen
+                    loadingscreen = scr
+                    return True
+                if stateDetector["hanger"].detect(scr):  # for click not succeed
+                    press(keycode.key_Enter)
+                    return False
+                if stateDetector["OK"].detect(scr):
+                    press(keycode.key_Enter)
+                    return False
+                if stateDetector["MissionCanceled"].detect(scr):
+                    press(keycode.key_Enter)
+                    return False
                 return False
-            if stateDetector["OK"].detect(scr):
-                press(keycode.key_Enter)
+
+            if not KeepDetecting(
+                successCond=detectLoadingMap,
+                cancelCond=lambda: self.ifTimeToStop(),
+                sleeptime=1,
+            ):
+                # canceled
                 return False
-            if stateDetector["MissionCanceled"].detect(scr):
-                press(keycode.key_Enter)
-                return False
-            return False
 
-        if not keepdetecting(detectLoadingMap, 1):
-            return
+            RythmNotify.play()
+            allchanneloutput("loading map")
 
-        RythmNotify.play()
-        allchanneloutput("loading map")
-
-        # determine if map desired
-        ret = False
-        # name,detector
-        for n, d in whitelistedmapdetector.items():
-            # done this by hand to get 2 times faster
-            if d.detect(loadingscreen):
-                allchanneloutput(f"{n}")
-                ret = True
-                break
+            # determine if map desired
+            ret = False
+            # name,detector
+            for n, d in whitelistedmapdetector.items():
+                # done this by hand to get 2 times faster
+                if d.detect(loadingscreen):
+                    allchanneloutput(f"{n}")
+                    ret = True
+                    break
 
         allchanneloutput(str(ret))
         if ret:
             # enter game
             RythmSuccess.play()
             allchanneloutput("good map")
-            break
+            return True
 
         # detected banned map
         setoffwifi()
@@ -596,18 +609,23 @@ def freshAMap():
             # setoffwifi()
             return False
 
-        # detect able to enter again
-        def detectGameRematchable(scr):
-            if stateDetector["hanger"].detect(scr):
-                return True
-            if stateDetector["MissionCanceled"].detect(scr):
-                return True
-            return False
-
         # sleep at least some time
         sleep(minDelayAfterDisconnected)
-        if not keepdetecting(detectGameCanceled, sleeptime=2):
-            return
+        if not KeepDetecting(
+            successCond=detectGameCanceled,
+            cancelCond=lambda: self.ifTimeToStop(),
+            sleeptime=2,
+        ):
+            '''
+            task canceld, do the cleanning
+            set on wifi after fully exit the game match
+            '''
+            KeepDetecting(
+                successCond=detectGameCanceled,
+                sleeptime=2,
+            )
+            setonwifi()
+            return False
 
         setonwifi()
         RythmNotify.play()
@@ -615,12 +633,6 @@ def freshAMap():
         # for not enter game too soon after wifi on
         wifonitime = time.time()
         sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
-
-
-def longDelay(t, interval=0.5):
-    round = math.ceil(t / interval)
-    for i in range(round):
-        time.sleep(interval)
 
 
 class ApproximateStandardizationGuide:

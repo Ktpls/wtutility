@@ -7,7 +7,7 @@ subsampleddetectionrate = 0.1
 
 log2file = False
 dbglog = True
-waitaftergoodmap = False
+waitafterdone = False
 
 standardSpawnCenterError = 200
 standardPointSelectorError = 20

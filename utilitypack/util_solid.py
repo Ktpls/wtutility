@@ -196,9 +196,15 @@ class StoppableThread:
         stop_and_rerun = 2
         skip_and_return = 3
 
+    class StrategyOnError(enum.Enum):
+        ignore = 0
+        raise_error = 1
+        print_error = 2
+
     def __init__(
         self,
         behavior_run_on_running: "StoppableThread.BehaviorOnTryingRuningWhenRunning" = BehaviorOnTryingRuningWhenRunning.raise_error,
+        strategy_on_error: "StoppableThread.StrategyOnError" = StrategyOnError.raise_error,
         pool: ThreadPoolExecutor = None,
     ) -> None:
         self.running: bool = False
@@ -209,6 +215,7 @@ class StoppableThread:
         self.submit = None
         self.result = None
         self.behavior_run_on_running = behavior_run_on_running
+        self.strategy_on_error = strategy_on_error
 
     def foo(self, *arg, **kw) -> None:
         raise NotImplementedError("should never run without overriding foo")
@@ -219,11 +226,20 @@ class StoppableThread:
     @FunctionalWrapper
     def go(self, *arg, **kw) -> None:
         if self.submit is not None:
-            if self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.raise_error:
+            if (
+                self.behavior_run_on_running
+                == StoppableThread.BehaviorOnTryingRuningWhenRunning.raise_error
+            ):
                 raise RuntimeError("already running")
-            elif self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun:
+            elif (
+                self.behavior_run_on_running
+                == StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun
+            ):
                 self.stop()
-            elif self.behavior_run_on_running == StoppableThread.BehaviorOnTryingRuningWhenRunning.skip_and_return:
+            elif (
+                self.behavior_run_on_running
+                == StoppableThread.BehaviorOnTryingRuningWhenRunning.skip_and_return
+            ):
                 return
         self.running = True
         self.stopsignal = False
@@ -237,7 +253,18 @@ class StoppableThread:
             try:
                 self.result = self.foo(*arg, **kw)
             except Exception as e:
-                traceback.print_exc()
+                if (
+                    self.strategy_on_error
+                    == StoppableThread.StrategyOnError.raise_error
+                ):
+                    raise e
+                elif (
+                    self.strategy_on_error
+                    == StoppableThread.StrategyOnError.print_error
+                ):
+                    traceback.print_exc()
+                elif self.strategy_on_error == StoppableThread.StrategyOnError.ignore:
+                    pass
             self.running = False
 
         self.submit = self.pool.submit(call)
@@ -250,6 +277,9 @@ class StoppableThread:
         self.submit.result()
         self.running = False
         self.submit = None
+
+    def ifTimeToStop(self) -> bool:
+        return self.stopsignal
 
 
 def ReadFile(path):
@@ -1125,6 +1155,42 @@ class fpsmanager:
     @FunctionalWrapper
     def SetToNextFrame(self):
         self.lt = time.perf_counter()
+
+
+def longDelay(t, interval=0.5):
+    round = math.ceil(t / interval)
+    for i in range(round):
+        time.sleep(interval)
+
+
+# to stop oscilation in autoCali due to sleep() precise
+def PreciseSleep(t):
+    if t > 0.1:
+        # too rough
+        sleep(t)
+    else:
+        endtime = time.perf_counter() + t
+        while True:
+            if time.perf_counter() >= endtime:
+                break
+
+
+def longDelay(t, interval=0.5):
+    round = math.ceil(t / interval)
+    for i in range(round):
+        time.sleep(interval)
+
+
+# to stop oscilation in autoCali due to sleep() precise
+def PreciseSleep(t):
+    if t > 0.1:
+        # too rough
+        sleep(t)
+    else:
+        endtime = time.perf_counter() + t
+        while True:
+            if time.perf_counter() >= endtime:
+                break
 
 
 def WrapperOfMultiLineText(s):
