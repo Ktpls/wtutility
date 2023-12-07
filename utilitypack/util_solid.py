@@ -1052,7 +1052,7 @@ exp: {e.expression}
                 splitline()
 
 
-def sleepuntil(con: Callable, dt=0.01):
+def sleepuntil(con: Callable, dt=0.1):
     while not con():
         time.sleep(dt)
 

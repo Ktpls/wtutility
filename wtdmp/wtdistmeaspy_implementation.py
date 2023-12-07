@@ -437,18 +437,22 @@ def SnipScencePreProcess(m, dbg, dbglogsavestep, log):
     dbglogsavestep(LineFilteredVer * 255)
     LineFilteredHor = cv.filter2D(redpart, -1, LineKernel.T) > lineFilterThresh
     dbglogsavestep(LineFilteredHor * 255)
-    
+
     # do it again to eliminate noise from each other
     LineFilteredVer2 = (
         cv.filter2D(
-            np.logical_and(redpart, np.logical_not(LineFilteredHor)).astype(np.float32), -1, LineKernel
+            np.logical_and(redpart, np.logical_not(LineFilteredHor)).astype(np.float32),
+            -1,
+            LineKernel,
         )
         > lineFilterThresh
     )
     dbglogsavestep(LineFilteredVer2 * 255)
     LineFilteredHor2 = (
         cv.filter2D(
-            np.logical_and(redpart, np.logical_not(LineFilteredVer)).astype(np.float32), -1, LineKernel.T
+            np.logical_and(redpart, np.logical_not(LineFilteredVer)).astype(np.float32),
+            -1,
+            LineKernel.T,
         )
         > lineFilterThresh
     )
@@ -653,11 +657,12 @@ def adjustCaliberation(pidoutput):
 
     control = np.abs(pidoutput)
     if control < nonlinearCaliStart:
-        control = 1/nonlinearCaliStart * control**2  # make it more precise
+        control = 1 / nonlinearCaliStart * control**2  # make it more precise
 
     # try if get improvement in the case of no response
-    gameinput.keydown(keycode2press)
-    gameinput.keyup(keycode2press)
+    for k in [gameinput.keycode.key_PageUp, gameinput.keycode.key_PageDown]:
+        gameinput.keydown(k)
+        gameinput.keyup(k)
 
     gameinput.keydown(keycode2press)
     PreciseSleep(control)

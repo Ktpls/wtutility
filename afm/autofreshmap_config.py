@@ -15,7 +15,7 @@ standardPointSelectorError = 20
 standardMatchThreshold = 0.3
 standardMapMatchThreshold = 0.25
 
-setonwifirecoverthresh = 13
+setonwifirecoverthresh = 10
 
 detectpointsimilarity = 0.1
 
