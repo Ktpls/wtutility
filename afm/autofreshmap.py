@@ -16,12 +16,10 @@ def main():
 
         def stopAfm():
             afm.stop()
-            for t in [500, 1000, 1500]:
-                win32api.Beep(t, 100)
 
         hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
 
-        fpsm = fpsmanager(1)
+        fpsm = fpsmanager(5)
         activeWindow(getWTHwnd())
         mouse.mov(*(0, 0))
         afm.go()

@@ -703,7 +703,7 @@ RythmSuccess = Rythm.fromString(
 1000
 """
     ),
-    default_dur=500,
+    default_dur=100,
 )
 RythmError = Rythm.fromString(
     WrapperOfMultiLineText(
@@ -712,7 +712,7 @@ RythmError = Rythm.fromString(
 500,1000
 """
     ),
-    default_dur=500,
+    default_dur=100,
 )
 RythmCancel = Rythm.fromString(
     WrapperOfMultiLineText(
@@ -722,7 +722,7 @@ RythmCancel = Rythm.fromString(
 500
 """
     ),
-    default_dur=500,
+    default_dur=100,
 )
 RythmNotify = Rythm.fromString(
     WrapperOfMultiLineText(

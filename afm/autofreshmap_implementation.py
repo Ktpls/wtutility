@@ -527,6 +527,7 @@ class freshAMap(StoppableThread):
         ) -> bool:
             while True:
                 scr = shot()
+
                 if successCond(scr):
                     return True
                 if cancelCond and cancelCond(scr):
@@ -553,6 +554,8 @@ class freshAMap(StoppableThread):
 
             allchanneloutput(str("detecting loading map"))
 
+            RythmNotify.play()
+
             def detectLoadingMap(scr):
                 if stateDetector["LoadingMap"].detect(scr):
                     nonlocal loadingscreen
@@ -571,10 +574,13 @@ class freshAMap(StoppableThread):
 
             if not KeepDetecting(
                 successCond=detectLoadingMap,
-                cancelCond=lambda: self.ifTimeToStop(),
+                cancelCond=lambda src: self.ifTimeToStop(),
                 sleeptime=1,
             ):
                 # canceled
+                # clear matching state
+                press(keycode.key_Esc)
+                RythmCancel.play()
                 return False
 
             RythmNotify.play()
@@ -613,13 +619,14 @@ class freshAMap(StoppableThread):
             sleep(minDelayAfterDisconnected)
             if not KeepDetecting(
                 successCond=detectGameCanceled,
-                cancelCond=lambda: self.ifTimeToStop(),
+                cancelCond=lambda scr: self.ifTimeToStop(),
                 sleeptime=2,
             ):
                 """
                 task canceld, do the cleanning
                 set on wifi after fully exit the game match
                 """
+                RythmCancel.play()
                 KeepDetecting(
                     successCond=detectGameCanceled,
                     sleeptime=2,
