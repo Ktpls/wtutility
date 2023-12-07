@@ -1,6 +1,6 @@
 import os
 import sys
-from autofreshmap_implementation import *
+from .autofreshmap_implementation import *
 
 
 def nicelyformatarraylike(a):
@@ -39,4 +39,4 @@ def main():
         os.system('pause')
 
 
-main()
+# main()

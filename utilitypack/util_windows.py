@@ -668,9 +668,9 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
     return ret
 
 
-@dataclasses
+@dataclasses.dataclass
 class Rythm:
-    @dataclasses
+    @dataclasses.dataclass
     class BeepTone:
         freq: int
         dur: int = 100
@@ -684,7 +684,7 @@ class Rythm:
         for l in lines:
             arg = l.split(",")
             tones.append(
-                freq=Rythm.BeepTone(
+                Rythm.BeepTone(
                     int(arg[0]), dur=int(arg[1]) if len(arg) > 1 else default_dur
                 )
             )

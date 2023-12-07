@@ -1,7 +1,7 @@
 
 import os
 import sys
-from autofreshmap_implementation import *
+from .autofreshmap_implementation import *
 
 
 
@@ -28,4 +28,4 @@ def main():
     i_s=sys.argv[1:]
     [doOne(i) for i in i_s]
     os.system('pause')
-main()
+# main()
