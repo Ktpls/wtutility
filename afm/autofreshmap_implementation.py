@@ -5,7 +5,6 @@ from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 
 
-
 def signName2Path(name):
     return r"statesign/{}.png".format(name)
 
@@ -516,12 +515,44 @@ def leaveButton():
 def freshAMap():
     # foo: bool(*foo)(Mat& screen), with return of if detected
     # ret: if matched and continue to next freshmap process step
-    def keepdetecting(foo: Callable[[np.ndarray], bool], sleeptime=0.5) -> bool:
+    def stoppableKeepDetecting(
+        successCond: Callable[[np.ndarray], bool],
+        cancelCond: Callable[[np.ndarray], bool] = None,
+        sleeptime=0.5,
+    ) -> bool:
         while True:
             scr = shot()
-            if foo(scr):
+            if successCond(scr):
                 return True
+            if cancelCond and cancelCond(scr):
+                return False
             sleep(sleeptime)
+
+    class StoppableTimeCostlyProcess(StoppableThread):
+        def foo(self, *arg, **kwargs):
+            pass
+
+        def on_exit(self):
+            pass
+
+        @FunctionalWrapper
+        def go(self, *args, **kwargs):
+            barrier = threading.Barrier(2)
+            oldfoo = self.foo
+
+            def fooWrapper():
+                ret = oldfoo(*args, **kwargs)
+                barrier.wait()
+                return ret
+
+            self.foo = fooWrapper
+            super().go(*args, **kwargs)
+            # wait for foo done
+            barrier.wait()
+            # wait for writting back result
+            sleepuntil(lambda: not self.getRunning())
+            self.on_exit()
+            self.foo = oldfoo
 
     # init
     loadAssetsNeeded4FreshAMap()
@@ -532,9 +563,7 @@ def freshAMap():
         shot = ss.shotbgr()
         if saveScreenShot:
             if random.uniform(0, 1) < saveRate:
-                savemat(
-                    shot, name=GetTimeString(), path=logscreenpath
-                )
+                savemat(shot, name=GetTimeString(), path=logscreenpath)
         return ss.shotbgr()
 
     while True:
@@ -545,23 +574,33 @@ def freshAMap():
 
         allchanneloutput(str("detecting loading map"))
 
-        def detectLoadingMap(scr):
-            if stateDetector["LoadingMap"].detect(scr):
-                nonlocal loadingscreen
-                loadingscreen = scr
-                return True
-            if stateDetector["hanger"].detect(scr):  # for click not succeed
-                press(keycode.key_Enter)
-                return False
-            if stateDetector["OK"].detect(scr):
-                press(keycode.key_Enter)
-                return False
-            if stateDetector["MissionCanceled"].detect(scr):
-                press(keycode.key_Enter)
-                return False
-            return False
+        class StcpLoadingMap(StoppableTimeCostlyProcess):
+            def foo(self):
+                def detectLoadingMap(scr):
+                    if stateDetector["LoadingMap"].detect(scr):
+                        nonlocal loadingscreen
+                        loadingscreen = scr
+                        return True
+                    if stateDetector["hanger"].detect(scr):  # for click not succeed
+                        press(keycode.key_Enter)
+                        return False
+                    if stateDetector["OK"].detect(scr):
+                        press(keycode.key_Enter)
+                        return False
+                    if stateDetector["MissionCanceled"].detect(scr):
+                        press(keycode.key_Enter)
+                        return False
+                    return False
 
-        if not keepdetecting(detectLoadingMap, 1):
+                return stoppableKeepDetecting(
+                    successCond=detectLoadingMap,
+                    cancelCond=lambda: self.stopsignal,
+                    sleeptime=1,
+                )
+
+        nowStcp = StcpLoadingMap()
+        nowStcp.go()
+        if not nowStcp.result():
             return
 
         win32api.Beep(500, 100)
@@ -592,23 +631,30 @@ def freshAMap():
         allchanneloutput("bad map")
 
         # detect game canceled, which is not in loading map scence
-        def detectGameCanceled(scr):
-            if not stateDetector["LoadingMap"].detect(scr):
-                return True
-            # setoffwifi()
-            return False
+        class StcpGameCanceled(StoppableTimeCostlyProcess):
+            @staticmethod
+            def detectGameCanceled(scr):
+                if not stateDetector["LoadingMap"].detect(scr):
+                    return True
+                # setoffwifi()
+                return False
 
-        # detect able to enter again
-        def detectGameRematchable(scr):
-            if stateDetector["hanger"].detect(scr):
-                return True
-            if stateDetector["MissionCanceled"].detect(scr):
-                return True
-            return False
+            def foo(self):
+                return stoppableKeepDetecting(
+                    successCond=StcpGameCanceled.detectGameCanceled,
+                    cancelCond=lambda: self.stopsignal,
+                    sleeptime=2,
+                )
+
+            def on_exit(self):
+                self.keepdetecting(StcpGameCanceled.detectGameCanceled, sleeptime=2)
+                setonwifi()
 
         # sleep at least some time
         sleep(minDelayAfterDisconnected)
-        if not keepdetecting(detectGameCanceled, sleeptime=2):
+        nowStcp = StcpGameCanceled()
+        nowStcp.go()
+        if not nowStcp.result:
             return
 
         setonwifi()
@@ -617,12 +663,6 @@ def freshAMap():
         # for not enter game too soon after wifi on
         wifonitime = time.time()
         sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
-
-
-def longDelay(t, interval=0.5):
-    round = math.ceil(t / interval)
-    for i in range(round):
-        time.sleep(interval)
 
 
 class ApproximateStandardizationGuide:

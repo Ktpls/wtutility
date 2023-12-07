@@ -8,6 +8,9 @@ import traceback
 
 def main():
     
+    class InputProcessor(StoppableThread):
+        def foo():
+            hotkey=HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5,)])
     
     try:
         
