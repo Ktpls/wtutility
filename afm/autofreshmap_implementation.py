@@ -512,157 +512,129 @@ def leaveButton():
     moveto([0, 0])
 
 
-def freshAMap():
-    # foo: bool(*foo)(Mat& screen), with return of if detected
-    # ret: if matched and continue to next freshmap process step
-    def stoppableKeepDetecting(
-        successCond: Callable[[np.ndarray], bool],
-        cancelCond: Callable[[np.ndarray], bool] = None,
-        sleeptime=0.5,
-    ) -> bool:
-        while True:
-            scr = shot()
-            if successCond(scr):
-                return True
-            if cancelCond and cancelCond(scr):
-                return False
-            sleep(sleeptime)
+class freshAMap(StoppableThread):
+    def foo(self):
+        """
+        successCond: bool(*foo)(Mat& screen), with return of if detected
+        cancelCond: same but return true if cancel detection
+        ret: true if successCond else false on cancelCond
+        """
 
-    class StoppableTimeCostlyProcess(StoppableThread):
-        def foo(self, *arg, **kwargs):
-            pass
-
-        def on_exit(self):
-            pass
-
-        @FunctionalWrapper
-        def go(self, *args, **kwargs):
-            barrier = threading.Barrier(2)
-            oldfoo = self.foo
-
-            def fooWrapper():
-                ret = oldfoo(*args, **kwargs)
-                barrier.wait()
-                return ret
-
-            self.foo = fooWrapper
-            super().go(*args, **kwargs)
-            # wait for foo done
-            barrier.wait()
-            # wait for writting back result
-            sleepuntil(lambda: not self.getRunning())
-            self.on_exit()
-            self.foo = oldfoo
-
-    # init
-    loadAssetsNeeded4FreshAMap()
-
-    ss = screenshoter(0)
-
-    def shot():
-        shot = ss.shotbgr()
-        if saveScreenShot:
-            if random.uniform(0, 1) < saveRate:
-                savemat(shot, name=GetTimeString(), path=logscreenpath)
-        return ss.shotbgr()
-
-    while True:
-        allchanneloutput("try matching")
-
-        # detect loading map
-        loadingscreen = None
-
-        allchanneloutput(str("detecting loading map"))
-
-        class StcpLoadingMap(StoppableTimeCostlyProcess):
-            def foo(self):
-                def detectLoadingMap(scr):
-                    if stateDetector["LoadingMap"].detect(scr):
-                        nonlocal loadingscreen
-                        loadingscreen = scr
-                        return True
-                    if stateDetector["hanger"].detect(scr):  # for click not succeed
-                        press(keycode.key_Enter)
-                        return False
-                    if stateDetector["OK"].detect(scr):
-                        press(keycode.key_Enter)
-                        return False
-                    if stateDetector["MissionCanceled"].detect(scr):
-                        press(keycode.key_Enter)
-                        return False
+        def KeepDetecting(
+            successCond: Callable[[np.ndarray], bool],
+            cancelCond: Callable[[np.ndarray], bool] = None,
+            sleeptime=0.5,
+        ) -> bool:
+            while True:
+                scr = shot()
+                if successCond(scr):
+                    return True
+                if cancelCond and cancelCond(scr):
                     return False
+                sleep(sleeptime)
 
-                return stoppableKeepDetecting(
-                    successCond=detectLoadingMap,
-                    cancelCond=lambda: self.stopsignal,
-                    sleeptime=1,
-                )
+        # init
+        loadAssetsNeeded4FreshAMap()
 
-        nowStcp = StcpLoadingMap()
-        nowStcp.go()
-        if not nowStcp.result():
-            return
+        ss = screenshoter(0)
 
-        win32api.Beep(500, 100)
-        allchanneloutput("loading map")
+        def shot():
+            shot = ss.shotbgr()
+            if saveScreenShot:
+                if random.uniform(0, 1) < saveRate:
+                    savemat(shot, name=GetTimeString(), path=logscreenpath)
+            return ss.shotbgr()
 
-        # determine if map desired
-        ret = False
-        # name,detector
-        for n, d in whitelistedmapdetector.items():
-            # done this by hand to get 2 times faster
-            if d.detect(loadingscreen):
-                allchanneloutput(f"{n}")
-                ret = True
-                break
+        while True:
+            allchanneloutput("try matching")
 
-        allchanneloutput(str(ret))
-        if ret:
-            # enter game
-            win32api.Beep(1000, 100)
+            # detect loading map
+            loadingscreen = None
+
+            allchanneloutput(str("detecting loading map"))
+
+            def detectLoadingMap(scr):
+                if stateDetector["LoadingMap"].detect(scr):
+                    nonlocal loadingscreen
+                    loadingscreen = scr
+                    return True
+                if stateDetector["hanger"].detect(scr):  # for click not succeed
+                    press(keycode.key_Enter)
+                    return False
+                if stateDetector["OK"].detect(scr):
+                    press(keycode.key_Enter)
+                    return False
+                if stateDetector["MissionCanceled"].detect(scr):
+                    press(keycode.key_Enter)
+                    return False
+                return False
+
+            if not KeepDetecting(
+                successCond=detectLoadingMap,
+                cancelCond=lambda: self.ifTimeToStop(),
+                sleeptime=1,
+            ):
+                # canceled
+                return False
+
             win32api.Beep(500, 100)
-            win32api.Beep(1000, 100)
-            allchanneloutput("good map")
-            break
+            allchanneloutput("loading map")
 
-        # detected banned map
-        setoffwifi()
-        win32api.Beep(500, 100)
-        allchanneloutput("bad map")
+            # determine if map desired
+            ret = False
+            # name,detector
+            for n, d in whitelistedmapdetector.items():
+                # done this by hand to get 2 times faster
+                if d.detect(loadingscreen):
+                    allchanneloutput(f"{n}")
+                    ret = True
+                    break
 
-        # detect game canceled, which is not in loading map scence
-        class StcpGameCanceled(StoppableTimeCostlyProcess):
-            @staticmethod
+            allchanneloutput(str(ret))
+            if ret:
+                # enter game
+                win32api.Beep(1000, 100)
+                win32api.Beep(500, 100)
+                win32api.Beep(1000, 100)
+                allchanneloutput("good map")
+                return True
+
+            # detected banned map
+            setoffwifi()
+            win32api.Beep(500, 100)
+            allchanneloutput("bad map")
+
+            # detect game canceled, which is not in loading map scence
             def detectGameCanceled(scr):
                 if not stateDetector["LoadingMap"].detect(scr):
                     return True
                 # setoffwifi()
                 return False
 
-            def foo(self):
-                return stoppableKeepDetecting(
-                    successCond=StcpGameCanceled.detectGameCanceled,
-                    cancelCond=lambda: self.stopsignal,
+            # sleep at least some time
+            sleep(minDelayAfterDisconnected)
+            if not KeepDetecting(
+                successCond=detectGameCanceled,
+                cancelCond=lambda: self.ifTimeToStop(),
+                sleeptime=2,
+            ):
+                '''
+                task canceld, do the cleanning
+                set on wifi after fully exit the game match
+                '''
+                KeepDetecting(
+                    successCond=detectGameCanceled,
                     sleeptime=2,
                 )
-
-            def on_exit(self):
-                self.keepdetecting(StcpGameCanceled.detectGameCanceled, sleeptime=2)
                 setonwifi()
+                return False
 
-        # sleep at least some time
-        sleep(minDelayAfterDisconnected)
-        nowStcp = StcpGameCanceled()
-        nowStcp.go()
-        if not nowStcp.result:
-            return
-
-        setonwifi()
-        win32api.Beep(500, 100)
-        allchanneloutput("canceled")
-        # for not enter game too soon after wifi on
-        wifonitime = time.time()
-        sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
+            setonwifi()
+            win32api.Beep(500, 100)
+            allchanneloutput("canceled")
+            # for not enter game too soon after wifi on
+            wifonitime = time.time()
+            sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
 
 
 class ApproximateStandardizationGuide:

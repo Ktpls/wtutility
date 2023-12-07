@@ -253,9 +253,15 @@ class StoppableThread:
             try:
                 self.result = self.foo(*arg, **kw)
             except Exception as e:
-                if self.strategy_on_error == StoppableThread.StrategyOnError.raise_error:
+                if (
+                    self.strategy_on_error
+                    == StoppableThread.StrategyOnError.raise_error
+                ):
                     raise e
-                elif self.strategy_on_error == StoppableThread.StrategyOnError.print_error:
+                elif (
+                    self.strategy_on_error
+                    == StoppableThread.StrategyOnError.print_error
+                ):
                     traceback.print_exc()
                 elif self.strategy_on_error == StoppableThread.StrategyOnError.ignore:
                     pass
@@ -271,6 +277,9 @@ class StoppableThread:
         self.submit.result()
         self.running = False
         self.submit = None
+
+    def ifTimeToStop(self) -> bool:
+        return self.stopsignal
 
 
 def ReadFile(path):
