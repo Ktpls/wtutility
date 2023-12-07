@@ -40,7 +40,7 @@ def onClick():
         return
     eedc.save(cachedShots[i].m)
     lastSaveTime=nowtime
-    win32api.Beep(1000, 100)
+    RythmNotify.play()
 
 
 def onFrame():

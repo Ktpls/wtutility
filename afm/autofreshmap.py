@@ -18,8 +18,7 @@ def main():
             os.system('pause')
     except Exception as err:
         traceback.print_exc()
-        win32api.Beep(1000,1000)
-        win32api.Beep(500,1000)
+        RythmError.play()
         if throwerrinmain:
             raise err
         system('pause')

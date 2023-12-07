@@ -564,7 +564,7 @@ def freshAMap():
         if not keepdetecting(detectLoadingMap, 1):
             return
 
-        win32api.Beep(500, 100)
+        RythmNotify.play()
         allchanneloutput("loading map")
 
         # determine if map desired
@@ -580,15 +580,13 @@ def freshAMap():
         allchanneloutput(str(ret))
         if ret:
             # enter game
-            win32api.Beep(1000, 100)
-            win32api.Beep(500, 100)
-            win32api.Beep(1000, 100)
+            RythmSuccess.play()
             allchanneloutput("good map")
             break
 
         # detected banned map
         setoffwifi()
-        win32api.Beep(500, 100)
+        RythmNotify.play()
         allchanneloutput("bad map")
 
         # detect game canceled, which is not in loading map scence
@@ -612,7 +610,7 @@ def freshAMap():
             return
 
         setonwifi()
-        win32api.Beep(500, 100)
+        RythmNotify.play()
         allchanneloutput("canceled")
         # for not enter game too soon after wifi on
         wifonitime = time.time()
@@ -866,9 +864,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         if detectPlayerVehicleResult == DetectPlayerVehicleResult.good:
             # good
-            win32api.Beep(1000, 100)
-            win32api.Beep(500, 100)
-            win32api.Beep(1000, 100)
+            RythmSuccess.play()
             import subprocess
 
             files = AllFileIn(musicPath)
@@ -889,9 +885,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             or detectPlayerVehicleResult == DetectPlayerVehicleResult.timeout
         ):
             # bad
-            win32api.Beep(500, 100)
-            win32api.Beep(500, 100)
-            win32api.Beep(500, 100)
+            RythmBadNotify.play()
         elif detectPlayerVehicleResult == DetectPlayerVehicleResult.unset:
             raise Exception("detectPlayerVehicleResult is unset")
 

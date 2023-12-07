@@ -669,14 +669,13 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
 
 
 @dataclasses
-class BeepTone:
-    freq: int
-    dur: int = 100
-
-
-@dataclasses
 class Rythm:
-    tones: typing.List[BeepTone]
+    @dataclasses
+    class BeepTone:
+        freq: int
+        dur: int = 100
+
+    tones: typing.List["Rythm.BeepTone"]
 
     @staticmethod
     def fromString(s: str, default_dur: int = 100):
@@ -685,7 +684,7 @@ class Rythm:
         for l in lines:
             arg = l.split(",")
             tones.append(
-                freq=BeepTone(
+                freq=Rythm.BeepTone(
                     int(arg[0]), dur=int(arg[1]) if len(arg) > 1 else default_dur
                 )
             )
@@ -712,16 +711,52 @@ RythmError = Rythm.fromString(
 1000,1000
 500,1000
 """
-    )
+    ),
+    default_dur=500,
 )
 RythmCancel = Rythm.fromString(
     WrapperOfMultiLineText(
         """
 1000
 500
-1000
-1000
+500
+"""
+    ),
+    default_dur=500,
+)
+RythmNotify = Rythm.fromString(
+    WrapperOfMultiLineText(
+        """
+500
+"""
+    ),
+    default_dur=100,
+)
+RythmGoodNotify = Rythm.fromString(
+    WrapperOfMultiLineText(
+        """
 1000
 """
-    )
+    ),
+    default_dur=100,
+)
+RythmBadNotify = Rythm.fromString(
+    WrapperOfMultiLineText(
+        """
+500
+500
+500
+"""
+    ),
+    default_dur=100,
+)
+RythmReboot = Rythm.fromString(
+    WrapperOfMultiLineText(
+        """
+500
+750
+400
+"""
+    ),
+    default_dur=100,
 )

@@ -10,8 +10,7 @@ telescopepos = (100, 100)
 
 
 def beepOnErr():
-    win32api.Beep(1000, 1000)
-    win32api.Beep(500, 1000)
+    RythmError.play()
 
 
 def main():
@@ -262,9 +261,7 @@ def main():
     def rebootfoo():
         hud.stop()
         bootAsAdmin(__file__)
-        dur = 100
-        freqseq = [500, 750, 400]
-        [win32api.Beep(f, dur) for f in freqseq]
+        RythmReboot.play()
         sys.exit()
 
     hotkeyaction.append(
