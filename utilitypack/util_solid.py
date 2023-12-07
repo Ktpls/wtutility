@@ -1125,3 +1125,16 @@ class fpsmanager:
     @FunctionalWrapper
     def SetToNextFrame(self):
         self.lt = time.perf_counter()
+
+
+def WrapperOfMultiLineText(s):
+    '''
+    to process text like this 
+    var=WrapperOfMultilLineText(${threeQuotes}
+your
+multiline
+content
+here
+${threeQuotes})
+    '''
+    return s[1:-1]
