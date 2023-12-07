@@ -1181,18 +1181,6 @@ def longDelay(t, interval=0.5):
         time.sleep(interval)
 
 
-# to stop oscilation in autoCali due to sleep() precise
-def PreciseSleep(t):
-    if t > 0.1:
-        # too rough
-        sleep(t)
-    else:
-        endtime = time.perf_counter() + t
-        while True:
-            if time.perf_counter() >= endtime:
-                break
-
-
 def WrapperOfMultiLineText(s):
     '''
     to process text like this 

@@ -590,49 +590,49 @@ class freshAMap(StoppableThread):
                     ret = True
                     break
 
-        allchanneloutput(str(ret))
-        if ret:
-            # enter game
-            RythmSuccess.play()
-            allchanneloutput("good map")
-            return True
-
-        # detected banned map
-        setoffwifi()
-        RythmNotify.play()
-        allchanneloutput("bad map")
-
-        # detect game canceled, which is not in loading map scence
-        def detectGameCanceled(scr):
-            if not stateDetector["LoadingMap"].detect(scr):
+            allchanneloutput(str(ret))
+            if ret:
+                # enter game
+                RythmSuccess.play()
+                allchanneloutput("good map")
                 return True
-            # setoffwifi()
-            return False
 
-        # sleep at least some time
-        sleep(minDelayAfterDisconnected)
-        if not KeepDetecting(
-            successCond=detectGameCanceled,
-            cancelCond=lambda: self.ifTimeToStop(),
-            sleeptime=2,
-        ):
-            '''
-            task canceld, do the cleanning
-            set on wifi after fully exit the game match
-            '''
-            KeepDetecting(
+            # detected banned map
+            setoffwifi()
+            RythmNotify.play()
+            allchanneloutput("bad map")
+
+            # detect game canceled, which is not in loading map scence
+            def detectGameCanceled(scr):
+                if not stateDetector["LoadingMap"].detect(scr):
+                    return True
+                # setoffwifi()
+                return False
+
+            # sleep at least some time
+            sleep(minDelayAfterDisconnected)
+            if not KeepDetecting(
                 successCond=detectGameCanceled,
+                cancelCond=lambda: self.ifTimeToStop(),
                 sleeptime=2,
-            )
-            setonwifi()
-            return False
+            ):
+                """
+                task canceld, do the cleanning
+                set on wifi after fully exit the game match
+                """
+                KeepDetecting(
+                    successCond=detectGameCanceled,
+                    sleeptime=2,
+                )
+                setonwifi()
+                return False
 
-        setonwifi()
-        RythmNotify.play()
-        allchanneloutput("canceled")
-        # for not enter game too soon after wifi on
-        wifonitime = time.time()
-        sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
+            setonwifi()
+            RythmNotify.play()
+            allchanneloutput("canceled")
+            # for not enter game too soon after wifi on
+            wifonitime = time.time()
+            sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
 
 
 class ApproximateStandardizationGuide:
