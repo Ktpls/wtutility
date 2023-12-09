@@ -561,13 +561,16 @@ class freshAMap(StoppableThread):
                     nonlocal loadingscreen
                     loadingscreen = scr
                     return True
-                if stateDetector["hanger"].detect(scr):  # for click not succeed
-                    press(keycode.key_Enter)
-                    return False
-                if stateDetector["OK"].detect(scr):
-                    press(keycode.key_Enter)
-                    return False
-                if stateDetector["MissionCanceled"].detect(scr):
+                if any(
+                    [
+                        stateDetector[d].detect(scr)
+                        for d in [
+                            "hanger",  # for click not succeed
+                            "MissionCanceled",
+                            "OK",
+                        ]
+                    ]
+                ):
                     press(keycode.key_Enter)
                     return False
                 return False
@@ -578,8 +581,18 @@ class freshAMap(StoppableThread):
                 sleeptime=1,
             ):
                 # canceled
-                # clear matching state
-                press(keycode.key_Esc)
+                scr = shot()
+                if not any(
+                    [
+                        stateDetector[d].detect(scr)
+                        for d in [
+                            "hanger",
+                            "MissionCanceled",
+                        ]
+                    ]
+                ):
+                    # clear matching state
+                    press(keycode.key_Esc)
                 RythmCancel.play()
                 return False
 
