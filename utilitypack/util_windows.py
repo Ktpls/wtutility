@@ -314,7 +314,7 @@ class HotkeyManager:
 
     @dataclasses.dataclass
     class ContiniousCallHandler:
-        prevState: typing.List[bool] = dataclasses.field(default_factory=list)
+        prevState: typing.Dict[int, bool] = dataclasses.field(default_factory=dict)
         countiousPressTime: int = 0
         startRepeatPeriod: int = 10
         useControlOnContiniousPress: bool = True

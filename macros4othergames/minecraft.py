@@ -20,6 +20,19 @@ def main():
     print("keyshortcut activated")
     import keyshortcut.keyshortcut as keyshortcut
 
+    hotkeySwitch = True
+
+    def WrapperHotkeySwitch(f):
+        def foo(*arg, **kw):
+            nonlocal hotkeySwitch
+            if hotkeySwitch:
+                f(*arg, **kw)
+            else:
+                bulletin.putup(bulletinBoard.Poster("hotkey disabled", 1))
+
+        return foo
+
+    @WrapperHotkeySwitch
     def holdLeftAndTell():
         keyshortcut.mouse.down(0)
         bulletin.putup(bulletinBoard.Poster("leftHolding", 1))
@@ -31,6 +44,7 @@ def main():
     )
 
     class holdWAndTell(StoppableThread):
+        @WrapperHotkeySwitch
         def foo(self, *arg, **kw) -> None:
             bulletin.putup(bulletinBoard.Poster("waiting", 1))
             time.sleep(1)
@@ -45,6 +59,7 @@ def main():
     )
 
     class takeOff(StoppableThread):
+        @WrapperHotkeySwitch
         def foo(self, *arg, **kw) -> None:
             keyshortcut.press(keyshortcut.keycode.key_Spacebar)
             PreciseSleep(0.25)
@@ -69,17 +84,23 @@ def main():
     ]
     direction = ["up", "left", "down", "right"]
     kd = zip(keylist, direction)
+
+    @WrapperHotkeySwitch
+    def fooMouse(*arg, **kw):
+        keyshortcut.move_mouse(*arg, **kw)
+
     for pair in kd:
         hotkeyaction.append(
             HotkeyManager.hotkeytask(
                 key=[win32con.VK_CONTROL, pair[0]],
-                foo=functools.partial(keyshortcut.move_mouse, pair[1]),
+                foo=functools.partial(fooMouse, pair[1]),
                 continiousPress=True,
             )
         )
 
     # reboot, not working on exit
 
+    @WrapperHotkeySwitch
     def rebootfoo():
         hud.stop()
         bootAsAdmin(__file__)
@@ -89,6 +110,21 @@ def main():
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
             key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12], foo=rebootfoo
+        )
+    )
+
+    def taskSwitch():
+        nonlocal hotkeySwitch
+        hotkeySwitch = not hotkeySwitch
+        if hotkeySwitch:
+            bulletin.putup(bulletinBoard.Poster("hkmEnabled"))
+        else:
+            bulletin.putup(bulletinBoard.Poster("hkmDisabled"))
+
+    hotkeyaction.append(
+        HotkeyManager.hotkeytask(
+            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11],
+            foo=taskSwitch,
         )
     )
 
