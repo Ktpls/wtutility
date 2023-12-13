@@ -344,7 +344,8 @@ class expparser:
     numlike
         tensor support
         string support
-        considering impl operator on those types
+            almost done
+            considering impl operator on this type
     """
 
     class TokenType(enum.Enum):
@@ -500,13 +501,13 @@ class expparser:
         ),
         "eq": unpackParaArray(lambda x, y, ep=0.001: abs(x - y) < ep),
         "streq": unpackParaArray(lambda x, y: x == y),
-        "array": lambda a: a,
         "CStr": unpackParaArray(str),
         "CNum": unpackParaArray(float),
         "CBool": unpackParaArray(bool),
         "CList": unpackParaArray(CList),
         "WrapSingle": lambda a: [a],
     }
+
     BasicConstantLib = {"e": math.e, "pi": math.pi, "true": True, "false": False}
 
     class OprException(Exception):
@@ -560,6 +561,9 @@ class expparser:
                 return 5
             elif self == expparser._OprType.POW:
                 return 6
+            elif self in [expparser._OprType.NEG, expparser._OprType.NOT]:
+                # unaries
+                return 99
             else:
                 expparser._OprType.__throw_opr_exception(self)
 
@@ -587,7 +591,7 @@ class expparser:
                 expparser._OprType.__throw_opr_exception(s)
             return dict[s]
 
-        def do(self, arg: typing.List["expparser.Token"], serial=0):
+        def do(self, arg: typing.List["expparser.Token"]):
             # take several tokens and return numlike
             if self == expparser._OprType.COMMA:
                 assert (
@@ -595,12 +599,9 @@ class expparser:
                     and arg[1].type == expparser.TokenType.NUMLIKE
                 )
                 # comma behaves differently with serial==0 and serial==other
-                if serial == 0:
-                    return [arg[0].value] + [arg[1].value]
-                else:
-                    return expparser.NumLikeUnionUtil.ToList(arg[0].value) + [
-                        arg[1].value
-                    ]
+                return expparser.NumLikeUnionUtil.ToList(
+                    arg[0].value
+                ) + expparser.NumLikeUnionUtil.ToList(arg[1].value)
             elif self == expparser._OprType.ADD:
                 assert (
                     arg[0].type == expparser.TokenType.NUMLIKE
@@ -798,9 +799,7 @@ class expparser:
         tokenList: typing.List[expparser.Token] = []
 
         # for operator priority
-        oprRisingBeginPosList: typing.List[expparser.__OprPriorityLeap] = [
-            expparser.__OprPriorityLeap(0, 0, 0)
-        ]
+        oprRisingBeginPosList: typing.List[expparser.__OprPriorityLeap] = list()
 
         def RaiseTokenException(token: expparser.Token):
             raise expparser.ParseException(
@@ -809,33 +808,24 @@ class expparser:
 
         def ClearOprSectionAssumingPeer(begin, end):
             nonlocal tokenList, oprRisingBeginPosList
-            i = begin
-            val = tokenList[i]
-            i += 1
-            peerPriority = None
-            serial = 0
+            # cache the section to use easily pop and push
+            section = tokenList[begin:end]
             while True:
-                if i >= end:
+                if len(section) == 1:
                     break
-                opr = tokenList[i]
-                i += 1
-                val2 = tokenList[i]
-                i += 1
-                if peerPriority:
-                    assert opr.value.getPriority() == peerPriority
+                val2 = section.pop()
+                opr = section.pop()
+                assert opr.type == expparser.TokenType.OPR
+                if opr.value.isUnary():
+                    val2.value = opr.value.do(arg=[val2])
+                    section.append(val2)
                 else:
-                    peerPriority = opr.value.getPriority()
-                val.value = opr.value.do(serial=serial, arg=[val, val2])
-                serial += 1
-            # replace the peer section into its result
-            tokenList = (
-                tokenList[:begin]
-                + [expparser.Token(expparser.TokenType.NUMLIKE, val.value, 0, 0)]
-                + tokenList[end:]
-            )
+                    val1 = section.pop()
+                    val1.value = opr.value.do(arg=[val1, val2])
+                    section.append(val1)
+            tokenList = tokenList[:begin] + section + tokenList[end:]
             RemapToken()
             oprRisingBeginPosList.pop()
-            return val
 
         def DealWithBra():
             nonlocal token, peekToken, state, tokenList
@@ -890,76 +880,75 @@ class expparser:
                 # calling any member on this will cause exception
                 token = None
 
+        def doWhenReadNewOpr():
+            nonlocal state, oprRisingBeginPosList, token, tokenList
+            state = expparser.__State.OPR
+            lastOprPrior = (
+                oprRisingBeginPosList[-1].priafter
+                if len(oprRisingBeginPosList) > 0
+                else 0
+            )
+            opr = token.value.getPriority()
+            if opr > lastOprPrior:
+                oprRisingBeginPosList.append(
+                    expparser.__OprPriorityLeap(len(tokenList) - 1, lastOprPrior, opr)
+                )  # len(tokenList) - 1 for opr
+            elif opr < lastOprPrior:
+                while True:
+                    lastOprPrior = (
+                        oprRisingBeginPosList[-1].priafter
+                        if len(oprRisingBeginPosList) > 0
+                        else 0
+                    )
+                    if opr >= lastOprPrior:
+                        break
+                        # clear since last rising, until flat
+                        # len(tokenList)-1 since the lowering opr has been appended
+                    """
+                    for unary, the token before first opr is unwanted to calc
+                    for binary, its necessary
+                    """
+                    ClearOprSectionAssumingPeer(
+                        oprRisingBeginPosList[-1].pos
+                        if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
+                        else oprRisingBeginPosList[-1].pos - 1,
+                        len(tokenList) - 1,  # the new opr
+                    )
+                if opr > lastOprPrior:
+                    # new opr is the new rising
+                    oprRisingBeginPosList.append(
+                        expparser.__OprPriorityLeap(
+                            len(tokenList) - 1,
+                            lastOprPrior,
+                            opr,
+                        )
+                    )
+
         # the fsm illustrated in notebook
         while True:
             MoveForwardToNextToken()
             if state == expparser.__State.START or state == expparser.__State.OPR:
                 # expecting numlike, but possible to meet bra, identifier, or unary operator
-                def DealWithUnaryOperatorIfNeeded():
-                    nonlocal state, token, peekToken, tokenList
-                    while True:
-                        # do in a loop to deal with nested unary
-                        if (
-                            len(tokenList) >= 2
-                            and tokenList[-2].type == expparser.TokenType.OPR
-                            and tokenList[-2].value.isUnary()
-                        ):
-                            # before it is unary operator, do it
-                            token.value = tokenList[-2].value.do(arg=[token])
-                            tokenList = tokenList[:-2] + [token]
-                            RemapToken()
-                        else:
-                            break
 
                 if token.type == expparser.TokenType.BRA:
                     DealWithBra()
-                    DealWithUnaryOperatorIfNeeded()
                 elif token.type == expparser.TokenType.NUMLIKE:
                     state = expparser.__State.NUM
-                    DealWithUnaryOperatorIfNeeded()
                 elif token.type == expparser.TokenType.IDR:
                     DealWithIdentifier()
-                    DealWithUnaryOperatorIfNeeded()
                 elif token.type == expparser.TokenType.OPR:
                     # maybe unary operator
-                    state = expparser.__State.OPR
                     if token.value == expparser._OprType.SUB:
                         # to neg
                         tokenList[-1].value = expparser._OprType.NEG
                     if not token.value.isUnary():
                         RaiseTokenException(token)
-                    # will be calced after read the num
+                    doWhenReadNewOpr()
                 else:
                     RaiseTokenException(token)
             elif state == expparser.__State.NUM:
                 if token.type == expparser.TokenType.OPR:
-                    state = expparser.__State.OPR
-                    lastOprPrior = oprRisingBeginPosList[-1].priafter
-                    opr = token.value.getPriority()
-                    if opr > lastOprPrior:
-                        oprRisingBeginPosList.append(
-                            expparser.__OprPriorityLeap(
-                                len(tokenList) - 2, lastOprPrior, opr
-                            )
-                        )  # -2 for num and opr
-                    elif opr < lastOprPrior:
-                        while True:
-                            if opr >= oprRisingBeginPosList[-1].priafter:
-                                break
-                            # clear since last rising, until flat
-                            # len(tokenList)-1 since the lowering opr has been appended
-                            ClearOprSectionAssumingPeer(
-                                oprRisingBeginPosList[-1].pos, len(tokenList) - 1
-                            )
-                        if opr > oprRisingBeginPosList[-1].priafter:
-                            # new opr is the new rising
-                            oprRisingBeginPosList.append(
-                                expparser.__OprPriorityLeap(
-                                    len(tokenList) - 2,
-                                    oprRisingBeginPosList[-1].priafter,
-                                    opr,
-                                )
-                            )
+                    doWhenReadNewOpr()
                 elif (
                     token.type == expparser.TokenType.KET
                     or token.type == expparser.TokenType.EOF
@@ -973,7 +962,10 @@ class expparser:
                         if len(oprRisingBeginPosList) == 0:
                             break
                         ClearOprSectionAssumingPeer(
-                            oprRisingBeginPosList[-1].pos, len(tokenList)
+                            oprRisingBeginPosList[-1].pos
+                            if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
+                            else oprRisingBeginPosList[-1].pos - 1,
+                            len(tokenList),
                         )
                     return expparser.__ExpParserResult(tokenList[0].value, expendpos)
                 else:
@@ -1032,8 +1024,8 @@ class expparser:
             TestUnit(r"CStr(true)", "True"),
             TestUnit(r'CNum("1.23")+1', "2.23"),
             TestUnit(r"CNum(true)+1", "2.0"),
-            TestUnit(r"array(array(1,0),array(0,1))", "[[1.0, 0.0], [0.0, 1.0]]"),
             TestUnit(r"WrapSingle(WrapSingle(1))", "[[1.0]]"),
+            TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
         ]
         unpassed: typing.List[TestUnit] = []
 
@@ -1065,7 +1057,7 @@ exp: {e.expression}
             )
             splitline()
         if len(unpassed) == 0:
-            print("all passed")
+            print("all passed!")
         else:
             print("unpassed")
             splitline()
@@ -1182,13 +1174,13 @@ def longDelay(t, interval=0.5):
 
 
 def WrapperOfMultiLineText(s):
-    '''
-    to process text like this 
-    var=WrapperOfMultilLineText(${threeQuotes}
-your
-multiline
-content
-here
-${threeQuotes})
-    '''
+    """
+        to process text like this
+        var=WrapperOfMultilLineText(${threeQuotes}
+    your
+    multiline
+    content
+    here
+    ${threeQuotes})
+    """
     return s[1:-1]

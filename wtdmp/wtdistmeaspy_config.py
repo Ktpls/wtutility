@@ -44,7 +44,7 @@ milDataErrorReq = 0.1
 milGridIntervalMin = 5
 autoCaliErr = 1.5
 lineFilterThresh = 0.5
-nonlinearCaliStart = 0
+nonlinearCaliStart = 0.15
 
 collectingSmallMap = True
 

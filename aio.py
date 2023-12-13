@@ -9,10 +9,6 @@ bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
 
-def beepOnErr():
-    RythmError.play()
-
-
 def main():
     # 告示板
     idlebulletincontents = [
@@ -295,7 +291,7 @@ def main():
         except SystemExit as e:
             raise e
         except Exception as e:
-            beepOnErr()
+            RythmError.play()
             print("#" * 10)
             traceback.print_exc()
             print("#" * 10)
@@ -306,7 +302,7 @@ def main():
             try:
                 bus()
             except Exception as e:
-                beepOnErr()
+                RythmError.play()
                 print("#" * 10)
                 traceback.print_exc()
                 print("#" * 10)
