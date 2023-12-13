@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from utilref import *
 import traceback
 import functools
+import time
 
 bulletinoutputpos = (100, 500)
 
@@ -21,29 +22,42 @@ def main():
 
     def holdLeftAndTell():
         keyshortcut.mouse.down(0)
-        bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
-
-    hotkeyaction.append(
-        HotkeyManager.hotkeytask(key=win32con.VK_F10, foo=holdLeftAndTell)
-    )
-
-    def holdCAndTell():
-        keyshortcut.keydown(keyshortcut.keycode.key_C)
-        bulletin.putup(bulletinBoard.Poster("CHolding", 1))
+        bulletin.putup(bulletinBoard.Poster("leftHolding", 1))
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL], [ord("C")]], foo=holdCAndTell
+            key=[win32con.VK_CONTROL, win32con.VK_F10], foo=holdLeftAndTell
         )
     )
 
-    def holdCAndTell():
-        keyshortcut.keydown(keyshortcut.keycode.key_W)
-        bulletin.putup(bulletinBoard.Poster("WHolding", 1))
+    class holdWAndTell(StoppableThread):
+        def foo(self, *arg, **kw) -> None:
+            bulletin.putup(bulletinBoard.Poster("waiting", 1))
+            time.sleep(1)
+            keyshortcut.keydown(keyshortcut.keycode.key_W)
+            bulletin.putup(bulletinBoard.Poster("wHolding", 1))
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL], [ord("W")]], foo=holdCAndTell
+            key=[[win32con.VK_CONTROL, ord("W")]],
+            foo=lambda: holdWAndTell(pool=threadpool).go(),
+        )
+    )
+
+    class takeOff(StoppableThread):
+        def foo(self, *arg, **kw) -> None:
+            keyshortcut.press(keyshortcut.keycode.key_Spacebar)
+            PreciseSleep(0.25)
+            keyshortcut.press(keyshortcut.keycode.key_Spacebar)
+            PreciseSleep(0.05)
+            keyshortcut.mouse.click(1)
+
+            bulletin.putup(bulletinBoard.Poster("tookOff"))
+
+    hotkeyaction.append(
+        HotkeyManager.hotkeytask(
+            key=[[win32con.VK_CONTROL, ord("G")]],
+            foo=lambda: takeOff(pool=threadpool).go(),
         )
     )
 
@@ -63,6 +77,20 @@ def main():
                 continiousPress=True,
             )
         )
+
+    # reboot, not working on exit
+
+    def rebootfoo():
+        hud.stop()
+        bootAsAdmin(__file__)
+        RythmReboot.play()
+        sys.exit()
+
+    hotkeyaction.append(
+        HotkeyManager.hotkeytask(
+            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12], foo=rebootfoo
+        )
+    )
 
     hud = fullScrHUD()
     hud.setup()

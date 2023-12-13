@@ -1,5 +1,5 @@
 import time
-
+import utilitypack.util_windows
 import keyshortcut.keycodeWinCode as keycode
 from ctypes import (
     POINTER,
@@ -83,33 +83,33 @@ import pyautogui
 
 def press(k, interval=0.1):
     keydown(k)
-    time.sleep(interval)
+    utilitypack.util_windows.PreciseSleep(interval)
     keyup(k)
     # time.sleep(0.4)
 
 
 def hold(k, t):
     keydown(k)
-    time.sleep(t)
+    utilitypack.util_windows.PreciseSleep(t)
     keyup(k)
     time.sleep(0.5)
 
 
 def key_down(k):
     keydown(k)
-    time.sleep(0.1)
+    utilitypack.util_windows.PreciseSleep(0.1)
 
 
 def key_up(k):
     keyup(k)
-    time.sleep(0.1)
+    utilitypack.util_windows.PreciseSleep(0.1)
 
 
 def wtpress(k):
     keydown(k)
-    time.sleep(0.2)
+    utilitypack.util_windows.PreciseSleep(0.2)
     keyup(k)
-    time.sleep(2)
+    utilitypack.util_windows.PreciseSleep(2)
 
 
 def moveto(p):
@@ -146,7 +146,7 @@ class mouse:
     @staticmethod
     def click(key, interval=0.1):
         mouse.down(key)
-        time.sleep(interval)
+        utilitypack.util_windows.PreciseSleep(interval)
         mouse.up(key)
 
     @staticmethod
