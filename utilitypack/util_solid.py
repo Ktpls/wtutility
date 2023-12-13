@@ -754,13 +754,13 @@ class expparser:
             matcher(exp=r"^\)", tokenType=expparser.TokenType.KET),
             matcher(exp=r"^$", tokenType=expparser.TokenType.EOF),
         ]
-        # "the \" string"
         for m in matcherList:
             ret = m.tryMatch(s, i)
             if ret:
                 if ret.type == expparser.TokenType.NUMLIKE:
                     # here is only num and str without other numlike types
                     if len(ret.value) >= 2 and ret.value[0] == '"':
+                        # hardest case is "the \" string"
                         # its string
                         strstart = ret.start
                         strbuffer = ""
