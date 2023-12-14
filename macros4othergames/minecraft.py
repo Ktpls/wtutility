@@ -11,7 +11,7 @@ def main():
     """
     simplified from wt aio
     """
-    bulletin = bulletinBoard("(=w=)")
+    bulletin = bulletinBoard("(*≧ω≦)")
 
     # 热键
     hotkeyaction = []
@@ -68,7 +68,7 @@ def main():
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL, ord('J')]],
+            key=[[win32con.VK_CONTROL, ord("J")]],
             foo=lambda: bestJumpOnHorse(pool=threadpool).go(),
         )
     )
@@ -169,7 +169,9 @@ def main():
         # show bulletin
         hud.writecontent(
             np.flip(bulletinoutputpos),
-            aPicWithText(bulletin.read(), maxsize=[400, 700]),
+            aPicWithTextWithPil(
+                bulletin.read(), maxsize=[400, 700], lineinterval=0
+            ),
         )
 
         hud.update()

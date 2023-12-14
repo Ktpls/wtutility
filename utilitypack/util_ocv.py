@@ -184,8 +184,11 @@ def outputlines2mat2(m, pos, content, textcolor=[255, 255, 255], lineinterval=10
 
 
 def aPicWithText(
-    content, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10
+    content: str, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10
 ):
+    """
+    impl with opencv
+    """
     m = np.zeros(
         maxsize
         + [
@@ -198,6 +201,45 @@ def aPicWithText(
     m = m[: mshape[1], : mshape[0]]
     m = addShadow2HUD(m)
     return m
+
+
+from PIL import Image, ImageDraw, ImageFont
+
+
+def aPicWithTextWithPil(
+    content: str, maxsize=[1080, 1920], textcolor=[255, 255, 255], lineinterval=10
+):
+    """
+    impl with PIL
+    """
+    maxsize = list(np.flip(maxsize))
+    # Create a blank image with the specified size
+    image = Image.new("RGB", maxsize)
+
+    # Create a draw object
+    draw = ImageDraw.Draw(image)
+
+    # Define the font size and font type
+    font_size = 30
+    font = ImageFont.truetype("yahei.ttf", font_size)
+
+    # Split the content into lines
+    lines = content.split("\n")
+
+    # Draw each line of text on the image
+    for iline, line in enumerate(lines):
+        # Calculate the x-coordinate for the line
+        x = 0
+        y = iline * (font_size + lineinterval)
+        # Draw the text on the image
+        draw.text((x, y), line, font=font, fill=tuple(textcolor))
+
+        # Increment the y-coordinate for the next line
+        y += font_size + lineinterval
+
+    # Return the image
+    # Convert the PIL image to an np.ndarray
+    return addShadow2HUD(np.array(image),1)
 
 
 def addShadow2HUD(m, thickness=2, color=50):
