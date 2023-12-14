@@ -169,9 +169,7 @@ def main():
         # show bulletin
         hud.writecontent(
             np.flip(bulletinoutputpos),
-            aPicWithTextWithPil(
-                bulletin.read(), maxsize=[400, 700], lineinterval=0
-            ),
+            aPicWithTextWithPil(bulletin.read(), maxsize=[400, 700], lineinterval=0),
         )
 
         hud.update()

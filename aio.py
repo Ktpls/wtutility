@@ -12,10 +12,11 @@ telescopepos = (100, 100)
 def main():
     # 告示板
     idlebulletincontents = [
-        ["(=w=)", 67],
-        ["(>^<)", 30],
+        ["(*=ω=)", 66],
+        ["(*≧ω≦)", 30],
         ["($w$)", 1],
-        ["(0w<)", 1],
+        ["(＞д＜)", 1],
+        ["(￣ω￣;)", 1],
         ["(0v0)", 1],
     ]
 
@@ -312,7 +313,7 @@ def main():
         # show bulletin
         hud.writecontent(
             np.flip(bulletinoutputpos),
-            aPicWithText(bulletin.read(), maxsize=[400, 700]),
+            aPicWithTextWithPil(bulletin.read(), maxsize=[400, 700], lineinterval=0),
         )
 
         hud.update()

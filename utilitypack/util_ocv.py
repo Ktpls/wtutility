@@ -221,7 +221,7 @@ def aPicWithTextWithPil(
 
     # Define the font size and font type
     font_size = 30
-    font = ImageFont.truetype("yahei.ttf", font_size)
+    font = ImageFont.truetype(r"asset\common\yahei.ttf", font_size)
 
     # Split the content into lines
     lines = content.split("\n")
