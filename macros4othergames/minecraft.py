@@ -58,6 +58,21 @@ def main():
         )
     )
 
+    class bestJumpOnHorse(StoppableThread):
+        @WrapperHotkeySwitch
+        def foo(self, *arg, **kw) -> None:
+            bulletin.putup(bulletinBoard.Poster("going", 1))
+            keyshortcut.keydown(keyshortcut.keycode.key_Spacebar)
+            PreciseSleep(0.55)
+            keyshortcut.keyup(keyshortcut.keycode.key_Spacebar)
+
+    hotkeyaction.append(
+        HotkeyManager.hotkeytask(
+            key=[[win32con.VK_CONTROL, ord('J')]],
+            foo=lambda: bestJumpOnHorse(pool=threadpool).go(),
+        )
+    )
+
     class takeOff(StoppableThread):
         @WrapperHotkeySwitch
         def foo(self, *arg, **kw) -> None:
