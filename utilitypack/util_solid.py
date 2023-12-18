@@ -355,6 +355,7 @@ class expparser:
         KET = 4
         EOF = 5
         IDR = 6
+        SPACE = 7
 
     @dataclasses.dataclass(repr=True)
     class Token:
@@ -753,34 +754,42 @@ class expparser:
             matcher(exp=r"^\(", tokenType=expparser.TokenType.BRA),
             matcher(exp=r"^\)", tokenType=expparser.TokenType.KET),
             matcher(exp=r"^$", tokenType=expparser.TokenType.EOF),
+            matcher(exp=r"^[\s\r\n\t]+", tokenType=expparser.TokenType.SPACE),
         ]
-        for m in matcherList:
-            ret = m.tryMatch(s, i)
-            if ret:
-                if ret.type == expparser.TokenType.NUMLIKE:
-                    # here is only num and str without other numlike types
-                    if len(ret.value) >= 2 and ret.value[0] == '"':
-                        # hardest case is "the \" string"
-                        # its string
-                        strstart = ret.start
-                        strbuffer = ""
-                        while True:
-                            if len(ret.value) > 2 and ret.value[-2] == "\\":
-                                # cancel the former " and \, add " back
-                                strbuffer += ret.value[1:-2] + '"'
-                                # move on to the next section
-                                ret = m.tryMatch(s, ret.end - 1)
-                            else:
-                                strbuffer += ret.value[1:-1]
-                                break
-                        ret.start = strstart
-                        ret.value = strbuffer
-                    else:
-                        ret.value = float(ret.value)
-                elif ret.type == expparser.TokenType.OPR:
-                    ret.value = expparser._OprType.fromStr(ret.value)
-                return ret
-        raise expparser.ParseException(f"unexpected token at {i}")
+
+        def getNextToken(s, i):
+            for m in matcherList:
+                ret = m.tryMatch(s, i)
+                if ret:
+                    if ret.type == expparser.TokenType.NUMLIKE:
+                        # here is only num and str without other numlike types
+                        if len(ret.value) >= 2 and ret.value[0] == '"':
+                            # hardest case is "the \" string"
+                            # its string
+                            strstart = ret.start
+                            strbuffer = ""
+                            while True:
+                                if len(ret.value) > 2 and ret.value[-2] == "\\":
+                                    # cancel the former " and \, add " back
+                                    strbuffer += ret.value[1:-2] + '"'
+                                    # move on to the next section
+                                    # m == matcher[the str one] now
+                                    ret = m.tryMatch(s, ret.end - 1)
+                                else:
+                                    strbuffer += ret.value[1:-1]
+                                    break
+                            ret.start = strstart
+                            ret.value = strbuffer
+                        else:
+                            ret.value = float(ret.value)
+                    elif ret.type == expparser.TokenType.OPR:
+                        ret.value = expparser._OprType.fromStr(ret.value)
+                    elif ret.type == expparser.TokenType.SPACE:
+                        return getNextToken(s, ret.end)
+                    return ret
+            raise expparser.ParseException(f"unexpected token at {i}")
+
+        return getNextToken(s, i)
 
     @dataclasses.dataclass
     class __ExpParserResult:
@@ -1026,6 +1035,7 @@ class expparser:
             TestUnit(r"CNum(true)+1", "2.0"),
             TestUnit(r"WrapSingle(WrapSingle(1))", "[[1.0]]"),
             TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
+            TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
         ]
         unpassed: typing.List[TestUnit] = []
 

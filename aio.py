@@ -12,9 +12,9 @@ telescopepos = (100, 100)
 def main():
     # 告示板
     idlebulletincontents = [
-        ["(*=ω=)", 66],
-        ["(*≧ω≦)", 30],
-        ["($w$)", 1],
+        ["(=ω=)", 66],
+        ["(≧ω≦)", 30],
+        ["($ω$)", 1],
         ["(＞д＜)", 1],
         ["(￣ω￣;)", 1],
         ["(0v0)", 1],
@@ -252,8 +252,6 @@ def main():
             HotkeyManager.hotkeytask(key=win32con.VK_LBUTTON, foo=eedcOnClickWithSwitch)
         )
         business.append(eagleeye.onFrame)
-
-    # reboot, not working on exit
 
     def rebootfoo():
         hud.stop()

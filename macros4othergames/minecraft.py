@@ -47,13 +47,13 @@ def main():
         @WrapperHotkeySwitch
         def foo(self, *arg, **kw) -> None:
             bulletin.putup(bulletinBoard.Poster("waiting", 1))
-            time.sleep(1)
+            time.sleep(0.5)
             keyshortcut.keydown(keyshortcut.keycode.key_W)
             bulletin.putup(bulletinBoard.Poster("wHolding", 1))
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL, ord("W")]],
+            key=[[win32con.VK_MENU, ord("W")]],
             foo=lambda: holdWAndTell(pool=threadpool).go(),
         )
     )
@@ -112,8 +112,6 @@ def main():
                 continiousPress=True,
             )
         )
-
-    # reboot, not working on exit
 
     @WrapperHotkeySwitch
     def rebootfoo():
