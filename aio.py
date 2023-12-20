@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+import keyshortcut.gameinput as gameinput
 from utilitypack.utility import *
 from aio_config import *
 import traceback
@@ -120,11 +121,14 @@ def main():
                     result = numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
                     bulletin.putup(f"plotting scale locked at {result}")
+                    gameinput.wtpress(win32con.VK_RETURN)
+                    gameinput.wtpress(ord("1"))
                 elif (
                     session.sessionEndType
                     == HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL
                 ):
                     bulletin.putup("plotting scale canceled")
+                    gameinput.wtpress(win32con.VK_ESCAPE)
 
             inputSession.IntoSession(
                 SetPlottingScaleLock,
