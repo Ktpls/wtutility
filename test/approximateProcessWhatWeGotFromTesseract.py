@@ -1,5 +1,5 @@
 from utilref import *
-from autofreshmap_implementation import *
+from afm.autofreshmap_implementation import *
 
 
 def doCutPlayer(m):

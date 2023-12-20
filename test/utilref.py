@@ -1,7 +1,5 @@
 
 import sys
 import os
-os.chdir('.')
-sys.path.append(".")
-sys.path.append("..")
-from utilitypack import *
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilitypack.utility import *

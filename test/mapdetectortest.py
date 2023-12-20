@@ -1,5 +1,5 @@
 from utilref import *
-import autofreshmap_implementation as afmi
+import afm.autofreshmap_implementation as afmi
 afmi.loadAssetsNeeded4FreshAMap()
 
 

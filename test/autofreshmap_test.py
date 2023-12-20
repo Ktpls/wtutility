@@ -1,7 +1,7 @@
 
 #%%
 # basic
-from autofreshmap_implementation import *
+from afm.autofreshmap_implementation import *
 
 whitelistedmapdetector,stateDetector=loadAssetsNeeded4FreshAMap()
 def tryCutROIOnScrShot(ss):

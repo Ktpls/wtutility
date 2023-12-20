@@ -14,13 +14,6 @@ import win32gui
 import win32ui
 
 
-def getWTHwnd():
-    ret = win32gui.FindWindow("DagorWClass", None)
-    if ret == win32con.NULL:
-        raise Exception("FindWindow() failed")
-    return ret
-
-
 class screenshoter:
     # reconstructed with no mfc
 
@@ -333,7 +326,7 @@ class HotkeyManager:
 
         def __init__(
             self,
-            key: int | Iterable,
+            key: int | Iterable[int] | Iterable[Iterable[int]],
             foo: Callable[[], None],
             continiousPress: bool = False,
         ) -> None:
