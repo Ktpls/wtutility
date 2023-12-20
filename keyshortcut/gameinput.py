@@ -105,11 +105,11 @@ def key_up(k):
     utilitypack.util_windows.PreciseSleep(0.1)
 
 
-def wtpress(k):
+def key_press(k):
     keydown(k)
     utilitypack.util_windows.PreciseSleep(0.2)
     keyup(k)
-    utilitypack.util_windows.PreciseSleep(2)
+    
 
 
 def moveto(p):
