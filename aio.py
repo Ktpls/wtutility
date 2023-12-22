@@ -257,17 +257,18 @@ def main():
         )
         business.append(eagleeye.onFrame)
 
-    if usingarbglock:
-        import arbglock.arbglock as arbglock
+    if usingglock:
+        print("glock activated")
+        import glock.glock as glock
 
-        agl = arbglock.ArbGLock(7, threadpool)
+        agl = glock.GLock(4, threadpool)
 
-        def aglBuzWrap():
+        def glBuzWrap():
             isCtrling, duration = agl.business()
             if isCtrling:
-                bulletin.putup(bulletinBoard.Poster(f"glock", duration))
+                bulletin.putup(bulletinBoard.Poster(f"glock", 0.5))
 
-        business.append(aglBuzWrap)
+        business.append(glBuzWrap)
 
     def rebootfoo():
         hud.stop()

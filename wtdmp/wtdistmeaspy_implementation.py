@@ -706,7 +706,7 @@ class LoadCalibrationOperator(StoppableThread):
                 self.stopped = True
                 log(self.result)
                 return
-            control = pid.update(targetpix, nowpix) * caliControlMul / mil
+            control = pid.update(targetpix-nowpix) * caliControlMul / mil
             log(f"control {control}")
             # get the real control, but without direction
             control = adjustCaliberation(control)

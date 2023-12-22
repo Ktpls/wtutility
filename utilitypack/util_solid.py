@@ -66,8 +66,8 @@ def numinstr(s: str):
     return int(s) if len(s) > 0 else 0
 
 
-def FunctionalWrapper(f: Callable[..., Any]) -> Callable[..., Any]:
-    def f2(self, *args: Any, **kwargs: Any) -> Any:
+def FunctionalWrapper(f: Callable) -> Callable:
+    def f2(self, *args, **kwargs):
         f(self, *args, **kwargs)
         return self
 
@@ -253,14 +253,10 @@ class StoppableThread:
             try:
                 self.result = self.foo(*arg, **kw)
             except Exception as e:
-                if (
-                    self.strategy_on_error
-                    == StoppableThread.Strategy_Error.raise_error
-                ):
+                if self.strategy_on_error == StoppableThread.Strategy_Error.raise_error:
                     raise e
                 elif (
-                    self.strategy_on_error
-                    == StoppableThread.Strategy_Error.print_error
+                    self.strategy_on_error == StoppableThread.Strategy_Error.print_error
                 ):
                     traceback.print_exc()
                 elif self.strategy_on_error == StoppableThread.Strategy_Error.ignore:
@@ -1204,8 +1200,7 @@ class PIDController:
         self.last_error = 0
         self.integral = 0
 
-    def update(self, targetval, nowval, dt=1):
-        error = targetval - nowval
+    def update(self, error, dt=1):
         self.integral += error * dt
         derivative = (error - self.last_error) / dt
         output = self.kp * error + self.ki * self.integral + self.kd * derivative
@@ -1215,7 +1210,6 @@ class PIDController:
 
 class OneOrderLinearFilter:
     def __init__(self, N, initial_val=None):
-        assert N > 0
         self.a = N / (N + 1)
         self.b = 1 / (N + 1)
         self.previous_output = initial_val if initial_val else 0
