@@ -20,7 +20,7 @@ def main():
         hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
 
         fpsm = fpsmanager(5)
-        activeWindow(getWTHwnd())
+        activeWindow(GetWtHwnd())
         mouse.mov(*(0, 0))
         afm.go()
         # main loop
@@ -47,6 +47,6 @@ def main():
 
 
 def test():
-    activeWindow(getWTHwnd())
+    activeWindow(GetWtHwnd())
     sleep(1)
     press(keycode.key_Enter)

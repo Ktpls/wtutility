@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-from typing import Any, Iterable, Mapping
 import matplotlib as mpl
 from utilitypack.utility import *
 import keyshortcut.gameinput as gameinput
@@ -613,23 +611,6 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     ret = np.array((targetpos, posnow, mil))
     ret /= caliTableDetectionZoomRate
     return ret
-
-
-class PIDController:
-    def __init__(self, kp, ki, kd):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.last_error = 0
-        self.integral = 0
-
-    def update(self, targetval, nowval, dt=1):
-        error = targetval - nowval
-        self.integral += error * dt
-        derivative = (error - self.last_error) / dt
-        output = self.kp * error + self.ki * self.integral + self.kd * derivative
-        self.last_error = error
-        return output
 
 
 def switchNightMode():

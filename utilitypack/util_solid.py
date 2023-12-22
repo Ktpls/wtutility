@@ -190,21 +190,21 @@ class StoppableThread:
     derivate from it and override foo()
     """
 
-    class BehaviorOnTryingRuningWhenRunning(enum.Enum):
+    class Strategy_RunOnRunning(enum.Enum):
         # ignore = 0
         raise_error = 1
         stop_and_rerun = 2
         skip_and_return = 3
 
-    class StrategyOnError(enum.Enum):
+    class Strategy_Error(enum.Enum):
         ignore = 0
         raise_error = 1
         print_error = 2
 
     def __init__(
         self,
-        behavior_run_on_running: "StoppableThread.BehaviorOnTryingRuningWhenRunning" = BehaviorOnTryingRuningWhenRunning.raise_error,
-        strategy_on_error: "StoppableThread.StrategyOnError" = StrategyOnError.raise_error,
+        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = Strategy_RunOnRunning.raise_error,
+        strategy_error: "StoppableThread.Strategy_Error" = Strategy_Error.raise_error,
         pool: ThreadPoolExecutor = None,
     ) -> None:
         self.running: bool = False
@@ -214,8 +214,8 @@ class StoppableThread:
         )
         self.submit = None
         self.result = None
-        self.behavior_run_on_running = behavior_run_on_running
-        self.strategy_on_error = strategy_on_error
+        self.behavior_run_on_running = strategy_runonrunning
+        self.strategy_on_error = strategy_error
 
     def foo(self, *arg, **kw) -> None:
         raise NotImplementedError("should never run without overriding foo")
@@ -228,17 +228,17 @@ class StoppableThread:
         if self.submit is not None:
             if (
                 self.behavior_run_on_running
-                == StoppableThread.BehaviorOnTryingRuningWhenRunning.raise_error
+                == StoppableThread.Strategy_RunOnRunning.raise_error
             ):
                 raise RuntimeError("already running")
             elif (
                 self.behavior_run_on_running
-                == StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun
+                == StoppableThread.Strategy_RunOnRunning.stop_and_rerun
             ):
                 self.stop()
             elif (
                 self.behavior_run_on_running
-                == StoppableThread.BehaviorOnTryingRuningWhenRunning.skip_and_return
+                == StoppableThread.Strategy_RunOnRunning.skip_and_return
             ):
                 return
         self.running = True
@@ -255,15 +255,15 @@ class StoppableThread:
             except Exception as e:
                 if (
                     self.strategy_on_error
-                    == StoppableThread.StrategyOnError.raise_error
+                    == StoppableThread.Strategy_Error.raise_error
                 ):
                     raise e
                 elif (
                     self.strategy_on_error
-                    == StoppableThread.StrategyOnError.print_error
+                    == StoppableThread.Strategy_Error.print_error
                 ):
                     traceback.print_exc()
-                elif self.strategy_on_error == StoppableThread.StrategyOnError.ignore:
+                elif self.strategy_on_error == StoppableThread.Strategy_Error.ignore:
                     pass
             self.running = False
 
@@ -1194,3 +1194,33 @@ def WrapperOfMultiLineText(s):
     ${threeQuotes})
     """
     return s[1:-1]
+
+
+class PIDController:
+    def __init__(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.last_error = 0
+        self.integral = 0
+
+    def update(self, targetval, nowval, dt=1):
+        error = targetval - nowval
+        self.integral += error * dt
+        derivative = (error - self.last_error) / dt
+        output = self.kp * error + self.ki * self.integral + self.kd * derivative
+        self.last_error = error
+        return output
+
+
+class OneOrderLinearFilter:
+    def __init__(self, N, initial_val=None):
+        assert N > 0
+        self.a = N / (N + 1)
+        self.b = 1 / (N + 1)
+        self.previous_output = initial_val if initial_val else 0
+
+    def update(self, input_sample):
+        output_sample = self.a * self.previous_output + self.b * input_sample
+        self.previous_output = output_sample
+        return output_sample

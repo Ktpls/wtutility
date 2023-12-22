@@ -75,7 +75,7 @@ def main():
                     wtdmp.caliOperator.go(lastStaged)
 
         goMeasureAndCali = GoMeasureAndCali(
-            StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun, threadpool
+            StoppableThread.Strategy_RunOnRunning.stop_and_rerun, threadpool
         )
 
         def hkcallWTDistMeas():
@@ -149,7 +149,7 @@ def main():
                     pool: ThreadPoolExecutor,
                 ) -> None:
                     super().__init__(
-                        StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun,
+                        StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
                         pool,
                     )
 
@@ -256,6 +256,18 @@ def main():
             HotkeyManager.hotkeytask(key=win32con.VK_LBUTTON, foo=eedcOnClickWithSwitch)
         )
         business.append(eagleeye.onFrame)
+
+    if usingarbglock:
+        import arbglock.arbglock as arbglock
+
+        agl = arbglock.ArbGLock(7, threadpool)
+
+        def aglBuzWrap():
+            isCtrling, duration = agl.business()
+            if isCtrling:
+                bulletin.putup(bulletinBoard.Poster(f"glock", duration))
+
+        business.append(aglBuzWrap)
 
     def rebootfoo():
         hud.stop()

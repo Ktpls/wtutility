@@ -96,3 +96,6 @@ def randomString(charset, length):
             for i in np.random.choice(range(len(charset)), length, replace=True)
         ]
     )
+
+def ReLU(x):
+    return np.maximum(0, x)

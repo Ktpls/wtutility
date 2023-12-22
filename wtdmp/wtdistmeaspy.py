@@ -14,7 +14,7 @@ class wtdistmeaspy:
     """
 
     caliOperator = LoadCalibrationOperator(
-        behavior_run_on_running=StoppableThread.BehaviorOnTryingRuningWhenRunning.stop_and_rerun
+        strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.stop_and_rerun
     )
 
     lastDistMeasResultStaged = ElementsOfMap(None, None, None, None, None)

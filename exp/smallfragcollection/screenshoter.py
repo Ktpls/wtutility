@@ -7,7 +7,7 @@ def window_capture():
     resolution=[1920,1080]
     hwnd = 0
     #hwnd=win32gui.FindWindow('DagorWClass','War Thunder')
-    hwnd=getWTHwnd()
+    hwnd=GetWtHwnd()
     hwndDC = win32gui.GetWindowDC(hwnd)
     mfcDC=win32ui.CreateDCFromHandle(hwndDC)
     saveDC=mfcDC.CreateCompatibleDC()
@@ -51,7 +51,7 @@ def window_capture_nomfc():
 
 def window_capture_nodump():
     resolution=[1920,1080]
-    hwnd=getWTHwnd()
+    hwnd=GetWtHwnd()
     #hwnd=0
     hdc = windll.user32.GetDC(hwnd)
     hbitmap=windll.gdi32.GetCurrentObject(hdc, win32con.OBJ_BITMAP)

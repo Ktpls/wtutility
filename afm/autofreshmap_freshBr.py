@@ -5,7 +5,7 @@ import traceback
 
 def main():
     try:
-        activeWindow(getWTHwnd())
+        activeWindow(GetWtHwnd())
         FreshBr(
             BannedVehicleInfoSourceCode="""
 MiG21SMT

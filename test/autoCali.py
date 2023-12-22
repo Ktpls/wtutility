@@ -1,7 +1,7 @@
 from utilref import *
 import wtdmp.wtdistmeaspy
 
-activeWindow(getWTHwnd())
+activeWindow(GetWtHwnd())
 sleep(2)
 RythmNotify.play()
 
