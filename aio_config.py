@@ -1,10 +1,10 @@
-usingwtdistmeaspy=True
-usingtelescope=True
-usingkeyshortcut=True
-usingeagleeye=False
-usingglock=True
+usingwtdistmeaspy = True
+usingtelescope = True
+usingkeyshortcut = True
+usingeagleeye = False
+usingglock = False
 
-throwErrorInBus=False
-throwErrorInHotkey=False
+throwErrorInBus = False
+throwErrorInHotkey = False
 
-aiofps=10
+aiofps = 10

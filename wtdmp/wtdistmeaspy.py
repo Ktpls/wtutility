@@ -203,15 +203,23 @@ class wtdistmeaspy:
         return WtdmpMainLogicResult(prompt, solveSummary)
 
     def freshPlottingScale(self):
-        scr = screenshoter().shotbgr()
-        scr = cutBottomRightMap(scr)
+        def SetPs(val):
+            self.lastDistMeasResultStaged.plottingscale = val
+            self.psLocked = True
+            return "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
+
+        # try 8111
+        ret = Port8111.get(Port8111.QueryType.map_info)
+        if ret is not None and ret.valid:
+            return SetPs(ret.grid_steps[0])
+
+        # try solve map
         ret = SolveMap_BottomRightSmallMap(
-            scr,
+            cutBottomRightMap(screenshoter().shotbgr()),
             dontGetPlottingScale=False,
         )
         if ret.plottingscale.state.smetype == SMException.SolveMapResultType.NO_ERR:
-            self.lastDistMeasResultStaged.plottingscale = ret.plottingscale.result
-            prompt = "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
-        else:
-            prompt = "bad fresh %s" % ret.plottingscale.state
-        return prompt
+            return SetPs(ret.plottingscale.result)
+
+        # bad
+        return "bad fresh"

@@ -527,11 +527,11 @@ class freshAMap(StoppableThread):
         ) -> bool:
             while True:
                 scr = shot()
-
-                if successCond(scr):
-                    return True
+                # respond cancel first
                 if cancelCond and cancelCond(scr):
                     return False
+                if successCond(scr):
+                    return True
                 sleep(sleeptime)
 
         # init
@@ -582,13 +582,6 @@ class freshAMap(StoppableThread):
             ):
                 # canceled
                 RythmCancel.play()
-                '''
-                cancel cond will be called after success cond
-                so cancel will be responded after pressed enter when found entering button in success cond
-                so its possible that its still in animation during closing the game result screen and starting the next game
-                solution is waiting several seconds
-                '''
-                time.sleep(3)
                 scr = shot()
                 if not any(
                     [

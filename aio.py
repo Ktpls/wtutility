@@ -38,7 +38,7 @@ def main():
     business = []
     # 热键
     hotkeyaction = []
-    threadpool = ThreadPoolExecutor()
+    threadpool = ThreadPoolExecutor(max_workers=10)
 
     # wtdistmeas
     if usingwtdistmeaspy:
@@ -261,12 +261,12 @@ def main():
         print("glock activated")
         import glock.glock as glock
 
-        agl = glock.GLock(4, threadpool)
+        agl = glock.GLock(2, threadpool)
 
         def glBuzWrap():
             isCtrling, duration = agl.business()
             if isCtrling:
-                bulletin.putup(bulletinBoard.Poster(f"glock", 0.5))
+                bulletin.putup(bulletinBoard.Poster(f"glock", 0.2))
 
         business.append(glBuzWrap)
 

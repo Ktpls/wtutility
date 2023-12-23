@@ -15,91 +15,91 @@ def GetWtHwnd():
 class Port8111:
     @dataclasses.dataclass
     class BeanIndicatorAir:
-        valid: bool
-        army: str
-        type: str
-        speed: float
-        pedals1: float
-        pedals2: float
-        stick_elevator: float
-        stick_ailerons: float
-        vario: float
-        altitude_hour: float
-        altitude_min: float
-        aviahorizon_roll: float
-        aviahorizon_pitch: float
-        bank: float
-        bank1: float
-        bank2: float
-        turn: float
-        compass: float
-        compass1: float
-        clock_hour: float
-        clock_sec: float
-        manifold_pressure: float
-        manifold_pressure1: float
-        rpm_min: float
-        rpm1_min: float
-        rpm_hour: float
-        rpm1_hour: float
-        oil_pressure: float
-        oil_pressure1: float
-        oil_temperature: float
-        oil_temperature1: float
-        oil_temperature2: float
-        oil_temperature3: float
-        mixture: float
-        mixture1: float
-        carb_temperature: float
-        carb_temperature1: float
-        fuel: float
-        fuel_pressure: float
-        fuel_pressure1: float
-        gears: float
-        gears1: float
-        flaps: float
-        trimmer: float
-        throttle: float
-        throttle1: float
-        weapon1: float
-        prop_pitch: float
-        prop_pitch1: float
-        supercharger: float
-        radiator: float
+        valid: bool = None
+        army: str = None
+        type: str = None
+        speed: float = None
+        pedals1: float = None
+        pedals2: float = None
+        stick_elevator: float = None
+        stick_ailerons: float = None
+        vario: float = None
+        altitude_hour: float = None
+        altitude_min: float = None
+        aviahorizon_roll: float = None
+        aviahorizon_pitch: float = None
+        bank: float = None
+        bank1: float = None
+        bank2: float = None
+        turn: float = None
+        compass: float = None
+        compass1: float = None
+        clock_hour: float = None
+        clock_sec: float = None
+        manifold_pressure: float = None
+        manifold_pressure1: float = None
+        rpm_min: float = None
+        rpm1_min: float = None
+        rpm_hour: float = None
+        rpm1_hour: float = None
+        oil_pressure: float = None
+        oil_pressure1: float = None
+        oil_temperature: float = None
+        oil_temperature1: float = None
+        oil_temperature2: float = None
+        oil_temperature3: float = None
+        mixture: float = None
+        mixture1: float = None
+        carb_temperature: float = None
+        carb_temperature1: float = None
+        fuel: float = None
+        fuel_pressure: float = None
+        fuel_pressure1: float = None
+        gears: float = None
+        gears1: float = None
+        flaps: float = None
+        trimmer: float = None
+        throttle: float = None
+        throttle1: float = None
+        weapon1: float = None
+        prop_pitch: float = None
+        prop_pitch1: float = None
+        supercharger: float = None
+        radiator: float = None
 
     @dataclasses.dataclass
     class BeanIndicatorTank:
-        valid: bool
-        army: str
-        type: str
-        stabilizer: float
-        gear: float
-        gear_neutral: float
-        speed: float
-        has_speed_warning: float
-        rpm: float
-        driving_direction_mode: float
-        cruise_control: float
-        lws: float
-        ircm: float
-        roll_indicators_is_available: float
-        first_stage_ammo: float
-        crew_total: float
-        crew_current: float
-        crew_distance: float
-        gunner_state: float
-        driver_state: float
+        valid: bool = None
+        army: str = None
+        type: str = None
+        stabilizer: float = None
+        gear: float = None
+        gear_neutral: float = None
+        speed: float = None
+        has_speed_warning: float = None
+        rpm: float = None
+        driving_direction_mode: float = None
+        cruise_control: float = None
+        lws: float = None
+        ircm: float = None
+        roll_indicators_is_available: float = None
+        first_stage_ammo: float = None
+        crew_total: float = None
+        crew_current: float = None
+        crew_distance: float = None
+        gunner_state: float = None
+        driver_state: float = None
 
     @dataclasses.dataclass
     class BeanMapInfo:
-        grid_size: List[float]
-        grid_steps: List[float]
-        grid_zero: List[float]
-        hud_type: int
-        map_generation: int
-        map_max: List[float]
-        map_min: List[float]
-        valid: bool
+        grid_size: List[float] = None
+        grid_steps: List[float] = None
+        grid_zero: List[float] = None
+        hud_type: int = None
+        map_generation: int = None
+        map_max: List[float] = None
+        map_min: List[float] = None
+        valid: bool = None
 
     @dataclasses.dataclass
     class BeanState:
@@ -110,38 +110,38 @@ class Port8111:
 
         @dataclasses.dataclass
         class Engine:
-            throttle: "Port8111.BeanState.UnitValue"
-            RPM_throttle: "Port8111.BeanState.UnitValue"
-            mixture: "Port8111.BeanState.UnitValue"
-            radiator: "Port8111.BeanState.UnitValue"
-            compressor_stage: "Port8111.BeanState.UnitValue"
-            magneto: "Port8111.BeanState.UnitValue"
-            power: "Port8111.BeanState.UnitValue"
-            RPM: "Port8111.BeanState.UnitValue"
-            manifold_pressure: "Port8111.BeanState.UnitValue"
-            oil_temp: "Port8111.BeanState.UnitValue"
-            pitch: "Port8111.BeanState.UnitValue"
-            thrust: "Port8111.BeanState.UnitValue"
-            efficiency: "Port8111.BeanState.UnitValue"
+            throttle: "Port8111.BeanState.UnitValue" = None
+            RPM_throttle: "Port8111.BeanState.UnitValue" = None
+            mixture: "Port8111.BeanState.UnitValue" = None
+            radiator: "Port8111.BeanState.UnitValue" = None
+            compressor_stage: "Port8111.BeanState.UnitValue" = None
+            magneto: "Port8111.BeanState.UnitValue" = None
+            power: "Port8111.BeanState.UnitValue" = None
+            RPM: "Port8111.BeanState.UnitValue" = None
+            manifold_pressure: "Port8111.BeanState.UnitValue" = None
+            oil_temp: "Port8111.BeanState.UnitValue" = None
+            pitch: "Port8111.BeanState.UnitValue" = None
+            thrust: "Port8111.BeanState.UnitValue" = None
+            efficiency: "Port8111.BeanState.UnitValue" = None
 
-        valid: bool
-        aileron: UnitValue
-        elevator: UnitValue
-        rudder: UnitValue
-        flaps: UnitValue
-        gear: UnitValue
-        H: UnitValue
-        TAS: UnitValue
-        IAS: UnitValue
-        M: UnitValue
-        AoA: UnitValue
-        AoS: UnitValue
-        Ny: UnitValue
-        Vy: UnitValue
-        Wx: UnitValue
-        Mfuel: UnitValue
-        Mfuel0: UnitValue
-        engine: Engine
+        valid: bool = None
+        aileron: UnitValue = None
+        elevator: UnitValue = None
+        rudder: UnitValue = None
+        flaps: UnitValue = None
+        gear: UnitValue = None
+        H: UnitValue = None
+        TAS: UnitValue = None
+        IAS: UnitValue = None
+        M: UnitValue = None
+        AoA: UnitValue = None
+        AoS: UnitValue = None
+        Ny: UnitValue = None
+        Vy: UnitValue = None
+        Wx: UnitValue = None
+        Mfuel: UnitValue = None
+        Mfuel0: UnitValue = None
+        engine: Engine = None
 
         @staticmethod
         def fromDict(data_dict: typing.Dict[str, float]) -> "Port8111.BeanState":
@@ -239,23 +239,6 @@ class Port8111:
             else:
                 aircraft = Port8111.BeanState(
                     valid=valid,
-                    aileron=None,
-                    elevator=None,
-                    rudder=None,
-                    flaps=None,
-                    gear=None,
-                    H=None,
-                    TAS=None,
-                    IAS=None,
-                    M=None,
-                    AoA=None,
-                    AoS=None,
-                    Ny=None,
-                    Vy=None,
-                    Wx=None,
-                    Mfuel=None,
-                    Mfuel0=None,
-                    engine=None,
                 )
             return aircraft
 
