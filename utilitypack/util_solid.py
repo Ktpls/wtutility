@@ -478,31 +478,28 @@ class expparser:
             return [a]
 
     BasicFunctionLib = {
-        "sin": unpackParaArray(math.sin),
-        "cos": unpackParaArray(math.cos),
-        "tan": unpackParaArray(math.tan),
-        "asin": unpackParaArray(math.asin),
-        "acos": unpackParaArray(math.acos),
-        "atan": unpackParaArray(math.atan),
-        "atan2": unpackParaArray(math.atan2),
-        "exp": unpackParaArray(math.exp),
-        "log": unpackParaArray(math.log),
-        "sqrt": unpackParaArray(math.sqrt),
-        "abs": unpackParaArray(abs),
-        "sign": unpackParaArray(lambda x: 1 if x > 0 else -1 if x < 0 else 0),
-        "floor": unpackParaArray(math.floor),
-        "ceil": unpackParaArray(math.ceil),
-        "neg": unpackParaArray(lambda x: -x),
-        "iif": unpackParaArray(
-            lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y
-        ),
-        "eq": unpackParaArray(lambda x, y, ep=0.001: abs(x - y) < ep),
-        "streq": unpackParaArray(lambda x, y: x == y),
-        "CStr": unpackParaArray(str),
-        "CNum": unpackParaArray(float),
-        "CBool": unpackParaArray(bool),
-        "CList": unpackParaArray(CList),
-        "WrapSingle": lambda a: [a],
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "asin": math.asin,
+        "acos": math.acos,
+        "atan": math.atan,
+        "atan2": math.atan2,
+        "exp": math.exp,
+        "log": math.log,
+        "sqrt": math.sqrt,
+        "abs": abs,
+        "sign": lambda x: 1 if x > 0 else -1 if x < 0 else 0,
+        "floor": math.floor,
+        "ceil": math.ceil,
+        "neg": lambda x: -x,
+        "iif": lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y,
+        "eq": lambda x, y, ep=0.001: abs(x - y) < ep,
+        "streq": lambda x, y: x == y,
+        "CStr": str,
+        "CNum": float,
+        "CBool": bool,
+        "CList": CList,
     }
 
     BasicConstantLib = {"e": math.e, "pi": math.pi, "true": True, "false": False}
@@ -834,7 +831,16 @@ class expparser:
 
         def DealWithBra():
             nonlocal token, peekToken, state, tokenList
-            subresult = expparser.__expparse_recursive(s, varList, funcList, token.end)
+            if peekToken.type == expparser.TokenType.KET:
+                """
+                a no para call bracket pair
+                cant parse with recursive function, which expects a value
+                """
+                subresult = expparser.__ExpParserResult([], peekToken.end)
+            else:
+                subresult = expparser.__expparse_recursive(
+                    s, varList, funcList, token.end
+                )
             tokenList.pop()  # remove the bra
             tokenList.append(
                 expparser.Token(expparser.TokenType.NUMLIKE, subresult.val, 0, 0)
@@ -853,8 +859,15 @@ class expparser:
                 MoveForwardToNextToken()
                 DealWithBra()
                 para = tokenList[-1].value
+                if (
+                    expparser.NumLikeUnionUtil.TypeOf(para)
+                    == expparser.NumLikeUnionUtil.NumLikeType.LIST
+                ):
+                    value = funcList[fooName](*para)
+                else:
+                    value = funcList[fooName](para)
                 tokenList[-1].value = expparser.NumLikeUnionUtil.ToProperFormFromAny(
-                    funcList[fooName](para)
+                    value
                 )
                 tokenList = tokenList[:-2] + tokenList[-1:]  # remove the func name
                 RemapToken()
@@ -1007,7 +1020,7 @@ class expparser:
     @staticmethod
     def test():
         var = {**expparser.BasicConstantLib}
-        func = {**expparser.BasicFunctionLib}
+        func = {**expparser.BasicFunctionLib, "DelayedEvaluation": lambda: 999}
 
         @dataclasses.dataclass
         class TestUnit:
@@ -1029,9 +1042,9 @@ class expparser:
             TestUnit(r"CStr(true)", "True"),
             TestUnit(r'CNum("1.23")+1', "2.23"),
             TestUnit(r"CNum(true)+1", "2.0"),
-            TestUnit(r"WrapSingle(WrapSingle(1))", "[[1.0]]"),
             TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
             TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
+            TestUnit(r"DelayedEvaluation()+1", "1000.0"),
         ]
         unpassed: typing.List[TestUnit] = []
 

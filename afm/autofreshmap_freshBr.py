@@ -7,7 +7,8 @@ def main():
     try:
         activeWindow(GetWtHwnd())
         FreshBr(
-            BannedVehicleInfoSourceCode="""
+            BannedVehicleInfoSourceCode=WrapperOfMultiLineText(
+                """
 MiG21SMT
 Su17M2
 MiG21MF
@@ -16,10 +17,10 @@ JaguarGR1A
 MirageIII
 A-5C
 Su-25
-"""[
-                1:-1
-            ],
-            WantedVehicleInfoSourceCode="""
+"""
+            ),
+            WantedVehicleInfoSourceCode=WrapperOfMultiLineText(
+                """
 G91R
 MiG15
 F86F
@@ -32,9 +33,8 @@ Scimitar
 Ki200
 J-2
 SAAB-105
-"""[
-                1:-1
-            ],
+"""
+            ),
         )
         if waitafterdone:
             os.system("pause")

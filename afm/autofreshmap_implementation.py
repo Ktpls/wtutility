@@ -682,7 +682,7 @@ class ApproximateStandardizationGuide:
             guideSourceCode (str): The source code of the guide.
         """
         self.guideSourceCode = guideSourceCode
-        guideitem = []
+        guideitem:typing.List[ApproximateStandardizationGuide.GuideItem] = []
         for g in guideSourceCode.split("\n"):
             if len(g) == 0:
                 continue
@@ -712,7 +712,7 @@ class ApproximateStandardizationGuide:
         """
         for g in self.guideitem:
             s = g.do(s)
-        return s
+        return s.strip()
 
 
 @dataclasses.dataclass
