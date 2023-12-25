@@ -339,9 +339,12 @@ class expparser:
     TODO:
     numlike
         tensor support
+            consider use middle bracket [] to represent tensor
         string support
             almost done
             considering impl operator on this type
+        non operator comma
+            process comma as token, stands for end of expression or something, rather than an operator
     """
 
     class TokenType(enum.Enum):
@@ -953,7 +956,7 @@ class expparser:
                 ):
                     state = expparser.__State.END
                     expendpos = token.end
-                    tokenList.pop()  # remove the eof or ket
+                    tokenList.pop()  # remove the eof or ket or comma in the future, end sign anyway
                     RemapToken()
                     # clear all
                     while True:

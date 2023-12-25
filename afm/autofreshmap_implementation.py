@@ -3,6 +3,7 @@ from logging import exception
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
+from .autofreshmap_configmap_importref import *
 
 
 def signName2Path(name):
@@ -36,6 +37,8 @@ elif resolution == "m1920x1080r1280x720":
     # 1280x720,75%
     standardMapLeftTopPoint = [292, 218]
     pointtemplatezoomrate = 1.5  # 1920/1366
+else:
+    raise Exception("unknown resolution")
 
 if dbglog:
     if log2file:
@@ -187,23 +190,27 @@ class matcher:
             m = m.reshape(m.shape + tuple([1]))  # in accordance to multi channeled
         return m.astype("float")  # for matching
 
-    def __init__(self, info: Dict):
-        path = assetpath2realpath(info["path"])
+    def __init__(
+        self,
+        leftTop: typing.List,
+        path: str,
+        thresh: float | None = None,
+        maskpath: str | None = None,
+    ):
+        # for dbg output
+        self.path = path
+
+        path = assetpath2realpath(path)
         m = cv.imread(path)
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
-        self.pointlt = np.array(info["lt"])
+        self.pointlt = np.array(leftTop)
         self.pointrd = self.pointlt + np.flip(m.shape[:2])
         self.m = matcher.imagepreprocess(m)
-        self.thresh = info.get(
-            "thresh", None
-        )  # optional thresh, for dynamic specified, if needed
+        self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
-        # for dbg output
-        self.path = info["path"]
-
-        if info["mask"] is not None:
-            m = assetpath2realpath(info["mask"])
+        if maskpath is not None:
+            m = assetpath2realpath(maskpath)
             m = cv.imread(m)
             self.mask = m
         else:
@@ -254,21 +261,19 @@ def threshedmatchtemplate(src, temp, mask, simu):
 
 
 class matchTemplateClassWrapper:
-    def __init__(self, info: Dict):
-        path = assetpath2realpath(info["path"])
+    def __init__(self, path, thresh=None, mask=None):
+        path = assetpath2realpath(path)
         m = cv.imread(path)
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
         self.m = m
-        self.thresh = info.get(
-            "thresh", None
-        )  # optional thresh, for dynamic specified, if needed
+        self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
         # for dbg output
-        self.path = info["path"]
+        self.path = path
 
-        if info["mask"] is not None:
-            m = assetpath2realpath(info["mask"])
+        if mask is not None:
+            m = assetpath2realpath(mask)
             m = cv.imread(m)
             self.mask = m
         else:
@@ -295,36 +300,19 @@ class detector:
         pass
 
 
-class defaultdetector(detector):
-    # para is matcherinfo
-    def __init__(self, para):
-        self.mtc = matcher(para)
 
-    def detect(self, mscr):
-        return self.mtc.detect(mscr)
-
-
-class signdetector(detector):
-    # para: {"path":path,"lt":lt}
-    def __init__(self, para: dict):
-        para = deepcopy(para)
-        para.setdefault("thresh", 0.27)
-        para.setdefault("mask", None)
-        para.setdefault("type", "matchtemplate")
-
-        if para.get("type") == "matcher":
-            self.mtc = matcher(para)
-        elif para.get("type") == "matchtemplate":
-            self.mtc = matchTemplateClassWrapper(para)
+class signdetector(matchTemplateClassWrapper):
+    def __init__(self, path, thresh=0.27, mask=None):
+        super().__init__(path, thresh, mask)
 
     def detect(self, mscr: np.ndarray):
-        return self.mtc.detect(mscr)
+        return self.detect(mscr)
 
     def getsigncenter(self):
-        return self.mtc.getsigncenter()
+        return self.getsigncenter()
 
     def getsignpointrd(self):
-        return self.mtc.getsignpointrd()
+        return self.getsignpointrd()
 
 
 def getMapSpawnCenter(m, spawntype="blue"):
@@ -389,29 +377,24 @@ class mapdetector(detector):
     after that assetpath2realpath will be done in matcher
     """
 
-    def __init__(self, para: dict):
+    def __init__(self, para: SpecialMapDetector):
         para = deepcopy(para)
 
-        if "mapreq" in para:
-            mapreq = para["mapreq"]
+        if para.mapreq is not None:
+            mapreq = para.mapreq
             # formalize to list
             if type(mapreq) is str:
                 mapreq = [mapreq]
             mapreq = [mapname2assetpath(mr) for mr in mapreq]
-            bean4mtc = [
-                {
-                    "mask": None,
-                    "lt": standardMapLeftTopPoint,
-                    "thresh": standardMapMatchThreshold,
-                    "path": mr,
-                }
+            bean4mtc = []
+            self.mtc = [
+                matcher(standardMapLeftTopPoint, mr, standardMapMatchThreshold, None)
                 for mr in mapreq
             ]
-            self.mtc = [matcher(bm) for bm in bean4mtc]
         else:
             self.mtc = []
 
-        self.foo = para["foo"]
+        self.foo = para.foo
 
     def detect(self, mscr):
         mapcut = cutmap(mscr)
@@ -504,7 +487,7 @@ stateDetector = None
 def loadAssetsNeeded4FreshAMap():
     global whitelistedmapdetector, stateDetector
     whitelistedmapdetector = maplist2detectorlist(whitelistedmap)
-    stateDetector = {k: signdetector(v) for k, v in stateDetectorInfo.items()}
+    stateDetector = {k: signdetector(**v) for k, v in stateDetectorInfo.items()}
     return whitelistedmapdetector, stateDetector
 
 
@@ -684,7 +667,7 @@ class ApproximateStandardizationGuide:
             guideSourceCode (str): The source code of the guide.
         """
         self.guideSourceCode = guideSourceCode
-        guideitem:typing.List[ApproximateStandardizationGuide.GuideItem] = []
+        guideitem: typing.List[ApproximateStandardizationGuide.GuideItem] = []
         for g in guideSourceCode.split("\n"):
             if len(g) == 0:
                 continue

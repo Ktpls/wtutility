@@ -1,176 +1,143 @@
-
+from .autofreshmap_configmap_importref import *
 
 # friendly for turrentless tank destroyers
 highSurvivablity = [
-    'AralSea',
-    'Berlin',
-    'EasternEurope',
-    'EuropeanProvince',
-    'FieldsOfNormandy',
-    'FieldsOfPoland',
-    'Finland',
+    "AralSea",
+    "Berlin",
+    "EasternEurope",
+    "EuropeanProvince",
+    "FieldsOfNormandy",
+    "FieldsOfPoland",
+    "Finland",
     #'FireArc',
-    'FrozenPass',
-    'Karelia',
-    'MaginotLineDomination#1',
-    'MaginotLineDomination#2',
-    'Mozdok#2',
-    'Poland',
-    'PortNovorossiysk',
-    'Pradesh',
-    'RedDesert',
-    'SandsOfSinai',
-    'SandsOfTunisia',
-    'SecondBattleOfElAlamein',
-    'Tunisia',
-    'AshRiver',
-    'Carpathians',
-    'Jungle',
-    'MiddleEast',
+    "FrozenPass",
+    "Karelia",
+    "MaginotLineDomination#1",
+    "MaginotLineDomination#2",
+    "Mozdok#2",
+    "Poland",
+    "PortNovorossiysk",
+    "Pradesh",
+    "RedDesert",
+    "SandsOfSinai",
+    "SandsOfTunisia",
+    "SecondBattleOfElAlamein",
+    "Tunisia",
+    "AshRiver",
+    "Carpathians",
+    "Jungle",
+    "MiddleEast",
 ]
 
-highMobility=[
-    'Normandy',
-]
 
-# for normal tanks
-lowSurvivablitity = [
-    'Sinai',
-    #'Berlin',
-]+highSurvivablity
-
-whitelistedmap = lowSurvivablitity
+whitelistedmap = highSurvivablity
 
 specialmapdetectors = {
-    "Sinai": {
-        "mapreq":
-        "Sinai",
+    "Sinai": SpecialMapDetector(
+        mapreq="Sinai",
         # B, or C or battle mode at any side
         # ignoring point type
-        "foo":
-        'ret(detectMapShape())'
-        # and (selectPoint(ppos=[272, 294]) or selectPoint(ppos=[568, 294]) or selectBattleMode()) 
-    },
-    "FrozenPass": {
-        "mapreq":
-        "FrozenPass",
+        foo="ret(detectMapShape())",
+    ),
+    "FrozenPass": SpecialMapDetector(
+        mapreq="FrozenPass",
         # A or B, not single C in village
-        "foo":
-        'ret(detectMapShape() and spawnAround([474,477]) and (not singlePoint([528, 99])))'
-    },
-    "EasternEurope": {
-        "mapreq": "EasternEurope",
-        "foo": 'ret(detectMapShape() and spawnAround([109,456]))'
-    },
-    "Karelia": {
-        "mapreq": "Karelia",
-        "foo": 'ret(detectMapShape() and spawnAround([316, 160]))'
-    },
-    "Japan": {
-        "mapreq":
-        "Japan",
+        foo="ret(detectMapShape() and spawnAround([474,477]) and (not singlePoint([528, 99])))",
+    ),
+    "EasternEurope": SpecialMapDetector(
+        mapreq="EasternEurope",
+        foo="ret(detectMapShape() and spawnAround([109,456]))",
+    ),
+    "Karelia": SpecialMapDetector(
+        mapreq="Karelia",
+        foo="ret(detectMapShape() and spawnAround([316, 160]))",
+    ),
+    "Japan": SpecialMapDetector(
+        mapreq="Japan",
         # b point
-        "foo":
-        'ret(detectMapShape() and spawnAround([233, 572]) and selectPoint(ppos=[325, 310]))'
-    },
-    "Normandy": {
-        "mapreq": "Normandy",
-        "foo": 'ret(detectMapShape() and spawnAround([536, 164]))'
-    },
-    "Poland": {
-        "mapreq": ["Poland", "Poland(winter)"],
-        "foo":
-        'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([86, 313]) and selectPoint("A"))'
+        foo="ret(detectMapShape() and spawnAround([233, 572]) and selectPoint(ppos=[325, 310]))",
+    ),
+    "Normandy": SpecialMapDetector(
+        mapreq="Normandy",
+        foo="ret(detectMapShape() and spawnAround([536, 164]))",
+    ),
+    "Poland": SpecialMapDetector(
+        mapreq=["Poland", "Poland(winter)"],
         # includes domination and conquest, not battle
-    },
-    "Jungle": {
-        "mapreq": "Jungle",
-        "foo": 'ret(detectMapShape() and spawnAround([130, 352]))'
-    },
-    "FieldsOfNormandy": {
-        "mapreq":
-        "FieldsOfNormandy",
-        "foo":
-        'ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))'  # single point at top
-    },
-    "AshRiver": {
-        "mapreq": "AshRiver",
-        "foo": 'ret(detectMapShape() and spawnAround([ 87, 359]))'
-    },
-    "Finland": {
-        "mapreq":
-        "Finland",
+        foo='ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([86, 313]) and selectPoint("A"))',
+    ),
+    "Jungle": SpecialMapDetector(
+        mapreq="Jungle",
+        foo="ret(detectMapShape() and spawnAround([130, 352]))",
+    ),
+    "FieldsOfNormandy": SpecialMapDetector(
+        mapreq="FieldsOfNormandy",
+        foo="ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))",  # single point at top
+    ),
+    "AshRiver": SpecialMapDetector(
+        mapreq="AshRiver",
+        foo="ret(detectMapShape() and spawnAround([ 87, 359]))",
+    ),
+    "Finland": SpecialMapDetector(
+        mapreq="Finland",
         # c point
-        "foo":
-        'ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))'  #not single point at left
-    },
-    "SandsOfSinai": {
-        "mapreq": "SandsOfSinai",
+        foo="ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))",  # not single point at left
+    ),
+    "SandsOfSinai": SpecialMapDetector(
+        mapreq="SandsOfSinai",
         # better survivability at upper, less likely to be killed by flankers
-        "foo": 'ret(detectMapShape() and spawnAround([334, 61]))'
-    },
-    # "AralSea": {
-    #     "mapreq": "AralSea",
-    #     # actually both side are fine
-    #     "foo": 'ret(detectMapShape() and spawnAround([502, 300]))'
-    # },
-    "FieldsOfPoland": {
-        "mapreq": "FieldsOfPoland",
-        "foo": 'ret(detectMapShape())'
-    },
-    "Tunisia": {
-        "mapreq":
-        "Tunisia",
+        foo="ret(detectMapShape() and spawnAround([334, 61]))",
+    ),
+    "FieldsOfPoland": SpecialMapDetector(
+        mapreq="FieldsOfPoland",
+        foo="ret(detectMapShape())",
+    ),
+    "Tunisia": SpecialMapDetector(
+        mapreq="Tunisia",
         # A point
-        "foo":
-        # born at bottom left, go behind the stone slightly left of the bridge above a
-        'ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))'
-    },
-    "MaginotLineDomination#1": {
-        "mapreq": ["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
-        "foo":
+        foo="ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))",
+    ),
+    "MaginotLineDomination#1": SpecialMapDetector(
+        mapreq=["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
         # born at upper, highland between two spawns
-        'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([290, 65]))'
-    },
-    "MaginotLineDomination#2": {
-        "mapreq": ["MaginotLineDomination#2", "MaginotLineDomination#2Winter"],
-        "foo": 'ret(detectMapShape(mtcid=0) or detectMapShape(mtcid=1))'
-    },
-    "EuropeanProvince": {
-        "mapreq": "EuropeanProvince",
+        foo="ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([290, 65]))",
+    ),
+    "MaginotLineDomination#2": SpecialMapDetector(
+        mapreq=["MaginotLineDomination#2", "MaginotLineDomination#2Winter"],
+        foo="ret(detectMapShape(mtcid=0) or detectMapShape(mtcid=1))",
+    ),
+    "EuropeanProvince": SpecialMapDetector(
+        mapreq="EuropeanProvince",
         # at bottom right spawn, good vision at this highland
-        "foo": 'ret(detectMapShape() and spawnAround([476, 303]))'
-    },
-    "Berlin": {
-        "mapreq": "Berlin",
+        foo="ret(detectMapShape() and spawnAround([476, 303]))",
+    ),
+    "Berlin": SpecialMapDetector(
+        mapreq="Berlin",
         # good vision at bottom right spawn or upper right
-        "foo": 'ret(detectMapShape())'
-    },
-    "PortNovorossiysk": {
-        "mapreq": "PortNovorossiysk",
+        foo="ret(detectMapShape())",
+    ),
+    "PortNovorossiysk": SpecialMapDetector(
+        mapreq="PortNovorossiysk",
         # upper spawn
         # born at upper, good vision between buildings through river and survivability for river
-        "foo": 'ret(detectMapShape() and spawnAround([550, 88]))'
-    },
-    "SecondBattleOfElAlamein": {
-        "mapreq": [
-            'SecondBattleOfElAlameinConquest#1',
-            'SecondBattleOfElAlameinDomination#2'
+        foo="ret(detectMapShape() and spawnAround([550, 88]))",
+    ),
+    "SecondBattleOfElAlamein": SpecialMapDetector(
+        mapreq=[
+            "SecondBattleOfElAlameinConquest#1",
+            "SecondBattleOfElAlameinDomination#2",
         ],
         # born at upper, better vision around up right spawn
-        "foo":
-        'ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([219, 87]))'
-    },
-    "Carpathians": {
-        "mapreq": 'Carpathians',
+        foo="ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([219, 87]))",
+    ),
+    "Carpathians": SpecialMapDetector(
+        mapreq="Carpathians",
         # born at lower, better vision around A on mount
-        "foo":
-        'ret(detectMapShape() and spawnAround([222, 529]))'
-    },
-    "MiddleEast": {
-        "mapreq": 'MiddleEast',
+        foo="ret(detectMapShape() and spawnAround([222, 529]))",
+    ),
+    "MiddleEast": SpecialMapDetector(
+        mapreq="MiddleEast",
         # born at lower, better vision around A on mount
-        "foo":
-        'ret(detectMapShape() and spawnAround([508, 346]))'
-    },
+        foo="ret(detectMapShape() and spawnAround([508, 346]))",
+    ),
 }
