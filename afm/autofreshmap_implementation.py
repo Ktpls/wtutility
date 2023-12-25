@@ -476,6 +476,8 @@ class mapdetector(detector):
 
         try:
             exec(self.foo)
+            if ret is None:
+                raise ValueError("nothing returned")
             return retVal
         except Exception as e:
             traceback.print_exc()

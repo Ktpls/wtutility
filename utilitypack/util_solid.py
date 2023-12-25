@@ -383,6 +383,7 @@ class expparser:
             STR = 1
             LIST = 2
             BOOL = 3
+            NONE = 4
 
         @staticmethod
         def TypeOf(nl):
@@ -394,6 +395,8 @@ class expparser:
                 return expparser.NumLikeUnionUtil.NumLikeType.NUM
             elif isinstance(nl, bool):
                 return expparser.NumLikeUnionUtil.NumLikeType.BOOL
+            elif nl is None:
+                return expparser.NumLikeUnionUtil.NumLikeType.NONE
             else:
                 raise expparser.NumLikeUnionUtil.NumLikeException()
 
@@ -418,6 +421,8 @@ class expparser:
             elif t == expparser.NumLikeUnionUtil.NumLikeType.NUM:
                 return [nl]
             elif t == expparser.NumLikeUnionUtil.NumLikeType.BOOL:
+                return [nl]
+            elif t == expparser.NumLikeUnionUtil.NumLikeType.NONE:
                 return [nl]
             else:
                 raise expparser.NumLikeUnionUtil.NumLikeException()
@@ -448,6 +453,8 @@ class expparser:
                 return nl
             elif isinstance(nl, int):
                 return float(nl)
+            elif nl is None:
+                return nl
             else:
                 raise expparser.NumLikeUnionUtil.NumLikeException()
 
@@ -476,33 +483,6 @@ class expparser:
             return a
         else:
             return [a]
-
-    BasicFunctionLib = {
-        "sin": math.sin,
-        "cos": math.cos,
-        "tan": math.tan,
-        "asin": math.asin,
-        "acos": math.acos,
-        "atan": math.atan,
-        "atan2": math.atan2,
-        "exp": math.exp,
-        "log": math.log,
-        "sqrt": math.sqrt,
-        "abs": abs,
-        "sign": lambda x: 1 if x > 0 else -1 if x < 0 else 0,
-        "floor": math.floor,
-        "ceil": math.ceil,
-        "neg": lambda x: -x,
-        "iif": lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y,
-        "eq": lambda x, y, ep=0.001: abs(x - y) < ep,
-        "streq": lambda x, y: x == y,
-        "CStr": str,
-        "CNum": float,
-        "CBool": bool,
-        "CList": CList,
-    }
-
-    BasicConstantLib = {"e": math.e, "pi": math.pi, "true": True, "false": False}
 
     class OprException(Exception):
         pass
@@ -1017,10 +997,56 @@ class expparser:
     def expparse(s, var={}, func={}):
         return expparser.__expparse_recursive(s, var, func).val
 
+    class Utils:
+        @staticmethod
+        def OptionalFunc(defaultParam: typing.List, func: typing.Callable):
+            return lambda *param: func(
+                *[a if a is not None else d for a, d in zip(param, defaultParam)]
+            )
+
+    BasicFunctionLib = {
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "asin": math.asin,
+        "acos": math.acos,
+        "atan": math.atan,
+        "atan2": math.atan2,
+        "exp": math.exp,
+        "log": math.log,
+        "sqrt": math.sqrt,
+        "abs": abs,
+        "sign": lambda x: 1 if x > 0 else -1 if x < 0 else 0,
+        "floor": math.floor,
+        "ceil": math.ceil,
+        "neg": lambda x: -x,
+        "iif": lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y,
+        "eq": lambda x, y, ep=0.001: abs(x - y) < ep,
+        "streq": lambda x, y: x == y,
+        "CStr": str,
+        "CNum": float,
+        "CBool": bool,
+        "CList": CList,
+    }
+
+    BasicConstantLib = {
+        "e": math.e,
+        "pi": math.pi,
+        "true": True,
+        "false": False,
+        "none": None,
+    }
+
     @staticmethod
     def test():
         var = {**expparser.BasicConstantLib}
-        func = {**expparser.BasicFunctionLib, "DelayedEvaluation": lambda: 999}
+        func = {
+            **expparser.BasicFunctionLib,
+            "DelayedEvaluation": lambda: 999,
+            "OptionalFunc": expparser.Utils.OptionalFunc(
+                [1, 0], lambda x, param: x + param
+            ),
+        }
 
         @dataclasses.dataclass
         class TestUnit:
@@ -1045,6 +1071,7 @@ class expparser:
             TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
             TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
             TestUnit(r"DelayedEvaluation()+1", "1000.0"),
+            TestUnit(r"OptionalFunc(none, 1) + 1", "3.0"),
         ]
         unpassed: typing.List[TestUnit] = []
 
