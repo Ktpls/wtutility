@@ -36,7 +36,7 @@ elif resolution == "m1920x1080r1366x768":
 elif resolution == "m1920x1080r1280x720":
     # 1280x720,75%
     standardMapLeftTopPoint = [292, 218]
-    pointtemplatezoomrate = 1.5  # 1920/1366
+    pointtemplatezoomrate = 1.5  # 1920/1280
 else:
     raise Exception("unknown resolution")
 
@@ -166,9 +166,11 @@ def assetpath2realpath(ap):
 zfoo4matcher = ZFunc(10, 0, 20, 1)
 
 
-class matcher:
-    # deprecated
-    # removed lt property in info, wont work and dont use this any more
+class FixedPositionImgMatcher:
+    '''
+    used for map detection.
+    cuz i need special algorithm that can not be impled in matchtemplate()
+    '''
     @staticmethod
     def imagepreprocess(m, mask=None):
         # all preprocess defined in config done here
@@ -206,7 +208,7 @@ class matcher:
             raise Exception("loading matcher failed in {}".format(path))
         self.pointlt = np.array(leftTop)
         self.pointrd = self.pointlt + np.flip(m.shape[:2])
-        self.m = matcher.imagepreprocess(m)
+        self.m = FixedPositionImgMatcher.imagepreprocess(m)
         self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
         if maskpath is not None:
@@ -227,7 +229,7 @@ class matcher:
     """
 
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
-        mscr = matcher.imagepreprocess(mscr)
+        mscr = FixedPositionImgMatcher.imagepreprocess(mscr)
         return zfoo4matcher(np.sqrt(np.square(self.m - mscr).mean(axis=(2,)))).mean(
             axis=(0, 1)
         )
@@ -260,7 +262,7 @@ def threshedmatchtemplate(src, temp, mask, simu):
     return minloc if minval <= simu else None
 
 
-class matchTemplateClassWrapper:
+class UnlocatedFullScreenImgMatcher:
     def __init__(self, path, thresh=None, mask=None):
         path = assetpath2realpath(path)
         m = cv.imread(path)
@@ -284,7 +286,7 @@ class matchTemplateClassWrapper:
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
         if dbglog:
             allchanneloutput(
-                f"{self.path} matchTemplateClassWrapper detecting, ret={ret}"
+                f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
             )
         return ret
 
@@ -300,19 +302,9 @@ class detector:
         pass
 
 
-
-class signdetector(matchTemplateClassWrapper):
+class signdetector(UnlocatedFullScreenImgMatcher):
     def __init__(self, path, thresh=0.27, mask=None):
         super().__init__(path, thresh, mask)
-
-    def detect(self, mscr: np.ndarray):
-        return self.detect(mscr)
-
-    def getsigncenter(self):
-        return self.getsigncenter()
-
-    def getsignpointrd(self):
-        return self.getsignpointrd()
 
 
 def getMapSpawnCenter(m, spawntype="blue"):
@@ -342,7 +334,7 @@ def mapname2assetpath(mapname):
 
 def cutmap(m):
     pointlt = np.array(standardMapLeftTopPoint)
-    pointrd = pointlt + [648, 648]
+    pointrd = pointlt + np.array([648, 648])
     mm = m[pointlt[1] : pointrd[1], pointlt[0] : pointrd[0]]
     return mm
 
@@ -368,27 +360,20 @@ Asset4PointDetection_Pointmask = zoompointimg(
 
 
 class mapdetector(detector):
-    """
-    para: {
-        "mapreq":path,
-        "foo":str
-    }
-    the so called path is actually map name, by which mapname2assetpath is needed
-    after that assetpath2realpath will be done in matcher
-    """
 
     def __init__(self, para: SpecialMapDetector):
-        para = deepcopy(para)
-
+        """
+        the so called path is actually map name, by which mapname2assetpath is needed
+        after that assetpath2realpath will be done in matcher
+        """
         if para.mapreq is not None:
             mapreq = para.mapreq
             # formalize to list
             if type(mapreq) is str:
                 mapreq = [mapreq]
             mapreq = [mapname2assetpath(mr) for mr in mapreq]
-            bean4mtc = []
             self.mtc = [
-                matcher(standardMapLeftTopPoint, mr, standardMapMatchThreshold, None)
+                FixedPositionImgMatcher(standardMapLeftTopPoint, mr, standardMapMatchThreshold, None)
                 for mr in mapreq
             ]
         else:
@@ -473,7 +458,7 @@ def maplist2detectorlist(ml):
         m: mapdetector(
             specialmapdetectors[m]
             if m in specialmapdetectors
-            else {"mapreq": m, "foo": "ret(detectMapShape())"}
+            else SpecialMapDetector(mapreq=m, foo="ret(detectMapShape())")
         )
         for m in ml
     }
@@ -507,7 +492,7 @@ class freshAMap(StoppableThread):
 
         def KeepDetecting(
             successCond: Callable[[np.ndarray], bool],
-            cancelCond: Callable[[np.ndarray], bool] = None,
+            cancelCond: Callable[[np.ndarray], bool] | None = None,
             sleeptime=0.5,
         ) -> bool:
             while True:
@@ -521,7 +506,7 @@ class freshAMap(StoppableThread):
 
         # init
         loadAssetsNeeded4FreshAMap()
-
+        assert stateDetector is not None and whitelistedmapdetector is not None
         ss = screenshoter(0)
 
         def shot():
@@ -542,6 +527,7 @@ class freshAMap(StoppableThread):
             RythmNotify.play()
 
             def detectLoadingMap(scr):
+                assert stateDetector is not None
                 if stateDetector["LoadingMap"].detect(scr):
                     nonlocal loadingscreen
                     loadingscreen = scr
@@ -609,6 +595,7 @@ class freshAMap(StoppableThread):
 
             # detect game canceled, which is not in loading map scence
             def detectGameCanceled(scr):
+                assert stateDetector is not None
                 if not stateDetector["LoadingMap"].detect(scr):
                     return True
                 # setoffwifi()
@@ -725,7 +712,9 @@ class VehicleInfo:
         vehicleInfo: str
 
     @staticmethod
-    def matchPlayerVehicleListAndVehicleInfoList(players: str, vi: List["VehicleInfo"]):
+    def matchPlayerVehicleListAndVehicleInfoList(
+        players: List[str], vi: List["VehicleInfo"]
+    ):
         ret: List[VehicleInfo.MatchResult] = []
         for l, p in enumerate(players):
             for v in vi:
@@ -737,8 +726,8 @@ class VehicleInfo:
     def detectAnyInOutputOfTesseract(
         players: str, vi: List["VehicleInfo"], asg: ApproximateStandardizationGuide
     ):
-        players = [asg.do(t) for t in players.split("\n")]
-        ret = VehicleInfo.matchPlayerVehicleListAndVehicleInfoList(players, vi)
+        playerlist = [asg.do(t) for t in players.split("\n")]
+        ret = VehicleInfo.matchPlayerVehicleListAndVehicleInfoList(playerlist, vi)
         if len(ret) == 0:
             print("nothing matched")
         else:
@@ -811,7 +800,8 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         """
 
         def detectStartMatch(scr):
-            sp = stateDetector["Statistics"].mtc.find(scr)
+            assert stateDetector is not None
+            sp = stateDetector["Statistics"].find(scr)
             if sp is not None:
                 moveto(sp)
                 time.sleep(1)
@@ -940,12 +930,13 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         mouse.click(0)
 
         # exit settlement screen
-        def detectStartMatch(scr):
+        def detectMissionCanceled(scr):
+            assert stateDetector is not None
             if stateDetector["MissionCanceled"].detect(scr):
                 press(keycode.key_Esc)
                 return True
             return False
 
-        keepdetecting(detectStartMatch)
+        keepdetecting(detectMissionCanceled)
 
         longDelay(5 * 60)
