@@ -581,7 +581,7 @@ class freshAMap(StoppableThread):
                 sleeptime=1,
             ):
                 # canceled
-                RythmCancel.play()
+                # press asap
                 scr = shot()
                 if not any(
                     [
@@ -594,6 +594,7 @@ class freshAMap(StoppableThread):
                 ):
                     # clear matching state
                     press(keycode.key_Esc)
+                RythmCancel.play()
                 return False
 
             RythmNotify.play()

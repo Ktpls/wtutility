@@ -3,6 +3,7 @@
 # friendly for turrentless tank destroyers
 highSurvivablity = [
     'AralSea',
+    'Berlin',
     'EasternEurope',
     'EuropeanProvince',
     'FieldsOfNormandy',
@@ -24,6 +25,8 @@ highSurvivablity = [
     'Tunisia',
     'AshRiver',
     'Carpathians',
+    'Jungle',
+    'MiddleEast',
 ]
 
 highMobility=[
@@ -42,9 +45,11 @@ specialmapdetectors = {
     "Sinai": {
         "mapreq":
         "Sinai",
-        # B, or battle mode at any side
+        # B, or C or battle mode at any side
+        # ignoring point type
         "foo":
-        'ret(detectMapShape() and (selectPoint(ppos=[272, 294]) or selectBattleMode()) )'
+        'ret(detectMapShape())'
+        # and (selectPoint(ppos=[272, 294]) or selectPoint(ppos=[568, 294]) or selectBattleMode()) 
     },
     "FrozenPass": {
         "mapreq":
@@ -138,9 +143,8 @@ specialmapdetectors = {
     },
     "Berlin": {
         "mapreq": "Berlin",
-        # bottom spawn
-        # good vision at bottom right spawn
-        "foo": 'ret(detectMapShape() and spawnAround([306, 504]))'
+        # good vision at bottom right spawn or upper right
+        "foo": 'ret(detectMapShape())'
     },
     "PortNovorossiysk": {
         "mapreq": "PortNovorossiysk",
@@ -162,5 +166,11 @@ specialmapdetectors = {
         # born at lower, better vision around A on mount
         "foo":
         'ret(detectMapShape() and spawnAround([222, 529]))'
+    },
+    "MiddleEast": {
+        "mapreq": 'MiddleEast',
+        # born at lower, better vision around A on mount
+        "foo":
+        'ret(detectMapShape() and spawnAround([508, 346]))'
     },
 }

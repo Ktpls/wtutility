@@ -1218,3 +1218,116 @@ class OneOrderLinearFilter:
         output_sample = self.a * self.previous_output + self.b * input_sample
         self.previous_output = output_sample
         return output_sample
+
+
+class Stage:
+    def step(self, dt):
+        raise NotImplementedError("")
+
+    t = property(fget=lambda self: None)
+
+
+class SyncExecutableManager:
+    def __init__(self, pool: ThreadPoolExecutor) -> None:
+        self.pool = pool
+        self.selist: List[SyncExecutable] = []
+
+    def step(self):
+        # call this on wolf update
+        # make sure set running before submitting. or would be possibly kicked out here
+        self.selist = [
+            e for e in self.selist if e.state != SyncExecutable.STATE.stopped
+        ]
+        for se in self.selist:
+            se.cond.acquire(True)
+            if se.state == SyncExecutable.STATE.suspended:
+                # knowing not satisfied, skip waking up
+                if se.waitWhat():
+                    se.cond.notify_all()
+                    se.cond.wait()
+            else:
+                se.cond.notify_all()
+                se.cond.wait()
+            se.cond.release()
+
+    def submit(self, se: "SyncExecutable", foo: Callable):
+        self.selist.append(se)
+        return self.pool.submit(foo)
+
+
+class SyncExecutable:
+    # for impl serialized but sync mechanization in async foo
+    # stage is something with t readable
+    class STATE(enum.Enum):
+        stopped = 0
+        running = 1
+        suspended = 2
+
+    def __init__(
+        self, stage: Stage, sem: SyncExecutableManager, raiseOnErr=True
+    ) -> None:
+        self.stage = stage
+        self.sem = sem
+        self.cond = threading.Condition()
+        self.state = self.STATE.stopped
+        self.future = None
+        self.raiseOnErr = raiseOnErr
+        self.waitWhat = None
+
+    # override
+    def main(self, **arg):
+        raise BaseException("not implemented")
+
+    def run(self, **arg):
+        def foo():
+            self.cond.acquire(True)
+            try:
+                self.main(**arg)
+            except BaseException as e:
+                if self.raiseOnErr:
+                    traceback.print_exc()
+                    raise e
+                else:
+                    traceback.print_exc()
+            self.state = self.STATE.stopped
+            self.cond.notify_all()  # no more sleep, aks sem to get up
+            self.cond.release()
+
+        if not self.isworking():
+            self.state = self.STATE.running
+            self.future = self.sem.submit(self, foo)
+        return self
+
+    # available in main
+    def sleepUntil(self, untilWhat, timeout=None):
+        overduetime = self.stage.t + timeout if timeout else None
+
+        def untilWhatOrTimeOut():
+            return untilWhat() or (overduetime and self.stage.t >= overduetime)
+
+        # give right of check to manager, so can i save cost of thread switching
+        self.waitWhat = untilWhatOrTimeOut
+        self.state = self.STATE.suspended
+        while True:
+            """
+            do this in main thread so cancelling thread switching cost
+            """
+            if untilWhatOrTimeOut():
+                break
+            # register
+            self.cond.notify_all()
+            self.cond.wait()
+        self.waitWhat = None
+        self.state = self.STATE.running
+
+    # available in main
+    def delay(self, delaytime):
+        self.sleepUntil(lambda: False, delaytime)
+
+    # available in main
+    def stepOneFrame(self):
+        self.cond.notify_all()
+        self.cond.wait()
+
+    def isworking(self):
+        return self.state != self.STATE.stopped

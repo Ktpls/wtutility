@@ -211,6 +211,39 @@ def main():
             HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell)
         )
 
+        class LaunchSeries(StoppableThread):
+            def __init__(
+                self,
+                pool: ThreadPoolExecutor,
+            ) -> None:
+                super().__init__(
+                    StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
+                    pool,
+                )
+
+            def foo(self, *args, **kwargs):
+                bulletin.putup("launching series")
+                interval = 0.1
+                num = 35
+                keyshortcut.keydown(keycode.key_LeftControl)
+                for i in range(num):
+                    if self.ifTimeToStop():
+                        break
+                    keyshortcut.keydown(keycode.key_Spacebar)
+                    PreciseSleep(0.03)
+                    keyshortcut.keyup(keycode.key_Spacebar)
+                    PreciseSleep(interval)
+                keyshortcut.keyup(keycode.key_LeftControl)
+
+                bulletin.putup("launch done")
+
+        launchSeries = LaunchSeries(threadpool)
+        hotkeyaction.append(
+            HotkeyManager.hotkeytask(
+                key=[ord("K"), ord("L"), win32con.VK_RCONTROL], foo=lambda: launchSeries.go()
+            )
+        )
+
         keylist = [
             win32con.VK_UP,
             win32con.VK_LEFT,
