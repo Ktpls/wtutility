@@ -355,6 +355,7 @@ class expparser:
         EOF = 5
         IDR = 6
         SPACE = 7
+        COMMA = 8
 
     @dataclasses.dataclass(repr=True)
     class Token:
@@ -370,6 +371,7 @@ class expparser:
         OPR = 4
         END = 5
         IDR = 6
+        COMMA = 7
 
     @dataclasses.dataclass
     class __OprPriorityLeap:
@@ -497,7 +499,6 @@ class expparser:
         MUL = 3
         DIV = 4
         POW = 5
-        COMMA = 6
         NEG = 7  # available by manual transfering from sub
         NEQ = 8
         EQ = 9
@@ -515,14 +516,12 @@ class expparser:
             raise expparser.OprException(f"bad opr {s}")
 
         def getPriority(self):
-            if self == expparser._OprType.COMMA:
-                return 1
-            elif self in [
+            if self in [
                 expparser._OprType.OR,
                 expparser._OprType.AND,
                 expparser._OprType.XOR,
             ]:
-                return 2
+                return 1
             elif self in [
                 expparser._OprType.GT,
                 expparser._OprType.GE,
@@ -531,13 +530,13 @@ class expparser:
                 expparser._OprType.EQ,
                 expparser._OprType.NEQ,
             ]:
-                return 3
+                return 2
             elif self in [expparser._OprType.ADD, expparser._OprType.SUB]:
-                return 4
+                return 3
             elif self in [expparser._OprType.MUL, expparser._OprType.DIV]:
-                return 5
+                return 4
             elif self == expparser._OprType.POW:
-                return 6
+                return 5
             elif self in [expparser._OprType.NEG, expparser._OprType.NOT]:
                 # unaries
                 return 99
@@ -552,7 +551,6 @@ class expparser:
                 "*": expparser._OprType.MUL,
                 "/": expparser._OprType.DIV,
                 "^": expparser._OprType.POW,
-                ",": expparser._OprType.COMMA,
                 "=": expparser._OprType.EQ,
                 "!=": expparser._OprType.NEQ,
                 ">": expparser._OprType.GT,
@@ -569,17 +567,7 @@ class expparser:
             return dict[s]
 
         def do(self, arg: typing.List["expparser.Token"]):
-            # take several tokens and return numlike
-            if self == expparser._OprType.COMMA:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
-                # comma behaves differently with serial==0 and serial==other
-                return expparser.NumLikeUnionUtil.ToList(
-                    arg[0].value
-                ) + expparser.NumLikeUnionUtil.ToList(arg[1].value)
-            elif self == expparser._OprType.ADD:
+            if self == expparser._OprType.ADD:
                 assert (
                     arg[0].type == expparser.TokenType.NUMLIKE
                     and arg[1].type == expparser.TokenType.NUMLIKE
@@ -722,13 +710,14 @@ class expparser:
                 exp=r"^(<=)|(>=)|(\^\^)|(!=)", tokenType=expparser.TokenType.OPR
             ),  # two width operator, match before single widthed ones to get priority
             matcher(
-                exp=r"^[*/+\-^,=<>&|]", tokenType=expparser.TokenType.OPR
+                exp=r"^[*/+\-^=<>&|]", tokenType=expparser.TokenType.OPR
             ),  # single width operator
             matcher(exp=r"^[0-9]+(\.[0-9]+)?", tokenType=expparser.TokenType.NUMLIKE),
             matcher(exp=r'^".*?"', tokenType=expparser.TokenType.NUMLIKE),
             matcher(exp=r"^[A-Za-z_][A-Za-z0-9_]*", tokenType=expparser.TokenType.IDR),
             matcher(exp=r"^\(", tokenType=expparser.TokenType.BRA),
             matcher(exp=r"^\)", tokenType=expparser.TokenType.KET),
+            matcher(exp=r"^,", tokenType=expparser.TokenType.COMMA),
             matcher(exp=r"^$", tokenType=expparser.TokenType.EOF),
             matcher(exp=r"^[\s\r\n\t]+", tokenType=expparser.TokenType.SPACE),
         ]
@@ -771,9 +760,12 @@ class expparser:
     class __ExpParserResult:
         val: typing.Any
         end: int
+        endedby: "expparser.TokenType"
 
     @staticmethod
-    def __expparse_recursive(s, varList: typing.Dict, funcList: typing.Dict, i=0):
+    def __expparse_recursive(
+        s, varList: typing.Dict, funcList: typing.Dict, i=0, collectAllCommaParts=False
+    ):
         # fsm fields
         state = expparser.__State.START
         token: expparser.Token = None
@@ -781,7 +773,8 @@ class expparser:
         peekToken = expparser.__NextToken(s, i)
 
         # buffer
-        tokenList: typing.List[expparser.Token] = []
+        tokenList: typing.List[expparser.Token] = list()
+        commaList = list()
 
         # for operator priority
         oprRisingBeginPosList: typing.List[expparser.__OprPriorityLeap] = list()
@@ -812,6 +805,18 @@ class expparser:
             RemapToken()
             oprRisingBeginPosList.pop()
 
+        def AddNewVirtualTokenValuedByCalculation(subresult: expparser.__ExpParserResult):
+            nonlocal token, peekToken, state, tokenList
+            tokenList.append(
+                expparser.Token(
+                    expparser.TokenType.NUMLIKE,
+                    subresult.val,
+                    token.start,
+                    subresult.end,
+                )
+            )
+            RemapToken()
+            peekToken = expparser.__NextToken(s, subresult.end)
         def DealWithBra():
             nonlocal token, peekToken, state, tokenList
             if peekToken.type == expparser.TokenType.KET:
@@ -819,17 +824,15 @@ class expparser:
                 a no para call bracket pair
                 cant parse with recursive function, which expects a value
                 """
-                subresult = expparser.__ExpParserResult([], peekToken.end)
+                subresult = expparser.__ExpParserResult(
+                    [], peekToken.end, expparser.TokenType.KET
+                )
             else:
                 subresult = expparser.__expparse_recursive(
-                    s, varList, funcList, token.end
+                    s, varList, funcList, token.end, collectAllCommaParts=True
                 )
             tokenList.pop()  # remove the bra
-            tokenList.append(
-                expparser.Token(expparser.TokenType.NUMLIKE, subresult.val, 0, 0)
-            )
-            RemapToken()
-            peekToken = expparser.__NextToken(s, subresult.end)
+            AddNewVirtualTokenValuedByCalculation(subresult)
             state = expparser.__State.NUM
 
         def DealWithIdentifier():
@@ -925,12 +928,42 @@ class expparser:
                         )
                     )
 
+        def dealWithExpressionEndSign():
+            nonlocal state, oprRisingBeginPosList, token, tokenList
+            expendpos = token.end
+            endtype = token.type
+            tokenList.pop()  # remove the eof or ket or comma, end sign anyway
+            RemapToken()
+            if len(tokenList) == 0:
+                # empty
+                val = None
+            else:
+                # clear all
+                while True:
+                    if len(oprRisingBeginPosList) == 0:
+                        break
+                    ClearOprSectionAssumingPeer(
+                        oprRisingBeginPosList[-1].pos
+                        if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
+                        else oprRisingBeginPosList[-1].pos - 1,
+                        len(tokenList),
+                    )
+                val = tokenList[-1].value
+            return expparser.__ExpParserResult(val, expendpos, endtype)
+
+        def dealWithFirstComma():
+            nonlocal state, oprRisingBeginPosList, token, tokenList
+            state = expparser.__State.COMMA
+            part = dealWithExpressionEndSign()
+            commaList.append(part.val)
+            endpos = part.end
+            return endpos
+
         # the fsm illustrated in notebook
         while True:
             MoveForwardToNextToken()
             if state == expparser.__State.START or state == expparser.__State.OPR:
-                # expecting numlike, but possible to meet bra, identifier, or unary operator
-
+                # expecting numlike, but possible to meet bra, identifier, or unary operator, eof, comma, ket
                 if token.type == expparser.TokenType.BRA:
                     DealWithBra()
                 elif token.type == expparser.TokenType.NUMLIKE:
@@ -945,32 +978,64 @@ class expparser:
                     if not token.value.isUnary():
                         RaiseTokenException(token)
                     doWhenReadNewOpr()
+                elif token.type in [
+                    expparser.TokenType.EOF,
+                    expparser.TokenType.KET,
+                ]:
+                    # return
+                    state = expparser.__State.END
+                    return dealWithExpressionEndSign()
+                elif token.type == expparser.TokenType.COMMA:
+                    if collectAllCommaParts:
+                        dealWithFirstComma()
+                    else:
+                        state = expparser.__State.END
+                        return dealWithExpressionEndSign()
                 else:
                     RaiseTokenException(token)
             elif state == expparser.__State.NUM:
                 if token.type == expparser.TokenType.OPR:
                     doWhenReadNewOpr()
-                elif (
-                    token.type == expparser.TokenType.KET
-                    or token.type == expparser.TokenType.EOF
-                ):
+                elif token.type in [
+                    expparser.TokenType.EOF,
+                    expparser.TokenType.KET,
+                ]:
+                    # return
                     state = expparser.__State.END
-                    expendpos = token.end
-                    tokenList.pop()  # remove the eof or ket or comma in the future, end sign anyway
-                    RemapToken()
-                    # clear all
-                    while True:
-                        if len(oprRisingBeginPosList) == 0:
-                            break
-                        ClearOprSectionAssumingPeer(
-                            oprRisingBeginPosList[-1].pos
-                            if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
-                            else oprRisingBeginPosList[-1].pos - 1,
-                            len(tokenList),
-                        )
-                    return expparser.__ExpParserResult(tokenList[0].value, expendpos)
+                    return dealWithExpressionEndSign()
+                elif token.type == expparser.TokenType.COMMA:
+                    if collectAllCommaParts:
+                        dealWithFirstComma()
+                    else:
+                        state = expparser.__State.END
+                        return dealWithExpressionEndSign()
                 else:
                     RaiseTokenException(token)
+            elif state == expparser.__State.COMMA:
+                assert collectAllCommaParts
+                # dont care which expression end sign that ends the last comma part is
+                # so 1,2, and 1,2 are the same
+                if token.type in [expparser.TokenType.EOF, expparser.TokenType.KET]:
+                    state = expparser.__State.END
+                    return expparser.__ExpParserResult(commaList, token.end, token.type)
+                else:
+                    newpart = expparser.__expparse_recursive(
+                        s, varList, funcList, token.start, collectAllCommaParts=False
+                    )
+
+                    tokenList.pop()  # remove the loaded token just after comma
+                    AddNewVirtualTokenValuedByCalculation(newpart)
+                    commaList.append(newpart.val)
+                    # the newpart end sign ends both the newpart, and the comma reader
+                    # but if endsign is comma, comma reader just carries on
+                    if newpart.endedby in [
+                        expparser.TokenType.EOF,
+                        expparser.TokenType.KET,
+                    ]:
+                        state = expparser.__State.END
+                        return expparser.__ExpParserResult(
+                            commaList, token.end, token.type
+                        )
             elif state == expparser.__State.END:
                 RaiseTokenException(token)
 
@@ -998,14 +1063,36 @@ class expparser:
 
     @staticmethod
     def expparse(s, var={}, func={}):
-        return expparser.__expparse_recursive(s, var, func).val
+        return expparser.__expparse_recursive(
+            s, var, func, collectAllCommaParts=True
+        ).val
 
     class Utils:
+        class NonOptionalException(Exception):
+            pass
+
+        class NonOptional:
+            @staticmethod
+            def checkParamListIfNonOptional(paramList):
+                for i, p in enumerate(paramList):
+                    if isinstance(p, expparser.Utils.NonOptional):
+                        raise expparser.Utils.NonOptionalException(
+                            f"Nonoptional parameter {i} unspecified"
+                        )
+                return paramList
+
         @staticmethod
         def OptionalFunc(defaultParam: typing.List, func: typing.Callable):
-            return lambda *param: func(
-                *[a if a is not None else d for a, d in zip(param, defaultParam)]
-            )
+            def newFunc(*param):
+                newParam = [
+                    a if a is not None else d for a, d in zip(param, defaultParam)
+                ]
+                if len(param) < len(defaultParam):
+                    newParam.extend(defaultParam[len(param) :])
+                expparser.Utils.NonOptional.checkParamListIfNonOptional(newParam)
+                return func(*newParam)
+
+            return newFunc
 
     BasicFunctionLib = {
         "sin": math.sin,
@@ -1042,17 +1129,25 @@ class expparser:
 
     @staticmethod
     def test():
+        def vecadd(va: typing.List, vb: typing.List):
+            assert len(va) == len(vb)
+            return list(map(lambda x, y: x + y, va, vb))
+
         var = {**expparser.BasicConstantLib}
         func = {
             **expparser.BasicFunctionLib,
             "DelayedEvaluation": lambda: 999,
             "OptionalFunc": expparser.Utils.OptionalFunc(
-                [1, 0], lambda x, param: x + param
+                [expparser.Utils.NonOptional(), 0, 0], lambda x, y, z: x + y + z
             ),
+            "vecadd": vecadd,
         }
 
         @dataclasses.dataclass
         class TestUnit:
+            class ExpectedException:
+                pass
+
             expression: str
             expected: str = "unspecified"
             result: str = ""
@@ -1074,7 +1169,10 @@ class expparser:
             TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
             TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
             TestUnit(r"DelayedEvaluation()+1", "1000.0"),
-            TestUnit(r"OptionalFunc(none, 1) + 1", "3.0"),
+            TestUnit(r"OptionalFunc(1,,)", "1.0"),
+            TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
+            TestUnit(r"((1,1),(2,2),1)", "[[1.0, 1.0], [2.0, 2.0], 1.0]"),
+            TestUnit(r"vecadd((1,2),(3,4))", "[4.0, 6.0]"),
         ]
         unpassed: typing.List[TestUnit] = []
 
@@ -1082,12 +1180,19 @@ class expparser:
             print("#" * 30)
 
         for e in exp:
-            result = expparser.expparse(
-                e.expression,
-                var=var,
-                func=func,
-            )
+            try:
+                result = expparser.expparse(
+                    e.expression,
+                    var=var,
+                    func=func,
+                )
+            except:
+                result = TestUnit.ExpectedException()
             if str(result) == e.expected:
+                ifpass = True
+            elif isinstance(e.expected, TestUnit.ExpectedException) and isinstance(
+                result, TestUnit.ExpectedException
+            ):
                 ifpass = True
             else:
                 ifpass = False

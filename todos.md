@@ -10,6 +10,7 @@
 要求目标翼展变化较低
 *为planetrack thresh之后的图片高斯模糊，再thresh，好像降低了被干扰率*
 ##planetracker因为未知原因在dell上截不了wt的图，所以用不了了
+##动目标指示
 
 #AutoFreshMap
 ##kurban总是误判
