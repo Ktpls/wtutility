@@ -19,6 +19,7 @@ highSurvivablity = [
     "PortNovorossiysk",
     "Pradesh",
     "RedDesert",
+    "Sinai",
     "SandsOfSinai",
     "SandsOfTunisia",
     "SecondBattleOfElAlamein",

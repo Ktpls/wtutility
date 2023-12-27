@@ -240,7 +240,7 @@ def main():
         launchSeries = LaunchSeries(threadpool)
         hotkeyaction.append(
             HotkeyManager.hotkeytask(
-                key=[ord("K"), ord("L"), win32con.VK_RCONTROL], foo=lambda: launchSeries.go()
+                key=[ord("K"), ord("O"), win32con.VK_RCONTROL], foo=lambda: launchSeries.go()
             )
         )
 

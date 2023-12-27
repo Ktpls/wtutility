@@ -28,7 +28,6 @@ if resolution == "m1920x1080r1920x1080":
     # res1920x1080,uiscale75%
     standardMapLeftTopPoint = [286, 216]
     pointtemplatezoomrate = 1.0
-
 elif resolution == "m1920x1080r1366x768":
     # 1366x768,75%
     standardMapLeftTopPoint = [294, 221]
@@ -38,7 +37,7 @@ elif resolution == "m1920x1080r1280x720":
     standardMapLeftTopPoint = [292, 218]
     pointtemplatezoomrate = 1.5  # 1920/1280
 else:
-    raise Exception("unknown resolution")
+    raise NotImplementedError("unknown resolution")
 
 if dbglog:
     if log2file:
@@ -144,21 +143,6 @@ def setonwifi():
     )
 
 
-# singleChanneled
-def picNorm(m):
-    return np.sqrt((m.astype("float") ** 2).sum()) + 0.01
-
-
-"""
-info like:{
-    "path":path
-    "mask":mask,
-    "lt":[x,y],
-    "thresh":123
-}
-"""
-
-
 def assetpath2realpath(ap):
     return os.path.join(afmassetroot, ap)
 
@@ -167,10 +151,11 @@ zfoo4matcher = ZFunc(10, 0, 20, 1)
 
 
 class FixedPositionImgMatcher:
-    '''
+    """
     used for map detection.
     cuz i need special algorithm that can not be impled in matchtemplate()
-    '''
+    """
+
     @staticmethod
     def imagepreprocess(m, mask=None):
         # all preprocess defined in config done here
@@ -360,7 +345,6 @@ Asset4PointDetection_Pointmask = zoompointimg(
 
 
 class mapdetector(detector):
-
     def __init__(self, para: SpecialMapDetector):
         """
         the so called path is actually map name, by which mapname2assetpath is needed
@@ -373,7 +357,9 @@ class mapdetector(detector):
                 mapreq = [mapreq]
             mapreq = [mapname2assetpath(mr) for mr in mapreq]
             self.mtc = [
-                FixedPositionImgMatcher(standardMapLeftTopPoint, mr, standardMapMatchThreshold, None)
+                FixedPositionImgMatcher(
+                    standardMapLeftTopPoint, mr, standardMapMatchThreshold, None
+                )
                 for mr in mapreq
             ]
         else:
