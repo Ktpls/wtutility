@@ -1,4 +1,4 @@
 from utilref import *
 
-# print(expparser.expparse("((1,1),(2,2),1)"))
+# print(expparser.expparse("CBool(1)", func={"CBool": bool}))
 expparser.test()

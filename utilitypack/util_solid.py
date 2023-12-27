@@ -338,13 +338,12 @@ class expparser:
     """
     TODO:
     numlike
-        tensor support
-            consider use middle bracket [] to represent tensor
-        string support
-            almost done
-            considering impl operator on this type
-        non operator comma
-            process comma as token, stands for end of expression or something, rather than an operator
+        tensor support(done)
+            considering operator
+        string support(done)
+            considering operator
+        named parameter in function call
+            foo(1, 2, 3, a=1, b=2)
     """
 
     class TokenType(enum.Enum):
@@ -1153,26 +1152,14 @@ class expparser:
             result: str = ""
 
         exp: typing.List[TestUnit] = [
-            TestUnit(r"sin(pi/2)", "1.0"),
-            TestUnit(r"1+2^2*2+--1", "10.0"),
-            TestUnit(r'streq("test \" str","test \" str")', "True"),
-            TestUnit(r"eq(1+0.1,1)", "False"),
-            TestUnit(r"eq(1+0.1,1,0.2)", "True"),
-            TestUnit(r"1!=2^^2>=3", "True"),
-            TestUnit(r"CList(1))", "[1.0]"),
-            TestUnit(r"CBool(1))", "True"),
-            TestUnit(r"CBool(0))", "False"),
-            TestUnit(r'streq(CStr(1),"1.0")', "True"),
-            TestUnit(r"CStr(true)", "True"),
-            TestUnit(r'CNum("1.23")+1', "2.23"),
-            TestUnit(r"CNum(true)+1", "2.0"),
-            TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
+            TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),
+            TestUnit(r'eq(1+0.1,1),eq(1+0.1,1,0.2),streq("test \" str","test \" str"),1!=2,2>=3', "[False, True, True, True, False]"),
+            TestUnit(r'CList(1),CBool(1),CBool(0),streq(CStr(1),"1.0"),CStr(true),CNum("1.23")+1,CNum(true)+1', "[[1.0], True, False, True, 'True', 2.23, 2.0]"),
+            TestUnit(r"CBool(0))))))))", "False"),
             TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
-            TestUnit(r"DelayedEvaluation()+1", "1000.0"),
-            TestUnit(r"OptionalFunc(1,,)", "1.0"),
+            TestUnit(r"DelayedEvaluation()+1,OptionalFunc(1,,),vecadd((1,2),(3,4))", "[1000.0, 1.0, [4.0, 6.0]]"),
             TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
-            TestUnit(r"((1,1),(2,2),1)", "[[1.0, 1.0], [2.0, 2.0], 1.0]"),
-            TestUnit(r"vecadd((1,2),(3,4))", "[4.0, 6.0]"),
+            TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0], 1.0]"),
         ]
         unpassed: typing.List[TestUnit] = []
 
