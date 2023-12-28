@@ -334,6 +334,28 @@ def GetTimeString():
     return time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
 
+class Progress:
+    """
+    irreversable!
+    """
+
+    def __init__(self, total: float, printPercentageStep: float = 0.1) -> None:
+        self.total = total
+        self.nowStage = 0
+        self.printPercentageStep = printPercentageStep
+
+    def update(self, current: float) -> None:
+        while True:
+            if current / self.total > self.nowStage * self.printPercentageStep:
+                self.nowStage += 1
+                print(f"{100 * self.current / self.total:>3.2f}%", end="\r")
+            else:
+                break
+
+    def setFinish(self):
+        self.update(self.total)
+
+
 class expparser:
     """
     TODO:
@@ -804,7 +826,9 @@ class expparser:
             RemapToken()
             oprRisingBeginPosList.pop()
 
-        def AddNewVirtualTokenValuedByCalculation(subresult: expparser.__ExpParserResult):
+        def AddNewVirtualTokenValuedByCalculation(
+            subresult: expparser.__ExpParserResult,
+        ):
             nonlocal token, peekToken, state, tokenList
             tokenList.append(
                 expparser.Token(
@@ -816,6 +840,7 @@ class expparser:
             )
             RemapToken()
             peekToken = expparser.__NextToken(s, subresult.end)
+
         def DealWithBra():
             nonlocal token, peekToken, state, tokenList
             if peekToken.type == expparser.TokenType.KET:
@@ -1153,11 +1178,20 @@ class expparser:
 
         exp: typing.List[TestUnit] = [
             TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),
-            TestUnit(r'eq(1+0.1,1),eq(1+0.1,1,0.2),streq("test \" str","test \" str"),1!=2,2>=3', "[False, True, True, True, False]"),
-            TestUnit(r'CList(1),CBool(1),CBool(0),streq(CStr(1),"1.0"),CStr(true),CNum("1.23")+1,CNum(true)+1', "[[1.0], True, False, True, 'True', 2.23, 2.0]"),
+            TestUnit(
+                r'eq(1+0.1,1),eq(1+0.1,1,0.2),streq("test \" str","test \" str"),1!=2,2>=3',
+                "[False, True, True, True, False]",
+            ),
+            TestUnit(
+                r'CList(1),CBool(1),CBool(0),streq(CStr(1),"1.0"),CStr(true),CNum("1.23")+1,CNum(true)+1',
+                "[[1.0], True, False, True, 'True', 2.23, 2.0]",
+            ),
             TestUnit(r"CBool(0))))))))", "False"),
             TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
-            TestUnit(r"DelayedEvaluation()+1,OptionalFunc(1,,),vecadd((1,2),(3,4))", "[1000.0, 1.0, [4.0, 6.0]]"),
+            TestUnit(
+                r"DelayedEvaluation()+1,OptionalFunc(1,,),vecadd((1,2),(3,4))",
+                "[1000.0, 1.0, [4.0, 6.0]]",
+            ),
             TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
             TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0], 1.0]"),
         ]
@@ -1166,7 +1200,7 @@ class expparser:
         def splitline():
             print("#" * 30)
 
-        for e in exp:
+        for i, e in enumerate(exp):
             try:
                 result = expparser.expparse(
                     e.expression,
@@ -1176,26 +1210,13 @@ class expparser:
             except:
                 result = TestUnit.ExpectedException()
             if str(result) == e.expected:
-                ifpass = True
+                pass
             elif isinstance(e.expected, TestUnit.ExpectedException) and isinstance(
                 result, TestUnit.ExpectedException
             ):
-                ifpass = True
+                pass
             else:
-                ifpass = False
-                e.result = result
                 unpassed.append(e)
-            print(
-                f"""
-exp: {e.expression}
-    elements: {expparser.parseelement(e.expression)}
-    expected: {e.expected}
-    result: {result}
-    {"pass" if ifpass else "fail"}
-"""[
-                    1:-1
-                ]
-            )
             splitline()
         if len(unpassed) == 0:
             print("all passed!")
@@ -1466,3 +1487,72 @@ class SyncExecutable:
 
     def isworking(self):
         return self.state != self.STATE.stopped
+
+
+class AccessibleQueue:
+    class AQException(Exception):
+        pass
+
+    def __init__(self, maxsize=1):
+        self.maxsize = maxsize
+        self.cursize = 0
+        self.sptr = 0
+        self.eptr = 0
+        self.q = [None] * maxsize
+
+    def push(self, val):
+        if self.isFull():
+            raise AccessibleQueue.AQException("queue full")
+        self.q[self.eptr] = val
+        self.eptr += 1
+        self.eptr %= self.maxsize
+        self.cursize += 1
+
+    def pop(self):
+        if self.isEmpty():
+            raise AccessibleQueue.AQException("queue empty")
+        val = self.q[self.sptr]
+        self.sptr += 1
+        self.sptr %= self.maxsize
+        self.cursize -= 1
+        return val
+
+    def push_pop_if_full(self, val):
+        if self.isFull():
+            self.pop()
+        self.push(val)
+
+    def resize(self, newsize):
+        if newsize < self.maxsize:
+            raise AccessibleQueue.AQException("newsize too small")
+        self.q.extend([None] * (newsize - self.maxsize))
+        if self.sptr > self.eptr or self.isFull():
+            # data at both end points
+            newsptr = newsize - (self.maxsize - self.sptr)
+            self.q[newsptr:] = self.q[self.sptr : self.maxsize]
+            self.sptr = newsptr
+        elif self.sptr < self.eptr:
+            # data within two ptrs
+            pass
+
+        self.maxsize = newsize
+
+    def __indexMapping(self, i):
+        return (i + self.sptr) % self.maxsize
+
+    def __len__(self):
+        return self.cursize
+
+    def isFull(self):
+        return self.cursize == self.maxsize
+
+    def isEmpty(self):
+        return self.cursize == 0
+
+    def __getitem__(self, i):
+        if i >= self.cursize:
+            raise AccessibleQueue.AQException("index out of range")
+        return self.q[self.__indexMapping(i)]
+
+    def ToList(self):
+        return [self[i] for i in range(len(self))]
