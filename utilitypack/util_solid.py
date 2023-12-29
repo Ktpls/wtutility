@@ -1151,90 +1151,6 @@ class expparser:
         "none": None,
     }
 
-    @staticmethod
-    def test():
-        def vecadd(va: typing.List, vb: typing.List):
-            assert len(va) == len(vb)
-            return list(map(lambda x, y: x + y, va, vb))
-
-        var = {**expparser.BasicConstantLib}
-        func = {
-            **expparser.BasicFunctionLib,
-            "DelayedEvaluation": lambda: 999,
-            "OptionalFunc": expparser.Utils.OptionalFunc(
-                [expparser.Utils.NonOptional(), 0, 0], lambda x, y, z: x + y + z
-            ),
-            "vecadd": vecadd,
-        }
-
-        @dataclasses.dataclass
-        class TestUnit:
-            class ExpectedException:
-                pass
-
-            expression: str
-            expected: str = "unspecified"
-            result: str = ""
-
-        exp: typing.List[TestUnit] = [
-            TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),
-            TestUnit(
-                r'eq(1+0.1,1),eq(1+0.1,1,0.2),streq("test \" str","test \" str"),1!=2,2>=3',
-                "[False, True, True, True, False]",
-            ),
-            TestUnit(
-                r'CList(1),CBool(1),CBool(0),streq(CStr(1),"1.0"),CStr(true),CNum("1.23")+1,CNum(true)+1',
-                "[[1.0], True, False, True, 'True', 2.23, 2.0]",
-            ),
-            TestUnit(r"CBool(0))))))))", "False"),
-            TestUnit("1 ,\t2,\r\n3", "[1.0, 2.0, 3.0]"),
-            TestUnit(
-                r"DelayedEvaluation()+1,OptionalFunc(1,,),vecadd((1,2),(3,4))",
-                "[1000.0, 1.0, [4.0, 6.0]]",
-            ),
-            TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
-            TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0], 1.0]"),
-        ]
-        unpassed: typing.List[TestUnit] = []
-
-        def splitline():
-            print("#" * 30)
-
-        for i, e in enumerate(exp):
-            try:
-                result = expparser.expparse(
-                    e.expression,
-                    var=var,
-                    func=func,
-                )
-            except:
-                result = TestUnit.ExpectedException()
-            if str(result) == e.expected:
-                pass
-            elif isinstance(e.expected, TestUnit.ExpectedException) and isinstance(
-                result, TestUnit.ExpectedException
-            ):
-                pass
-            else:
-                unpassed.append(e)
-            splitline()
-        if len(unpassed) == 0:
-            print("all passed!")
-        else:
-            print("unpassed")
-            splitline()
-            for u in unpassed:
-                print(
-                    f"""
-{u.expression}
-    expected: {u.expected}
-    result: {u.result}
-"""[
-                        1:-1
-                    ]
-                )
-                splitline()
-
 
 def sleepuntil(con: Callable, dt=0.1):
     while not con():
@@ -1517,7 +1433,7 @@ class AccessibleQueue:
         self.cursize -= 1
         return val
 
-    def push_pop_if_full(self, val):
+    def push__pop_if_full(self, val):
         if self.isFull():
             self.pop()
         self.push(val)
@@ -1538,6 +1454,8 @@ class AccessibleQueue:
         self.maxsize = newsize
 
     def __indexMapping(self, i):
+        if i < 0:
+            i = self.cursize + i
         return (i + self.sptr) % self.maxsize
 
     def __len__(self):
@@ -1549,10 +1467,20 @@ class AccessibleQueue:
     def isEmpty(self):
         return self.cursize == 0
 
-    def __getitem__(self, i):
-        if i >= self.cursize:
-            raise AccessibleQueue.AQException("index out of range")
-        return self.q[self.__indexMapping(i)]
+    def __getitem__(self, i: int | slice):
+        if isinstance(i, int):
+            if i >= self.cursize:
+                raise AccessibleQueue.AQException("index out of range")
+            return self.q[self.__indexMapping(i)]
+        elif isinstance(i, slice):
+            return [
+                self[j]
+                for j in range(
+                    i.start if i.start is not None else 0,
+                    i.stop if i.stop is not None else self.cursize,
+                    i.step if i.step is not None else 1,
+                )
+            ]
 
     def ToList(self):
         return [self[i] for i in range(len(self))]

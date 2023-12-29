@@ -1,7 +1,9 @@
 from utilref import *
+
+
 aq=AccessibleQueue(3)
 def printAq():
-    print(aq.ToList())
+    print(aq[:])
     
 print('fill')
 i=0
@@ -28,3 +30,10 @@ while not aq.isFull():
     aq.push(i)
     i+=1
     printAq()
+
+print('rev iter')
+j=-1
+while j>=-len(aq):
+    print(aq[j], end=", ")
+    j-=1
+print(end="\n")

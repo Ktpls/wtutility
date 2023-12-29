@@ -1,4 +1,5 @@
 from utilitypack import *
+from utilitypack.util_torch import *
 from .opdar_config import *
 
 uimask = cv.imread(uimaskPath)
@@ -10,7 +11,7 @@ odc = [
 
 
 def scoring(X, lamb, mu=0):
-    return 1 / ((lamb * (X - mu))**2 + 1)
+    return 1 / ((lamb * (X - mu)) ** 2 + 1)
 
 
 def deltaX(X):
@@ -21,14 +22,13 @@ def deltaX(X):
 
 
 class stablizer_continous:
-
     def __init__(self, lamb, x0=0):
         self.x = x0
         self.lamb = lamb
 
     def init_from_series(self, X, T):
-        COF = self.lamb**(-(T[-1] - T))
-        self.x = (self.lamb**(-(T[-1] - T)) * X).sum()
+        COF = self.lamb ** (-(T[-1] - T))
+        self.x = (self.lamb ** (-(T[-1] - T)) * X).sum()
 
     def sample(self, x, dt):
         self.x = self.x * self.lamb**dt + x * (-self.lamb**dt + 1)
@@ -42,7 +42,6 @@ class stablizer_continous:
 
 
 class stablizer:
-
     def __init__(self, lamb, x0=0):
         self.x = x0
         self.lamb = lamb
@@ -55,7 +54,7 @@ class stablizer:
     def sample(self, x, acceptableerr=-1):
         # enabled
         if not acceptableerr < 0:
-            #not acceptable
+            # not acceptable
             if abs(x - self.x) > acceptableerr:
                 return self.x
         self.x = self.x * self.lamb + x * (-self.lamb + 1)
@@ -69,7 +68,7 @@ class stablizer:
 
 
 class Estimator:
-    #lamb is N/(N+1)
+    # lamb is N/(N+1)
     def __init__(self, lamb, X, T):
         assert len(X) >= 3 and len(T) == len(X)
         DT = deltaX(T)
@@ -113,8 +112,8 @@ def fit_errmax(P):
     ave = P.sum(0) / P.shape[0]
     ave = np.repeat(ave.reshape([1, 2]), P.shape[0], axis=0)
     Pcenterized = P - ave
-    #layout: X==P[:,0], Y==P[:,1]
-    delta = (Pcenterized[:, 0]**2 - Pcenterized[:, 1]**2).sum()
+    # layout: X==P[:,0], Y==P[:,1]
+    delta = (Pcenterized[:, 0] ** 2 - Pcenterized[:, 1] ** 2).sum()
     gamma = (Pcenterized[:, 0] * Pcenterized[:, 1]).sum()
     base = np.sqrt(delta**2 + 4 * gamma**2)
     if base < 0.1:
@@ -146,7 +145,7 @@ def estimateWingSpan(m):
     if len(ps) < 2:
         return 0
     A, B, Pc = fit_errmax(ps)
-    dist2 = (A * Pc[:, 0] + B * Pc[:, 1])**2
+    dist2 = (A * Pc[:, 0] + B * Pc[:, 1]) ** 2
     dist2max = dist2.max()
     return 2 * np.sqrt(dist2max)
 
@@ -154,30 +153,31 @@ def estimateWingSpan(m):
 from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
 if useNNTracker:
-    nntrker = getmodel(r'.\exp\DLOnOpdarPlaneDetection\nntracker.pth')
+    nntrker = getmodel(r".\exp\DLOnOpdarPlaneDetection\nntracker.pth")
 else:
     nntrker = None
 
 
 def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
-    mask = mask.astype('float32') * 1 / 255
+    mask = mask.astype("float32") * 1 / 255
     size = [m.shape[1], m.shape[0]]
     posref = point_legalize(posref, size)
 
     # get region
-    pul = (posref - searchrange).astype('int32')
-    pbr = (posref + searchrange).astype('int32')
+    pul = (posref - searchrange).astype("int32")
+    pbr = (posref + searchrange).astype("int32")
     pul_l = point_legalize(pul, size)
     pbr_l = point_legalize(pbr, size)
-    if ((pul-pul_l)**2).sum()+((pbr-pbr_l)**2).sum() > 1:
+    if ((pul - pul_l) ** 2).sum() + ((pbr - pbr_l) ** 2).sum() > 1:
         # bad shape for nn
         return None
-    m = m[pul_l[1]:pbr_l[1], pul_l[0]:pbr_l[0]]
+    m = m[pul_l[1] : pbr_l[1], pul_l[0] : pbr_l[0]]
     mndarray = m
     with torch.no_grad():
         from torchvision.transforms import ToTensor
+
         m = ToTensor()(m)
-        m = m.reshape((1, ) + m.shape)  #add batch
+        m = m.reshape((1,) + m.shape)  # add batch
         result = nntrker.forward(m)
         result = result[0, :, :, :]
         m = mndarray
@@ -186,9 +186,10 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     # savemat(mndarray)
     result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
 
-    #clustering
-    contours = cv.findContours(result.astype('uint8'), cv.RETR_EXTERNAL,
-                               cv.CHAIN_APPROX_NONE)[0]
+    # clustering
+    contours = cv.findContours(
+        result.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+    )[0]
     contnum = len(contours)
     if contnum == 0:  # found nothing
         return None
@@ -205,10 +206,12 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
         X = np.arange(pul_l[0], pbr_l[0])
         Y = np.arange(pul_l[1], pbr_l[1])
 
-        info[c] = [(X * clusterXdist).sum() / (clusterXdist.sum() + 0.001),
-                   (Y * clusterYdist).sum() / (clusterYdist.sum() + 0.001),
-                   estimateWingSpan(clusterbinary),
-                   cluster.sum() / clusterbinary.sum()]
+        info[c] = [
+            (X * clusterXdist).sum() / (clusterXdist.sum() + 0.001),
+            (Y * clusterYdist).sum() / (clusterYdist.sum() + 0.001),
+            estimateWingSpan(clusterbinary),
+            cluster.sum() / clusterbinary.sum(),
+        ]
 
     wingspanref = np.max(info[:, 2], axis=0)
     wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + 0.001)
@@ -221,36 +224,36 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     if totalscore[maxscorecontourid] < scoreleast:
         return None
     mcontourmax = np.zeros_like(mgray)
-    cv.drawContours(mcontourmax,
-                    contours,
-                    maxscorecontourid,
-                    1,
-                    thickness=cv.FILLED)
+    cv.drawContours(mcontourmax, contours, maxscorecontourid, 1, thickness=cv.FILLED)
     clustermax = mcontourmax * mgray
     # (posx, posy), wingspan, clustermax, pul, its score
-    return info[maxscorecontourid,
-                0:2], info[maxscorecontourid,
-                           2], clustermax, pul_l, info[maxscorecontourid, 3]
+    return (
+        info[maxscorecontourid, 0:2],
+        info[maxscorecontourid, 2],
+        clustermax,
+        pul_l,
+        info[maxscorecontourid, 3],
+    )
 
 
 def planetrack(m, posref, wingspanref=-1, mask=None):
-    mask = mask.astype('float32') * 1 / 255
+    mask = mask.astype("float32") * 1 / 255
     size = [m.shape[1], m.shape[0]]
     posref = point_legalize(posref, size)
 
     # get region
-    pul = (posref - searchrange).astype('int32')
-    pbr = (posref + searchrange).astype('int32')
+    pul = (posref - searchrange).astype("int32")
+    pbr = (posref + searchrange).astype("int32")
     pul = point_legalize(pul, size)
     pbr = point_legalize(pbr, size)
-    m = m[pul[1]:pbr[1], pul[0]:pbr[0]]
+    m = m[pul[1] : pbr[1], pul[0] : pbr[0]]
     if not mask is None:
-        mask = mask[pul[1]:pbr[1], pul[0]:pbr[0]]
+        mask = mask[pul[1] : pbr[1], pul[0] : pbr[0]]
         m = m * mask
     if m.size <= 0:
         return None
     imgshape = m.shape
-    m = m.astype('float32') * 1 / 255
+    m = m.astype("float32") * 1 / 255
 
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange], mask)
@@ -260,7 +263,7 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
     # normally filter from background color
     madat = cv.threshold(madat, adptthresh, 0, cv.THRESH_TOZERO)[1]
 
-    #abs thresh
+    # abs thresh
     mabst = cv.threshold(m, abslthresh, 1, cv.THRESH_BINARY_INV)[1]
 
     m = madat * mabst
@@ -276,8 +279,9 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
     Xcspan = regionsum(Xc, [regionrange, regionrange])
     Xbdcrange = cv.threshold(Xcspan, 0, 1, cv.THRESH_BINARY)[1]
     Xbdc = m * Xbdcrange
-    contours = cv.findContours(Xbdcrange.astype('uint8'), cv.RETR_EXTERNAL,
-                               cv.CHAIN_APPROX_NONE)[0]
+    contours = cv.findContours(
+        Xbdcrange.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+    )[0]
     contnum = len(contours)
     if contnum == 0:  # found nothing
         return None
@@ -293,14 +297,20 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
         X = np.arange(pul[0], pbr[0])
         Y = np.arange(pul[1], pbr[1])
 
-        info[c] = [(X * clusterXdist).sum() / (clusterXdist.sum()),
-                   (Y * clusterYdist).sum() / (clusterYdist.sum()),
-                   estimateWingSpan(clusterbinary),
-                   cluster.sum() / clusterbinary.sum()]
+        info[c] = [
+            (X * clusterXdist).sum() / (clusterXdist.sum()),
+            (Y * clusterYdist).sum() / (clusterYdist.sum()),
+            estimateWingSpan(clusterbinary),
+            cluster.sum() / clusterbinary.sum(),
+        ]
 
     sqrdist = (
-        ((info[:, 0:1] - np.repeat(posref.reshape([1, 2]), contnum, axis=0)) /
-         searchrange)**2).sum(axis=1)
+        (
+            (info[:, 0:1] - np.repeat(posref.reshape([1, 2]), contnum, axis=0))
+            / searchrange
+        )
+        ** 2
+    ).sum(axis=1)
     scorepos = scoring(sqrdist, posrellamb)
     scorepos = np.ones_like(scorepos)
 
@@ -320,38 +330,36 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
         return None
 
     mcontourmax = np.zeros_like(m)
-    cv.drawContours(mcontourmax,
-                    contours,
-                    maxscorecontourid,
-                    1,
-                    thickness=cv.FILLED)
+    cv.drawContours(mcontourmax, contours, maxscorecontourid, 1, thickness=cv.FILLED)
     clustermax = mcontourmax * m
 
     # (posx, posy), wingspan, clustermax, pul, its score
-    return info[maxscorecontourid,
-                0:2], info[maxscorecontourid,
-                           2], clustermax, pul, info[maxscorecontourid, 3]
+    return (
+        info[maxscorecontourid, 0:2],
+        info[maxscorecontourid, 2],
+        clustermax,
+        pul,
+        info[maxscorecontourid, 3],
+    )
 
 
 def cameramotion(m0, m1, mask, subsamplerate=0.2):
-    m0small = cv.resize(m0,
-                        None,
-                        fx=subsamplerate,
-                        fy=subsamplerate,
-                        interpolation=cv.INTER_AREA)
-    masksmall = cv.resize(mask,
-                          None,
-                          fx=subsamplerate,
-                          fy=subsamplerate,
-                          interpolation=cv.INTER_AREA)
-    prev_pts = cv.goodFeaturesToTrack(m0small,
-                                      maxCorners=100,
-                                      qualityLevel=0.001,
-                                      minDistance=3,
-                                      blockSize=3,
-                                      mask=masksmall)
+    m0small = cv.resize(
+        m0, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
+    )
+    masksmall = cv.resize(
+        mask, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
+    )
+    prev_pts = cv.goodFeaturesToTrack(
+        m0small,
+        maxCorners=100,
+        qualityLevel=0.001,
+        minDistance=3,
+        blockSize=3,
+        mask=masksmall,
+    )
     if prev_pts is None:
-        raise Exception('No point to track')
+        raise Exception("No point to track")
     # sky=m0small[:int(0.5*m0small.shape[0]),:]
     # sky_pts = cv.goodFeaturesToTrack(sky,
     #                                   maxCorners=200,
@@ -361,15 +369,12 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     #                                   mask=masksmall[:int(0.5*masksmall.shape[0]),:])
     # prev_pts=np.concatenate((prev_pts,sky_pts))
 
-    m1small = cv.resize(m1,
-                        None,
-                        fx=subsamplerate,
-                        fy=subsamplerate,
-                        interpolation=cv.INTER_AREA)
+    m1small = cv.resize(
+        m1, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
+    )
 
     # Calculate optical flow (i.e. track feature points)
-    curr_pts, status, err = cv.calcOpticalFlowPyrLK(m0small, m1small, prev_pts,
-                                                    None)
+    curr_pts, status, err = cv.calcOpticalFlowPyrLK(m0small, m1small, prev_pts, None)
 
     # Sanity check
     assert prev_pts.shape == curr_pts.shape
@@ -384,7 +389,7 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     curr_pts = curr_pts / subsamplerate
 
     # Find transformation matrix
-    #m = cv.estimateRigidTransform(prev_pts, curr_pts, fullAffine=False)
+    # m = cv.estimateRigidTransform(prev_pts, curr_pts, fullAffine=False)
     # will only work with OpenCV-3 or less
     m = cv.estimateAffinePartial2D(prev_pts, curr_pts, False)[0]
 
@@ -393,12 +398,18 @@ def cameramotion(m0, m1, mask, subsamplerate=0.2):
     return curr_pts, m
 
 
-from wtdmp.wtdistmeaspy_implementation import SnipScencePreProcess, GetCrosshair, getMilInterval, AdjustByZoomRate, gridSearchWidth_unzoom,BadCaliException
+from wtdmp.wtdistmeaspy_implementation import (
+    SnipScencePreProcess,
+    GetCrosshair,
+    getMilInterval,
+    AdjustByZoomRate,
+    gridSearchWidth_unzoom,
+    BadCaliException,
+)
 
 
 def GetMilIntervalFromScrShot(m):
-
-    def dbglogsavestep(m, name=None, method='savemat'):
+    def dbglogsavestep(m, name=None, method="savemat"):
         pass
 
     def log(s):
@@ -407,12 +418,19 @@ def GetMilIntervalFromScrShot(m):
     dbg = False
     red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
     crosshair = GetCrosshair(red_mask)
-    gridlineHor, rangeHor, mil = getMilInterval(red_mask,
-        crosshair, AdjustByZoomRate(gridSearchWidth_unzoom), log)
+    gridlineHor, rangeHor, mil = getMilInterval(
+        red_mask, crosshair, AdjustByZoomRate(gridSearchWidth_unzoom), log
+    )
     return mil
 
 
 class tracker:
+    @dataclasses.dataclass
+    class MtiStorage:
+        img: np.ndarray
+
+        # compared with prev frame
+        cammotion: np.ndarray
 
     def setup(self, p0):
         self.omegastab = [stablizer(stablamb, 0), stablizer(stablamb, 0)]
@@ -421,7 +439,7 @@ class tracker:
         self.ss = screenshoter()
         # no longer able to shot wt individually, but setwindowcaptureaffinity solved hud in another way
 
-        curr = self.ss.shot().astype('uint8')
+        curr = self.ss.shot().astype("uint8")
         self.lastshottime = time.perf_counter()
         self.prev_red = curr[:, :, 2]
 
@@ -429,70 +447,123 @@ class tracker:
 
         self.lazyplanetrackerfpsmanager = fpsmanager(fps=trackFps)
 
+        # fake type notation in order to scam ide type analysis
+        self.mtiQueue: typing.List[
+            tracker.MtiStorage
+        ] | AccessibleQueue = AccessibleQueue(5)
+
     def track(self):
-        curr = self.ss.shotbgr().astype('uint8')
+        curr = self.ss.shotbgr().astype("uint8")
         shottime = time.perf_counter()
         tdelta = shottime - self.lastshottime
 
         curr_red = curr[:, :, 2]
-        trackingpoints, cm = cameramotion(self.prev_red, curr_red, uimask,
-                                          camerestablizersubsamplerate)
+        # i expect cm has no zoom and rotation, so only with translation
+        trackingpoints, cm = cameramotion(
+            self.prev_red, curr_red, uimask, camerestablizersubsamplerate
+        )
 
         curr_gray = None
         # blue channel
-        if planetrackerchannel == 'B':
+        if planetrackerchannel == "B":
             curr_gray = curr[:, :, 0]
         # gray channel
-        elif planetrackerchannel == 'G':
+        elif planetrackerchannel == "G":
             curr_gray = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
         # value channel
-        elif planetrackerchannel == 'V':
+        elif planetrackerchannel == "V":
             curr_gray = np.max(curr, axis=2)
         else:  # fallback to blue
             curr_gray = curr[:, :, 0]
 
+        # mit proc
+        def cammotionmat2x3to3x3(cammot: np.ndarray):
+            return np.concatenate(
+                [
+                    cammot,
+                    [0, 0, 1],
+                ]
+            )
+
+        def cammotionmat3x3to2x3(cammot: np.ndarray):
+            return cammot[:2, :]
+
+        motionSum = cammotionmat2x3to3x3(cm)
+        scrsize = curr_gray.shape
+        prevScreenAtNowView = []
+        for i in range(len(self.mtiQueue), 0, -1):
+            # iter from the newest to oldest
+            prevScreenAtNowView.append(
+                cv.warpAffine(
+                    255 - self.mtiQueue[i].img,
+                    cammotionmat3x3to2x3(motionSum),  # only x, y, no w
+                    np.flip(scrsize),
+                    borderMode=cv.BORDER_CONSTANT,
+                    borderValue=255,  # border white, so no dark signal
+                )
+            )
+            motionSum = cammotionmat2x3to3x3(self.mtiQueue[i].cammotion) @ motionSum
+        prevsignal = 255 - np.array(prevScreenAtNowView)
+        weight = (0.75) ** np.arange(len(prevScreenAtNowView))
+        prevsignal = np.average(prevsignal, axis=0, weights=weight)
+        prevsignal
+
         pomega = np.zeros([2])
         for c in range(len(pomega)):
             pomega[c] = self.omegastab[c].val()
-        pestimated = self.lastpos+tdelta*pomega if self.trackbuildinguptimer == 0 else \
-            self.lastpos
+        pestimated = (
+            self.lastpos + tdelta * pomega
+            if self.trackbuildinguptimer == 0
+            else self.lastpos
+        )
+
         preference = cm @ np.concatenate((pestimated, [1]))
         plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
 
-        #set to be default
+        # set to be default
         ponshot, wingspan, planemap, pul, maxscore = [
-            preference, self.lastwingspan,
-            np.zeros([1, 1]), [0, 0], 0
+            preference,
+            self.lastwingspan,
+            np.zeros([1, 1]),
+            [0, 0],
+            0,
         ]
-        thetabypix=c_thetabypix
+        thetabypix = c_thetabypix
         if self.lazyplanetrackerfpsmanager.CheckIfTimeToDoNextFrame():
             self.lazyplanetrackerfpsmanager.SetToNextFrame()
-            
+
             if useThetaByPixCalcFromMil:
                 try:
-                    thetabypix=(2*3.1415926/6000)/GetMilIntervalFromScrShot(curr)
+                    thetabypix = (2 * 3.1415926 / 6000) / GetMilIntervalFromScrShot(
+                        curr
+                    )
                 except BadCaliException:
                     pass
-            
+
             if useNNTracker:
                 ret = planetracknn(curr, preference, mask=uimask.copy())
             else:
-                ret = planetrack(curr_gray,
-                                 preference,
-                                 wingspanref=self.lastwingspan,
-                                 mask=uimask.copy())
-            
+                ret = planetrack(
+                    curr_gray,
+                    preference,
+                    wingspanref=self.lastwingspan,
+                    mask=uimask.copy(),
+                )
+
             if ret != None:
                 ponshot, wingspan, planemap, pul, maxscore = ret
                 # collecing for dl project
                 # ponshot is in x,y format
-                if collectingPlaneSample and np.random.random(
-                ) < collectingPlaneSampleRate:
+                if (
+                    collectingPlaneSample
+                    and np.random.random() < collectingPlaneSampleRate
+                ):
                     name = DataCollector.geneName()
-                    m4coll = curr[int(ponshot[1]) -
-                                  searchrange:int(ponshot[1]) + searchrange,
-                                  int(ponshot[0]) -
-                                  searchrange:int(ponshot[0]) + searchrange, :]
+                    m4coll = curr[
+                        int(ponshot[1]) - searchrange : int(ponshot[1]) + searchrange,
+                        int(ponshot[0]) - searchrange : int(ponshot[0]) + searchrange,
+                        :,
+                    ]
                     odc[0].save(m4coll, name)
                     odc[1].save(planemap * 255, name)
 
@@ -500,12 +571,27 @@ class tracker:
 
         self.prev_red = curr_red
         self.lastshottime = shottime
+        self.mtiQueue.push__pop_if_full(tracker.MtiStorage(curr_gray, cm))
         for c in range(len(self.omegastab)):
-            acceptableerr = -1 if self.trackbuildinguptimer > 0 \
-                else self.omegastab[c].val()*stabaccepterrrelthr+stabaccepterrabsthr
+            acceptableerr = (
+                -1
+                if self.trackbuildinguptimer > 0
+                else self.omegastab[c].val() * stabaccepterrrelthr + stabaccepterrabsthr
+            )
             pomega[c] = self.omegastab[c].sample(pomega[c], acceptableerr)
         self.lastpos = ponshot
         self.lastwingspan = wingspan
         if self.trackbuildinguptimer > 0:
             self.trackbuildinguptimer -= 1
-        return ponshot, pomega, plastinthisframe, wingspan, cm, trackingpoints, planemap, pul, maxscore, thetabypix
+        return (
+            ponshot,
+            pomega,
+            plastinthisframe,
+            wingspan,
+            cm,
+            trackingpoints,
+            planemap,
+            pul,
+            maxscore,
+            thetabypix,
+        )
