@@ -26,7 +26,7 @@ def main():
         # main loop
         while True:
             fpsm.WaitUntilNextFrame()
-            if not afm.getRunning():
+            if not afm.isRunning():
                 break
             hkm.doAllDecidedKey(hkm.decideAllHotKey(), printonerr=True)
         if waitafterdone:

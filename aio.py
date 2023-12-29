@@ -227,7 +227,7 @@ def main():
                 num = 35
                 keyshortcut.keydown(keycode.key_LeftControl)
                 for i in range(num):
-                    if self.ifTimeToStop():
+                    if self.timeToStop():
                         break
                     keyshortcut.keydown(keycode.key_Spacebar)
                     PreciseSleep(0.03)

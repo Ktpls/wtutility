@@ -535,7 +535,7 @@ class freshAMap(StoppableThread):
 
             if not KeepDetecting(
                 successCond=detectLoadingMap,
-                cancelCond=lambda src: self.ifTimeToStop(),
+                cancelCond=lambda src: self.timeToStop(),
                 sleeptime=1,
             ):
                 # canceled
@@ -592,7 +592,7 @@ class freshAMap(StoppableThread):
             sleep(minDelayAfterDisconnected)
             if not KeepDetecting(
                 successCond=detectGameCanceled,
-                cancelCond=lambda scr: self.ifTimeToStop(),
+                cancelCond=lambda scr: self.timeToStop(),
                 sleeptime=2,
             ):
                 """

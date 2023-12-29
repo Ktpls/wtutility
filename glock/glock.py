@@ -21,7 +21,7 @@ class GPush(StoppableThread):
 
     def foo(self):
         period = 0.2
-        while not self.ifTimeToStop():
+        while not self.timeToStop():
             ratio = self.ratio
             if ratio == GPush.disabled:
                 PreciseSleep(period)
@@ -60,7 +60,7 @@ class Sampler(StoppableThread):
 
     def foo(self):
         period = 0.1
-        while not self.ifTimeToStop():
+        while not self.timeToStop():
             self.sampleNow()
             sleep(period)
 

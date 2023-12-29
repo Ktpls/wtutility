@@ -15,6 +15,7 @@ import time
 import traceback
 import typing
 import inspect
+import multiprocessing
 
 """
 solid
@@ -184,11 +185,7 @@ def AllFileIn(path, includeFileInSubDir=True):
     return ret
 
 
-class StoppableThread:
-    """
-    derivate from it and override foo()
-    """
-
+class StoppableSomewhat:
     class Strategy_RunOnRunning(enum.Enum):
         # ignore = 0
         raise_error = 1
@@ -202,10 +199,49 @@ class StoppableThread:
 
     def __init__(
         self,
-        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = Strategy_RunOnRunning.raise_error,
-        strategy_error: "StoppableThread.Strategy_Error" = Strategy_Error.raise_error,
+        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
+        strategy_error: "StoppableThread.Strategy_Error" = None,
+    ):
+        self.behavior_run_on_running = (
+            strategy_runonrunning
+            if strategy_runonrunning is not None
+            else StoppableThread.Strategy_RunOnRunning.raise_error
+        )
+        self.strategy_on_error = (
+            strategy_error
+            if strategy_error is not None
+            else StoppableThread.Strategy_Error.raise_error
+        )
+
+    def foo(self):
+        ...
+
+    def isRunning(self) -> bool:
+        ...
+
+    @FunctionalWrapper
+    def go(self, *args, **kwargs):
+        ...
+
+    def stop(self):
+        ...
+
+    def timeToStop(self) -> bool:
+        ...
+
+
+class StoppableThread(StoppableSomewhat):
+    """
+    derivate from it and override foo()
+    """
+
+    def __init__(
+        self,
+        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
+        strategy_error: "StoppableThread.Strategy_Error" = None,
         pool: ThreadPoolExecutor = None,
     ) -> None:
+        super().__init__(strategy_runonrunning, strategy_error)
         self.running: bool = False
         self.stopsignal: bool = True
         self.pool: ThreadPoolExecutor = (
@@ -213,13 +249,11 @@ class StoppableThread:
         )
         self.submit = None
         self.result = None
-        self.behavior_run_on_running = strategy_runonrunning
-        self.strategy_on_error = strategy_error
 
     def foo(self, *arg, **kw) -> None:
         raise NotImplementedError("should never run without overriding foo")
 
-    def getRunning(self) -> bool:
+    def isRunning(self) -> bool:
         return self.running
 
     @FunctionalWrapper
@@ -273,8 +307,44 @@ class StoppableThread:
         self.running = False
         self.submit = None
 
-    def ifTimeToStop(self) -> bool:
+    def timeToStop(self) -> bool:
         return self.stopsignal
+
+
+class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
+
+    def __init__(
+        self,
+        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
+        strategy_error: "StoppableThread.Strategy_Error" = None,
+    ):
+        multiprocessing.Process.__init__(self)
+        StoppableSomewhat.__init__(self, strategy_runonrunning, strategy_error)
+        self._stop_event = multiprocessing.Event()
+
+    def foo(self):
+        # This is a placeholder for the method to be overridden by the inherited class
+        pass
+
+    def isRunning(self) -> bool:
+        return self.is_alive()
+
+    @FunctionalWrapper
+    def go(self, *args, **kwargs):
+        self.arg = args, kwargs
+        self.start()
+
+    def stop(self):
+        self._stop_event.set()
+        self.join()
+
+    def timeToStop(self) -> bool:
+        return self._stop_event.is_set()
+
+    # override
+    def run(self):
+        args, kwargs = self.arg
+        self.foo(*args, **kwargs)
 
 
 def ReadFile(path):
