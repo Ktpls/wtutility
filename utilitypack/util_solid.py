@@ -1,8 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
-from copy import deepcopy
 import enum
 from time import sleep
-from typing import Dict, List, Callable, Iterable, Any
 import ctypes
 import dataclasses
 import itertools
@@ -16,6 +14,7 @@ import threading
 import time
 import traceback
 import typing
+import inspect
 
 """
 solid
@@ -66,7 +65,7 @@ def numinstr(s: str):
     return int(s) if len(s) > 0 else 0
 
 
-def FunctionalWrapper(f: Callable) -> Callable:
+def FunctionalWrapper(f: typing.Callable) -> typing.Callable:
     def f2(self, *args, **kwargs):
         f(self, *args, **kwargs)
         return self
@@ -74,7 +73,7 @@ def FunctionalWrapper(f: Callable) -> Callable:
     return f2
 
 
-def UnfinishedWrapper(msg=None) -> Callable[..., Any]:
+def UnfinishedWrapper(msg=None) -> typing.Callable[..., typing.Any]:
     if callable(msg):
         # calling without parens, works both on a class and a function
         foo = msg
@@ -85,7 +84,7 @@ def UnfinishedWrapper(msg=None) -> Callable[..., Any]:
         msg = default_msg
 
     def f2(foo):
-        def f3(*args: Any, **kwargs: Any) -> Any:
+        def f3(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
             raise NotImplementedError(msg)
 
         return f3
@@ -306,23 +305,23 @@ def WriteTextFile(path: str, text: str):
 
 
 class Pipe:
-    value: Any = None
+    value: typing.Any = None
 
-    def __init__(self, initValue: Any = None, printStep: bool = False) -> None:
+    def __init__(self, initValue: typing.Any = None, printStep: bool = False) -> None:
         self.printStep = printStep
         self.set(initValue)
 
-    def get(self) -> Any:
+    def get(self) -> typing.Any:
         return self.value
 
     @FunctionalWrapper
-    def set(self, val: Any) -> None:
+    def set(self, val: typing.Any) -> None:
         self.value = val
         if self.printStep:
             print(self.value)
 
     @FunctionalWrapper
-    def do(self, foo: Callable[[Any], Any]) -> "Pipe":
+    def do(self, foo: typing.Callable[[typing.Any], typing.Any]) -> "Pipe":
         self.set(foo(self.get()))
         return self
 
@@ -1152,7 +1151,7 @@ class expparser:
     }
 
 
-def sleepuntil(con: Callable, dt=0.1):
+def sleepuntil(con: typing.Callable, dt=0.1):
     while not con():
         time.sleep(dt)
 
@@ -1302,7 +1301,7 @@ class Stage:
 class SyncExecutableManager:
     def __init__(self, pool: ThreadPoolExecutor) -> None:
         self.pool = pool
-        self.selist: List[SyncExecutable] = []
+        self.selist: typing.List[SyncExecutable] = []
 
     def step(self):
         # call this on wolf update
@@ -1322,7 +1321,7 @@ class SyncExecutableManager:
                 se.cond.wait()
             se.cond.release()
 
-    def submit(self, se: "SyncExecutable", foo: Callable):
+    def submit(self, se: "SyncExecutable", foo: typing.Callable):
         self.selist.append(se)
         return self.pool.submit(foo)
 
@@ -1484,3 +1483,75 @@ class AccessibleQueue:
 
     def ToList(self):
         return [self[i] for i in range(len(self))]
+
+
+IdentityMapping = lambda x: x
+
+
+class BeanUtil:
+    @dataclasses.dataclass
+    class Option:
+        ignoreNoneInSrc: bool = True
+
+    """
+    have to deal with dict, object, and class(only on dest)
+    """
+
+    @staticmethod
+    def __GetEmptyInstance(cls):
+        return cls()
+
+    @staticmethod
+    def __FieldConversionFunc(obj, field):
+        return obj.__annotations__.get(field, IdentityMapping)
+
+    @staticmethod
+    def __GetKV(obj):
+        if isinstance(obj, dict):
+            return obj.items()
+        return obj.__dict__.items()
+
+    @staticmethod
+    def __SetKV(obj, k, v):
+        if isinstance(obj, dict):
+            if k in obj:
+                obj[k] = v
+        if k in obj.__dict__:
+            obj.__setattr__(k, BeanUtil.__FieldConversionFunc(obj, k)(v))
+
+    @staticmethod
+    def __DictOrObj2DictOrObjCopy(src: object, dst: object, option: "BeanUtil.Option"):
+        for k, v in BeanUtil.__GetKV(src):
+            if option.ignoreNoneInSrc and v is None:
+                continue
+            BeanUtil.__SetKV(dst, k, v)
+
+    @staticmethod
+    def __DictOrObj2ClassCopy(
+        src: object, dst: typing.Callable, option: "BeanUtil.Option"
+    ):
+        dstobj = BeanUtil.__GetEmptyInstance(dst)
+        BeanUtil.__DictOrObj2DictOrObjCopy(src, dstobj, option)
+        return dstobj
+
+    @staticmethod
+    def BeanCopy(src, dst: object, option: "BeanUtil.Option" = Option()):
+        if inspect.isclass(dst):
+            return BeanUtil.__DictOrObj2ClassCopy(src, dst, option)
+        else:
+            BeanUtil.__DictOrObj2DictOrObjCopy(src, dst, option)
+
+
+def AllOptionalInit(clz):
+    oldInit = clz.__init__
+    kws = [k for k in oldInit.__annotations__.keys() if k != "return"]
+
+    def initNone(self, **kwargs):
+        nonlocal oldInit, kws
+        for k in kws:
+            if k not in kwargs:
+                kwargs[k] = None
+        oldInit(self, **kwargs)
+
+    clz.__init__ = initNone
+    return clz

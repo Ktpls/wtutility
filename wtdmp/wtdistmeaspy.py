@@ -57,13 +57,13 @@ class wtdistmeaspy:
                 spliter = "\n"
             return spliter.join([e.__repr__() for e in el])
 
-        exception: List[SMException] = []
+        exception: typing.List[SMException] = []
         prompt = ""
 
         # check if fall back to last result
         def CheckAndReplaceIfNeeded(
             resultitem: SolveMapResultItem,
-            val2replace: Any,
+            val2replace: typing.Any,
             exceptionOnReplace: SMException,
         ):
             if resultitem.state.smetype != SMException.SolveMapResultType.NO_ERR:

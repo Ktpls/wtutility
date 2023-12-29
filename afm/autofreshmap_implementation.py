@@ -344,23 +344,24 @@ Asset4PointDetection_Pointmask = zoompointimg(
 )[:, :, 0]
 
 
-class mapdetector(detector):
-    def __init__(self, para: SpecialMapDetector):
+class MapDetectorImpled(detector, MapDetector):
+    def __init__(self, para: MapDetector):
+        super().__init__(para)
         """
         the so called path is actually map name, by which mapname2assetpath is needed
         after that assetpath2realpath will be done in matcher
         """
-        if para.mapreq is not None:
-            mapreq = para.mapreq
+        if para.map is not None:
+            map = para.map
             # formalize to list
-            if type(mapreq) is str:
-                mapreq = [mapreq]
-            mapreq = [mapname2assetpath(mr) for mr in mapreq]
+            if type(map) is str:
+                map = [map]
+            map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
                 FixedPositionImgMatcher(
                     standardMapLeftTopPoint, mr, standardMapMatchThreshold, None
                 )
-                for mr in mapreq
+                for mr in map
             ]
         else:
             self.mtc = []
@@ -441,10 +442,10 @@ class mapdetector(detector):
 def maplist2detectorlist(ml):
     ml = deduplicate(ml)
     dl = {
-        m: mapdetector(
+        m: MapDetectorImpled(
             specialmapdetectors[m]
             if m in specialmapdetectors
-            else SpecialMapDetector(mapreq=m, foo="ret(detectMapShape())")
+            else MapDetector(map=m, foo="ret(detectMapShape())")
         )
         for m in ml
     }
@@ -477,8 +478,8 @@ class freshAMap(StoppableThread):
         """
 
         def KeepDetecting(
-            successCond: Callable[[np.ndarray], bool],
-            cancelCond: Callable[[np.ndarray], bool] | None = None,
+            successCond: typing.Callable[[np.ndarray], bool],
+            cancelCond: typing.Callable[[np.ndarray], bool] | None = None,
             sleeptime=0.5,
         ) -> bool:
             while True:
@@ -681,7 +682,7 @@ class VehicleInfo:
     @staticmethod
     def compile(
         sourceCode: str, asg: ApproximateStandardizationGuide
-    ) -> List["VehicleInfo"]:
+    ) -> typing.List["VehicleInfo"]:
         ret = []
         for t in sourceCode.split("\n"):
             if len(t) == 0:
@@ -699,9 +700,9 @@ class VehicleInfo:
 
     @staticmethod
     def matchPlayerVehicleListAndVehicleInfoList(
-        players: List[str], vi: List["VehicleInfo"]
+        players: typing.List[str], vi: typing.List["VehicleInfo"]
     ):
-        ret: List[VehicleInfo.MatchResult] = []
+        ret: typing.List[VehicleInfo.MatchResult] = []
         for l, p in enumerate(players):
             for v in vi:
                 if re.match(v.pattern, p) is not None:
@@ -710,7 +711,7 @@ class VehicleInfo:
 
     @staticmethod
     def detectAnyInOutputOfTesseract(
-        players: str, vi: List["VehicleInfo"], asg: ApproximateStandardizationGuide
+        players: str, vi: typing.List["VehicleInfo"], asg: ApproximateStandardizationGuide
     ):
         playerlist = [asg.do(t) for t in players.split("\n")]
         ret = VehicleInfo.matchPlayerVehicleListAndVehicleInfoList(playerlist, vi)
@@ -737,7 +738,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         return ss.shotbgr()
 
     # wait until true
-    def keepdetecting(foo: Callable[[np.ndarray], bool], sleeptime=0.5) -> bool:
+    def keepdetecting(foo: typing.Callable[[np.ndarray], bool], sleeptime=0.5) -> bool:
         while True:
             scr = shot()
             if foo(scr):

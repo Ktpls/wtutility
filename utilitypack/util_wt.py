@@ -92,13 +92,13 @@ class Port8111:
 
     @dataclasses.dataclass
     class BeanMapInfo:
-        grid_size: List[float] = None
-        grid_steps: List[float] = None
-        grid_zero: List[float] = None
+        grid_size: typing.List[float] = None
+        grid_steps: typing.List[float] = None
+        grid_zero: typing.List[float] = None
         hud_type: int = None
         map_generation: int = None
-        map_max: List[float] = None
-        map_min: List[float] = None
+        map_max: typing.List[float] = None
+        map_min: typing.List[float] = None
         valid: bool = None
 
     @dataclasses.dataclass

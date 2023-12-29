@@ -34,110 +34,110 @@ highSurvivablity = [
 whitelistedmap = highSurvivablity
 
 specialmapdetectors = {
-    "Sinai": SpecialMapDetector(
-        mapreq="Sinai",
+    "Sinai": MapDetector(
+        map="Sinai",
         # B, or C or battle mode at any side
         # ignoring point type
         foo="ret(detectMapShape())",
     ),
-    "FrozenPass": SpecialMapDetector(
-        mapreq="FrozenPass",
+    "FrozenPass": MapDetector(
+        map="FrozenPass",
         # A or B, not single C in village
         foo="ret(detectMapShape() and spawnAround([474,477]) and (not singlePoint([528, 99])))",
     ),
-    "EasternEurope": SpecialMapDetector(
-        mapreq="EasternEurope",
+    "EasternEurope": MapDetector(
+        map="EasternEurope",
         foo="ret(detectMapShape() and spawnAround([109,456]))",
     ),
-    "Karelia": SpecialMapDetector(
-        mapreq="Karelia",
+    "Karelia": MapDetector(
+        map="Karelia",
         foo="ret(detectMapShape() and spawnAround([316, 160]))",
     ),
-    "Japan": SpecialMapDetector(
-        mapreq="Japan",
+    "Japan": MapDetector(
+        map="Japan",
         # b point
         foo="ret(detectMapShape() and spawnAround([233, 572]) and selectPoint(ppos=[325, 310]))",
     ),
-    "Normandy": SpecialMapDetector(
-        mapreq="Normandy",
+    "Normandy": MapDetector(
+        map="Normandy",
         foo="ret(detectMapShape() and spawnAround([536, 164]))",
     ),
-    "Poland": SpecialMapDetector(
-        mapreq=["Poland", "Poland(winter)"],
+    "Poland": MapDetector(
+        map=["Poland", "Poland(winter)"],
         # includes domination and conquest, not battle
         foo='ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([86, 313]) and selectPoint("A"))',
     ),
-    "Jungle": SpecialMapDetector(
-        mapreq="Jungle",
+    "Jungle": MapDetector(
+        map="Jungle",
         foo="ret(detectMapShape() and spawnAround([130, 352]))",
     ),
-    "FieldsOfNormandy": SpecialMapDetector(
-        mapreq="FieldsOfNormandy",
+    "FieldsOfNormandy": MapDetector(
+        map="FieldsOfNormandy",
         foo="ret(detectMapShape() and spawnAround([ 88, 294]) and singlePoint([359, 98]))",  # single point at top
     ),
-    "AshRiver": SpecialMapDetector(
-        mapreq="AshRiver",
+    "AshRiver": MapDetector(
+        map="AshRiver",
         foo="ret(detectMapShape() and spawnAround([ 87, 359]))",
     ),
-    "Finland": SpecialMapDetector(
-        mapreq="Finland",
+    "Finland": MapDetector(
+        map="Finland",
         # c point
         foo="ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))",  # not single point at left
     ),
-    "SandsOfSinai": SpecialMapDetector(
-        mapreq="SandsOfSinai",
+    "SandsOfSinai": MapDetector(
+        map="SandsOfSinai",
         # better survivability at upper, less likely to be killed by flankers
         foo="ret(detectMapShape() and spawnAround([334, 61]))",
     ),
-    "FieldsOfPoland": SpecialMapDetector(
-        mapreq="FieldsOfPoland",
+    "FieldsOfPoland": MapDetector(
+        map="FieldsOfPoland",
         foo="ret(detectMapShape())",
     ),
-    "Tunisia": SpecialMapDetector(
-        mapreq="Tunisia",
+    "Tunisia": MapDetector(
+        map="Tunisia",
         # A point
         foo="ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))",
     ),
-    "MaginotLineDomination#1": SpecialMapDetector(
-        mapreq=["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
+    "MaginotLineDomination#1": MapDetector(
+        map=["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
         # born at upper, highland between two spawns
         foo="ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([290, 65]))",
     ),
-    "MaginotLineDomination#2": SpecialMapDetector(
-        mapreq=["MaginotLineDomination#2", "MaginotLineDomination#2Winter"],
+    "MaginotLineDomination#2": MapDetector(
+        map=["MaginotLineDomination#2", "MaginotLineDomination#2Winter"],
         foo="ret(detectMapShape(mtcid=0) or detectMapShape(mtcid=1))",
     ),
-    "EuropeanProvince": SpecialMapDetector(
-        mapreq="EuropeanProvince",
+    "EuropeanProvince": MapDetector(
+        map="EuropeanProvince",
         # at bottom right spawn, good vision at this highland
         foo="ret(detectMapShape() and spawnAround([476, 303]))",
     ),
-    "Berlin": SpecialMapDetector(
-        mapreq="Berlin",
+    "Berlin": MapDetector(
+        map="Berlin",
         # good vision at bottom right spawn or upper right
         foo="ret(detectMapShape())",
     ),
-    "PortNovorossiysk": SpecialMapDetector(
-        mapreq="PortNovorossiysk",
+    "PortNovorossiysk": MapDetector(
+        map="PortNovorossiysk",
         # upper spawn
         # born at upper, good vision between buildings through river and survivability for river
         foo="ret(detectMapShape() and spawnAround([550, 88]))",
     ),
-    "SecondBattleOfElAlamein": SpecialMapDetector(
-        mapreq=[
+    "SecondBattleOfElAlamein": MapDetector(
+        map=[
             "SecondBattleOfElAlameinConquest#1",
             "SecondBattleOfElAlameinDomination#2",
         ],
         # born at upper, better vision around up right spawn
         foo="ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([219, 87]))",
     ),
-    "Carpathians": SpecialMapDetector(
-        mapreq="Carpathians",
+    "Carpathians": MapDetector(
+        map="Carpathians",
         # born at lower, better vision around A on mount
         foo="ret(detectMapShape() and spawnAround([222, 529]))",
     ),
-    "MiddleEast": SpecialMapDetector(
-        mapreq="MiddleEast",
+    "MiddleEast": MapDetector(
+        map="MiddleEast",
         # born at lower, better vision around A on mount
         foo="ret(detectMapShape() and spawnAround([508, 346]))",
     ),

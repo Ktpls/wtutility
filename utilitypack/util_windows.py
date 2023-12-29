@@ -322,17 +322,17 @@ class HotkeyManager:
                 return True
 
     class hotkeytask:
-        key: List[List[int]]
+        key: typing.List[typing.List[int]]
 
         def __init__(
             self,
-            key: int | Iterable[int] | Iterable[Iterable[int]],
-            foo: Callable[[], None],
+            key: int | typing.Iterable[int] | typing.Iterable[typing.Iterable[int]],
+            foo: typing.Callable[[], None],
             continiousPress: bool = False,
         ) -> None:
-            if not isinstance(key, Iterable):
+            if not isinstance(key, typing.Iterable):
                 self.key = [[key]]
-            elif not isinstance(key[0], Iterable):
+            elif not isinstance(key[0], typing.Iterable):
                 self.key = [key]
             else:
                 self.key = key
@@ -372,7 +372,7 @@ class HotkeyManager:
         def GetKeyDown(self):
             return isKBDown(self.code)
 
-    def __init__(self, hotkeytasklist: List[hotkeytask]):
+    def __init__(self, hotkeytasklist: typing.List[hotkeytask]):
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
@@ -411,7 +411,7 @@ class HotkeyManager:
             for bidx, b in enumerate(self.hktl)
         ]
 
-    def decideAllHotKey(self) -> List[bool]:
+    def decideAllHotKey(self) -> typing.List[bool]:
         keystate = {k.code: k.GetKeyDown() for k in self.kc}
         cchblocked = not self.cch.updateState(keystate)
 
@@ -494,7 +494,7 @@ class HotkeyManager:
                 OK = 1
                 CANCEL = 2
 
-            FooSessionDoneCallback: Callable[
+            FooSessionDoneCallback: typing.Callable[
                 [typing.Type["HotkeyManager.InputSession.SessionInstance"]], None
             ] = None
             content: str = ""
@@ -510,12 +510,12 @@ class HotkeyManager:
                 bulletin.putup(self.content)
 
         # foo that sets hkm and returns older hkm
-        FooSwapHKM: Callable[["HotkeyManager"], "HotkeyManager"]
+        FooSwapHKM: typing.Callable[["HotkeyManager"], "HotkeyManager"]
         bulletin: bulletinBoard
         RunningSessionInstance: SessionInstance = dataclasses.field(
             default_factory=SessionInstance
         )
-        hotkeymanagerStack: List["HotkeyManager"] = dataclasses.field(
+        hotkeymanagerStack: typing.List["HotkeyManager"] = dataclasses.field(
             default_factory=list
         )
 

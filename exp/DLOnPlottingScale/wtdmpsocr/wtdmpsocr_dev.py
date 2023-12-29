@@ -3,6 +3,7 @@
 # %%
 #basics
 from utilref import *
+from utilitypack.util_torch import *
 from torch.utils.tensorboard import SummaryWriter
 import traceback
 from torch.utils.data import Dataset
@@ -234,7 +235,7 @@ class labeldataset(Dataset):
         idx = int(ifrac * len(self.piclist[t]))
         return self.readSample(t, idx)
 
-    def draw_SpecifiedType(self, ifrac, type: List):
+    def draw_SpecifiedType(self, ifrac, type: typing.List):
         while (True):
             # to skip empty
             t = int(np.random.choice(type))
