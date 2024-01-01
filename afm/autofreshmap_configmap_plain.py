@@ -3,7 +3,7 @@ from .autofreshmap_configmap_importref import *
 # friendly for turrentless tank destroyers
 highSurvivablity = [
     "AralSea",
-    "Berlin",
+    #"Berlin",
     "EasternEurope",
     "EuropeanProvince",
     "FieldsOfNormandy",
@@ -20,7 +20,6 @@ highSurvivablity = [
     "Pradesh",
     "RedDesert",
     "Sinai",
-    "SandsOfSinai",
     "SandsOfTunisia",
     "SecondBattleOfElAlamein",
     "Tunisia",
@@ -38,7 +37,8 @@ specialmapdetectors = {
         map="Sinai",
         # B, or C or battle mode at any side
         # ignoring point type
-        foo="ret(detectMapShape())",
+        # have no shelter in battle mode with spawn at bottom
+        foo="ret(detectMapShape() and not (selectPoint('redA') and spawnAround([244, 542])))",
     ),
     "FrozenPass": MapDetector(
         map="FrozenPass",

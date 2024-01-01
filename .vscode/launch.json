@@ -23,7 +23,7 @@
             "name": "Python: Opdar",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}/Opdar.py",
+            "program": "${cwd}/Opdar/Opdar.py",
             "console": "integratedTerminal",
             "justMyCode": false
         },

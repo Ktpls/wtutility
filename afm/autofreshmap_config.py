@@ -15,7 +15,7 @@ standardPointSelectorError = 20
 standardMatchThreshold = 0.3
 standardMapMatchThreshold = 0.25
 
-setonwifirecoverthresh = 10
+setonwifirecoverthresh = 5
 
 detectpointsimilarity = 0.1
 
@@ -29,7 +29,7 @@ saveRate = 0.1
 
 
 wlanname4netshinterface = "WLAN2"
-wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305", "HUAZHU-Hanting"][2]
+wlanname4netshwlan = ["ChinaNet-pHmm", "as20", "CMCC-305", "CMCC-303", "HUAZHU-Hanting"][4]
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 

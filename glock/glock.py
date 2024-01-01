@@ -8,19 +8,19 @@ from utilitypack.util_wt import *
 import keyshortcut.gameinput as gameinput
 
 
-class GPush(StoppableThread):
+class GPush(StoppableProcess):
     ratio: float
     disabled = None
 
-    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+    def __init__(self) -> None:
         self.ratio = 0
         super().__init__(
-            strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
-            pool=pool,
+            strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.skip_and_return,
         )
 
     def foo(self):
         period = 0.2
+        lastoutputtime = time.perf_counter()
         while not self.timeToStop():
             ratio = self.ratio
             if ratio == GPush.disabled:
@@ -34,6 +34,10 @@ class GPush(StoppableThread):
             torelax = (1 - ratio) * period
             gameinput.hold(gameinput.keycode.key_S, topush)
             PreciseSleep(torelax)
+            # nowtime = time.perf_counter()
+            # if nowtime - lastoutputtime > 5:
+            #     lastoutputtime = nowtime
+            #     RythmNotify.play()
 
     def config(self, ratio):
         self.ratio = ratio
@@ -42,7 +46,7 @@ class GPush(StoppableThread):
 class Sampler(StoppableThread):
     def __init__(self, pool: ThreadPoolExecutor = None) -> None:
         super().__init__(
-            StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
+            StoppableThread.Strategy_RunOnRunning.skip_and_return,
             StoppableThread.Strategy_Error.ignore,
             pool,
         )
@@ -92,7 +96,7 @@ class GLock:
     def __init__(self, lim, pool=None):
         self.lim = lim
         self.controller = PIDController(kp=0.9, ki=0, kd=0.0)
-        self.pusher: GPush = GPush(pool=pool).go()
+        self.pusher: GPush = GPush().go()
         self.sampler: Sampler = Sampler(pool=pool).go()
 
     def business(self):

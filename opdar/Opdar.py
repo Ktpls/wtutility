@@ -1,3 +1,4 @@
+from utilref import *
 from opdar_implementation import *
 
 # setup
@@ -6,9 +7,12 @@ hud.setup()
 
 
 def beepOnErr():
-
     RythmError.play()
-throwErrorInHotkey=True
+
+
+throwErrorInHotkey = True
+
+
 def main():
     tr = tracker()
     tracking = False
@@ -16,35 +20,29 @@ def main():
 
     hklist = []
 
-    def turnon():
-        tr.setup(lockpoint_default)
+    def trackswitch():
         nonlocal tracking
-        tracking = True
+        if not tracking:
+            tr.setup(lockpoint_default)
+            tracking = True
+        else:
+            tracking = False
+            RythmNotify.play()
 
-    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], turnon))
+    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], trackswitch))
 
-    def turnoff():
-        nonlocal tracking
-        tracking = False
-        RythmNotify.play()
-
-    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F11], turnoff))
-    
     # key shortcuts
-    import keyshortcut
+    import keyshortcut.keyshortcut as keyshortcut
 
     def holdCAndTell():
         keyshortcut.holdC()
         RythmNotify.play()
-    hklist.append(HotkeyManager.hotkeytask(
-        key=win32con.VK_F12,
-        foo=holdCAndTell
-    ))
+
+    hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
     hkm = HotkeyManager(hklist)
 
-    while (True):
-        sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps,
-                   dt=0.25 * 1 / fps)
+    while True:
+        sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
         nowtime = time.perf_counter()
         frametime = nowtime - lastT
         lastT = nowtime
@@ -63,25 +61,45 @@ def main():
 
         def drawsearchrange(output, p):
             # range it self
-            output = cv.circle(output, p.astype('int32'), searchrange,
-                               lockcirclecolor, lockcirclethickness)
+            output = cv.circle(
+                output,
+                p.astype("int32"),
+                searchrange,
+                lockcirclecolor,
+                lockcirclethickness,
+            )
             # inner shadow
             output = cv.circle(
-                output, p.astype('int32'),
+                output,
+                p.astype("int32"),
                 searchrange - (2 * (lockcirclethickness - 1) + 1),
-                lockcirclecolorinner, lockcirclethickness)
+                lockcirclecolorinner,
+                lockcirclethickness,
+            )
             # outter shadow
             output = cv.circle(
-                output, p.astype('int32'),
+                output,
+                p.astype("int32"),
                 searchrange + (2 * (lockcirclethickness - 1) + 1),
-                lockcirclecoloroutter, lockcirclethickness)
+                lockcirclecoloroutter,
+                lockcirclethickness,
+            )
             return output
 
         if tracking:
-
             # track
-            ponshot, pomega, plastinthisframe, wingspanpx, cm, trackingpoints, planemap, pul, maxscore, thetabypix = tr.track(
-            )
+            (
+                ponshot,
+                pomega,
+                plastinthisframe,
+                wingspanpx,
+                cm,
+                trackingpoints,
+                planemap,
+                pul,
+                maxscore,
+                thetabypix,
+            ) = tr.track()
 
             distance = targetwingspan / (thetabypix * wingspanpx)
 
@@ -91,7 +109,7 @@ def main():
             pest = te * pomega
             pverticaltargeting = [
                 0,
-                0.5 * np.arcsin(9.8e-3 * distance / vbullet**2) / thetabypix
+                0.5 * np.arcsin(9.8e-3 * distance / vbullet**2) / thetabypix,
             ]
             estimed = ponshot + pcompensation + pest + pverticaltargeting
             pnow = ponshot + pcompensation
@@ -99,16 +117,29 @@ def main():
             output = drawsearchrange(output, pnow)
 
             # plane pos
-            output = cv.circle(output, pnow.astype('int32'), planecircleradius,
-                               planecirclecolor, firecontrolseriesthickness)
+            output = cv.circle(
+                output,
+                pnow.astype("int32"),
+                planecircleradius,
+                planecirclecolor,
+                firecontrolseriesthickness,
+            )
             # speed vector
-            output = cv.line(output, pnow.astype('int32'),
-                             (estimed).astype('int32'), speedvectorcolor,
-                             firecontrolseriesthickness)
+            output = cv.line(
+                output,
+                pnow.astype("int32"),
+                (estimed).astype("int32"),
+                speedvectorcolor,
+                firecontrolseriesthickness,
+            )
             # estimated point
-            output = cv.circle(output, (estimed).astype('int32'), 10,
-                               firecontrolcirclecolor,
-                               firecontrolseriesthickness)
+            output = cv.circle(
+                output,
+                (estimed).astype("int32"),
+                10,
+                firecontrolcirclecolor,
+                firecontrolseriesthickness,
+            )
 
             # info
             infoline = 0
@@ -116,25 +147,30 @@ def main():
             def outputoneline():
                 nonlocal infoline, output
                 cv.putText(
-                    output, info,
-                    pnow.astype('int32') +
-                    [0, searchrange + 3 * lockcirclethickness + lineheight] +
-                    [0, infoline * lineheight], cv.FONT_HERSHEY_SIMPLEX, 1,
-                    textcolor)
+                    output,
+                    info,
+                    pnow.astype("int32")
+                    + [0, searchrange + 3 * lockcirclethickness + lineheight]
+                    + [0, infoline * lineheight],
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    textcolor,
+                )
                 infoline += 1
 
-            info = '%4.2fkm, %4.2fs' % (distance, te)
+            info = "%4.2fkm, %4.2fs" % (distance, te)
             outputoneline()
-            info = '(%4.2f,%4.2f)' % (pomega[0], pomega[1])
+            info = "(%4.2f,%4.2f)" % (pomega[0], pomega[1])
             outputoneline()
-            info = 's%4.2f' % (maxscore)
+            info = "s%4.2f" % (maxscore)
             outputoneline()
 
             # plane tracker's view
             planemap = cv.threshold(planemap, 0, 1, cv.THRESH_BINARY)[1]
             planemap = 255 * planemap
-            planemap = planemap.astype('uint8').reshape(
-                np.concatenate((planemap.shape, [1])))
+            planemap = planemap.astype("uint8").reshape(
+                np.concatenate((planemap.shape, [1]))
+            )
             planemap = np.concatenate((planemap, planemap, planemap), 2)
             # bigplanemap = cv.copyMakeBorder(
             #     planemap, pul[1], output.shape[0] - planemap.shape[0] - pul[1],
@@ -142,9 +178,12 @@ def main():
             #     cv.BORDER_CONSTANT)
             # output += bigplanemap
 
-            #pul is in [x,y], originated from screensize = np.array([w, h], np.int32)
-            output[pul[1]:pul[1] + planemap.shape[0],
-                   pul[0]:pul[0] + planemap.shape[1], :] += planemap
+            # pul is in [x,y], originated from screensize = np.array([w, h], np.int32)
+            output[
+                pul[1] : pul[1] + planemap.shape[0],
+                pul[0] : pul[0] + planemap.shape[1],
+                :,
+            ] += planemap
 
             # #last pos
             # output=cv.circle(

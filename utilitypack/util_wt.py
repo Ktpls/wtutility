@@ -276,10 +276,11 @@ class Port8111:
             Port8111.QueryType.__throwEnumNotFound()
 
     @staticmethod
-    def get_raw_json(queryType: "Port8111.QueryType"):
+    def get_raw_json(queryType: "Port8111.QueryType", timeout=None):
         try:
             response = requests.get(
-                "http://localhost:8111/" + queryType.getPath(), timeout=1
+                "http://localhost:8111/" + queryType.getPath(),
+                timeout=timeout if timeout is not None else 1,
             )
         except (requests.ConnectionError, requests.ReadTimeout):
             return None
@@ -287,8 +288,8 @@ class Port8111:
         return json_data
 
     @staticmethod
-    def get(queryType: "Port8111.QueryType"):
-        json_data = Port8111.get_raw_json(queryType)
+    def get(queryType: "Port8111.QueryType", timeout=None):
+        json_data = Port8111.get_raw_json(queryType, timeout=timeout)
         if json_data is None:
             return None
         return queryType.parseJson(json_data)

@@ -92,7 +92,6 @@ def hold(k, t):
     keydown(k)
     utilitypack.util_windows.PreciseSleep(t)
     keyup(k)
-    time.sleep(0.5)
 
 
 def key_down(k):

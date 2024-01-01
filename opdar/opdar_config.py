@@ -15,14 +15,14 @@ stablamb = 0.75
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
-useNNTracker = True
+useNNTracker = False
 trackFps = 20
 camerestablizersubsamplerate = 0.1
-planetrackerchannel = 'V'
-searchrange = 96//2  # -sr~+sr, must be 16n. as for sr, must be 8n
+planetrackerchannel = "V"
+searchrange = 100 // 2  # -sr~+sr, must be 16n. as for sr, must be 8n
 backgroundrange = 21
 adptthresh = 0.1
-abslthresh = 0.55
+abslthresh = 0.15
 regionrange = 3
 routhresh = 0.05
 posrellamb = getlambfromtarget(0.75, 1)
@@ -36,6 +36,7 @@ targetwingspan = 16.3e-3
 vbullet = 0.800
 screensize = np.array([w, h], np.int32)
 lockpoint_default = screensize * [0.5, 0.2]
+epsilon = 1e-3
 
 # render
 lockcirclethickness = 1
@@ -52,10 +53,10 @@ firecontrolcirclecolor = 255 * rgb2bgr(hsv2rgb((firecontrolserieshue, 0.6, 1)))
 lineheight = 25
 textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
 
-#datacollecting
+# datacollecting
 collectingPlaneSample = False
 collectingPlaneSampleRate = 0.1
 
 uimaskPath = r"./asset/opdar/UIMASK.png"
-datacoll_samplepath = './output/opdar_plane/spl'
-datacoll_labelpath = './output/opdar_plane/lbl'
+datacoll_samplepath = "./output/opdar_plane/spl"
+datacoll_labelpath = "./output/opdar_plane/lbl"

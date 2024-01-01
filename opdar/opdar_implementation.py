@@ -1,6 +1,8 @@
-from utilitypack import *
-from utilitypack.util_torch import *
-from .opdar_config import *
+from utilref import *
+from opdar_config import *
+
+if useNNTracker:
+    from utilitypack.util_torch import *
 
 uimask = cv.imread(uimaskPath)
 uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
@@ -150,9 +152,9 @@ def estimateWingSpan(m):
     return 2 * np.sqrt(dist2max)
 
 
-from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
-
 if useNNTracker:
+    from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
+
     nntrker = getmodel(r".\exp\DLOnOpdarPlaneDetection\nntracker.pth")
 else:
     nntrker = None
@@ -207,14 +209,14 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
         Y = np.arange(pul_l[1], pbr_l[1])
 
         info[c] = [
-            (X * clusterXdist).sum() / (clusterXdist.sum() + 0.001),
-            (Y * clusterYdist).sum() / (clusterYdist.sum() + 0.001),
+            (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
+            (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
             estimateWingSpan(clusterbinary),
             cluster.sum() / clusterbinary.sum(),
         ]
 
     wingspanref = np.max(info[:, 2], axis=0)
-    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + 0.001)
+    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + epsilon)
     scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
     scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
 
@@ -236,8 +238,13 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     )
 
 
-def planetrack(m, posref, wingspanref=-1, mask=None):
-    mask = mask.astype("float32") * 1 / 255
+def planetrack(
+    m: np.ndarray, posref: np.ndarray, wingspanref=-1, mask: np.ndarray = None
+):
+    """
+    expects to have m negatived and in range [0, 1] and type np.float32
+    """
+    mask = (mask > 0).astype("float32")
     size = [m.shape[1], m.shape[0]]
     posref = point_legalize(posref, size)
 
@@ -253,18 +260,18 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
     if m.size <= 0:
         return None
     imgshape = m.shape
-    m = m.astype("float32") * 1 / 255
 
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange], mask)
-    madat = ave - m
-    madat = cv.threshold(madat, 0, 0, cv.THRESH_TOZERO)[1]
+    madat = m - ave
+    madat[madat < 0] = 0
     madat = cv.normalize(madat, madat, 0, 1, cv.NORM_MINMAX)
     # normally filter from background color
-    madat = cv.threshold(madat, adptthresh, 0, cv.THRESH_TOZERO)[1]
+    madat[madat < adptthresh] = 0
 
     # abs thresh
-    mabst = cv.threshold(m, abslthresh, 1, cv.THRESH_BINARY_INV)[1]
+    mabst = np.copy(m)
+    mabst[mabst < abslthresh] = 0
 
     m = madat * mabst
 
@@ -298,10 +305,10 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
         Y = np.arange(pul[1], pbr[1])
 
         info[c] = [
-            (X * clusterXdist).sum() / (clusterXdist.sum()),
-            (Y * clusterYdist).sum() / (clusterYdist.sum()),
+            (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
+            (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
             estimateWingSpan(clusterbinary),
-            cluster.sum() / clusterbinary.sum(),
+            cluster.sum() / (clusterbinary.sum() + epsilon),
         ]
 
     sqrdist = (
@@ -318,7 +325,7 @@ def planetrack(m, posref, wingspanref=-1, mask=None):
         # no suggusted wingspan
         # use the bigest one as reference, since its often clear in first tracking
         wingspanref = np.max(info[:, 2], axis=0)
-    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + 0.0001)
+    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + epsilon)
     scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
     scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
 
@@ -424,7 +431,7 @@ def GetMilIntervalFromScrShot(m):
     return mil
 
 
-class tracker:
+class MtiFilter:
     @dataclasses.dataclass
     class MtiStorage:
         img: np.ndarray
@@ -432,6 +439,81 @@ class tracker:
         # compared with prev frame
         cammotion: np.ndarray
 
+    def __init__(self) -> None:
+        """
+        consider storage only the transformed and meaned pic
+        like the dynamic window way. kick the oldest one in queue out, and take its effect out of meaned pic
+        """
+        # fake type notation in order to scam ide type analysis
+        self.mtiQueue: typing.List[
+            MtiFilter.MtiStorage
+        ] | AccessibleQueue = AccessibleQueue(5)
+
+        # try convienient type annotation but wont work
+        # self.mtiQueue: AccessibleQueue.Annotation(
+        #     MtiFilter.MtiStorage
+        # ) = AccessibleQueue(5)
+
+    def update(self, img: np.ndarray, cammotion: np.ndarray):
+        # mit proc
+        if self.mtiQueue.isEmpty():
+            ret = np.ones_like(img)
+        else:
+
+            def cammotionmat2x3to3x3(cammot: np.ndarray):
+                return np.concatenate(
+                    [
+                        cammot,
+                        [[0, 0, 1]],
+                    ]
+                )
+
+            def cammotionmat3x3to2x3(cammot: np.ndarray):
+                return cammot[:2, :]
+
+            motionSum = cammotionmat2x3to3x3(cammotion)
+            scrsize = img.shape
+            prevScreenAtNowView = []
+            for i in range(len(self.mtiQueue)):
+                # iter from the newest to oldest
+                prevScreenAtNowView.append(
+                    cv.warpAffine(
+                        self.mtiQueue[-i].img,
+                        cammotionmat3x3to2x3(motionSum),  # only x, y, no w
+                        np.flip(scrsize),
+                        borderMode=cv.BORDER_CONSTANT,
+                        borderValue=0,
+                    )
+                )
+                motionSum = (
+                    cammotionmat2x3to3x3(self.mtiQueue[-i].cammotion) @ motionSum
+                )
+            prevsignal = np.array(prevScreenAtNowView)
+            prevsignal = np.average(prevsignal, axis=0)
+            """
+            in case that input is not binary, like a gray dot
+            and it doesnt hurt in this case, that:
+                for the head part of trajectory of moving dot, img_now is 1-ish, so prevsignal is 0-ish
+                for the tail part, img_now is 0-ish, so prevsignal is 1-ish
+                it fits the filter logic
+            """
+            prevsignal = prevsignal / (img + epsilon)
+
+            def filter(x):
+                ret = np.zeros_like(x)
+                p1 = 0.2
+                p2 = 0.6
+                ret = -(1 / (p2 - p1)) * (x - p2) + 0
+                ret[x < p1] = 1
+                ret[x > p2] = 0
+                return ret
+
+            ret = filter(prevsignal)
+        self.mtiQueue.push__pop_if_full(MtiFilter.MtiStorage(img, cammotion))
+        return ret
+
+
+class tracker:
     def setup(self, p0):
         self.omegastab = [stablizer(stablamb, 0), stablizer(stablamb, 0)]
         self.lastpos = p0
@@ -447,10 +529,7 @@ class tracker:
 
         self.lazyplanetrackerfpsmanager = fpsmanager(fps=trackFps)
 
-        # fake type notation in order to scam ide type analysis
-        self.mtiQueue: typing.List[
-            tracker.MtiStorage
-        ] | AccessibleQueue = AccessibleQueue(5)
+        self.mtif = MtiFilter()
 
     def track(self):
         curr = self.ss.shotbgr().astype("uint8")
@@ -476,37 +555,11 @@ class tracker:
         else:  # fallback to blue
             curr_gray = curr[:, :, 0]
 
-        # mit proc
-        def cammotionmat2x3to3x3(cammot: np.ndarray):
-            return np.concatenate(
-                [
-                    cammot,
-                    [0, 0, 1],
-                ]
-            )
+        # neg to get dark signal
+        curr_gray = 1 - curr_gray.astype(np.float32) / 255
 
-        def cammotionmat3x3to2x3(cammot: np.ndarray):
-            return cammot[:2, :]
-
-        motionSum = cammotionmat2x3to3x3(cm)
-        scrsize = curr_gray.shape
-        prevScreenAtNowView = []
-        for i in range(len(self.mtiQueue), 0, -1):
-            # iter from the newest to oldest
-            prevScreenAtNowView.append(
-                cv.warpAffine(
-                    255 - self.mtiQueue[i].img,
-                    cammotionmat3x3to2x3(motionSum),  # only x, y, no w
-                    np.flip(scrsize),
-                    borderMode=cv.BORDER_CONSTANT,
-                    borderValue=255,  # border white, so no dark signal
-                )
-            )
-            motionSum = cammotionmat2x3to3x3(self.mtiQueue[i].cammotion) @ motionSum
-        prevsignal = 255 - np.array(prevScreenAtNowView)
-        weight = (0.75) ** np.arange(len(prevScreenAtNowView))
-        prevsignal = np.average(prevsignal, axis=0, weights=weight)
-        prevsignal
+        mtiresult = self.mtif.update(curr_gray, cm)
+        curr_gray = mtiresult * curr_gray
 
         pomega = np.zeros([2])
         for c in range(len(pomega)):
@@ -571,7 +624,6 @@ class tracker:
 
         self.prev_red = curr_red
         self.lastshottime = shottime
-        self.mtiQueue.push__pop_if_full(tracker.MtiStorage(curr_gray, cm))
         for c in range(len(self.omegastab)):
             acceptableerr = (
                 -1

@@ -294,7 +294,7 @@ def main():
         print("glock activated")
         import glock.glock as glock
 
-        agl = glock.GLock(2, threadpool)
+        agl = glock.GLock(2)
 
         def glBuzWrap():
             isCtrling, duration = agl.business()
@@ -366,5 +366,5 @@ def main():
 
         hud.update()
 
-
-main()
+if __name__ == '__main__':
+    main()

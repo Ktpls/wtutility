@@ -312,7 +312,6 @@ class StoppableThread(StoppableSomewhat):
 
 
 class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
-
     def __init__(
         self,
         strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
@@ -321,6 +320,7 @@ class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         StoppableSomewhat.__init__(self, strategy_runonrunning, strategy_error)
         self._stop_event = multiprocessing.Event()
+        self.result = None
 
     def foo(self):
         # This is a placeholder for the method to be overridden by the inherited class
@@ -331,6 +331,22 @@ class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
 
     @FunctionalWrapper
     def go(self, *args, **kwargs):
+        if self.isRunning():
+            if (
+                self.behavior_run_on_running
+                == StoppableThread.Strategy_RunOnRunning.raise_error
+            ):
+                raise RuntimeError("already running")
+            elif (
+                self.behavior_run_on_running
+                == StoppableThread.Strategy_RunOnRunning.stop_and_rerun
+            ):
+                self.stop()
+            elif (
+                self.behavior_run_on_running
+                == StoppableThread.Strategy_RunOnRunning.skip_and_return
+            ):
+                return
         self.arg = args, kwargs
         self.start()
 
@@ -344,7 +360,15 @@ class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
     # override
     def run(self):
         args, kwargs = self.arg
-        self.foo(*args, **kwargs)
+        try:
+            self.result = self.foo(*args, **kwargs)
+        except Exception as e:
+            if self.strategy_on_error == StoppableThread.Strategy_Error.raise_error:
+                raise e
+            elif self.strategy_on_error == StoppableThread.Strategy_Error.print_error:
+                traceback.print_exc()
+            elif self.strategy_on_error == StoppableThread.Strategy_Error.ignore:
+                pass
 
 
 def ReadFile(path):
@@ -1475,31 +1499,33 @@ class SyncExecutable:
 
 
 class AccessibleQueue:
+    Annotation = lambda T: typing.List[T]
+
     class AQException(Exception):
         pass
 
     def __init__(self, maxsize=1):
-        self.maxsize = maxsize
-        self.cursize = 0
-        self.sptr = 0
-        self.eptr = 0
-        self.q = [None] * maxsize
+        self._maxsize = maxsize
+        self._cursize = 0
+        self._sptr = 0
+        self._eptr = 0
+        self._q = [None] * maxsize
 
     def push(self, val):
         if self.isFull():
             raise AccessibleQueue.AQException("queue full")
-        self.q[self.eptr] = val
-        self.eptr += 1
-        self.eptr %= self.maxsize
-        self.cursize += 1
+        self._q[self._eptr] = val
+        self._eptr += 1
+        self._eptr %= self._maxsize
+        self._cursize += 1
 
     def pop(self):
         if self.isEmpty():
             raise AccessibleQueue.AQException("queue empty")
-        val = self.q[self.sptr]
-        self.sptr += 1
-        self.sptr %= self.maxsize
-        self.cursize -= 1
+        val = self._q[self._sptr]
+        self._sptr += 1
+        self._sptr %= self._maxsize
+        self._cursize -= 1
         return val
 
     def push__pop_if_full(self, val):
@@ -1508,45 +1534,45 @@ class AccessibleQueue:
         self.push(val)
 
     def resize(self, newsize):
-        if newsize < self.maxsize:
+        if newsize < self._maxsize:
             raise AccessibleQueue.AQException("newsize too small")
-        self.q.extend([None] * (newsize - self.maxsize))
-        if self.sptr > self.eptr or self.isFull():
+        self._q.extend([None] * (newsize - self._maxsize))
+        if self._sptr > self._eptr or self.isFull():
             # data at both end points
-            newsptr = newsize - (self.maxsize - self.sptr)
-            self.q[newsptr:] = self.q[self.sptr : self.maxsize]
-            self.sptr = newsptr
-        elif self.sptr < self.eptr:
+            newsptr = newsize - (self._maxsize - self._sptr)
+            self._q[newsptr:] = self._q[self._sptr : self._maxsize]
+            self._sptr = newsptr
+        elif self._sptr < self._eptr:
             # data within two ptrs
             pass
 
-        self.maxsize = newsize
+        self._maxsize = newsize
 
     def __indexMapping(self, i):
         if i < 0:
-            i = self.cursize + i
-        return (i + self.sptr) % self.maxsize
+            i = self._cursize + i
+        return (i + self._sptr) % self._maxsize
 
     def __len__(self):
-        return self.cursize
+        return self._cursize
 
     def isFull(self):
-        return self.cursize == self.maxsize
+        return self._cursize == self._maxsize
 
     def isEmpty(self):
-        return self.cursize == 0
+        return self._cursize == 0
 
     def __getitem__(self, i: int | slice):
         if isinstance(i, int):
-            if i >= self.cursize:
+            if i >= self._cursize:
                 raise AccessibleQueue.AQException("index out of range")
-            return self.q[self.__indexMapping(i)]
+            return self._q[self.__indexMapping(i)]
         elif isinstance(i, slice):
             return [
                 self[j]
                 for j in range(
                     i.start if i.start is not None else 0,
-                    i.stop if i.stop is not None else self.cursize,
+                    i.stop if i.stop is not None else self._cursize,
                     i.step if i.step is not None else 1,
                 )
             ]
