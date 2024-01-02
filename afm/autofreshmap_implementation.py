@@ -20,7 +20,7 @@ stateDetectorInfo = {
     "LoadingMap": {
         "path": signName2Path("LoadingMap"),
     },
-    "OK": {"path": signName2Path("OK"), "thresh": 0.2},
+    "OK": {"path": signName2Path("OK"), "thresh": 0.195},
     "Statistics": {"path": signName2Path("Statistics")},
 }
 

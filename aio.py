@@ -223,8 +223,8 @@ def main():
 
             def foo(self, *args, **kwargs):
                 bulletin.putup("launching series")
-                interval = 0.1
-                num = 35
+                interval = 0.099
+                num = 29+3
                 keyshortcut.keydown(keycode.key_LeftControl)
                 for i in range(num):
                     if self.timeToStop():
@@ -235,12 +235,17 @@ def main():
                     PreciseSleep(interval)
                 keyshortcut.keyup(keycode.key_LeftControl)
 
-                bulletin.putup("launch done")
+                bulletin.putup(f"launch done")
 
         launchSeries = LaunchSeries(threadpool)
         hotkeyaction.append(
             HotkeyManager.hotkeytask(
-                key=[ord("K"), ord("O"), win32con.VK_RCONTROL], foo=lambda: launchSeries.go()
+                key=[
+                    win32con.VK_RCONTROL,
+                    ord("K"),
+                    ord("O"),
+                ],
+                foo=lambda: launchSeries.go(),
             )
         )
 
@@ -366,5 +371,6 @@ def main():
 
         hud.update()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
