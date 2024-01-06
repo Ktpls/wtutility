@@ -1,8 +1,8 @@
-usingwtdistmeaspy = True
-usingtelescope = True
+usingwtdistmeaspy = False
+usingtelescope = usingwtdistmeaspy
 usingkeyshortcut = True
 usingeagleeye = False
-usingglock = False
+usingglock = True
 
 throwErrorInBus = False
 throwErrorInHotkey = False

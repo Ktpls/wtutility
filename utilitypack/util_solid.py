@@ -102,7 +102,6 @@ class logger:
             os.makedirs(dir)
         self.f = open(path, "wb+")
 
-    @FunctionalWrapper
     def log(self, content):
         self.f.write((content + "\n").encode("utf8"))
         # self.f.flush()
@@ -158,7 +157,6 @@ class bulletinBoard:
         self.idlecontent = idlecontent
         self.content: typing.List["bulletinBoard.Poster"] = []
 
-    @FunctionalWrapper
     def putup(self, poster: typing.Union[Poster, str]):
         if type(poster) == str:
             poster = bulletinBoard.Poster(poster)
@@ -1261,12 +1259,24 @@ class expparser:
     }
 
 
-def sleepuntil(con: typing.Callable, dt=0.1, sleepImpl=time.sleep):
+def sleepuntil(con: typing.Callable, dt=None, sleepImpl=None):
+    if sleepImpl is None:
+        sleepImpl = time.sleep
+    if dt is None:
+        dt = 0.025
     while not con():
         sleepImpl(dt)
 
 
 class perf_statistic:
+    """
+    calculate the time past between start() to now, directly by perf_counter()-starttime
+    record all accumulated time before start(), but uncleared after stop()
+    so start and stop are also playing roles as resume and pause
+    countcycle() will increase the cycle count, helping to calculate average time in a loop-like task
+    clear() will clear all accumulated time, stops counting
+    """
+
     def __init__(self, startnow=False):
         self.clear()
         if startnow:
@@ -1310,16 +1320,14 @@ class fpsmanager:
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
-    @FunctionalWrapper
-    def WaitUntilNextFrame(self):
+    def WaitUntilNextFrame(self, sleepImpl=None):
         sleepuntil(
             lambda: time.perf_counter() - self.lt > self.frametime,
             dt=0.5 * self.frametime,
-            sleepImpl=PreciseSleep,
+            sleepImpl=sleepImpl,
         )
         self.SetToNextFrame()
 
-    @FunctionalWrapper
     def CheckIfTimeToDoNextFrame(self) -> bool:
         """
         usage
@@ -1332,7 +1340,6 @@ class fpsmanager:
         result = time.perf_counter() - self.lt > self.frametime
         return result
 
-    @FunctionalWrapper
     def SetToNextFrame(self):
         self.lt = time.perf_counter()
 
@@ -1345,7 +1352,8 @@ def longDelay(t, interval=0.5):
 
 def PreciseSleep(t):
     # to stop oscilation in autoCali due to sleep() precise
-    if t > 0.1:
+    # to my suprise time.sleep() is quite precise
+    if t > 0.0005773010000120849:
         # too rough
         sleep(t)
     else:
@@ -1374,16 +1382,22 @@ def WrapperOfMultiLineText(s):
     return s[1:-1]
 
 
+@dataclasses.dataclass
 class PIDController:
-    def __init__(self, kp, ki, kd):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.last_error = 0
-        self.integral = 0
+    kp: float
+    ki: float
+    kd: float
+    integralLimitMin: float = None
+    integralLimitMax: float = None
+    last_error: float = dataclasses.field(default=0, init=False)
+    integral: float = dataclasses.field(default=0, init=False)
 
     def update(self, error, dt=1):
         self.integral += error * dt
+        if self.integralLimitMax is not None and self.integral > self.integralLimitMax:
+            self.integral = self.integralLimitMax
+        if self.integralLimitMin is not None and self.integral < self.integralLimitMin:
+            self.integral = self.integralLimitMin
         derivative = (error - self.last_error) / dt
         output = self.kp * error + self.ki * self.integral + self.kd * derivative
         self.last_error = error

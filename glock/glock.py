@@ -20,39 +20,49 @@ class Reporter:
 class GPush(StoppableProcess):
     ratio: float
     disabled = -1
+    full = 2
 
-    def __init__(self, ratio: multiprocessing.Value) -> None:
+    @staticmethod
+    def isFull(x):
+        return x > 1
+
+    @staticmethod
+    def isZero(x):
+        return x < 0
+
+    def __init__(
+        self, ratio: multiprocessing.Value, bad8111Exit: multiprocessing.Event
+    ) -> None:
         self.ratio = ratio
+        self.bad8111Exit = bad8111Exit
         super().__init__(
             strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.skip_and_return,
         )
 
     def foo(self):
         def report():
+            if not GPush.isZero(ratio):
+                RythmNotify.play()
             print(f"ratio: {self.ratio.value}")
 
         reporter = Reporter(5, report)
         period = 0.05
-        while not self.timeToStop():
+        while not self.timeToStop() and not self.bad8111Exit.is_set():
             ratio = self.ratio.value
-            if ratio < 0:
+            if GPush.isZero(ratio):
                 # diabled
                 PreciseSleep(period)
-                continue
-            if ratio > 1:
-                ratio = 1
-            if ratio < 0:
-                ratio = 0
-            topush = ratio * period
-            torelax = (1 - ratio) * period
-            gameinput.hold(gameinput.keycode.key_S, topush)
-            RythmNotify.play()
-            # PreciseSleep(topush)
-            PreciseSleep(torelax)
+            elif GPush.isFull(ratio):
+                # key will be realeased until some point that not full
+                gameinput.keydown(gameinput.keycode.key_S)
+                PreciseSleep(period)
+            else:
+                topush = ratio * period
+                torelax = (1 - ratio) * period
+                gameinput.hold(gameinput.keycode.key_S, topush)
+                # PreciseSleep(topush)
+                PreciseSleep(torelax)
             reporter.update()
-
-    def config(self, ratio):
-        self.ratio = ratio
 
 
 class SepDerivativer:
@@ -68,70 +78,89 @@ class SepDerivativer:
 
 
 class Sampler(StoppableProcess):
-    def __init__(self, ratio: multiprocessing.Value, lim: float) -> None:
+    def __init__(
+        self,
+        ratio: multiprocessing.Value,
+        bad8111Exit: multiprocessing.Event,
+        lim: float,
+    ) -> None:
         super().__init__(
             StoppableThread.Strategy_RunOnRunning.skip_and_return,
             StoppableThread.Strategy_Error.print_error,
         )
         self.ratio = ratio
+        self.bad8111Exit = bad8111Exit
         self.lim = lim
-        self.controller = PIDController(kp=1 / 7, ki=0, kd=0.0)
-        self.oolf = OneOrderLinearFilter(1, 0)
-        self.fps = fpsmanager(20)
+
+    def foo(self):
+        fullPushExceed = 13 - self.lim
+        controller = PIDController(
+            kp=0.1 * 1 / fullPushExceed,
+            ki=1 / fullPushExceed,
+            kd=0.1 * 1 / fullPushExceed,
+            integralLimitMax=0,
+            integralLimitMin=-fullPushExceed,
+        )
+        oolf = OneOrderLinearFilter(1, 0)
+        fps = fpsmanager(20)
+
+        def calcEnerge(h, tas):
+            return h * 9.8 + 0.5 * tas**2
 
         state = Port8111.get(Port8111.QueryType.state)
         if state is None or state.valid is False:
             energyNow = 0
         else:
-            energyNow = self.__calcEnerge(state.H.value, state.TAS.value)
-        self.sepderi = SepDerivativer(energyNow, time.perf_counter())
-        # self.ps = perf_statistic(startnow=False)
-
-    def foo(self):
+            energyNow = calcEnerge(state.H.value, state.TAS.value)
+        sepderi = SepDerivativer(energyNow, time.perf_counter())
+        ps = perf_statistic(startnow=True)
         while not self.timeToStop():
-            self.fps.WaitUntilNextFrame()
-            self.sampleNow()
-        # print(self.ps.aveTime())
+            fps.WaitUntilNextFrame(sleepImpl=PreciseSleep)
+            """
+            request.get always return until the last millisecond before time out
+            """
+            state = Port8111.get(Port8111.QueryType.state, timeout=0.1)
+            if state is None or state.valid is False:
+                self.bad8111Exit.set()
+                break
+            # if state.Ny is None:
+            #     breakpoint()
 
-    def sampleNow(self):
-        """
-        request.get always return until the last millisecond before time out
-        """
-        state = Port8111.get(Port8111.QueryType.state, timeout=0.1)
-        if state is None or state.valid is False:
-            return False, 0
-        # if state.Ny is None:
-        #     breakpoint()
+            sep = sepderi.update(
+                calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
+            )
+            g = state.Ny.value
+            aoa = state.AoA.value
 
-        sep = self.sepderi.update(
-            self.__calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
-        )
-        g = state.Ny.value
-        aoa = state.AoA.value
+            index = g
+            index = oolf.update(index)
+            # allow negative error to clear intergraled error
+            ctrl = controller.update(self.lim - index, ps.time())
+            ps.clear().start()
 
-        index = self.oolf.update(g)
-        err = ReLU(index - self.lim)
-        ctrl = self.controller.update(err)
-        if ctrl > 1:
-            ctrl = 1
-        if err > 0:
-            self.ratio.value = ctrl
-            return True, ctrl
-        else:
-            self.ratio.value = GPush.disabled
-            return False, 0
-
-    def __calcEnerge(self, h, tas):
-        return h * 9.8 + 0.5 * tas**2
+            # ctrl in negative, since its pushing.
+            if ctrl < -1:
+                # max pushing rate is 1.
+                self.ratio.value = GPush.full
+            elif ctrl > 0:
+                # and i dont want pulling.
+                self.ratio.value = GPush.disabled
+            else:
+                # smooth controlling
+                self.ratio.value = abs(ctrl)
 
 
 class GLock:
     def __init__(self, lim):
         self.sharedRatio = multiprocessing.Value("d", 0.0)
-        self.pusher: GPush = GPush(ratio=self.sharedRatio)
-        self.sampler: Sampler = Sampler(ratio=self.sharedRatio, lim=lim)
+        self.bad8111Exit = multiprocessing.Event()
+        self.pusher: GPush = GPush(ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit)
+        self.sampler: Sampler = Sampler(
+            ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit, lim=lim
+        )
 
     def setOn(self):
+        self.bad8111Exit.clear()
         self.pusher.go()
         self.sampler.go()
 
