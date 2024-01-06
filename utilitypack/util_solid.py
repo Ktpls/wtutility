@@ -311,23 +311,47 @@ class StoppableThread(StoppableSomewhat):
         return self.stopsignal
 
 
-class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
+class StoppableProcess(StoppableSomewhat):
+    class StoppableOnlyOnceProcess(multiprocessing.Process):
+        def __init__(self, sp: "StoppableProcess") -> None:
+            multiprocessing.Process.__init__(self)
+            self.sp = sp  # read only. cuz cant write
+
+        # override
+        def run(self, *args, **kwargs):
+            try:
+                result = self.sp.foo(*args, **kwargs)
+            except Exception as e:
+                if (
+                    self.sp.strategy_on_error
+                    == StoppableThread.Strategy_Error.raise_error
+                ):
+                    raise e
+                elif (
+                    self.sp.strategy_on_error
+                    == StoppableThread.Strategy_Error.print_error
+                ):
+                    traceback.print_exc()
+                elif self.sp.strategy_on_error == StoppableThread.Strategy_Error.ignore:
+                    pass
+            return result
+
     def __init__(
         self,
         strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
         strategy_error: "StoppableThread.Strategy_Error" = None,
     ):
-        multiprocessing.Process.__init__(self)
         StoppableSomewhat.__init__(self, strategy_runonrunning, strategy_error)
         self._stop_event = multiprocessing.Event()
         self.result = None
+        self.submit: "StoppableProcess.StoppableOnlyOnceProcess" = None
 
     def foo(self):
         # This is a placeholder for the method to be overridden by the inherited class
         pass
 
     def isRunning(self) -> bool:
-        return self.is_alive()
+        return self.submit is not None and self.submit.is_alive()
 
     @FunctionalWrapper
     def go(self, *args, **kwargs):
@@ -347,28 +371,20 @@ class StoppableProcess(StoppableSomewhat, multiprocessing.Process):
                 == StoppableThread.Strategy_RunOnRunning.skip_and_return
             ):
                 return
-        self.arg = args, kwargs
-        self.start()
+        self._stop_event.clear()
+        self.submit = self.StoppableOnlyOnceProcess(self)
+        self.submit.start(*args, **kwargs)
 
     def stop(self):
+        if not self.isRunning():
+            return
         self._stop_event.set()
-        self.join()
+        self.submit.join()
+        # self.result=...
+        self.submit = None
 
     def timeToStop(self) -> bool:
         return self._stop_event.is_set()
-
-    # override
-    def run(self):
-        args, kwargs = self.arg
-        try:
-            self.result = self.foo(*args, **kwargs)
-        except Exception as e:
-            if self.strategy_on_error == StoppableThread.Strategy_Error.raise_error:
-                raise e
-            elif self.strategy_on_error == StoppableThread.Strategy_Error.print_error:
-                traceback.print_exc()
-            elif self.strategy_on_error == StoppableThread.Strategy_Error.ignore:
-                pass
 
 
 def ReadFile(path):
@@ -1245,9 +1261,9 @@ class expparser:
     }
 
 
-def sleepuntil(con: typing.Callable, dt=0.1):
+def sleepuntil(con: typing.Callable, dt=0.1, sleepImpl=time.sleep):
     while not con():
-        time.sleep(dt)
+        sleepImpl(dt)
 
 
 class perf_statistic:
@@ -1299,6 +1315,7 @@ class fpsmanager:
         sleepuntil(
             lambda: time.perf_counter() - self.lt > self.frametime,
             dt=0.5 * self.frametime,
+            sleepImpl=PreciseSleep,
         )
         self.SetToNextFrame()
 
@@ -1534,17 +1551,13 @@ class AccessibleQueue:
         self.push(val)
 
     def resize(self, newsize):
-        if newsize < self._maxsize:
+        if newsize < self._cursize:
             raise AccessibleQueue.AQException("newsize too small")
-        self._q.extend([None] * (newsize - self._maxsize))
-        if self._sptr > self._eptr or self.isFull():
-            # data at both end points
-            newsptr = newsize - (self._maxsize - self._sptr)
-            self._q[newsptr:] = self._q[self._sptr : self._maxsize]
-            self._sptr = newsptr
-        elif self._sptr < self._eptr:
-            # data within two ptrs
-            pass
+        # guess resizing list will realloc anyway
+        l2 = list([None] * newsize)
+        for i in range(self._cursize):
+            l2[i] = self[i]
+        self._q = l2
 
         self._maxsize = newsize
 

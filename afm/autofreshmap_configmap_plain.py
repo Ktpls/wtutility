@@ -20,6 +20,7 @@ highSurvivablity = [
     "Pradesh",
     "RedDesert",
     "Sinai",
+    "SandsOfSinai",
     "SandsOfTunisia",
     "SecondBattleOfElAlamein",
     "Tunisia",
@@ -38,7 +39,7 @@ specialmapdetectors = {
         # B, or C or battle mode at any side
         # ignoring point type
         # have no shelter in battle mode with spawn at bottom
-        foo="ret(detectMapShape() and not (selectPoint('redA') and spawnAround([244, 542])))",
+        foo="ret(detectMapShape() and not (singlePoint([102, 293]) and spawnAround([244, 542])))",
     ),
     "FrozenPass": MapDetector(
         map="FrozenPass",

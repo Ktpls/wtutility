@@ -224,7 +224,7 @@ def main():
             def foo(self, *args, **kwargs):
                 bulletin.putup("launching series")
                 interval = 0.099
-                num = 29+3
+                num = 29 + 3
                 keyshortcut.keydown(keycode.key_LeftControl)
                 for i in range(num):
                     if self.timeToStop():
@@ -255,7 +255,12 @@ def main():
             win32con.VK_DOWN,
             win32con.VK_RIGHT,
         ]
-        direction = ["up", "left", "down", "right"]
+        direction = [
+            keyshortcut.MoveMouseDirection.up,
+            keyshortcut.MoveMouseDirection.left,
+            keyshortcut.MoveMouseDirection.down,
+            keyshortcut.MoveMouseDirection.right,
+        ]
         kd = zip(keylist, direction)
         for pair in kd:
             hotkeyaction.append(
@@ -299,14 +304,24 @@ def main():
         print("glock activated")
         import glock.glock as glock
 
-        agl = glock.GLock(2)
+        gl = glock.GLock(5)
 
-        def glBuzWrap():
-            isCtrling, duration = agl.business()
-            if isCtrling:
-                bulletin.putup(bulletinBoard.Poster(f"glock", 0.2))
+        def glTestBuz():
+            if gl.isRunning():
+                bulletin.putup(bulletinBoard.Poster("glock stopping"))
+                gl.setOff()
+                bulletin.putup(bulletinBoard.Poster("glock stopped"))
+            else:
+                gl.setOn()
+                bulletin.putup(bulletinBoard.Poster("glock started"))
 
-        business.append(glBuzWrap)
+        hotkeyaction.append(
+            HotkeyManager.hotkeytask(
+                key=[win32con.VK_RSHIFT, win32con.VK_F9], foo=glTestBuz
+            )
+        )
+
+        # business.append(printRunning)
 
     def rebootfoo():
         hud.stop()

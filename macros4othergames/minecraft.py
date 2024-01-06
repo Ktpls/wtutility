@@ -20,6 +20,33 @@ def main():
     print("keyshortcut activated")
     import keyshortcut.keyshortcut as keyshortcut
 
+    K_HoldLeft = [win32con.VK_CONTROL, win32con.VK_F10]
+    print("HoldLeft")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_HoldLeft))
+
+    K_HoldW = [[win32con.VK_MENU, ord("W")]]
+    print("HoldW")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_HoldW))
+
+    K_JumpHorse = [[win32con.VK_CONTROL, ord("J")]]
+    print("JumpHorse")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_JumpHorse))
+
+    K_TakeOff = [[win32con.VK_CONTROL, ord("G")]]
+    print("JumpHorse")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_JumpHorse))
+
+    K_Reboot = [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12]
+    print("Reboot")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_Reboot))
+
+    K_HKEnable = [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11]
+    print("HKEnable")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_HKEnable))
+
+    print("MoveMouse")
+    print("Ctrl+UpDownLeftRight")
+
     hotkeySwitch = True
 
     def WrapperHotkeySwitch(f):
@@ -37,11 +64,7 @@ def main():
         keyshortcut.mouse.down(0)
         bulletin.putup(bulletinBoard.Poster("leftHolding", 1))
 
-    hotkeyaction.append(
-        HotkeyManager.hotkeytask(
-            key=[win32con.VK_CONTROL, win32con.VK_F10], foo=holdLeftAndTell
-        )
-    )
+    hotkeyaction.append(HotkeyManager.hotkeytask(key=K_HoldLeft, foo=holdLeftAndTell))
 
     class holdWAndTell(StoppableThread):
         @WrapperHotkeySwitch
@@ -53,7 +76,7 @@ def main():
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_MENU, ord("W")]],
+            key=K_HoldW,
             foo=lambda: holdWAndTell(pool=threadpool).go(),
         )
     )
@@ -68,7 +91,7 @@ def main():
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL, ord("J")]],
+            key=K_JumpHorse,
             foo=lambda: bestJumpOnHorse(pool=threadpool).go(),
         )
     )
@@ -86,7 +109,7 @@ def main():
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[[win32con.VK_CONTROL, ord("G")]],
+            key=K_TakeOff,
             foo=lambda: takeOff(pool=threadpool).go(),
         )
     )
@@ -97,7 +120,12 @@ def main():
         win32con.VK_DOWN,
         win32con.VK_RIGHT,
     ]
-    direction = ["up", "left", "down", "right"]
+    direction = [
+        keyshortcut.MoveMouseDirection.up,
+        keyshortcut.MoveMouseDirection.left,
+        keyshortcut.MoveMouseDirection.down,
+        keyshortcut.MoveMouseDirection.right,
+    ]
     kd = zip(keylist, direction)
 
     @WrapperHotkeySwitch
@@ -120,11 +148,7 @@ def main():
         RythmReboot.play()
         sys.exit()
 
-    hotkeyaction.append(
-        HotkeyManager.hotkeytask(
-            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12], foo=rebootfoo
-        )
-    )
+    hotkeyaction.append(HotkeyManager.hotkeytask(key=K_Reboot, foo=rebootfoo))
 
     def taskSwitch():
         nonlocal hotkeySwitch
@@ -136,7 +160,7 @@ def main():
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(
-            key=[win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11],
+            key=K_HKEnable,
             foo=taskSwitch,
         )
     )

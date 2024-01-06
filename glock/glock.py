@@ -1,29 +1,42 @@
 from concurrent.futures import ThreadPoolExecutor
-from re import T
-from tkinter import NO
-
-from flask.scaffold import F
 from utilitypack.util_solid import StoppableThread
 from utilitypack.util_wt import *
 import keyshortcut.gameinput as gameinput
 
 
+class Reporter:
+    def __init__(self, interval, reportBusiness) -> None:
+        self.t0 = time.perf_counter()
+        self.interval = interval
+        self.reportBusiness = reportBusiness
+
+    def update(self):
+        tnow = time.perf_counter()
+        if tnow - self.t0 > self.interval:
+            self.reportBusiness()
+            self.t0 = tnow
+
+
 class GPush(StoppableProcess):
     ratio: float
-    disabled = None
+    disabled = -1
 
-    def __init__(self) -> None:
-        self.ratio = 0
+    def __init__(self, ratio: multiprocessing.Value) -> None:
+        self.ratio = ratio
         super().__init__(
             strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.skip_and_return,
         )
 
     def foo(self):
-        period = 0.2
-        lastoutputtime = time.perf_counter()
+        def report():
+            print(f"ratio: {self.ratio.value}")
+
+        reporter = Reporter(5, report)
+        period = 0.05
         while not self.timeToStop():
-            ratio = self.ratio
-            if ratio == GPush.disabled:
+            ratio = self.ratio.value
+            if ratio < 0:
+                # diabled
                 PreciseSleep(period)
                 continue
             if ratio > 1:
@@ -33,84 +46,114 @@ class GPush(StoppableProcess):
             topush = ratio * period
             torelax = (1 - ratio) * period
             gameinput.hold(gameinput.keycode.key_S, topush)
+            RythmNotify.play()
+            # PreciseSleep(topush)
             PreciseSleep(torelax)
-            # nowtime = time.perf_counter()
-            # if nowtime - lastoutputtime > 5:
-            #     lastoutputtime = nowtime
-            #     RythmNotify.play()
+            reporter.update()
 
     def config(self, ratio):
         self.ratio = ratio
 
 
-class Sampler(StoppableThread):
-    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+class SepDerivativer:
+    def __init__(self, val0, t0):
+        self.val0 = val0
+        self.t0 = t0
+
+    def update(self, v, t):
+        ret = (v - self.val0) / (t - self.t0)
+        self.val0 = v
+        self.t0 = t
+        return ret
+
+
+class Sampler(StoppableProcess):
+    def __init__(self, ratio: multiprocessing.Value, lim: float) -> None:
         super().__init__(
             StoppableThread.Strategy_RunOnRunning.skip_and_return,
-            StoppableThread.Strategy_Error.ignore,
-            pool,
+            StoppableThread.Strategy_Error.print_error,
         )
+        self.ratio = ratio
+        self.lim = lim
+        self.controller = PIDController(kp=1 / 7, ki=0, kd=0.0)
+        self.oolf = OneOrderLinearFilter(1, 0)
+        self.fps = fpsmanager(20)
+
         state = Port8111.get(Port8111.QueryType.state)
         if state is None or state.valid is False:
-            self.lastEnergy = 0
+            energyNow = 0
         else:
-            self.lastEnergy = self.__calcEnerge(state.H.value, state.TAS.value)
-        self.lastFreshTime = time.perf_counter()
-
-        self.oolf = OneOrderLinearFilter(1, 0)
-        self.g = 0
-        self.aoa = 0
-        self.sep = 0
+            energyNow = self.__calcEnerge(state.H.value, state.TAS.value)
+        self.sepderi = SepDerivativer(energyNow, time.perf_counter())
+        # self.ps = perf_statistic(startnow=False)
 
     def foo(self):
-        period = 0.1
         while not self.timeToStop():
+            self.fps.WaitUntilNextFrame()
             self.sampleNow()
-            sleep(period)
+        # print(self.ps.aveTime())
 
     def sampleNow(self):
-        state = Port8111.get(Port8111.QueryType.state)
+        """
+        request.get always return until the last millisecond before time out
+        """
+        state = Port8111.get(Port8111.QueryType.state, timeout=0.1)
         if state is None or state.valid is False:
             return False, 0
-        timeNow = time.perf_counter()
-        if state.Ny is None:
-            breakpoint()
+        # if state.Ny is None:
+        #     breakpoint()
+
+        sep = self.sepderi.update(
+            self.__calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
+        )
         g = state.Ny.value
         aoa = state.AoA.value
-        energyNow = self.__calcEnerge(state.H.value, state.TAS.value)
-        sep = (energyNow - self.lastEnergy) / (timeNow - self.lastFreshTime)
-        self.lastEnergy = energyNow
-        self.lastFreshTime = timeNow
 
-        g = self.oolf.update(g)
-
-        self.g = g
-        self.aoa = aoa
-        self.sep = sep
+        index = self.oolf.update(g)
+        err = ReLU(index - self.lim)
+        ctrl = self.controller.update(err)
+        if ctrl > 1:
+            ctrl = 1
+        if err > 0:
+            self.ratio.value = ctrl
+            return True, ctrl
+        else:
+            self.ratio.value = GPush.disabled
+            return False, 0
 
     def __calcEnerge(self, h, tas):
         return h * 9.8 + 0.5 * tas**2
 
 
 class GLock:
-    def __init__(self, lim, pool=None):
-        self.lim = lim
-        self.controller = PIDController(kp=0.9, ki=0, kd=0.0)
-        self.pusher: GPush = GPush().go()
-        self.sampler: Sampler = Sampler(pool=pool).go()
+    def __init__(self, lim):
+        self.sharedRatio = multiprocessing.Value("d", 0.0)
+        self.pusher: GPush = GPush(ratio=self.sharedRatio)
+        self.sampler: Sampler = Sampler(ratio=self.sharedRatio, lim=lim)
 
-    def business(self):
-        index = self.sampler.g
+    def setOn(self):
+        self.pusher.go()
+        self.sampler.go()
 
-        err = ReLU(index - self.lim)
-        ctrl = self.controller.update(err)
-        if ctrl > 1:
-            ctrl = 1
-        if err > 0:
-            # push negative g
-            self.pusher.config(ctrl)
-            # gameinput.hold(gameinput.keycode.key_S, ctrl)
-            return True, ctrl
-        else:
-            self.pusher.config(GPush.disabled)
-            return False, 0
+    def setOff(self):
+        self.pusher.stop()
+        self.sampler.stop()
+
+    def isRunning(self):
+        return self.pusher.isRunning() and self.sampler.isRunning()
+
+
+class Puller(StoppableProcess):
+    def __init__(self) -> None:
+        super().__init__(
+            strategy_runonrunning=StoppableSomewhat.Strategy_RunOnRunning.skip_and_return,
+        )
+
+    def foo(self):
+        ratio = 0.5
+        period = 0.1
+        while not self.timeToStop():
+            ontime = ratio * period
+            offtime = (1 - ratio) * period
+            gameinput.hold(gameinput.keycode.key_W, ontime)
+            PreciseSleep(offtime)

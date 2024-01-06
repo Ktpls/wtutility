@@ -293,6 +293,53 @@ def isKBDownNow(k):
     return win32api.GetAsyncKeyState(k) and 0x8000
 
 
+class TranslateHotKey:
+    dct = {
+        win32con.VK_CONTROL: "Ctrl",
+        win32con.VK_SHIFT: "Shift",
+        win32con.VK_MENU: "Alt",
+        win32con.VK_RCONTROL: "RCtrl",
+        win32con.VK_RSHIFT: "RShift",
+        win32con.VK_RMENU: "RAlt",
+        win32con.VK_LCONTROL: "LCtrl",
+        win32con.VK_LSHIFT: "LShift",
+        win32con.VK_LMENU: "LAlt",
+        win32con.VK_BACK: "Backspace",
+        win32con.VK_RETURN: "Enter",
+        win32con.VK_ESCAPE: "Esc",
+        win32con.VK_SPACE: "Space",
+        win32con.VK_TAB: "Tab",
+        win32con.VK_F1: "F1",
+        win32con.VK_F2: "F2",
+        win32con.VK_F3: "F3",
+        win32con.VK_F4: "F4",
+        win32con.VK_F5: "F5",
+        win32con.VK_F6: "F6",
+        win32con.VK_F7: "F7",
+        win32con.VK_F8: "F8",
+        win32con.VK_F9: "F9",
+        win32con.VK_F10: "F10",
+        win32con.VK_F11: "F11",
+        win32con.VK_F12: "F12",
+        win32con.VK_NUMPAD0: "Numpad0",
+        win32con.VK_NUMPAD1: "Numpad1",
+        win32con.VK_NUMPAD2: "Numpad2",
+        win32con.VK_NUMPAD3: "Numpad3",
+        win32con.VK_NUMPAD4: "Numpad4",
+        win32con.VK_NUMPAD5: "Numpad5",
+        win32con.VK_NUMPAD6: "Numpad6",
+        win32con.VK_NUMPAD7: "Numpad7",
+        win32con.VK_NUMPAD8: "Numpad8",
+        win32con.VK_NUMPAD9: "Numpad9",
+    }
+
+    @staticmethod
+    def __call__(k):
+        if chr(k).isalnum():
+            return chr(k)
+        return TranslateHotKey.dct.get(k, k)
+
+
 class HotkeyManager:
     """
     to piorer ctrl+c than c
@@ -330,12 +377,7 @@ class HotkeyManager:
             foo: typing.Callable[[], None],
             continiousPress: bool = False,
         ) -> None:
-            if not isinstance(key, typing.Iterable):
-                self.key = [[key]]
-            elif not isinstance(key[0], typing.Iterable):
-                self.key = [key]
-            else:
-                self.key = key
+            self.key = HotkeyManager.hotkeytask.formalize_key_param(key)
             # self.key is like [keyset1=[key1, key2], keyset2=[key3, key4]]
             self.foo = foo
             self.continiousPress = continiousPress
@@ -346,6 +388,32 @@ class HotkeyManager:
                 else ListEq(self.key[0], self.key[-1])
                 for i, k in enumerate(self.key)
             ]
+
+        @staticmethod
+        def formalize_key_param(key):
+            if not isinstance(key, typing.Iterable):
+                key = [[key]]
+            elif not isinstance(key[0], typing.Iterable):
+                key = [key]
+            else:
+                key = key
+            return key
+
+        @staticmethod
+        def getKeyRepr(key):
+            key = HotkeyManager.hotkeytask.formalize_key_param(key)
+            if len(key) == 1:
+                # only one stage
+                return " + ".join([TranslateHotKey()(k) for k in key[0]])
+            else:
+                return "\n".join(
+                    [
+                        [
+                            f"Stage {i}: {' + '.join([TranslateHotKey()(k) for k in ks])}"
+                            for i, ks in enumerate(key)
+                        ]
+                    ]
+                )
 
         def tryRespond(self, respond: bool, anyRespondingExceptThis: bool) -> bool:
             """
