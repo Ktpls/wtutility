@@ -2,7 +2,7 @@ usingwtdistmeaspy = False
 usingtelescope = usingwtdistmeaspy
 usingkeyshortcut = True
 usingeagleeye = False
-usingglock = True
+usingglock = False
 
 throwErrorInBus = False
 throwErrorInHotkey = False

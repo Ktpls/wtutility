@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableThread
 from utilitypack.util_wt import *
 import keyshortcut.gameinput as gameinput
-
+from glock_config import *
 
 class Reporter:
     def __init__(self, interval, reportBusiness) -> None:
@@ -43,7 +43,8 @@ class GPush(StoppableProcess):
         def report():
             if not GPush.isZero(ratio):
                 RythmNotify.play()
-            print(f"ratio: {self.ratio.value}")
+            if print_ctrl_ratio:
+                print(f"ratio: {self.ratio.value}")
 
         reporter = Reporter(5, report)
         period = 0.05
@@ -126,11 +127,11 @@ class Sampler(StoppableProcess):
             # if state.Ny is None:
             #     breakpoint()
 
-            sep = sepderi.update(
-                calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
-            )
+            # sep = sepderi.update(
+            #     calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
+            # )
             g = state.Ny.value
-            aoa = state.AoA.value
+            # aoa = state.AoA.value
 
             index = g
             index = oolf.update(index)
@@ -151,12 +152,12 @@ class Sampler(StoppableProcess):
 
 
 class GLock:
-    def __init__(self, lim):
+    def __init__(self):
         self.sharedRatio = multiprocessing.Value("d", 0.0)
         self.bad8111Exit = multiprocessing.Event()
         self.pusher: GPush = GPush(ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit)
         self.sampler: Sampler = Sampler(
-            ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit, lim=lim
+            ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit, lim=glim
         )
 
     def setOn(self):
