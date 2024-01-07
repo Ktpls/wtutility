@@ -16,7 +16,8 @@ import traceback
 import typing
 import inspect
 import multiprocessing
-
+from datetime import datetime
+import copy
 """
 solid
 """
@@ -332,7 +333,8 @@ class StoppableProcess(StoppableSomewhat):
                     traceback.print_exc()
                 elif self.sp.strategy_on_error == StoppableThread.Strategy_Error.ignore:
                     pass
-            return result
+            # cant return result now
+            # return result
 
     def __init__(
         self,
@@ -438,7 +440,7 @@ class Pipe:
 
 
 def GetTimeString():
-    return time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+    return datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
 
 
 class Progress:
@@ -1384,11 +1386,21 @@ def WrapperOfMultiLineText(s):
 
 @dataclasses.dataclass
 class PIDController:
+    @dataclasses.dataclass
+    class AnalizerFrameData:
+        partp: float
+        parti: float
+        partd: float
+        error: float
+        integral: float
+        derivative: float
+
     kp: float
     ki: float
     kd: float
     integralLimitMin: float = None
     integralLimitMax: float = None
+    analizerMode: bool = False
     last_error: float = dataclasses.field(default=0, init=False)
     integral: float = dataclasses.field(default=0, init=False)
 
@@ -1401,7 +1413,17 @@ class PIDController:
         derivative = (error - self.last_error) / dt
         output = self.kp * error + self.ki * self.integral + self.kd * derivative
         self.last_error = error
-        return output
+        if self.analizerMode:
+            return output, self.AnalizerFrameData(
+                partp=self.kp * error,
+                parti=self.ki * self.integral,
+                partd=self.kd * derivative,
+                error=error,
+                integral=self.integral,
+                derivative=derivative,
+            )
+        else:
+            return output
 
 
 class OneOrderLinearFilter:

@@ -335,7 +335,7 @@ class TranslateHotKey:
 
     @staticmethod
     def __call__(k):
-        if chr(k).isalnum():
+        if (k >= ord("A") and k <= ord("Z")) or (k >= ord("0") and k <= ord("9")):
             return chr(k)
         return TranslateHotKey.dct.get(k, k)
 
@@ -344,6 +344,9 @@ class HotkeyManager:
     """
     to piorer ctrl+c than c
     responde no c after doing ctrl+c
+    key is given by win32con.VK_*,
+        for letters, use ord([letter's UPPER case])
+        for numbers, use ord([number])
     issue:
     1. ctrl+a,ctrl+a and ctrl+a,ctrl+s
         fastly press ctrl+a, and ctrl+s, could cause slightly overlap whose key state is [ctrl,a,s] physically
@@ -707,8 +710,12 @@ def save_list_to_xls(data_list, filename, sheetname=None):
         ws = wb.create_sheet(sheetname)
 
     # Iterate over the list and write each item to a new row
-    for row, item in enumerate(data_list):
-        ws.cell(row=row + 1, column=1, value=item)
+    for row, rowcontent in enumerate(data_list):
+        # formalize format
+        if not isinstance(rowcontent, (list, tuple)):
+            rowcontent = [rowcontent]
+        for col, item in enumerate(rowcontent):
+            ws.cell(row=row + 1, column=col + 1, value=item)
 
     # Save the workbook to the specified filename
     wb.save(filename)

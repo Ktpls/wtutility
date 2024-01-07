@@ -33,8 +33,8 @@ def main():
     print(HotkeyManager.hotkeytask.getKeyRepr(K_JumpHorse))
 
     K_TakeOff = [[win32con.VK_CONTROL, ord("G")]]
-    print("JumpHorse")
-    print(HotkeyManager.hotkeytask.getKeyRepr(K_JumpHorse))
+    print("TakeOff")
+    print(HotkeyManager.hotkeytask.getKeyRepr(K_TakeOff))
 
     K_Reboot = [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12]
     print("Reboot")

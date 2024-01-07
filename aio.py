@@ -304,7 +304,7 @@ def main():
         print("glock activated")
         import glock.glock as glock
 
-        gl = glock.GLock(6)
+        gl = glock.GLock()
 
         def glTestBuz():
             if gl.isRunning():

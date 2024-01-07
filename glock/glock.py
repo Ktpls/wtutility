@@ -2,7 +2,8 @@ from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableThread
 from utilitypack.util_wt import *
 import keyshortcut.gameinput as gameinput
-from glock_config import *
+from .glock_config import *
+
 
 class Reporter:
     def __init__(self, interval, reportBusiness) -> None:
@@ -94,16 +95,19 @@ class Sampler(StoppableProcess):
         self.lim = lim
 
     def foo(self):
-        fullPushExceed = 13 - self.lim
+        GMax = 13
+        pushMax = (self.lim - GMax) * (-0.5) / (GMax - 1)
+        fullPushExceed = GMax - self.lim
         controller = PIDController(
-            kp=0.1 * 1 / fullPushExceed,
-            ki=1 / fullPushExceed,
-            kd=0.1 * 1 / fullPushExceed,
+            kp=0.2 * 1 / fullPushExceed,
+            ki=0.5 / fullPushExceed,
+            kd=0.05 * 1 / fullPushExceed,
             integralLimitMax=0,
             integralLimitMin=-fullPushExceed,
+            # analizerMode=True,
         )
-        oolf = OneOrderLinearFilter(1, 0)
-        fps = fpsmanager(20)
+        oolf = OneOrderLinearFilter(0, 0)
+        fps = fpsmanager(10)
 
         def calcEnerge(h, tas):
             return h * 9.8 + 0.5 * tas**2
@@ -114,7 +118,9 @@ class Sampler(StoppableProcess):
         else:
             energyNow = calcEnerge(state.H.value, state.TAS.value)
         sepderi = SepDerivativer(energyNow, time.perf_counter())
-        ps = perf_statistic(startnow=True)
+        ps4pid = perf_statistic(startnow=True)
+        # dc = []
+        ps4dctime = perf_statistic(startnow=True)
         while not self.timeToStop():
             fps.WaitUntilNextFrame(sleepImpl=PreciseSleep)
             """
@@ -136,9 +142,9 @@ class Sampler(StoppableProcess):
             index = g
             index = oolf.update(index)
             # allow negative error to clear intergraled error
-            ctrl = controller.update(self.lim - index, ps.time())
-            ps.clear().start()
-
+            # ctrl, an = controller.update(self.lim - index, ps4pid.time())
+            ctrl = controller.update(self.lim - index, ps4pid.time())
+            ps4pid.clear().start()
             # ctrl in negative, since its pushing.
             if ctrl < -1:
                 # max pushing rate is 1.
@@ -149,6 +155,38 @@ class Sampler(StoppableProcess):
             else:
                 # smooth controlling
                 self.ratio.value = abs(ctrl)
+        #     dc.append(
+        #         copy.deepcopy(
+        #             (
+        #                 ps4dctime.time(),
+        #                 -index / 10,
+        #                 ctrl,
+        #                 an.partp,
+        #                 an.parti,
+        #                 an.partd,
+        #                 an.error,
+        #                 an.integral,
+        #                 an.derivative,
+        #             )
+        #         )
+        #     )
+        # save_list_to_xls(
+        #     [
+        #         (
+        #             "t",
+        #             "index",
+        #             "ctrl",
+        #             "partP",
+        #             "partI",
+        #             "partD",
+        #             "error",
+        #             "integral",
+        #             "derivative",
+        #         )
+        #     ]
+        #     + dc,
+        #     f"glock_dc_{GetTimeString()}.xlsx",
+        # )
 
 
 class GLock:

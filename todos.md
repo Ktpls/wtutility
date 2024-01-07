@@ -11,6 +11,7 @@
 *为planetrack thresh之后的图片高斯模糊，再thresh，好像降低了被干扰率*
 ##planetracker因为未知原因在dell上截不了wt的图，所以用不了了
 ##动目标指示
+##考虑记忆目标光学特征以辅助过滤，就像9x记特征一样
 
 #AutoFreshMap
 ##kurban总是误判

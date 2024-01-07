@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "C:/Users/KITA/Desktop/PortNovorossiyskBattle#1.png"
+            ]
+        },
+        {
             "name": "Python: AFM",
             "type": "python",
             "request": "launch",
@@ -26,16 +38,6 @@
             "program": "${cwd}/Opdar/Opdar.py",
             "console": "integratedTerminal",
             "justMyCode": false
-        },
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "cwd": "${workspaceFolder}",
-            "args": ["C:/Users/KITA/Desktop/PortNovorossiyskBattle#1.png"]
         }
     ]
 }
