@@ -21,9 +21,6 @@ def main():
     print("keyshortcut activated")
     import keyshortcut.keyshortcut as keyshortcut
 
-    def splitLine():
-        print("#" * 10)
-
     @WrapperAsMyTaste()
     def RegisterHotkey(foo, prompt, key, continiousPress=None):
         print(f"{prompt:<15}{HotkeyManager.hotkeytask.getKeyRepr(key)}")
