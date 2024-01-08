@@ -335,6 +335,7 @@ class TranslateHotKey:
         win32con.VK_LEFT: "Left",
         win32con.VK_DOWN: "Down",
         win32con.VK_RIGHT: "Right",
+        0xC0: "~",
     }
 
     @staticmethod
