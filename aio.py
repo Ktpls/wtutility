@@ -343,14 +343,6 @@ def main():
                 if throwErrorInBus:
                     raise e
 
-        # show bulletin
-        hud.writecontent(
-            np.flip(bulletinoutputpos),
-            aPicWithTextWithPil(bulletin.read(), maxsize=[400, 700], lineinterval=0),
-        )
-
-        hud.update()
-
 
 if __name__ == "__main__":
     main()
