@@ -18,6 +18,7 @@ import inspect
 import multiprocessing
 from datetime import datetime
 import copy
+
 """
 solid
 """
@@ -236,8 +237,8 @@ class StoppableThread(StoppableSomewhat):
 
     def __init__(
         self,
-        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
-        strategy_error: "StoppableThread.Strategy_Error" = None,
+        strategy_runonrunning: "StoppableSomewhat.Strategy_RunOnRunning" = None,
+        strategy_error: "StoppableSomewhat.Strategy_Error" = None,
         pool: ThreadPoolExecutor = None,
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
@@ -1700,3 +1701,53 @@ def AllOptionalInit(clz):
 
     clz.__init__ = initNone
     return clz
+
+
+def WrapperAsMyTaste():
+    """
+    use like this
+        @WrapperAsMyTaste()
+        def myWrapper(f, some_arg_your_wrapper_needs):
+            ...
+        @myWrapper([arg_for_wrapper])
+        def RealFunc(func_arg):
+            ...
+    note that this is forbiden:
+        @myWrapper
+        def RealFunc(func_arg):
+            ...
+    use if no arg for myWrapper
+        @myWrapper()
+        def RealFunc(func_arg):
+            ...
+    
+    ###############
+    note that python design is piece of shlt
+    ###############
+    """
+
+    def toGetWrapperLogic(wrapperLogic):
+        def newWrapper(*arg, **kw):
+            def toGetFLogic(fLogic):
+                return wrapperLogic(fLogic, *arg, **kw)
+
+            return toGetFLogic
+
+        return newWrapper
+
+    return toGetWrapperLogic
+
+@WrapperAsMyTaste()
+def AsyncTimeCostlyProcess(f, pool=None):
+    class Thread4LongScript(StoppableThread):
+        def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+            super().__init__(
+                strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
+                strategy_error=StoppableThread.Strategy_Error.print_error,
+                pool=pool,
+            )
+
+        def foo(self, *arg, **kw) -> None:
+            f(*arg, **kw)
+
+    return lambda: Thread4LongScript(pool=pool).go()

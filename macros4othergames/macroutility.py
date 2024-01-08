@@ -1,41 +1,46 @@
-from utilref import fpsmanager, HotkeyManager, deduplicate
-from gameinput import *
+from utilref import *
+from keyshortcut.gameinput import *
 from time import sleep
 import traceback
+import win32process
 
 
-def mainloop(fps, hotkeyactionlist):
+def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
     fps = fpsmanager(fps)
-    #main loop
+    # main loop
     hkm = HotkeyManager(hotkeyactionlist)
 
-    while (True):
+    while True:
         fps.WaitUntilNextFrame()
-        hkm.doAllDecidedKey(hkm.decideAllHotKey(), throwonerr=True)
+        decideresult = hkm.decideAllHotKey()
+        try:
+            hkm.doAllDecidedKey(decideresult, True, False)
+        except SystemExit as e:
+            raise e
+        except Exception as e:
+            RythmError.play()
+            print("#" * 10)
+            traceback.print_exc()
+            print("#" * 10)
 
-
-
-def BeepErr():
-    win32api.Beep(1000, 2000)
-
-
-def BeepOk():
-    win32api.Beep(1000, 500)
-
-
-def BeepCancel():
-    win32api.Beep(500, 500)
+        for bus in businesslist:
+            try:
+                bus()
+            except Exception as e:
+                RythmError.play()
+                print("#" * 10)
+                traceback.print_exc()
+                print("#" * 10)
 
 
 def AllTheWayOnErr(msg):
-    BeepErr()
+    RythmError.play()
     print(msg)
-    os.system('pause')
+    os.system("pause")
     exit()
 
 
 class ExecutableCommand:
-
     def __init__(self, ptr, cmd, hproc) -> None:
         self.ptr = ptr
         self.cmd = cmd
@@ -48,45 +53,48 @@ class ExecutableCommand:
     @staticmethod
     def from_ptr_len(ptr, len, hproc):
         return ExecutableCommand(
-            ptr, win32process.ReadProcessMemory(hproc, ptr, len), hproc)
+            ptr, win32process.ReadProcessMemory(hproc, ptr, len), hproc
+        )
 
     def TestNop(self):
-        buf = win32process.ReadProcessMemory(self.hproc, self.ptr,
-                                             len(self.cmd))
+        buf = win32process.ReadProcessMemory(self.hproc, self.ptr, len(self.cmd))
         return all([b == 0x90 for b in buf])
 
     def SetNop(self):
-        windll.kernel32.WriteProcessMemory(c_uint64(self.hproc.handle),
-                                           c_uint64(self.ptr),
-                                           c_buffer(b'\x90' * len(self.cmd)),
-                                           c_uint64(len(self.cmd)),
-                                           c_uint64(0))
+        windll.kernel32.WriteProcessMemory(
+            ctypes.c_uint64(self.hproc.handle),
+            ctypes.c_uint64(self.ptr),
+            ctypes.c_buffer(b"\x90" * len(self.cmd)),
+            ctypes.c_uint64(len(self.cmd)),
+            ctypes.c_uint64(0),
+        )
 
     def SetCmd(self):
-        windll.kernel32.WriteProcessMemory(c_uint64(self.hproc.handle),
-                                           c_uint64(self.ptr),
-                                           c_buffer(self.cmd),
-                                           c_uint64(len(self.cmd)),
-                                           c_uint64(0))
+        windll.kernel32.WriteProcessMemory(
+            ctypes.c_uint64(self.hproc.handle),
+            ctypes.c_uint64(self.ptr),
+            ctypes.c_buffer(self.cmd),
+            ctypes.c_uint64(len(self.cmd)),
+            ctypes.c_uint64(0),
+        )
 
     def autoSwitch(self):
         if self.TestNop():
             self.SetCmd()
-            BeepCancel()
+            RythmCancel.play()
         else:
             self.SetNop()
-            BeepOk()
+            RythmGoodNotify.play()
 
 
 class KeyPressRepeater(StoppableThread):
-
     def __init__(self, key, peroid) -> None:
         super().__init__()
         self.key = key
         self.peroid = peroid
 
     def foo(self):
-        while (self.getRunning()):
+        while self.getRunning():
             key_down(self.key)
             time.sleep(0.01)
             key_up(self.key)
@@ -95,7 +103,7 @@ class KeyPressRepeater(StoppableThread):
     def autoSwitch(self):
         if not self.getRunning():
             self.go()
-            BeepOk()
+            RythmGoodNotify.play()
         else:
             self.stop()
-            BeepCancel()
+            RythmCancel.play()

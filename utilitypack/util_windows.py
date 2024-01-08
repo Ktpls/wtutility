@@ -331,13 +331,18 @@ class TranslateHotKey:
         win32con.VK_NUMPAD7: "Numpad7",
         win32con.VK_NUMPAD8: "Numpad8",
         win32con.VK_NUMPAD9: "Numpad9",
+        win32con.VK_UP: "Up",
+        win32con.VK_LEFT: "Left",
+        win32con.VK_DOWN: "Down",
+        win32con.VK_RIGHT: "Right",
     }
 
     @staticmethod
     def __call__(k):
         if (k >= ord("A") and k <= ord("Z")) or (k >= ord("0") and k <= ord("9")):
             return chr(k)
-        return TranslateHotKey.dct.get(k, k)
+        assert k in TranslateHotKey.dct, "unknown key"
+        return TranslateHotKey.dct[k]
 
 
 class HotkeyManager:
@@ -378,12 +383,12 @@ class HotkeyManager:
             self,
             key: int | typing.Iterable[int] | typing.Iterable[typing.Iterable[int]],
             foo: typing.Callable[[], None],
-            continiousPress: bool = False,
+            continiousPress: bool = None,
         ) -> None:
             self.key = HotkeyManager.hotkeytask.formalize_key_param(key)
             # self.key is like [keyset1=[key1, key2], keyset2=[key3, key4]]
             self.foo = foo
-            self.continiousPress = continiousPress
+            self.continiousPress = continiousPress if continiousPress else False
             self.stage = 0
             self.keyChangeOnStageChange = [
                 ListEq(self.key[i], self.key[i - 1])
