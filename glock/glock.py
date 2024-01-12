@@ -37,7 +37,7 @@ class GPush(StoppableProcess):
         self.ratio = ratio
         self.bad8111Exit = bad8111Exit
         super().__init__(
-            strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.skip_and_return,
+            strategy_runonrunning=StoppableThread.StrategyRunOnRunning.skip_and_return,
         )
 
     def foo(self):
@@ -48,7 +48,7 @@ class GPush(StoppableProcess):
                 print(f"ratio: {self.ratio.value}")
 
         reporter = Reporter(5, report)
-        period = 0.05
+        period = 0.025
         while not self.timeToStop() and not self.bad8111Exit.is_set():
             ratio = self.ratio.value
             if GPush.isZero(ratio):
@@ -87,8 +87,8 @@ class Sampler(StoppableProcess):
         lim: float,
     ) -> None:
         super().__init__(
-            StoppableThread.Strategy_RunOnRunning.skip_and_return,
-            StoppableThread.Strategy_Error.print_error,
+            StoppableThread.StrategyRunOnRunning.skip_and_return,
+            StoppableThread.StrategyError.print_error,
         )
         self.ratio = ratio
         self.bad8111Exit = bad8111Exit
@@ -97,16 +97,19 @@ class Sampler(StoppableProcess):
     def foo(self):
         GMax = 13
         pushMax = (self.lim - GMax) * (-0.5) / (GMax - 1)
-        fullPushExceed = GMax - self.lim
+        fullPushExceed = (GMax - self.lim)*0.75
         controller = PIDController(
-            kp=0.2 * 1 / fullPushExceed,
-            ki=0.5 / fullPushExceed,
-            kd=0.05 * 1 / fullPushExceed,
+            kp=0.05 * 1 / fullPushExceed,
+            ki=1.0 * 1 / fullPushExceed,
+            kd=0.2 * 1 / fullPushExceed,
             integralLimitMax=0,
             integralLimitMin=-fullPushExceed,
             # analizerMode=True,
         )
-        oolf = OneOrderLinearFilter(0, 0)
+        # input filter
+        oolfi = OneOrderLinearFilter(0, 0)
+        # control filter
+        oolfc = OneOrderLinearFilter(0, 0)
         fps = fpsmanager(10)
 
         def calcEnerge(h, tas):
@@ -140,10 +143,11 @@ class Sampler(StoppableProcess):
             # aoa = state.AoA.value
 
             index = g
-            index = oolf.update(index)
+            index = oolfi.update(index)
             # allow negative error to clear intergraled error
             # ctrl, an = controller.update(self.lim - index, ps4pid.time())
             ctrl = controller.update(self.lim - index, ps4pid.time())
+            ctrl = oolfc.update(ctrl)
             ps4pid.clear().start()
             # ctrl in negative, since its pushing.
             if ctrl < -1:
@@ -214,7 +218,7 @@ class GLock:
 class Puller(StoppableProcess):
     def __init__(self) -> None:
         super().__init__(
-            strategy_runonrunning=StoppableSomewhat.Strategy_RunOnRunning.skip_and_return,
+            strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.skip_and_return,
         )
 
     def foo(self):

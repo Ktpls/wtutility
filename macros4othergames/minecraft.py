@@ -43,7 +43,7 @@ def main():
         return foo
 
     AsyncTimeCostlyProcessInPool = functools.partial(
-        AsyncTimeCostlyProcess, pool=threadpool
+        OpenBoxAndUse, pool=threadpool
     )
 
     @RegisterHotkey("HoldLeft", [win32con.VK_CONTROL, win32con.VK_F10])
@@ -57,7 +57,9 @@ def main():
     @WrapperHotkeySwitch()
     def holdW(*arg, **kw) -> None:
         bulletin.putup(bulletinBoard.Poster("waiting", 1))
-        time.sleep(0.5)
+        for i in range(5):
+            keyshortcut.keydown(keyshortcut.keycode.key_W)
+            time.sleep(0.1)
         keyshortcut.keydown(keyshortcut.keycode.key_W)
         bulletin.putup(bulletinBoard.Poster("wHolding", 1))
 

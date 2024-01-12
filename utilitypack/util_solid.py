@@ -95,6 +95,41 @@ def UnfinishedWrapper(msg=None) -> typing.Callable[..., typing.Any]:
     return f2
 
 
+def WrapperAsMyTaste():
+    """
+    use like this
+        @WrapperAsMyTaste()
+        def yourWrapper(f, some_arg_your_wrapper_needs):
+            ...
+        @yourWrapper(some_arg_your_wrapper_needs)
+        def RealFunc(func_arg):
+            ...
+    note that this is forbiden:
+        @yourWrapper
+        def RealFunc(func_arg):
+            ...
+    use this instead if no arg for myWrapper
+        @yourWrapper()
+        def RealFunc(func_arg):
+            ...
+
+    ###############
+    note that python design is piece of shlt
+    ###############
+    """
+
+    def toGetWrapperLogic(wrapperLogic):
+        def newWrapper(*arg, **kw):
+            def toGetFLogic(fLogic):
+                return wrapperLogic(fLogic, *arg, **kw)
+
+            return toGetFLogic
+
+        return newWrapper
+
+    return toGetWrapperLogic
+
+
 class logger:
     def __init__(self, path):
         self.path = path
@@ -186,31 +221,31 @@ def AllFileIn(path, includeFileInSubDir=True):
 
 
 class StoppableSomewhat:
-    class Strategy_RunOnRunning(enum.Enum):
+    class StrategyRunOnRunning(enum.Enum):
         # ignore = 0
         raise_error = 1
         stop_and_rerun = 2
         skip_and_return = 3
 
-    class Strategy_Error(enum.Enum):
+    class StrategyError(enum.Enum):
         ignore = 0
         raise_error = 1
         print_error = 2
 
     def __init__(
         self,
-        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
-        strategy_error: "StoppableThread.Strategy_Error" = None,
+        strategy_runonrunning: "StoppableThread.StrategyRunOnRunning" = None,
+        strategy_error: "StoppableThread.StrategyError" = None,
     ):
-        self.behavior_run_on_running = (
+        self.strategy_runonrunning = (
             strategy_runonrunning
             if strategy_runonrunning is not None
-            else StoppableThread.Strategy_RunOnRunning.raise_error
+            else StoppableThread.StrategyRunOnRunning.raise_error
         )
-        self.strategy_on_error = (
+        self.strategy_error = (
             strategy_error
             if strategy_error is not None
-            else StoppableThread.Strategy_Error.raise_error
+            else StoppableThread.StrategyError.raise_error
         )
 
     def foo(self):
@@ -229,6 +264,33 @@ class StoppableSomewhat:
     def timeToStop(self) -> bool:
         ...
 
+    @staticmethod
+    @WrapperAsMyTaste()
+    def EasyUse(f, implType=None, **kwStoppableSomewhat):
+        """
+        wrapper on function, and ready for use
+        define function as:
+            def f(self:StoppableProcess, [your arg]):
+                ...
+        so f can know when to stop
+        every calling produces an instance
+        """
+        if implType == StoppableProcess:
+            raise NotImplementedError("doesn't work")
+        if implType is None:
+            implType = StoppableThread
+
+        class Thread4LongScript(implType):
+            def foo(self, *arg, **kw) -> None:
+                f(self, *arg, **kw)
+
+        instance = Thread4LongScript(**kwStoppableSomewhat)
+
+        def newF(*arg, **kw):
+            instance.go(*arg, **kw)
+
+        return newF
+
 
 class StoppableThread(StoppableSomewhat):
     """
@@ -237,8 +299,8 @@ class StoppableThread(StoppableSomewhat):
 
     def __init__(
         self,
-        strategy_runonrunning: "StoppableSomewhat.Strategy_RunOnRunning" = None,
-        strategy_error: "StoppableSomewhat.Strategy_Error" = None,
+        strategy_runonrunning: "StoppableSomewhat.StrategyRunOnRunning" = None,
+        strategy_error: "StoppableSomewhat.StrategyError" = None,
         pool: ThreadPoolExecutor = None,
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
@@ -260,18 +322,18 @@ class StoppableThread(StoppableSomewhat):
     def go(self, *arg, **kw) -> None:
         if self.submit is not None:
             if (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.raise_error
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.raise_error
             ):
                 raise RuntimeError("already running")
             elif (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.stop_and_rerun
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.stop_and_rerun
             ):
                 self.stop()
             elif (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.skip_and_return
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.skip_and_return
             ):
                 return
         self.running = True
@@ -286,13 +348,13 @@ class StoppableThread(StoppableSomewhat):
             try:
                 self.result = self.foo(*arg, **kw)
             except Exception as e:
-                if self.strategy_on_error == StoppableThread.Strategy_Error.raise_error:
+                if self.strategy_error == StoppableThread.StrategyError.raise_error:
                     raise e
                 elif (
-                    self.strategy_on_error == StoppableThread.Strategy_Error.print_error
+                    self.strategy_error == StoppableThread.StrategyError.print_error
                 ):
                     traceback.print_exc()
-                elif self.strategy_on_error == StoppableThread.Strategy_Error.ignore:
+                elif self.strategy_error == StoppableThread.StrategyError.ignore:
                     pass
             self.running = False
 
@@ -313,8 +375,8 @@ class StoppableThread(StoppableSomewhat):
 
 class StoppableProcess(StoppableSomewhat):
     class StoppableOnlyOnceProcess(multiprocessing.Process):
-        def __init__(self, sp: "StoppableProcess") -> None:
-            multiprocessing.Process.__init__(self)
+        def __init__(self, sp: "StoppableProcess", args, kwargs) -> None:
+            multiprocessing.Process.__init__(self, args=args, kwargs=kwargs)
             self.sp = sp  # read only. cuz cant write
 
         # override
@@ -323,24 +385,24 @@ class StoppableProcess(StoppableSomewhat):
                 result = self.sp.foo(*args, **kwargs)
             except Exception as e:
                 if (
-                    self.sp.strategy_on_error
-                    == StoppableThread.Strategy_Error.raise_error
+                    self.sp.strategy_error
+                    == StoppableThread.StrategyError.raise_error
                 ):
                     raise e
                 elif (
-                    self.sp.strategy_on_error
-                    == StoppableThread.Strategy_Error.print_error
+                    self.sp.strategy_error
+                    == StoppableThread.StrategyError.print_error
                 ):
                     traceback.print_exc()
-                elif self.sp.strategy_on_error == StoppableThread.Strategy_Error.ignore:
+                elif self.sp.strategy_error == StoppableThread.StrategyError.ignore:
                     pass
             # cant return result now
             # return result
 
     def __init__(
         self,
-        strategy_runonrunning: "StoppableThread.Strategy_RunOnRunning" = None,
-        strategy_error: "StoppableThread.Strategy_Error" = None,
+        strategy_runonrunning: "StoppableThread.StrategyRunOnRunning" = None,
+        strategy_error: "StoppableThread.StrategyError" = None,
     ):
         StoppableSomewhat.__init__(self, strategy_runonrunning, strategy_error)
         self._stop_event = multiprocessing.Event()
@@ -358,23 +420,23 @@ class StoppableProcess(StoppableSomewhat):
     def go(self, *args, **kwargs):
         if self.isRunning():
             if (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.raise_error
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.raise_error
             ):
                 raise RuntimeError("already running")
             elif (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.stop_and_rerun
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.stop_and_rerun
             ):
                 self.stop()
             elif (
-                self.behavior_run_on_running
-                == StoppableThread.Strategy_RunOnRunning.skip_and_return
+                self.strategy_runonrunning
+                == StoppableThread.StrategyRunOnRunning.skip_and_return
             ):
                 return
         self._stop_event.clear()
-        self.submit = self.StoppableOnlyOnceProcess(self)
-        self.submit.start(*args, **kwargs)
+        self.submit = self.StoppableOnlyOnceProcess(self, args=args, kwargs=kwargs)
+        self.submit.start()
 
     def stop(self):
         if not self.isRunning():
@@ -1353,6 +1415,13 @@ def longDelay(t, interval=0.5):
         time.sleep(interval)
 
 
+def CostlySleep(t):
+    endtime = time.perf_counter() + t
+    while True:
+        if time.perf_counter() >= endtime:
+            break
+
+
 def PreciseSleep(t):
     # to stop oscilation in autoCali due to sleep() precise
     # to my suprise time.sleep() is quite precise
@@ -1360,10 +1429,7 @@ def PreciseSleep(t):
         # too rough
         sleep(t)
     else:
-        endtime = time.perf_counter() + t
-        while True:
-            if time.perf_counter() >= endtime:
-                break
+        CostlySleep(t)
 
 
 def longDelay(t, interval=0.5):
@@ -1703,51 +1769,14 @@ def AllOptionalInit(clz):
     return clz
 
 
-def WrapperAsMyTaste():
-    """
-    use like this
-        @WrapperAsMyTaste()
-        def myWrapper(f, some_arg_your_wrapper_needs):
-            ...
-        @myWrapper([arg_for_wrapper])
-        def RealFunc(func_arg):
-            ...
-    note that this is forbiden:
-        @myWrapper
-        def RealFunc(func_arg):
-            ...
-    use if no arg for myWrapper
-        @myWrapper()
-        def RealFunc(func_arg):
-            ...
-    
-    ###############
-    note that python design is piece of shlt
-    ###############
-    """
+class Container:
+    __content = None
 
-    def toGetWrapperLogic(wrapperLogic):
-        def newWrapper(*arg, **kw):
-            def toGetFLogic(fLogic):
-                return wrapperLogic(fLogic, *arg, **kw)
+    def get(self):
+        return self.__content
 
-            return toGetFLogic
+    def set(self, newContent):
+        self.__content = newContent
 
-        return newWrapper
-
-    return toGetWrapperLogic
-
-@WrapperAsMyTaste()
-def AsyncTimeCostlyProcess(f, pool=None):
-    class Thread4LongScript(StoppableThread):
-        def __init__(self, pool: ThreadPoolExecutor = None) -> None:
-            super().__init__(
-                strategy_runonrunning=StoppableThread.Strategy_RunOnRunning.stop_and_rerun,
-                strategy_error=StoppableThread.Strategy_Error.print_error,
-                pool=pool,
-            )
-
-        def foo(self, *arg, **kw) -> None:
-            f(*arg, **kw)
-
-    return lambda: Thread4LongScript(pool=pool).go()
+    def isEmpty(self):
+        return self.__content is None
