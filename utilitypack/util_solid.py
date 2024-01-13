@@ -1776,3 +1776,20 @@ class Container:
 
     def isEmpty(self):
         return self.__content is None
+
+
+class Switch:
+    def __init__(self, initial=False):
+        self.__value = initial
+
+    def on(self):
+        self.__value = True
+
+    def off(self):
+        self.__value = False
+
+    def switch(self):
+        self.__value = not self.__value
+
+    def __call__(self) -> bool:
+        return self.__value
