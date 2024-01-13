@@ -1232,7 +1232,7 @@ class expparser:
                 RaiseTokenException(token)
 
     @staticmethod
-    def parseelement(s):
+    def elementparse(s):
         i = 0
         tokenList: typing.List[expparser.Token] = []
         while True:
