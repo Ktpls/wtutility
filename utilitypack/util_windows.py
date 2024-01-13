@@ -768,6 +768,12 @@ class Rythm:
         for t in self.tones:
             win32api.Beep(t.freq, t.dur)
 
+    @StoppableSomewhat.EasyUse(
+        strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun
+    )
+    def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm):
+        selfRythm.play()
+
 
 RythmSuccess = Rythm.fromString(
     WrapperOfMultiLineText(

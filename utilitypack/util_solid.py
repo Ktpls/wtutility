@@ -275,16 +275,18 @@ class StoppableSomewhat:
         so f can know when to stop
         every calling produces an instance
         """
-        if implType == StoppableProcess:
-            raise NotImplementedError("doesn't work")
         if implType is None:
             implType = StoppableThread
+        if not issubclass(implType, StoppableSomewhat):
+            raise NotImplementedError("doesn't work")
+        if implType == StoppableProcess:
+            raise NotImplementedError("doesn't work")
 
         class Thread4LongScript(implType):
             def foo(self, *arg, **kw) -> None:
                 f(self, *arg, **kw)
 
-        instance = Thread4LongScript(**kwStoppableSomewhat)
+        instance: StoppableSomewhat = Thread4LongScript(**kwStoppableSomewhat)
 
         def newF(*arg, **kw):
             instance.go(*arg, **kw)
@@ -350,9 +352,7 @@ class StoppableThread(StoppableSomewhat):
             except Exception as e:
                 if self.strategy_error == StoppableThread.StrategyError.raise_error:
                     raise e
-                elif (
-                    self.strategy_error == StoppableThread.StrategyError.print_error
-                ):
+                elif self.strategy_error == StoppableThread.StrategyError.print_error:
                     traceback.print_exc()
                 elif self.strategy_error == StoppableThread.StrategyError.ignore:
                     pass
@@ -384,14 +384,10 @@ class StoppableProcess(StoppableSomewhat):
             try:
                 result = self.sp.foo(*args, **kwargs)
             except Exception as e:
-                if (
-                    self.sp.strategy_error
-                    == StoppableThread.StrategyError.raise_error
-                ):
+                if self.sp.strategy_error == StoppableThread.StrategyError.raise_error:
                     raise e
                 elif (
-                    self.sp.strategy_error
-                    == StoppableThread.StrategyError.print_error
+                    self.sp.strategy_error == StoppableThread.StrategyError.print_error
                 ):
                     traceback.print_exc()
                 elif self.sp.strategy_error == StoppableThread.StrategyError.ignore:

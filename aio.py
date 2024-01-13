@@ -1,64 +1,15 @@
 from concurrent.futures import ThreadPoolExecutor
 import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinCode as keycode
 from utilitypack.utility import *
+from utilitypack.util_app import *
 from aio_config import *
-import traceback
-import hashlib
 import functools
 
-bulletinoutputpos = (100, 500)
 telescopepos = (100, 100)
 
 
 def main():
-    # 告示板
-    idlebulletincontents = [
-        ["(=ω=)", 66],
-        ["(*≧ω≦)", 30],
-        ["($ω$)", 1],
-        ["(＞д＜)", 1],
-        ["(￣ω￣;)", 1],
-        ["(0v0)", 1],
-    ]
-
-    # 每天固定一种
-    seed = time.strftime("%Y-%m-%d", time.localtime()).encode("utf-8")
-    seed = hashlib.md5(seed).digest()
-    seed = int.from_bytes(seed[:8], "big")
-    bulletin = bulletinBoard(
-        idlebulletincontents[
-            summonCard(
-                [c[1] for c in idlebulletincontents],
-                np.random.Generator(np.random.PCG64(seed)),
-            )
-        ][0]
-    )
-
-    business = []
-
-    @WrapperAsMyTaste()
-    def RegisterBusiness(foo):
-        business.append(foo)
-        return foo
-
-    hotkeyaction = []
-    threadpool = ThreadPoolExecutor(max_workers=10)
-
-    @WrapperAsMyTaste()
-    def RegisterHotkey(foo, prompt, key, continiousPress=None):
-        print(f"{prompt:<20}{HotkeyManager.hotkeytask.getKeyRepr(key)}")
-        hotkeyaction.append(
-            HotkeyManager.hotkeytask(key=key, foo=foo, continiousPress=continiousPress)
-        )
-        return foo
-
-    StoppableThreadEasyUse = functools.partial(
-        StoppableSomewhat.EasyUse,
-        pool=threadpool,
-        implType=StoppableThread,
-        strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
-        strategy_error=StoppableSomewhat.StrategyError.print_error,
-    )
+    app = BulletinApp(fps=aiofps)
 
     # wtdistmeas
     if usingwtdistmeaspy:
@@ -73,47 +24,44 @@ def main():
         """
         OEM3 = 0xC0
 
-        @RegisterHotkey("PlottingScaleLock", [ord("L"), OEM3])
+        @app.Hotkey("PlottingScaleLock", [ord("L"), OEM3])
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
-                bulletin.putup(
+                app.bulletin.putup(
                     f"plotting scale locked, now is {wtdmp.lastDistMeasResultStaged.plottingscale}"
                 )
             else:
-                bulletin.putup("plotting scale unlocked")
+                app.bulletin.putup("plotting scale unlocked")
 
-        @RegisterHotkey("DistMeas&Cali", OEM3)
-        @StoppableThreadEasyUse()
+        @app.Hotkey("DistMeas&Cali", OEM3)
+        @app.AsyncLongScript()
         def GoMeasureAndCali(self: StoppableSomewhat):
-            bulletin.putup("measuring")
+            app.bulletin.putup("measuring")
             result = wtdmp.solveMapMainLogic()
-            bulletin.putup(result.prompt)
+            app.bulletin.putup(result.prompt)
             if result.succeed:
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
 
-        @RegisterHotkey("StartCali", [win32con.VK_CONTROL, OEM3])
+        @app.Hotkey("StartCali", [win32con.VK_CONTROL, OEM3])
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
-                bulletin.putup("no staged dist result to cali")
+                app.bulletin.putup("no staged dist result to cali")
                 return
             wtdmp.caliOperator.go(lastStaged)
-            bulletin.putup(f"caliberating to {lastStaged}")
+            app.bulletin.putup(f"caliberating to {lastStaged}")
 
         # not used that much. normally just switch out from snip mode
         # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, OEM3])
         def stopCali():
             wtdmp.caliOperator.stop()
-            bulletin.putup(f"cali stopped")
+            app.bulletin.putup(f"cali stopped")
 
-        @RegisterHotkey(
-            "SetPlottingScale", [win32con.VK_CONTROL, win32con.VK_MENU, OEM3]
-        )
+        @app.Hotkey("SetPlottingScale", [win32con.VK_CONTROL, win32con.VK_MENU, OEM3])
         def SetPlottingScale():
-            nonlocal inputSession
-            bulletin.putup("input plotting scale")
+            app.bulletin.putup("input plotting scale")
 
             def SetPlottingScaleLock(
                 session: HotkeyManager.InputSession.SessionInstance,
@@ -126,27 +74,27 @@ def main():
                     wtdmp.psLocked = True
                     result = numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
-                    bulletin.putup(f"plotting scale locked at {result}")
+                    app.bulletin.putup(f"plotting scale locked at {result}")
                     gameinput.key_press(keycode.key_Enter)
                     gameinput.key_press(keycode.key_1)
                 elif (
                     session.sessionEndType
                     == HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL
                 ):
-                    bulletin.putup("plotting scale canceled")
+                    app.bulletin.putup("plotting scale canceled")
                     gameinput.key_press(keycode.key_Esc)
 
-            inputSession.IntoSession(
+            app.inputSession.IntoSession(
                 SetPlottingScaleLock,
                 [HotkeyManager.InputSession.InputTypeEnabled.NUMBER],
             )
 
-        @RegisterHotkey("FreshPlottingScale", [ord("L"), ord("K"), OEM3])
-        @StoppableThreadEasyUse()
+        @app.Hotkey("FreshPlottingScale", [ord("L"), ord("K"), OEM3])
+        @app.AsyncLongScript()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp
-            bulletin.putup("freshing")
-            bulletin.putup(wtdmp.freshPlottingScale())
+            app.bulletin.putup("freshing")
+            app.bulletin.putup(wtdmp.freshPlottingScale())
             wtdmp.psLocked = True
 
     # telescope
@@ -156,14 +104,14 @@ def main():
 
         tele = telescope.telescope()
 
-        @RegisterBusiness()
+        @app.Business()
         def telemain():
             scope = tele.mainlooplogic()
             if scope is None:
                 return
-            hud.writecontent(np.flip(telescopepos), scope)
+            app.hud.writecontent(np.flip(telescopepos), scope)
 
-        @RegisterHotkey("SwitchTelescope", win32con.VK_F12)
+        @app.Hotkey("SwitchTelescope", win32con.VK_F12)
         def switchtele():
             tele.enabled = not tele.enabled
 
@@ -172,21 +120,21 @@ def main():
         print("keyshortcut activated")
         import keyshortcut.keyshortcut as keyshortcut
 
-        @RegisterHotkey("HoldLeftAndTell", win32con.VK_F10)
+        @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
-            bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
+            app.bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
 
-        @RegisterHotkey("HoldCAndTell", win32con.VK_F11)
+        @app.Hotkey("HoldCAndTell", win32con.VK_F11)
         def holdCAndTell():
             keyshortcut.holdC()
-            bulletin.putup(bulletinBoard.Poster("CHolding", 1))
+            app.bulletin.putup(bulletinBoard.Poster("CHolding", 1))
 
-        @RegisterHotkey("LaunchSeries", [win32con.VK_RCONTROL, ord("K"), ord("O")])
-        @StoppableThreadEasyUse()
+        @app.Hotkey("LaunchSeries", [win32con.VK_RCONTROL, ord("K"), ord("O")])
+        @app.AsyncLongScript()
         def launchSeriesGo(self: StoppableSomewhat):
-            bulletin.putup("launching series")
-            interval = 0.099
+            app.bulletin.putup("launching series")
+            interval = 0.01
             num = 29 + 3
             keyshortcut.keydown(keycode.key_LeftControl)
             for i in range(num):
@@ -198,7 +146,7 @@ def main():
                 PreciseSleep(interval)
             keyshortcut.keyup(keycode.key_LeftControl)
 
-            bulletin.putup(f"launch done")
+            app.bulletin.putup(f"launch done")
 
         for key, dire, name in [
             [
@@ -222,7 +170,7 @@ def main():
                 "Right",
             ],
         ]:
-            RegisterHotkey(
+            app.Hotkey(
                 f"MoveMouse{name}", [win32con.VK_CONTROL, key], continiousPress=True
             )(functools.partial(keyshortcut.move_mouse, dire))
 
@@ -232,23 +180,23 @@ def main():
 
         eedcstate = False
 
-        @RegisterHotkey("EagleEyeDataCollector", win32con.VK_F8)
+        @app.Hotkey("EagleEyeDataCollector", win32con.VK_F8)
         def eedcswitch():
             nonlocal eedcstate
             if eedcstate:
                 eagleeye.cachedShots = []
                 eedcstate = False
-                bulletin.putup(bulletinBoard.Poster("eedc off", 1))
+                app.bulletin.putup(bulletinBoard.Poster("eedc off", 1))
             else:
                 eedcstate = True
-                bulletin.putup(bulletinBoard.Poster("eedc on", 1))
+                app.bulletin.putup(bulletinBoard.Poster("eedc on", 1))
 
-        @RegisterHotkey("EagleEyeOnClick", win32con.VK_LBUTTON)
+        @app.Hotkey("EagleEyeOnClick", win32con.VK_LBUTTON)
         def eedcOnClickWithSwitch():
             if eedcstate:
                 eagleeye.onClick()
 
-        RegisterBusiness()(eagleeye.onFrame)
+        app.Business()(eagleeye.onFrame)
 
     if usingglock:
         print("glock activated")
@@ -256,78 +204,24 @@ def main():
 
         gl = glock.GLock()
 
-        @RegisterHotkey("Glock", [win32con.VK_RSHIFT, win32con.VK_F9])
+        @app.Hotkey("Glock", [win32con.VK_RSHIFT, win32con.VK_F9])
         def glSwitchBusiness():
             if gl.isRunning():
-                bulletin.putup(bulletinBoard.Poster("glock stopping"))
+                app.bulletin.putup(bulletinBoard.Poster("glock stopping"))
                 gl.setOff()
-                bulletin.putup(bulletinBoard.Poster("glock stopped"))
+                app.bulletin.putup(bulletinBoard.Poster("glock stopped"))
             else:
                 gl.setOn()
-                bulletin.putup(bulletinBoard.Poster("glock started"))
+                app.bulletin.putup(bulletinBoard.Poster("glock started"))
 
-        # business.append(printRunning)
-
-    @RegisterHotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
+    @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
     def rebootfoo():
-        hud.stop()
+        app.hud.stop()
         bootAsAdmin(__file__)
         RythmReboot.play()
         sys.exit()
 
-    hud = fullScrHUD()
-    hud.setup()
-    fpsm = fpsmanager(aiofps)
-    hkm = HotkeyManager(hotkeyaction)
-
-    @RegisterBusiness()
-    def showBulletinAndUpdateHud():
-        # show bulletin
-        hud.writecontent(
-            np.flip(bulletinoutputpos),
-            aPicWithTextWithPil(bulletin.read(), maxsize=[400, 700], lineinterval=0),
-        )
-
-        hud.update()
-
-    def swapHKM(newHkm):
-        nonlocal hkm
-        old = hkm
-        hkm = newHkm
-        return old
-
-    inputSession = HotkeyManager.InputSession(swapHKM, bulletin)
-
-    # main loop
-    while True:
-        fpsm.WaitUntilNextFrame()
-        hud.clear()
-
-        decideresult = hkm.decideAllHotKey()
-
-        try:
-            hkm.doAllDecidedKey(decideresult, True, False)
-        except SystemExit as e:
-            raise e
-        except Exception as e:
-            RythmError.play()
-            print("#" * 10)
-            traceback.print_exc()
-            print("#" * 10)
-            if throwErrorInHotkey:
-                raise e
-
-        for bus in business:
-            try:
-                bus()
-            except Exception as e:
-                RythmError.play()
-                print("#" * 10)
-                traceback.print_exc()
-                print("#" * 10)
-                if throwErrorInBus:
-                    raise e
-                    
+    app.go()
 
 
 if __name__ == "__main__":
