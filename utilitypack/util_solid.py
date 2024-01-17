@@ -1714,25 +1714,35 @@ class BeanUtil:
         return obj.__annotations__.get(field, IdentityMapping)
 
     @staticmethod
-    def __GetKV(obj):
+    def __GetterOf(obj):
         if isinstance(obj, dict):
-            return obj.items()
-        return obj.__dict__.items()
+            return lambda: obj.items()
+        return lambda: obj.__dict__.items()
 
     @staticmethod
-    def __SetKV(obj, k, v):
+    def __SetterOf(obj):
         if isinstance(obj, dict):
-            if k in obj:
-                obj[k] = v
-        if k in obj.__dict__:
-            obj.__setattr__(k, BeanUtil.__FieldConversionFunc(obj, k)(v))
+
+            def DictSetter(obj, k, v):
+                if k in obj:
+                    obj[k] = v
+
+            return DictSetter
+
+        def ObjSetter(obj, k, v):
+            if k in obj.__dict__:
+                obj.__setattr__(k, BeanUtil.__FieldConversionFunc(obj, k)(v))
+
+        return ObjSetter
 
     @staticmethod
     def __DictOrObj2DictOrObjCopy(src: object, dst: object, option: "BeanUtil.Option"):
-        for k, v in BeanUtil.__GetKV(src):
+        Getter = BeanUtil.__GetterOf(src)
+        Setter = BeanUtil.__SetterOf(dst)
+        for k, v in Getter():
             if option.ignoreNoneInSrc and v is None:
                 continue
-            BeanUtil.__SetKV(dst, k, v)
+            Setter(dst, k, v)
 
     @staticmethod
     def __DictOrObj2ClassCopy(
