@@ -1,5 +1,6 @@
 from utilref import *
 from opdar_config import *
+import scipy.interpolate as interpolate
 
 if useNNTracker:
     from utilitypack.util_torch import *
@@ -20,37 +21,33 @@ def deltaX(X):
     return X - arrayshift(X, 1)
 
 
-# sample contribution according to deltaT
-
-
-class stablizer_continous:
-    def __init__(self, lamb, x0=0):
+class stablizer_base:
+    def __init__(self, lamb, x0):
         self.x = x0
         self.lamb = lamb
 
+    def sample(self, x):
+        pass
+
+    def val(self):
+        return self.x
+
+
+class stablizer_continous(stablizer_base):
+    # sample contribution according to deltaT
+
     def init_from_series(self, X, T):
-        COF = self.lamb ** (-(T[-1] - T))
         self.x = (self.lamb ** (-(T[-1] - T)) * X).sum()
 
     def sample(self, x, dt):
         self.x = self.x * self.lamb**dt + x * (-self.lamb**dt + 1)
         return self.x
 
-    def val(self):
-        return self.x
 
-
-# treat every sample equally
-
-
-class stablizer:
-    def __init__(self, lamb, x0=0):
-        self.x = x0
-        self.lamb = lamb
+class stablizer(stablizer_base):
+    # treat every sample equally
 
     def init_from_series(self, X):
-        # COF=self.lamb**(-(T[-1]-T))
-        # self.x=(self.lamb**(-(T[-1]-T))*X).sum()
         pass
 
     def sample(self, x, acceptableerr=-1):
@@ -62,8 +59,18 @@ class stablizer:
         self.x = self.x * self.lamb + x * (-self.lamb + 1)
         return self.x
 
-    def val(self):
-        return self.x
+
+class stablizerNd(stablizer_base):
+    def __init__(self, lamb, x0=[0, 0]):
+        self.dim = len(x0)
+        self.stab = [stablizer(lamb, c) for c in x0]
+
+    def sample(self, x, acceptableerr=-1):
+        assert len(x) == self.dim
+        if isinstance(acceptableerr, (float, int)):
+            acceptableerr = [acceptableerr] * self.dim
+        assert len(acceptableerr) == self.dim
+        return [self.stab[i].sample(x[i], acceptableerr[i]) for i in range(self.dim)]
 
 
 # assume a remains almost constant
@@ -188,53 +195,12 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
     # savemat(mndarray)
     result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
 
-    # clustering
-    contours = cv.findContours(
-        result.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
-    )[0]
-    contnum = len(contours)
-    if contnum == 0:  # found nothing
-        return None
-    info = np.zeros([contnum, 4])  # x, y, wingspan, averangeAdaptiveThreshErr
-    for c in range(contnum):
-        mgray = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
-        mcontour = np.zeros_like(mgray)
-        cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
-        cluster = mcontour * mgray
-        clusterbinary = cv.threshold(cluster, 0.1, 1, cv.THRESH_BINARY)[1]
-
-        clusterXdist = clusterbinary.sum(0)
-        clusterYdist = clusterbinary.sum(1)
-        X = np.arange(pul_l[0], pbr_l[0])
-        Y = np.arange(pul_l[1], pbr_l[1])
-
-        info[c] = [
-            (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
-            (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
-            estimateWingSpan(clusterbinary),
-            cluster.sum() / clusterbinary.sum(),
-        ]
-
-    wingspanref = np.max(info[:, 2], axis=0)
-    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + epsilon)
-    scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
-    scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
-
-    totalscore = scorewingspan * info[:, 3]
-    maxscorecontourid = np.argmax(totalscore, axis=0)
-    # not matched satisfyingly
-    if totalscore[maxscorecontourid] < scoreleast:
-        return None
-    mcontourmax = np.zeros_like(mgray)
-    cv.drawContours(mcontourmax, contours, maxscorecontourid, 1, thickness=cv.FILLED)
-    clustermax = mcontourmax * mgray
-    # (posx, posy), wingspan, clustermax, pul, its score
     return (
-        info[maxscorecontourid, 0:2],
-        info[maxscorecontourid, 2],
-        clustermax,
-        pul_l,
-        info[maxscorecontourid, 3],
+        0,
+        0,
+        0,
+        0,
+        0,
     )
 
 
@@ -276,77 +242,87 @@ def planetrack(
     m = madat * mabst
 
     # clustering
-    def density(m, eps=5):
-        flter = np.ones([eps, eps])
+    def density(m, range=5):
+        flter = np.ones([range, range])
         flter *= 1 / flter.size
         return cv.filter2D(m, -1, flter)
 
-    d = density(m, regionrange)
-    Xc = m * cv.threshold(d, routhresh, 1, cv.THRESH_BINARY)[1]
-    Xcspan = regionsum(Xc, [regionrange, regionrange])
-    Xbdcrange = cv.threshold(Xcspan, 0, 1, cv.THRESH_BINARY)[1]
-    Xbdc = m * Xbdcrange
-    contours = cv.findContours(
-        Xbdcrange.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
-    )[0]
-    contnum = len(contours)
-    if contnum == 0:  # found nothing
-        return None
-    info = np.zeros([contnum, 4])  # x, y, wingspan, averangeAdaptiveThreshErr
-    for c in range(contnum):
-        mcontour = np.zeros_like(m)
-        cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
-        cluster = mcontour * m
-        clusterbinary = cv.threshold(cluster, 0.1, 1, cv.THRESH_BINARY)[1]
+    rho = density(m, regionrange)
+    m_rhoThreshed = m * cv.threshold(rho, routhresh, 1, cv.THRESH_BINARY)[1]
 
-        clusterXdist = clusterbinary.sum(0)
-        clusterYdist = clusterbinary.sum(1)
+    def SeperateObject(m: cv.Mat):
+        contours = cv.findContours(
+            m.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+        )[0]
+        ret: list[cv.Mat] = []
+        for c in range(len(contours)):
+            mcontour = np.zeros_like(m)
+            cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
+            ret.append(mcontour)
+        return ret
+
+    objects = SeperateObject(m_rhoThreshed)
+
+    @dataclasses.dataclass
+    class ObjectInfo:
+        r: np.ndarray
+        wingspan: float
+
+    # info = np.zeros([contnum, 4])  # x, y, wingspan, averangeAdaptiveThreshErr
+    info: list[ObjectInfo] = []
+    for o in objects:
+        clusterXdist = o.sum(0)
+        clusterYdist = o.sum(1)
         X = np.arange(pul[0], pbr[0])
         Y = np.arange(pul[1], pbr[1])
 
-        info[c] = [
-            (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
-            (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
-            estimateWingSpan(clusterbinary),
-            cluster.sum() / (clusterbinary.sum() + epsilon),
-        ]
-
-    sqrdist = (
-        (
-            (info[:, 0:1] - np.repeat(posref.reshape([1, 2]), contnum, axis=0))
-            / searchrange
+        info.append(
+            ObjectInfo(
+                np.array(
+                    [
+                        (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
+                        (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
+                    ]
+                ),
+                estimateWingSpan(o),
+            )
         )
-        ** 2
-    ).sum(axis=1)
+
+    sqrdist = ((([i.r for i in info] - posref.reshape([1, 2])) / searchrange) ** 2).sum(
+        axis=1
+    )
     scorepos = scoring(sqrdist, posrellamb)
     scorepos = np.ones_like(scorepos)
 
     if wingspanref < 0:
         # no suggusted wingspan
         # use the bigest one as reference, since its often clear in first tracking
-        wingspanref = np.max(info[:, 2], axis=0)
-    wingspanerrrelative = (wingspanref - info[:, 2]) / (wingspanref + epsilon)
+        wingspanref = np.max([i.wingspan for i in info], axis=0)
+    wingspanerrrelative = (wingspanref - [i.wingspan for i in info]) / (
+        wingspanref + epsilon
+    )
     scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
-    scorewingspan = (info[:, 2] >= wingspanleast) * scorewingspan
+    scorewingspan = (
+        np.array([i.wingspan for i in info]) >= wingspanleast
+    ) * scorewingspan
 
-    totalscore = scorepos * scorewingspan * info[:, 3]
+    totalscore = scorepos * scorewingspan
     maxscorecontourid = np.argmax(totalscore, axis=0)
 
     # not matched satisfyingly
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    mcontourmax = np.zeros_like(m)
-    cv.drawContours(mcontourmax, contours, maxscorecontourid, 1, thickness=cv.FILLED)
+    mcontourmax = objects[maxscorecontourid]
     clustermax = mcontourmax * m
 
     # (posx, posy), wingspan, clustermax, pul, its score
     return (
-        info[maxscorecontourid, 0:2],
-        info[maxscorecontourid, 2],
+        info[maxscorecontourid].r,
+        info[maxscorecontourid].wingspan,
         clustermax,
         pul,
-        info[maxscorecontourid, 3],
+        totalscore[maxscorecontourid],
     )
 
 
@@ -416,12 +392,8 @@ from wtdmp.wtdistmeaspy_implementation import (
 
 
 def GetMilIntervalFromScrShot(m):
-    def dbglogsavestep(m, name=None, method="savemat"):
-        pass
-
-    def log(s):
-        pass
-
+    dbglogsavestep = lambda m, name=None, method="savemat": None
+    log = lambda s: None
     dbg = False
     red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
     crosshair = GetCrosshair(red_mask)
@@ -439,15 +411,16 @@ class MtiFilter:
         # compared with prev frame
         cammotion: np.ndarray
 
-    def __init__(self) -> None:
+    def __init__(self, mtiQueueSize, on) -> None:
         """
         consider storage only the transformed and meaned pic
         like the dynamic window way. kick the oldest one in queue out, and take its effect out of meaned pic
         """
+        self.filter = interpolate.interp1d([0, 0.3, 0.75, 1], [1, 1, 0, 0])
         # fake type notation in order to scam ide type analysis
         self.mtiQueue: typing.List[
             MtiFilter.MtiStorage
-        ] | AccessibleQueue = AccessibleQueue(5)
+        ] | AccessibleQueue = AccessibleQueue(mtiQueueSize)
 
         # try convienient type annotation but wont work
         # self.mtiQueue: AccessibleQueue.Annotation(
@@ -455,11 +428,10 @@ class MtiFilter:
         # ) = AccessibleQueue(5)
 
     def update(self, img: np.ndarray, cammotion: np.ndarray):
-        # mit proc
         if self.mtiQueue.isEmpty():
             ret = np.ones_like(img)
         else:
-
+            # mit proc
             def cammotionmat2x3to3x3(cammot: np.ndarray):
                 return np.concatenate(
                     [
@@ -488,6 +460,7 @@ class MtiFilter:
                 motionSum = (
                     cammotionmat2x3to3x3(self.mtiQueue[-i].cammotion) @ motionSum
                 )
+            self.mtiQueue.push__pop_if_full(MtiFilter.MtiStorage(img, cammotion))
             prevsignal = np.array(prevScreenAtNowView)
             prevsignal = np.average(prevsignal, axis=0)
             """
@@ -499,23 +472,27 @@ class MtiFilter:
             """
             prevsignal = prevsignal / (img + epsilon)
 
-            def filter(x):
-                ret = np.zeros_like(x)
-                p1 = 0.2
-                p2 = 0.6
-                ret = -(1 / (p2 - p1)) * (x - p2) + 0
-                ret[x < p1] = 1
-                ret[x > p2] = 0
-                return ret
-
-            ret = filter(prevsignal)
-        self.mtiQueue.push__pop_if_full(MtiFilter.MtiStorage(img, cammotion))
+            ret = self.filter(prevsignal)
         return ret
+
+
+class MotionEstimator:
+    def __init__(self) -> None:
+        self.lastScreen = None
+
+    def update(self, newScreen):
+        newScreen = newScreen[:, :, 2]
+        if self.lastScreen is None:
+            self.lastScreen = newScreen
+            return None
+        return cameramotion(
+            self.lastScreen, newScreen, uimask, camerestablizersubsamplerate
+        )
 
 
 class tracker:
     def setup(self, p0):
-        self.omegastab = [stablizer(stablamb, 0), stablizer(stablamb, 0)]
+        self.omegastab = stablizerNd(stablamb, [0, 0])
         self.lastpos = p0
         self.lastwingspan = -1
         self.ss = screenshoter()
@@ -523,24 +500,23 @@ class tracker:
 
         curr = self.ss.shot().astype("uint8")
         self.lastshottime = time.perf_counter()
-        self.prev_red = curr[:, :, 2]
+        self.motionEstimator = MotionEstimator()
+        self.motionEstimator.update(curr)
 
         self.trackbuildinguptimer = 2 * fps
 
         self.lazyplanetrackerfpsmanager = fpsmanager(fps=trackFps)
 
-        self.mtif = MtiFilter()
+        self.mtif = MtiFilter(mtiQueueSize)
+        self.mtif.update(curr, None)
 
     def track(self):
         curr = self.ss.shotbgr().astype("uint8")
         shottime = time.perf_counter()
         tdelta = shottime - self.lastshottime
 
-        curr_red = curr[:, :, 2]
         # i expect cm has no zoom and rotation, so only with translation
-        trackingpoints, cm = cameramotion(
-            self.prev_red, curr_red, uimask, camerestablizersubsamplerate
-        )
+        trackingpoints, cm = self.motionEstimator.update(curr)
 
         curr_gray = None
         # blue channel
@@ -558,12 +534,11 @@ class tracker:
         # neg to get dark signal
         curr_gray = 1 - curr_gray.astype(np.float32) / 255
 
-        mtiresult = self.mtif.update(curr_gray, cm)
-        curr_gray = mtiresult * curr_gray
+        if mtiOn:
+            mtiresult = self.mtif.update(curr_gray, cm)
+            curr_gray = mtiresult * curr_gray
 
-        pomega = np.zeros([2])
-        for c in range(len(pomega)):
-            pomega[c] = self.omegastab[c].val()
+        pomega = self.omegastab.val()
         pestimated = (
             self.lastpos + tdelta * pomega
             if self.trackbuildinguptimer == 0
@@ -622,15 +597,16 @@ class tracker:
 
         pomega = (ponshot - plastinthisframe) / tdelta
 
-        self.prev_red = curr_red
         self.lastshottime = shottime
-        for c in range(len(self.omegastab)):
+
+        if self.trackbuildinguptimer > 0:
+            acceptableerr = -1
+        else:
             acceptableerr = (
-                -1
-                if self.trackbuildinguptimer > 0
-                else self.omegastab[c].val() * stabaccepterrrelthr + stabaccepterrabsthr
+                self.omegastab.val() * stabaccepterrrelthr + stabaccepterrabsthr
             )
-            pomega[c] = self.omegastab[c].sample(pomega[c], acceptableerr)
+        pomega = self.omegastab.sample(pomega, acceptableerr)
+
         self.lastpos = ponshot
         self.lastwingspan = wingspan
         if self.trackbuildinguptimer > 0:

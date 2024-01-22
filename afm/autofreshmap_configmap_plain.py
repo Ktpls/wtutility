@@ -20,7 +20,7 @@ highSurvivablity = [
     "Pradesh",
     "RedDesert",
     "Sinai",
-    "SandsOfSinai",
+    #"SandsOfSinai",
     "SandsOfTunisia",
     "SecondBattleOfElAlamein",
     "Tunisia",

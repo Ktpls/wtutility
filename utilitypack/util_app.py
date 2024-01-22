@@ -17,9 +17,9 @@ class BulletinApp:
         idlebulletincontents = replaceNone(
             idlebulletincontents,
             [
-                ["(=ω=)", 66],
+                ["(=w=)", 66],
                 ["(*≧ω≦)", 30],
-                ["($ω$)", 1],
+                ["($w$)", 1],
                 ["(＞д＜)", 1],
                 ["(￣ω￣;)", 1],
                 ["(0v0)", 1],

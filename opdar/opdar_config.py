@@ -29,11 +29,13 @@ posrellamb = getlambfromtarget(0.75, 1)
 wingspanrellamb = getlambfromtarget(0.5, 0.25)
 wingspanleast = 5
 scoreleast = 0.1
+mtiOn = True
+mtiQueueSize = 3
 # firecontrol
 c_thetabypix = 0.8115411412708535 * 1e-3
 useThetaByPixCalcFromMil = False
 targetwingspan = 16.3e-3
-vbullet = 0.800
+vbullet = 0.580
 screensize = np.array([w, h], np.int32)
 lockpoint_default = screensize * [0.5, 0.2]
 epsilon = 1e-3
