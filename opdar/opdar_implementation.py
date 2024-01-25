@@ -167,7 +167,7 @@ else:
     nntrker = None
 
 
-def ObjectFilterNN(m: np.ndarray):
+def ObjectFilterNn(m: np.ndarray):
     assert np.sqrt(np.sum((np.array(m.shape) - [128, 128]) ** 2)) < 1
     mndarray = m
     with torch.no_grad():
@@ -255,27 +255,8 @@ def GetObjectOnSignal(
     shaperef=None,
     mask: np.ndarray = None,
 ):
-    """
-    expects to have m negatived and in range [0, 1] and type np.float32
-    """
-    mask = (mask > 0).astype("float32")
-    size = [m.shape[1], m.shape[0]]
-    posref = point_legalize(posref, size)
-
-    # get region
-    pul = (posref - searchrange).astype("int32")
-    pbr = (posref + searchrange).astype("int32")
-    pul = point_legalize(pul, size)
-    pbr = point_legalize(pbr, size)
-    m = m[pul[1] : pbr[1], pul[0] : pbr[0]]
-    if not mask is None:
-        mask = mask[pul[1] : pbr[1], pul[0] : pbr[0]]
-        m = m * mask
-    if m.size <= 0:
-        return None
-
     if useNnTracker:
-        m = ObjectFilterNN(m)
+        m = ObjectFilterNn(m)
     else:
         m = ObjectFilterTrad(m)
 
@@ -283,7 +264,7 @@ def GetObjectOnSignal(
 
     # position score
     # searchrange is the center of cutted roi
-    sqrdist = ((([i.r for i in info] - searchrange) / searchrange) ** 2).sum(axis=1)
+    sqrdist = ((([i.r for i in info] - posref) / posref) ** 2).sum(axis=1)
     scorepos = scoring(sqrdist, posrellamb)
     scorepos = np.ones_like(scorepos)
 
@@ -349,14 +330,7 @@ def GetObjectOnSignal(
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    # (posx, posy), wingspan, clustermax, pul, its score
-    return (
-        info[maxscorecontourid].r,
-        info[maxscorecontourid].wingspan,
-        info[maxscorecontourid].shadow * m,
-        pul,
-        totalscore[maxscorecontourid],
-    )
+    return info[maxscorecontourid]
 
 
 def cameramotion(m0, m1, mask, subsamplerate=0.2):
@@ -527,7 +501,8 @@ class tracker:
     def setup(self, p0):
         self.omegastab = stablizerNd(stablamb, [0, 0])
         self.lastpos = p0
-        self.lastwingspan = -1
+        self.lastwingspan = None
+        self.lastshape = None
         self.ss = screenshoter()
         # no longer able to shot wt individually, but setwindowcaptureaffinity solved hud in another way
 
@@ -551,25 +526,25 @@ class tracker:
         # i expect cm has no zoom and rotation, so only with translation
         trackingpoints, cm = self.motionEstimator.update(curr)
 
-        curr_gray = None
+        signal_fullscreen = None
         # blue channel
         if planetrackerchannel == "B":
-            curr_gray = curr[:, :, 0]
+            signal_fullscreen = curr[:, :, 0]
         # gray channel
         elif planetrackerchannel == "G":
-            curr_gray = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
+            signal_fullscreen = cv.cvtColor(curr, cv.COLOR_BGRA2GRAY)
         # value channel
         elif planetrackerchannel == "V":
-            curr_gray = np.max(curr, axis=2)
+            signal_fullscreen = np.max(curr, axis=2)
         else:  # fallback to blue
-            curr_gray = curr[:, :, 0]
+            signal_fullscreen = curr[:, :, 0]
 
         # neg to get dark signal
-        curr_gray = 1 - curr_gray.astype(np.float32) / 255
+        signal_fullscreen = 1 - signal_fullscreen.astype(np.float32) / 255
 
         if mtiOn:
-            mtiresult = self.mtif.update(curr_gray, cm)
-            curr_gray = mtiresult * curr_gray
+            mtiresult = self.mtif.update(signal_fullscreen, cm)
+            signal_fullscreen = mtiresult * signal_fullscreen
 
         pomega = self.omegastab.val()
         pestimated = (
@@ -581,15 +556,23 @@ class tracker:
         preference = cm @ np.concatenate((pestimated, [1]))
         plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
 
-        # set to be default
-        ponshot, wingspan, planemap, pul, maxscore = [
+        thetabypix = c_thetabypix
+        mask = (mask > 0).astype("float32")
+        size = [signal_fullscreen.shape[1], signal_fullscreen.shape[0]]
+        posref = point_legalize(posref, size)
+
+        # get region
+        pul = (posref - searchrange).astype("int32")
+        pbr = (posref + searchrange).astype("int32")
+        pul = point_legalize(pul, size)
+        pbr = point_legalize(pbr, size)
+
+        # close eye, set default in case of tracking failed
+        ponshot, wingspan, planemap = [
             preference,
             self.lastwingspan,
             np.zeros([1, 1]),
-            [0, 0],
-            0,
         ]
-        thetabypix = c_thetabypix
         if self.lazyplanetrackerfpsmanager.CheckIfTimeToDoNextFrame():
             self.lazyplanetrackerfpsmanager.SetToNextFrame()
 
@@ -601,29 +584,41 @@ class tracker:
                 except BadCaliException:
                     pass
 
-            ret = GetObjectOnSignal(
-                curr_gray,
-                preference,
-                wingspanref=self.lastwingspan,
-                mask=uimask.copy(),
-            )
+            if not mask is None:
+                signal_fullscreen = signal_fullscreen * mask
+            signal = signal_fullscreen[pul[1] : pbr[1], pul[0] : pbr[0]]
 
-            if ret != None:
-                ponshot, wingspan, planemap, pul, maxscore = ret
-                # collecing for dl project
-                # ponshot is in x,y format
-                if (
-                    collectingPlaneSample
-                    and np.random.random() < collectingPlaneSampleRate
-                ):
-                    name = DataCollector.geneName()
-                    m4coll = curr[
-                        int(ponshot[1]) - searchrange : int(ponshot[1]) + searchrange,
-                        int(ponshot[0]) - searchrange : int(ponshot[0]) + searchrange,
-                        :,
-                    ]
-                    odc[0].save(m4coll, name)
-                    odc[1].save(planemap * 255, name)
+            if signal.size > 0:
+                # not bad cut
+                ret = GetObjectOnSignal(
+                    signal,
+                    preference,
+                    wingspanref=self.lastwingspan,
+                    shaperef=self.lastshape,
+                    mask=uimask.copy(),
+                )
+
+                if ret is not None:
+                    # back to global coordinate
+                    ponshot, wingspan, planemap = ret.r + pul, ret.wingspan, ret.shadow
+                    # collecing for dl project
+                    # ponshot is in x,y format
+                    if (
+                        collectingPlaneSample
+                        and np.random.random() < collectingPlaneSampleRate
+                    ):
+                        name = DataCollector.geneName()
+                        m4coll = curr[
+                            int(ponshot[1])
+                            - searchrange : int(ponshot[1])
+                            + searchrange,
+                            int(ponshot[0])
+                            - searchrange : int(ponshot[0])
+                            + searchrange,
+                            :,
+                        ]
+                        odc[0].save(m4coll, name)
+                        odc[1].save(planemap * 255, name)
 
         pomega = (ponshot - plastinthisframe) / tdelta
 
@@ -639,6 +634,7 @@ class tracker:
 
         self.lastpos = ponshot
         self.lastwingspan = wingspan
+        self.lastshape = planemap
         if self.trackbuildinguptimer > 0:
             self.trackbuildinguptimer -= 1
         return (
@@ -650,6 +646,5 @@ class tracker:
             trackingpoints,
             planemap,
             pul,
-            maxscore,
             thetabypix,
         )

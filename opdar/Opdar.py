@@ -97,7 +97,6 @@ def main():
                 trackingpoints,
                 planemap,
                 pul,
-                maxscore,
                 thetabypix,
             ) = tr.track()
 
@@ -161,8 +160,6 @@ def main():
             info = "%4.2fkm, %4.2fs" % (distance, te)
             outputoneline()
             info = "(%4.2f,%4.2f)" % (pomega[0], pomega[1])
-            outputoneline()
-            info = "s%4.2f" % (maxscore)
             outputoneline()
 
             # plane tracker's view
