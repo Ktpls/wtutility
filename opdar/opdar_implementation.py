@@ -2,7 +2,7 @@ from utilref import *
 from opdar_config import *
 import scipy.interpolate as interpolate
 
-if useNNTracker:
+if useNnTracker:
     from utilitypack.util_torch import *
 
 uimask = cv.imread(uimaskPath)
@@ -13,8 +13,8 @@ odc = [
 ]
 
 
-def scoring(X, lamb, mu=0):
-    return 1 / ((lamb * (X - mu)) ** 2 + 1)
+def scoring(X, lamb, mu=0):  # best score at mu
+    return 1 / (lamb * ((X - mu)) ** 2 + 1)
 
 
 def deltaX(X):
@@ -159,7 +159,7 @@ def estimateWingSpan(m):
     return 2 * np.sqrt(dist2max)
 
 
-if useNNTracker:
+if useNnTracker:
     from exp.DLOnOpdarPlaneDetection.nntracker import getmodel
 
     nntrker = getmodel(r".\exp\DLOnOpdarPlaneDetection\nntracker.pth")
@@ -167,20 +167,8 @@ else:
     nntrker = None
 
 
-def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
-    mask = mask.astype("float32") * 1 / 255
-    size = [m.shape[1], m.shape[0]]
-    posref = point_legalize(posref, size)
-
-    # get region
-    pul = (posref - searchrange).astype("int32")
-    pbr = (posref + searchrange).astype("int32")
-    pul_l = point_legalize(pul, size)
-    pbr_l = point_legalize(pbr, size)
-    if ((pul - pul_l) ** 2).sum() + ((pbr - pbr_l) ** 2).sum() > 1:
-        # bad shape for nn
-        return None
-    m = m[pul_l[1] : pbr_l[1], pul_l[0] : pbr_l[0]]
+def ObjectFilterNN(m: np.ndarray):
+    assert np.sqrt(np.sum((np.array(m.shape) - [128, 128]) ** 2)) < 1
     mndarray = m
     with torch.no_grad():
         from torchvision.transforms import ToTensor
@@ -191,44 +179,13 @@ def planetracknn(m, posref, mask=None, *paralistelse, **paradictelse):
         result = result[0, :, :, :]
         m = mndarray
     result = tensorimg2ndarray(result)
-    # savemat(result)
-    # savemat(mndarray)
     result = cv.threshold(result, 0.5, 1, cv.THRESH_BINARY)[1]
-
-    return (
-        0,
-        0,
-        0,
-        0,
-        0,
-    )
+    return result
 
 
-def planetrack(
-    m: np.ndarray, posref: np.ndarray, wingspanref=-1, mask: np.ndarray = None
-):
-    """
-    expects to have m negatived and in range [0, 1] and type np.float32
-    """
-    mask = (mask > 0).astype("float32")
-    size = [m.shape[1], m.shape[0]]
-    posref = point_legalize(posref, size)
-
-    # get region
-    pul = (posref - searchrange).astype("int32")
-    pbr = (posref + searchrange).astype("int32")
-    pul = point_legalize(pul, size)
-    pbr = point_legalize(pbr, size)
-    m = m[pul[1] : pbr[1], pul[0] : pbr[0]]
-    if not mask is None:
-        mask = mask[pul[1] : pbr[1], pul[0] : pbr[0]]
-        m = m * mask
-    if m.size <= 0:
-        return None
-    imgshape = m.shape
-
+def ObjectFilterTrad(m: np.ndarray):
     # adaptive thresh
-    ave = regionave(m, [backgroundrange, backgroundrange], mask)
+    ave = regionave(m, [backgroundrange, backgroundrange])
     madat = m - ave
     madat[madat < 0] = 0
     madat = cv.normalize(madat, madat, 0, 1, cv.NORM_MINMAX)
@@ -249,78 +206,154 @@ def planetrack(
 
     rho = density(m, regionrange)
     m_rhoThreshed = m * cv.threshold(rho, routhresh, 1, cv.THRESH_BINARY)[1]
+    return m_rhoThreshed
 
-    def SeperateObject(m: cv.Mat):
-        contours = cv.findContours(
-            m.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
-        )[0]
-        ret: list[cv.Mat] = []
-        for c in range(len(contours)):
-            mcontour = np.zeros_like(m)
-            cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
-            ret.append(mcontour)
-        return ret
 
-    objects = SeperateObject(m_rhoThreshed)
+def SplitObject(m: cv.Mat):
+    contours = cv.findContours(
+        m.astype("uint8"), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+    )[0]
+    ret: list[cv.Mat] = []
+    for c in range(len(contours)):
+        mcontour = np.zeros_like(m)
+        cv.drawContours(mcontour, contours, c, 1, thickness=cv.FILLED)
+        ret.append(mcontour)
+    return ret
 
-    @dataclasses.dataclass
-    class ObjectInfo:
-        r: np.ndarray
-        wingspan: float
 
-    # info = np.zeros([contnum, 4])  # x, y, wingspan, averangeAdaptiveThreshErr
-    info: list[ObjectInfo] = []
-    for o in objects:
-        clusterXdist = o.sum(0)
-        clusterYdist = o.sum(1)
-        X = np.arange(pul[0], pbr[0])
-        Y = np.arange(pul[1], pbr[1])
+@dataclasses.dataclass
+class ObjectInfo:
+    r: np.ndarray
+    wingspan: float
+    shadow: cv.Mat
+    aabb: np.ndarray
 
-        info.append(
-            ObjectInfo(
-                np.array(
-                    [
-                        (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
-                        (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
-                    ]
-                ),
-                estimateWingSpan(o),
-            )
+    @staticmethod
+    def fromObjectSignal(m: cv.Mat):
+        clusterXdist = m.sum(0)
+        clusterYdist = m.sum(1)
+        X = np.arange(0, m.shape[1])
+        Y = np.arange(0, m.shape[0])
+
+        return ObjectInfo(
+            r=np.array(
+                [
+                    (X * clusterXdist).sum() / (clusterXdist.sum() + epsilon),
+                    (Y * clusterYdist).sum() / (clusterYdist.sum() + epsilon),
+                ]
+            ),
+            wingspan=estimateWingSpan(m),
+            shadow=m,
+            aabb=np.array(get_AABB(m)),
         )
 
-    sqrdist = ((([i.r for i in info] - posref.reshape([1, 2])) / searchrange) ** 2).sum(
-        axis=1
-    )
+
+def GetObjectOnSignal(
+    m: np.ndarray,
+    posref: np.ndarray,
+    wingspanref=None,
+    shaperef=None,
+    mask: np.ndarray = None,
+):
+    """
+    expects to have m negatived and in range [0, 1] and type np.float32
+    """
+    mask = (mask > 0).astype("float32")
+    size = [m.shape[1], m.shape[0]]
+    posref = point_legalize(posref, size)
+
+    # get region
+    pul = (posref - searchrange).astype("int32")
+    pbr = (posref + searchrange).astype("int32")
+    pul = point_legalize(pul, size)
+    pbr = point_legalize(pbr, size)
+    m = m[pul[1] : pbr[1], pul[0] : pbr[0]]
+    if not mask is None:
+        mask = mask[pul[1] : pbr[1], pul[0] : pbr[0]]
+        m = m * mask
+    if m.size <= 0:
+        return None
+
+    if useNnTracker:
+        m = ObjectFilterNN(m)
+    else:
+        m = ObjectFilterTrad(m)
+
+    info: list[ObjectInfo] = [ObjectInfo.fromObjectSignal(o) for o in SplitObject(m)]
+
+    # position score
+    # searchrange is the center of cutted roi
+    sqrdist = ((([i.r for i in info] - searchrange) / searchrange) ** 2).sum(axis=1)
     scorepos = scoring(sqrdist, posrellamb)
     scorepos = np.ones_like(scorepos)
 
-    if wingspanref < 0:
+    # wingspan score
+    if wingspanref is None:
         # no suggusted wingspan
-        # use the bigest one as reference, since its often clear in first tracking
-        wingspanref = np.max([i.wingspan for i in info], axis=0)
-    wingspanerrrelative = (wingspanref - [i.wingspan for i in info]) / (
-        wingspanref + epsilon
-    )
-    scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
-    scorewingspan = (
-        np.array([i.wingspan for i in info]) >= wingspanleast
-    ) * scorewingspan
+        scorewingspan = 1
+    else:
+        wingspanerrrelative = (wingspanref - [i.wingspan for i in info]) / (
+            wingspanref + epsilon
+        )
+        scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
+        scorewingspan = (
+            np.array([i.wingspan for i in info]) >= wingspanleast
+        ) * scorewingspan
 
-    totalscore = scorepos * scorewingspan
+    # shape score
+    if shaperef is None:
+        # no suggusted shape
+        shapescore = 1
+    else:
+        objinfoShaperef = ObjectInfo.fromObjectSignal(shaperef)
+        allObj = info + [objinfoShaperef]
+        # [obj, [minx, miny, maxx, maxy]]
+        aabb_uncentred = np.array([i.aabb for i in allObj])
+        center = np.array([i.r for i in info])
+        aabbmin = aabb_uncentred[:, :2] - center
+        aabbmax = aabb_uncentred[:, 2:] - center
+        aabbminOfAll = np.min(aabbmin, axis=0)
+        aabbmaxOfAll = np.max(aabbmax, axis=0)
+        newShape = np.ceil(aabbmaxOfAll - aabbminOfAll)  # dont need a flip
+        newCenter = np.flip(-aabbminOfAll)
+
+        relocateds = [
+            cv.warpAffine(
+                o.shadow,
+                np.array(
+                    [[1, 0, newCenter[0] - o.r[0]], [0, 1, newCenter[1] - o.r[1]]]
+                ),
+                newShape,
+            )
+            for o in allObj
+        ]
+        # relocateds[-1] is the shaperef
+        shapescore = np.array(
+            [
+                scoring(
+                    np.sum((o - relocateds[-1]) ** 2)
+                    / (np.sum(relocateds[-1]) + epsilon),
+                    shapereallamb,
+                )
+                for o in relocateds
+            ]
+        )[
+            :-1
+        ]  # remove the shaperef
+
+    # total score
+    totalscore = scorepos * scorewingspan * shapescore
     maxscorecontourid = np.argmax(totalscore, axis=0)
 
     # not matched satisfyingly
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    mcontourmax = objects[maxscorecontourid]
-    clustermax = mcontourmax * m
-
     # (posx, posy), wingspan, clustermax, pul, its score
     return (
         info[maxscorecontourid].r,
         info[maxscorecontourid].wingspan,
-        clustermax,
+        info[maxscorecontourid].shadow * m,
         pul,
         totalscore[maxscorecontourid],
     )
@@ -568,15 +601,12 @@ class tracker:
                 except BadCaliException:
                     pass
 
-            if useNNTracker:
-                ret = planetracknn(curr, preference, mask=uimask.copy())
-            else:
-                ret = planetrack(
-                    curr_gray,
-                    preference,
-                    wingspanref=self.lastwingspan,
-                    mask=uimask.copy(),
-                )
+            ret = GetObjectOnSignal(
+                curr_gray,
+                preference,
+                wingspanref=self.lastwingspan,
+                mask=uimask.copy(),
+            )
 
             if ret != None:
                 ponshot, wingspan, planemap, pul, maxscore = ret

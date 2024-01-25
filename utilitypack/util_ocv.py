@@ -239,7 +239,7 @@ def aPicWithTextWithPil(
 
     # Return the image
     # Convert the PIL image to an np.ndarray
-    return addShadow2HUD(np.array(image),1)
+    return addShadow2HUD(np.array(image), 1)
 
 
 def addShadow2HUD(m, thickness=2, color=50):
@@ -297,3 +297,22 @@ class DataCollector:
         if name is None:
             name = DataCollector.geneName()
         savemat(m, f"{name}", path=self.outputpath)
+
+
+def get_AABB(binary_image):
+    """
+    This function takes a binary value image as input and outputs the AABB of the object in the image which is indicated by its pixel value=255.
+    """
+    # find the indices of non-zero elements in the binary image
+    non_zero_indices = np.nonzero(binary_image)
+    if non_zero_indices[0].size == 0:
+        return 0, 0, 0, 0
+
+    # get the minimum and maximum x and y coordinates of the non-zero elements
+    min_x = np.min(non_zero_indices[1])
+    min_y = np.min(non_zero_indices[0])
+    max_x = np.max(non_zero_indices[1])
+    max_y = np.max(non_zero_indices[0])
+
+    # return the AABB
+    return (min_x, min_y, max_x, max_y)

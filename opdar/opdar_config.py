@@ -1,8 +1,8 @@
 from utilitypack import rgb2bgr, hsv2rgb, np
 
 
-def getlambfromtarget(how, where):
-    return np.sqrt((1 / how - 1)) / where
+def getlambfromtarget(how, where, mu=0):
+    return (1 / how - 1) / ((where - mu) ** 2)
 
 
 # screen
@@ -15,7 +15,7 @@ stablamb = 0.75
 stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
-useNNTracker = False
+useNnTracker = False
 trackFps = 20
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = "V"
@@ -25,8 +25,9 @@ adptthresh = 0.1
 abslthresh = 0.15
 regionrange = 3
 routhresh = 0.05
-posrellamb = getlambfromtarget(0.75, 1)
+posrellamb = getlambfromtarget(0.75, 1) # pos ref not so accurate
 wingspanrellamb = getlambfromtarget(0.5, 0.25)
+shapereallamb = getlambfromtarget(0.2, 1)
 wingspanleast = 5
 scoreleast = 0.1
 mtiOn = True
