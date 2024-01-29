@@ -1803,3 +1803,11 @@ class Switch:
 
     def __call__(self) -> bool:
         return self.__value
+
+
+def inProbability(p: float) -> bool:
+    return random.random() < p
+
+
+def flipCoin() -> bool:
+    return inProbability(0.5)

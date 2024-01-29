@@ -88,19 +88,30 @@ def main():
 
         if tracking:
             # track
+            trkret = tr.track()
             (
                 ponshot,
                 pomega,
                 plastinthisframe,
-                wingspanpx,
+                wingspan,
                 cm,
                 trackingpoints,
                 planemap,
                 pul,
                 thetabypix,
-            ) = tr.track()
+            ) = (
+                trkret.ponshot,
+                trkret.pomega,
+                trkret.plastinthisframe,
+                trkret.wingspan,
+                trkret.cm,
+                trkret.trackingpoints,
+                trkret.planemap,
+                trkret.pul,
+                trkret.thetabypix,
+            )
 
-            distance = targetwingspan / (thetabypix * wingspanpx)
+            distance = targetwingspan / (thetabypix * wingspan + epsilon)
 
             te = distance / vbullet
             # the compensation of calculation delay from shot time

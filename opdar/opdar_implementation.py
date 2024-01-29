@@ -7,6 +7,7 @@ if useNnTracker:
 
 uimask = cv.imread(uimaskPath)
 uimask = cv.cvtColor(uimask, cv.COLOR_BGR2GRAY)
+uimask = (uimask > 0).astype(np.uint8)
 odc = [
     DataCollector(datacoll_samplepath),
     DataCollector(datacoll_labelpath),
@@ -65,12 +66,16 @@ class stablizerNd(stablizer_base):
         self.dim = len(x0)
         self.stab = [stablizer(lamb, c) for c in x0]
 
+    def val(self):
+        return np.array([s.val() for s in self.stab])
+
     def sample(self, x, acceptableerr=-1):
         assert len(x) == self.dim
         if isinstance(acceptableerr, (float, int)):
             acceptableerr = [acceptableerr] * self.dim
         assert len(acceptableerr) == self.dim
-        return [self.stab[i].sample(x[i], acceptableerr[i]) for i in range(self.dim)]
+        [self.stab[i].sample(x[i], acceptableerr[i]) for i in range(self.dim)]
+        return self.val()
 
 
 # assume a remains almost constant
@@ -187,26 +192,23 @@ def ObjectFilterTrad(m: np.ndarray):
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange])
     madat = m - ave
-    madat[madat < 0] = 0
-    madat = cv.normalize(madat, madat, 0, 1, cv.NORM_MINMAX)
-    # normally filter from background color
-    madat[madat < adptthresh] = 0
+    madat = (madat >= adptthresh).astype(np.uint8)
 
     # abs thresh
     mabst = np.copy(m)
-    mabst[mabst < abslthresh] = 0
+    mabst = (mabst >= abslthresh).astype(np.uint8)
 
-    m = madat * mabst
-
-    # clustering
+    # denoise
     def density(m, range=5):
         flter = np.ones([range, range])
         flter *= 1 / flter.size
         return cv.filter2D(m, -1, flter)
 
     rho = density(m, regionrange)
-    m_rhoThreshed = m * cv.threshold(rho, routhresh, 1, cv.THRESH_BINARY)[1]
-    return m_rhoThreshed
+    m_rhoThreshed = (rho >= rhothresh).astype(np.uint8)
+
+    m = (madat * mabst * m_rhoThreshed).astype(np.float32)
+    return m
 
 
 def SplitObject(m: cv.Mat):
@@ -225,7 +227,7 @@ def SplitObject(m: cv.Mat):
 class ObjectInfo:
     r: np.ndarray
     wingspan: float
-    shadow: cv.Mat
+    shape: cv.Mat
     aabb: np.ndarray
 
     @staticmethod
@@ -243,7 +245,7 @@ class ObjectInfo:
                 ]
             ),
             wingspan=estimateWingSpan(m),
-            shadow=m,
+            shape=m,
             aabb=np.array(get_AABB(m)),
         )
 
@@ -259,12 +261,14 @@ def GetObjectOnSignal(
         m = ObjectFilterNn(m)
     else:
         m = ObjectFilterTrad(m)
-
-    info: list[ObjectInfo] = [ObjectInfo.fromObjectSignal(o) for o in SplitObject(m)]
+    obj = SplitObject(m)
+    if len(obj) == 0:
+        return None
+    obj = [ObjectInfo.fromObjectSignal(o) for o in obj]
 
     # position score
     # searchrange is the center of cutted roi
-    sqrdist = ((([i.r for i in info] - posref) / posref) ** 2).sum(axis=1)
+    sqrdist = ((([i.r for i in obj] - posref) / posref) ** 2).sum(axis=1)
     scorepos = scoring(sqrdist, posrellamb)
     scorepos = np.ones_like(scorepos)
 
@@ -273,12 +277,12 @@ def GetObjectOnSignal(
         # no suggusted wingspan
         scorewingspan = 1
     else:
-        wingspanerrrelative = (wingspanref - [i.wingspan for i in info]) / (
+        wingspanerrrelative = (wingspanref - np.array([i.wingspan for i in obj])) / (
             wingspanref + epsilon
         )
         scorewingspan = scoring(wingspanerrrelative, wingspanrellamb)
         scorewingspan = (
-            np.array([i.wingspan for i in info]) >= wingspanleast
+            np.array([i.wingspan for i in obj]) >= wingspanleast
         ) * scorewingspan
 
     # shape score
@@ -287,22 +291,25 @@ def GetObjectOnSignal(
         shapescore = 1
     else:
         objinfoShaperef = ObjectInfo.fromObjectSignal(shaperef)
-        allObj = info + [objinfoShaperef]
+        allObj = obj + [objinfoShaperef]
         # [obj, [minx, miny, maxx, maxy]]
         aabb_uncentred = np.array([i.aabb for i in allObj])
-        center = np.array([i.r for i in info])
+        center = np.array([i.r for i in allObj])
         aabbmin = aabb_uncentred[:, :2] - center
         aabbmax = aabb_uncentred[:, 2:] - center
         aabbminOfAll = np.min(aabbmin, axis=0)
         aabbmaxOfAll = np.max(aabbmax, axis=0)
-        newShape = np.ceil(aabbmaxOfAll - aabbminOfAll)  # dont need a flip
+        newShape = np.ceil(aabbmaxOfAll - aabbminOfAll).astype(
+            np.uint32
+        )  # dont need a flip
         newCenter = np.flip(-aabbminOfAll)
 
         relocateds = [
             cv.warpAffine(
-                o.shadow,
+                o.shape,
                 np.array(
-                    [[1, 0, newCenter[0] - o.r[0]], [0, 1, newCenter[1] - o.r[1]]]
+                    [[1, 0, newCenter[0] - o.r[0]], [0, 1, newCenter[1] - o.r[1]]],
+                    dtype=np.float32,
                 ),
                 newShape,
             )
@@ -324,13 +331,16 @@ def GetObjectOnSignal(
 
     # total score
     totalscore = scorepos * scorewingspan * shapescore
+    # totalscore = np.ones(len(obj))
     maxscorecontourid = np.argmax(totalscore, axis=0)
 
     # not matched satisfyingly
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    return info[maxscorecontourid]
+    savemat(m * 255)
+    savemat(obj[maxscorecontourid].shape * 255)
+    return obj[maxscorecontourid]
 
 
 def cameramotion(m0, m1, mask, subsamplerate=0.2):
@@ -418,7 +428,7 @@ class MtiFilter:
         # compared with prev frame
         cammotion: np.ndarray
 
-    def __init__(self, mtiQueueSize, on) -> None:
+    def __init__(self, mtiQueueSize) -> None:
         """
         consider storage only the transformed and meaned pic
         like the dynamic window way. kick the oldest one in queue out, and take its effect out of meaned pic
@@ -497,6 +507,19 @@ class MotionEstimator:
         )
 
 
+@dataclasses.dataclass
+class trackerRet:
+    ponshot: np.ndarray
+    pomega: np.ndarray
+    plastinthisframe: np.ndarray
+    wingspan: float
+    cm: np.ndarray
+    trackingpoints: typing.Any
+    planemap: cv.Mat
+    pul: np.ndarray
+    thetabypix: float
+
+
 class tracker:
     def setup(self, p0):
         self.omegastab = stablizerNd(stablamb, [0, 0])
@@ -557,9 +580,8 @@ class tracker:
         plastinthisframe = cm @ np.concatenate((self.lastpos, [1]))
 
         thetabypix = c_thetabypix
-        mask = (mask > 0).astype("float32")
         size = [signal_fullscreen.shape[1], signal_fullscreen.shape[0]]
-        posref = point_legalize(posref, size)
+        posref = point_legalize(preference, size)
 
         # get region
         pul = (posref - searchrange).astype("int32")
@@ -584,8 +606,8 @@ class tracker:
                 except BadCaliException:
                     pass
 
-            if not mask is None:
-                signal_fullscreen = signal_fullscreen * mask
+            if not uimask is None:
+                signal_fullscreen = signal_fullscreen * uimask
             signal = signal_fullscreen[pul[1] : pbr[1], pul[0] : pbr[0]]
 
             if signal.size > 0:
@@ -600,7 +622,7 @@ class tracker:
 
                 if ret is not None:
                     # back to global coordinate
-                    ponshot, wingspan, planemap = ret.r + pul, ret.wingspan, ret.shadow
+                    ponshot, wingspan, planemap = ret.r + pul, ret.wingspan, ret.shape
                     # collecing for dl project
                     # ponshot is in x,y format
                     if (
@@ -637,14 +659,14 @@ class tracker:
         self.lastshape = planemap
         if self.trackbuildinguptimer > 0:
             self.trackbuildinguptimer -= 1
-        return (
-            ponshot,
-            pomega,
-            plastinthisframe,
-            wingspan,
-            cm,
-            trackingpoints,
-            planemap,
-            pul,
-            thetabypix,
+        return trackerRet(
+            ponshot=ponshot,
+            pomega=pomega,
+            plastinthisframe=plastinthisframe,
+            wingspan=wingspan if wingspan is not None else 1,
+            cm=cm,
+            trackingpoints=trackingpoints,
+            planemap=planemap if planemap is not None else np.zeros([1, 1]),
+            pul=pul,
+            thetabypix=thetabypix,
         )
