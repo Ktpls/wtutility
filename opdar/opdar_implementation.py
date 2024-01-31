@@ -191,23 +191,18 @@ def ObjectFilterNn(m: np.ndarray):
 def ObjectFilterTrad(m: np.ndarray):
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange])
-    madat = m - ave
-    madat = (madat >= adptthresh).astype(np.uint8)
+    mAdat = m - ave
+    mAdat = (mAdat >= adptthresh).astype(np.uint8)
 
     # abs thresh
-    mabst = np.copy(m)
-    mabst = (mabst >= abslthresh).astype(np.uint8)
+    mAbst = np.copy(m)
+    mAbst = (mAbst >= abslthresh).astype(np.uint8)
 
-    # denoise
-    def density(m, range=5):
-        flter = np.ones([range, range])
-        flter *= 1 / flter.size
-        return cv.filter2D(m, -1, flter)
+    # density thresh
+    rho = regionave(m, [backgroundrange, backgroundrange])
+    mRhoThreshed = (rho >= rhothresh).astype(np.uint8)
 
-    rho = density(m, regionrange)
-    m_rhoThreshed = (rho >= rhothresh).astype(np.uint8)
-
-    m = (madat * mabst * m_rhoThreshed).astype(np.float32)
+    m = (mAdat * mAbst * mRhoThreshed).astype(np.float32)
     return m
 
 

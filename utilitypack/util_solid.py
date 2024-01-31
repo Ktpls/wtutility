@@ -516,7 +516,7 @@ class Progress:
         while True:
             if current / self.total > self.nowStage * self.printPercentageStep:
                 self.nowStage += 1
-                print(f"{100 * self.current / self.total:>3.2f}%", end="\r")
+                print(f"{100 * current / self.total:>3.2f}%", end="\r")
             else:
                 break
 
@@ -528,10 +528,8 @@ class expparser:
     """
     TODO:
     numlike
-        tensor support(done)
-            considering operator
-        string support(done)
-            considering operator
+        tensor operator
+        string operator
         named parameter in function call
             foo(1, 2, 3, a=1, b=2)
     """
@@ -560,7 +558,6 @@ class expparser:
         OPR = 4
         END = 5
         IDR = 6
-        COMMA = 7
 
     @dataclasses.dataclass
     class __OprPriorityLeap:
@@ -952,14 +949,38 @@ class expparser:
         endedby: "expparser.TokenType"
 
     @staticmethod
+    def __expparse_recursive_comma_collector_wrapped(
+        s, varList: typing.Dict, funcList: typing.Dict, i=0
+    ):
+        nextval = expparser.__expparse_recursive(s, varList, funcList, i)
+        if nextval.endedby == expparser.TokenType.COMMA:
+            vallist = [nextval.val]
+            while True:
+                nextval = expparser.__expparse_recursive(
+                    s, varList, funcList, nextval.end
+                )
+                vallist.append(nextval.val)
+                if nextval.endedby != expparser.TokenType.COMMA:
+                    break
+            retval = vallist
+        else:
+            retval = nextval.val
+        return expparser.__ExpParserResult(
+            val=retval, end=nextval.end, endedby=nextval.endedby
+        )
+
+    @staticmethod
     def __expparse_recursive(
-        s, varList: typing.Dict, funcList: typing.Dict, i=0, collectAllCommaParts=False
+        s,
+        varList: typing.Dict,
+        funcList: typing.Dict,
+        startPos=0,
     ):
         # fsm fields
         state = expparser.__State.START
         token: expparser.Token = None
         # never modify peekToken
-        peekToken = expparser.__NextToken(s, i)
+        peekToken = expparser.__NextToken(s, startPos)
 
         # buffer
         tokenList: typing.List[expparser.Token] = list()
@@ -1020,8 +1041,8 @@ class expparser:
                     [], peekToken.end, expparser.TokenType.KET
                 )
             else:
-                subresult = expparser.__expparse_recursive(
-                    s, varList, funcList, token.end, collectAllCommaParts=True
+                subresult = expparser.__expparse_recursive_comma_collector_wrapped(
+                    s, varList, funcList, token.end
                 )
             tokenList.pop()  # remove the bra
             AddNewVirtualTokenValuedByCalculation(subresult)
@@ -1143,14 +1164,6 @@ class expparser:
                 val = tokenList[-1].value
             return expparser.__ExpParserResult(val, expendpos, endtype)
 
-        def dealWithFirstComma():
-            nonlocal state, oprRisingBeginPosList, token, tokenList
-            state = expparser.__State.COMMA
-            part = dealWithExpressionEndSign()
-            commaList.append(part.val)
-            endpos = part.end
-            return endpos
-
         # the fsm illustrated in notebook
         while True:
             MoveForwardToNextToken()
@@ -1173,16 +1186,11 @@ class expparser:
                 elif token.type in [
                     expparser.TokenType.EOF,
                     expparser.TokenType.KET,
+                    expparser.TokenType.COMMA,
                 ]:
                     # return
                     state = expparser.__State.END
                     return dealWithExpressionEndSign()
-                elif token.type == expparser.TokenType.COMMA:
-                    if collectAllCommaParts:
-                        dealWithFirstComma()
-                    else:
-                        state = expparser.__State.END
-                        return dealWithExpressionEndSign()
                 else:
                     RaiseTokenException(token)
             elif state == expparser.__State.NUM:
@@ -1191,43 +1199,13 @@ class expparser:
                 elif token.type in [
                     expparser.TokenType.EOF,
                     expparser.TokenType.KET,
+                    expparser.TokenType.COMMA,
                 ]:
                     # return
                     state = expparser.__State.END
                     return dealWithExpressionEndSign()
-                elif token.type == expparser.TokenType.COMMA:
-                    if collectAllCommaParts:
-                        dealWithFirstComma()
-                    else:
-                        state = expparser.__State.END
-                        return dealWithExpressionEndSign()
                 else:
                     RaiseTokenException(token)
-            elif state == expparser.__State.COMMA:
-                assert collectAllCommaParts
-                # dont care which expression end sign that ends the last comma part is
-                # so 1,2, and 1,2 are the same
-                if token.type in [expparser.TokenType.EOF, expparser.TokenType.KET]:
-                    state = expparser.__State.END
-                    return expparser.__ExpParserResult(commaList, token.end, token.type)
-                else:
-                    newpart = expparser.__expparse_recursive(
-                        s, varList, funcList, token.start, collectAllCommaParts=False
-                    )
-
-                    tokenList.pop()  # remove the loaded token just after comma
-                    AddNewVirtualTokenValuedByCalculation(newpart)
-                    commaList.append(newpart.val)
-                    # the newpart end sign ends both the newpart, and the comma reader
-                    # but if endsign is comma, comma reader just carries on
-                    if newpart.endedby in [
-                        expparser.TokenType.EOF,
-                        expparser.TokenType.KET,
-                    ]:
-                        state = expparser.__State.END
-                        return expparser.__ExpParserResult(
-                            commaList, token.end, token.type
-                        )
             elif state == expparser.__State.END:
                 RaiseTokenException(token)
 
@@ -1255,9 +1233,7 @@ class expparser:
 
     @staticmethod
     def expparse(s, var={}, func={}):
-        return expparser.__expparse_recursive(
-            s, var, func, collectAllCommaParts=True
-        ).val
+        return expparser.__expparse_recursive_comma_collector_wrapped(s, var, func).val
 
     class Utils:
         class NonOptionalException(Exception):
@@ -1304,7 +1280,7 @@ class expparser:
         "neg": lambda x: -x,
         "iif": lambda cond, x, y: x if expparser.NumLikeUnionUtil.ToBool(cond) else y,
         "eq": lambda x, y, ep=0.001: abs(x - y) < ep,
-        "streq": lambda x, y: x == y,
+        "StrEq": lambda x, y: x == y,
         "CStr": str,
         "CNum": float,
         "CBool": bool,
@@ -1759,7 +1735,7 @@ class BeanUtil:
         else:
             BeanUtil.__DictOrObj2DictOrObjCopy(src, dst, option)
 
-
+@WrapperAsMyTaste()
 def AllOptionalInit(clz):
     oldInit = clz.__init__
     kws = [k for k in oldInit.__annotations__.keys() if k != "return"]

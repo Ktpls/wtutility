@@ -1,14 +1,14 @@
 from utilref import *
 
 
-@AllOptionalInit
+@AllOptionalInit()
 @dataclasses.dataclass
 class clz1:
     a: int
     b: int
 
 
-@AllOptionalInit
+@AllOptionalInit()
 @dataclasses.dataclass
 class clz2:
     a: int
