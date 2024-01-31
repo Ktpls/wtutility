@@ -67,12 +67,12 @@ class BulletinApp:
         self.hkm = None
         self.bulletinoutputpos = bulletinoutputpos
 
-    @WrapperAsMyTaste()
+    @WrapperAsMyTaste
     def Business(foo, self: "BulletinApp"):
         self.business.append(foo)
         return foo
 
-    @WrapperAsMyTaste()
+    @WrapperAsMyTaste
     def Hotkey(foo, self: "BulletinApp", prompt, key, continiousPress=None):
         print(f"{prompt:<20}{HotkeyManager.hotkeytask.getKeyRepr(key)}")
         self.hotkeytask.append(

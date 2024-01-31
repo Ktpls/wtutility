@@ -18,7 +18,7 @@ def main():
 
     hotkeySwitch = Switch(True)
 
-    @WrapperAsMyTaste()
+    @WrapperAsMyTaste
     def WithHotkeySwitch(f):
         def foo(*arg, **kw):
             if hotkeySwitch():
@@ -64,7 +64,7 @@ def main():
         PreciseSleep(0.05)
         keyshortcut.mouse.click(1)
 
-        app.bulletin.putup(bulletinBoard.Poster("tookOff"))
+        app.bulletin.putup(bulletinBoard.Poster("takeOff"))
 
     for key, dire, name in [
         [

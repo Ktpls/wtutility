@@ -95,7 +95,7 @@ def UnfinishedWrapper(msg=None) -> typing.Callable[..., typing.Any]:
     return f2
 
 
-def WrapperAsMyTaste():
+def WrapperAsMyTaste(wrappedLogic=None):
     """
     use like this
         @WrapperAsMyTaste()
@@ -104,12 +104,17 @@ def WrapperAsMyTaste():
         @yourWrapper(some_arg_your_wrapper_needs)
         def RealFunc(func_arg):
             ...
-    note that this is forbiden:
-        @yourWrapper
+    or
+        @yourWrapper # if no arg for yourWrapper
         def RealFunc(func_arg):
             ...
-    use this instead if no arg for myWrapper
-        @yourWrapper()
+    note that this is forbiden:
+        @yourWrapper(some_callable)
+        def RealFunc(func_arg):
+            ...
+    cuz wrapper is confused with if its processing the wrapped function or callable in arg
+    use this instead if wrapper needs another callable more than the one you are wrapping
+        @yourWrapper(keyword=some_callable)
         def RealFunc(func_arg):
             ...
 
@@ -118,16 +123,24 @@ def WrapperAsMyTaste():
     ###############
     """
 
-    def toGetWrapperLogic(wrapperLogic):
+    def toGetWrapperLogic(wrappedLogic):
         def newWrapper(*arg, **kw):
             def toGetFLogic(fLogic):
-                return wrapperLogic(fLogic, *arg, **kw)
+                return wrappedLogic(fLogic, *arg, **kw)
 
-            return toGetFLogic
+            if len(arg) == 1 and isinstance(arg[0], typing.Callable) and len(kw) == 0:
+                # calling without parens
+                return wrappedLogic(arg[0])
+            else:
+                return toGetFLogic
 
         return newWrapper
 
-    return toGetWrapperLogic
+    if wrappedLogic is None:
+        # calling without parens
+        return toGetWrapperLogic
+    else:
+        return toGetWrapperLogic(wrappedLogic)
 
 
 class logger:
@@ -265,7 +278,7 @@ class StoppableSomewhat:
         ...
 
     @staticmethod
-    @WrapperAsMyTaste()
+    @WrapperAsMyTaste
     def EasyUse(f, implType=None, **kwStoppableSomewhat):
         """
         wrapper on function, and ready for use
@@ -532,6 +545,7 @@ class expparser:
         string operator
         named parameter in function call
             foo(1, 2, 3, a=1, b=2)
+        delayed evaluation optimization
     """
 
     class TokenType(enum.Enum):
@@ -1735,7 +1749,8 @@ class BeanUtil:
         else:
             BeanUtil.__DictOrObj2DictOrObjCopy(src, dst, option)
 
-@WrapperAsMyTaste()
+
+@WrapperAsMyTaste
 def AllOptionalInit(clz):
     oldInit = clz.__init__
     kws = [k for k in oldInit.__annotations__.keys() if k != "return"]

@@ -769,7 +769,8 @@ class Rythm:
             win32api.Beep(t.freq, t.dur)
 
     @StoppableSomewhat.EasyUse(
-        strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun
+        strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
+        implType=StoppableThread,
     )
     def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm):
         selfRythm.play()
