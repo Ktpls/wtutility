@@ -1,8 +1,6 @@
 # %%
 # perform dataenh
 from utilref import *
-from utilitypack.util_torch import *
-from utilitypack.util_windows import *
 from nntracker_common import labeldataset
 import hashlib
 
@@ -255,11 +253,14 @@ class SampleLabelPair:
 
 
 def performDataEnh():
-
+    nameList=[]
     def saveFiles(para):
         name = DataCollector.geneName() + ".png"
         savemat(para.sample * 255, name, rf"{dest}/spl")
         savemat(para.label * 255, name, rf"{dest}/lbl")
+        nameList.append(name)
+    def afterProc():
+        save_list_to_xls(nameList,rf"{dest}/all.xlsx")
 
     source = Xls2ListList(xlsSource)
     # pick some
@@ -295,6 +296,7 @@ def performDataEnh():
         .map(lambda p: SampleLabelPair(*dataEnhance(p.sample, p.label)))
         .peek(saveFiles)
     )
+    afterProc()
 
 
 performDataEnh()

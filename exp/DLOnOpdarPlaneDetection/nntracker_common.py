@@ -1,12 +1,9 @@
 RunOnWtUtilityEnviroment = True
 if RunOnWtUtilityEnviroment:
-    if __package__ == '':
-        from utilref import *
-    else:
-        from .utilref import *
-    pass
+    from utilref import *
 else:
-    from utilkaggle import *
+    # from utilkaggle import *
+    pass
 from torchvision.transforms import ToTensor
 
 from torch.utils.data import Dataset

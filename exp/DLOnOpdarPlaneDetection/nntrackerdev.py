@@ -26,9 +26,9 @@ print("loading dataset")
 datasetname = "LE2REnh"
 datasetroot = r"C:\file\code\wtutility/exp/DLOnOpdarPlaneDetection/dataset/"
 if datasetname == "LE2REnh":
-    path = r"LE2REnh/LE2REnh.zip"
+    path = r"LE2REnh/"
     sel = r"LE2REnh/all.xlsx"
-    datasettype = "zip"
+    datasettype = "fld"
 if datasetname == "LE2RAREnh":
     path = r"LE2RAREnh/LE2RAREnh.zip"
     sel = r"LE2RAREnh/all.xlsx"
@@ -186,7 +186,7 @@ def viewmodel():
             plt.imshow(lbl, **imshowconfig)
             # npp.subplot(i, 3)
             # plt.imshow(cv.cvtColor(srcatte, cv.COLOR_BGR2RGB))
-    print(f"average inferencetime={totalinferencetime / samplenum}")
+    print(f"average inference time={totalinferencetime / samplenum}")
 
 
 viewmodel()
