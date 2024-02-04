@@ -551,7 +551,7 @@ class Stream:
             return Stream.Collector(lambda stream: list(stream.content))
 
         @staticmethod
-        def toMap(keyPred, valuePred):
+        def toDict(keyPred, valuePred):
             return Stream.Collector(
                 lambda stream: {keyPred(i): valuePred(i) for i in stream.content}
             )
