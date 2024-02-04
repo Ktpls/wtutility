@@ -3,11 +3,8 @@
 RunOnWtUtilityEnviroment = True
 # %%
 # basics
-if __package__ == "":
-    from utilref import *
-else:
-    from .utilref import *
-pass
+from utilref import *
+from utilitypack.util_torch import *
 from torch import nn
 import torch.nn.functional as F
 import functools

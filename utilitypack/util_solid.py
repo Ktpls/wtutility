@@ -261,21 +261,16 @@ class StoppableSomewhat:
             else StoppableThread.StrategyError.raise_error
         )
 
-    def foo(self):
-        ...
+    def foo(self): ...
 
-    def isRunning(self) -> bool:
-        ...
+    def isRunning(self) -> bool: ...
 
     @FunctionalWrapper
-    def go(self, *args, **kwargs):
-        ...
+    def go(self, *args, **kwargs): ...
 
-    def stop(self):
-        ...
+    def stop(self): ...
 
-    def timeToStop(self) -> bool:
-        ...
+    def timeToStop(self) -> bool: ...
 
     @staticmethod
     @WrapperAsMyTaste
@@ -509,6 +504,71 @@ class Pipe:
 
     def __repr__(self) -> str:
         return self.get().__repr__()
+
+
+class Stream:
+    content: list
+
+    def __init__(self, iter: list | tuple | dict) -> None:
+        if isinstance(iter, (list, tuple)):
+            self.content = iter
+        elif isinstance(iter, dict):
+            self.content = iter.items()
+        else:
+            raise TypeError("iter must be list|tuple|dict")
+
+    def sort(self, pred: typing.Callable[[typing.Any, typing.Any], int]):
+        self.content.sort(key=functools.cmp_to_key(pred))
+        return self
+
+    def peek(self, pred: typing.Callable[[typing.Any], None]):
+        for i in self.content:
+            pred(i)
+        return self
+    def filter(self, pred: typing.Callable[[typing.Any], bool]):
+        self.content = list(filter(pred, self.content))
+        return self
+
+    def map(self, pred: typing.Callable[[typing.Any], typing.Any]):
+        self.content = list(map(pred, self.content))
+        return self
+
+    def flatMap(self, pred: "typing.Callable[[typing.Any],Stream]"):
+        self.content = list(
+            itertools.chain.from_iterable([s.content for s in map(pred, self.content)])
+        )
+        return self
+
+    class Collector:
+        def __init__(self, collectImpl):
+            self.collectImpl = collectImpl
+
+        def do(self, stream):
+            return self.collectImpl(stream)
+
+        @staticmethod
+        def toList():
+            return Stream.Collector(lambda stream: list(stream.content))
+
+        @staticmethod
+        def toMap(keyPred, valuePred):
+            return Stream.Collector(
+                lambda stream: {keyPred(i): valuePred(i) for i in stream.content}
+            )
+
+        @staticmethod
+        def groupBy(keyPred):
+            return Stream.Collector(
+                lambda stream: {
+                    key: list(group)
+                    for key, group in itertools.groupby(
+                        sorted(stream.content, key=keyPred), key=keyPred
+                    )
+                }
+            )
+
+    def collect(self, collector: "Stream.Collector"):
+        return collector.do(self)
 
 
 def GetTimeString():
@@ -1140,9 +1200,11 @@ class expparser:
                     for binary, its necessary
                     """
                     ClearOprSectionAssumingPeer(
-                        oprRisingBeginPosList[-1].pos
-                        if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
-                        else oprRisingBeginPosList[-1].pos - 1,
+                        (
+                            oprRisingBeginPosList[-1].pos
+                            if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
+                            else oprRisingBeginPosList[-1].pos - 1
+                        ),
                         len(tokenList) - 1,  # the new opr
                     )
                 if opr > lastOprPrior:
@@ -1170,9 +1232,11 @@ class expparser:
                     if len(oprRisingBeginPosList) == 0:
                         break
                     ClearOprSectionAssumingPeer(
-                        oprRisingBeginPosList[-1].pos
-                        if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
-                        else oprRisingBeginPosList[-1].pos - 1,
+                        (
+                            oprRisingBeginPosList[-1].pos
+                            if tokenList[oprRisingBeginPosList[-1].pos].value.isUnary()
+                            else oprRisingBeginPosList[-1].pos - 1
+                        ),
                         len(tokenList),
                     )
                 val = tokenList[-1].value
