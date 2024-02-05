@@ -612,6 +612,73 @@ class expparser:
         delayed evaluation optimization
     """
 
+    @dataclasses.dataclass
+    class evaluator:
+        class EvalType(enum.Enum):
+            literal = 0
+            operator = 1
+            func = 2
+            var = 3
+            lyst = 4
+
+        type: EvalType
+        value: typing.Any
+        para: typing.Any
+
+        @staticmethod
+        def ofOpr(opr: "expparser._OprType", para):
+            return expparser.evaluator(expparser.evaluator.EvalType.operator, opr, para)
+
+        @staticmethod
+        def ofLiteral(literal):
+            return expparser.evaluator(
+                expparser.evaluator.EvalType.literal, literal, None
+            )
+
+        @staticmethod
+        def ofFunc(func, para):
+            return expparser.evaluator(expparser.evaluator.EvalType.func, func, para)
+
+        @staticmethod
+        def ofVar(var):
+            return expparser.evaluator(expparser.evaluator.EvalType.var, var, None)
+
+        @staticmethod
+        def ofList(var):
+            return expparser.evaluator(expparser.evaluator.EvalType.lyst, var, None)
+
+        def eval(self, var, func):
+            if self.type == expparser.evaluator.EvalType.literal:
+                return self.value
+            elif self.type == expparser.evaluator.EvalType.operator:
+                para = [p.eval(var, func) for p in self.para]
+                return self.value.do(para)
+            elif self.type == expparser.evaluator.EvalType.func:
+                assert self.value in func
+                para = [p.eval(var, func) for p in self.para]
+                return func[self.value](*para)
+            elif self.type == expparser.evaluator.EvalType.var:
+                assert self.value in var
+                return var[self.value]
+            elif self.type == expparser.evaluator.EvalType.lyst:
+                value = [p.eval(var, func) for p in self.value]
+                return value
+
+        def __repr__(self, indentLvl: int = 0) -> str:
+            indent = " " * 4 * indentLvl
+            tipe = f"{indent}{self.type}, "
+            if self.type == expparser.evaluator.EvalType.lyst:
+                val = f"list\n"
+                child = "".join([p.__repr__(indentLvl + 1) for p in self.value])
+            else:
+                val = f"{self.value}\n"
+                child = ""
+                if self.para is not None:
+                    child = "".join([p.__repr__(indentLvl + 1) for p in self.para])
+                else:
+                    child = ""
+            return tipe + val + child
+
     class TokenType(enum.Enum):
         NUMLIKE = 1
         OPR = 2
@@ -830,125 +897,67 @@ class expparser:
                 expparser._OprType.__throw_opr_exception(s)
             return dict[s]
 
-        def do(self, arg: typing.List["expparser.Token"]):
+        def do(self, arg):
             if self == expparser._OprType.ADD:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) + expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) + expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.SUB:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) - expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) - expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.MUL:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) * expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) * expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.DIV:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) / expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) / expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.POW:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) ** expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) ** expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.NEG:
-                assert arg[0].type == expparser.TokenType.NUMLIKE
-                return -expparser.NumLikeUnionUtil.ToNum(arg[0].value)
+                return -expparser.NumLikeUnionUtil.ToNum(arg[0])
             elif self == expparser._OprType.NEQ:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) != expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) != expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.EQ:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) == expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) == expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.GT:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) > expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) > expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.GE:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) >= expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) >= expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.LT:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) < expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) < expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.LE:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToNum(
-                    arg[0].value
-                ) <= expparser.NumLikeUnionUtil.ToNum(arg[1].value)
+                    arg[0]
+                ) <= expparser.NumLikeUnionUtil.ToNum(arg[1])
             elif self == expparser._OprType.NOT:
-                assert arg[0].type == expparser.TokenType.NUMLIKE
-                return not expparser.NumLikeUnionUtil.ToBool(arg[0].value)
+                return not expparser.NumLikeUnionUtil.ToBool(arg[0])
             elif self == expparser._OprType.AND:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToBool(
-                    arg[0].value
-                ) and expparser.NumLikeUnionUtil.ToBool(arg[1].value)
+                    arg[0]
+                ) and expparser.NumLikeUnionUtil.ToBool(arg[1])
             elif self == expparser._OprType.OR:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToBool(
-                    arg[0].value
-                ) or expparser.NumLikeUnionUtil.ToBool(arg[1].value)
+                    arg[0]
+                ) or expparser.NumLikeUnionUtil.ToBool(arg[1])
             elif self == expparser._OprType.XOR:
-                assert (
-                    arg[0].type == expparser.TokenType.NUMLIKE
-                    and arg[1].type == expparser.TokenType.NUMLIKE
-                )
                 return expparser.NumLikeUnionUtil.ToBool(
-                    arg[0].value
-                ) ^ expparser.NumLikeUnionUtil.ToBool(arg[1].value)
+                    arg[0]
+                ) ^ expparser.NumLikeUnionUtil.ToBool(arg[1])
             else:
                 expparser._OprType.__throw_opr_exception(self)
 
@@ -1027,22 +1036,20 @@ class expparser:
         endedby: "expparser.TokenType"
 
     @staticmethod
-    def __expparse_recursive_comma_collector_wrapped(
-        s, varList: typing.Dict, funcList: typing.Dict, i=0
-    ):
-        nextval = expparser.__expparse_recursive(s, varList, funcList, i)
+    def __expparse_recursive__comma_collector_wrapper(s, i=0):
+        nextval = expparser.__expparse_recursive(s, i)
         if nextval.endedby == expparser.TokenType.COMMA:
             vallist = [nextval.val]
             while True:
-                nextval = expparser.__expparse_recursive(
-                    s, varList, funcList, nextval.end
-                )
+                nextval = expparser.__expparse_recursive(s, nextval.end)
                 vallist.append(nextval.val)
                 if nextval.endedby != expparser.TokenType.COMMA:
                     break
-            retval = vallist
+            retval = expparser.evaluator.ofList(vallist)
         else:
-            retval = nextval.val
+            retval = (
+                nextval.val
+            )  # should be converted into evaluator by expparse_recursive
         return expparser.__ExpParserResult(
             val=retval, end=nextval.end, endedby=nextval.endedby
         )
@@ -1050,8 +1057,6 @@ class expparser:
     @staticmethod
     def __expparse_recursive(
         s,
-        varList: typing.Dict,
-        funcList: typing.Dict,
         startPos=0,
     ):
         # fsm fields
@@ -1062,7 +1067,6 @@ class expparser:
 
         # buffer
         tokenList: typing.List[expparser.Token] = list()
-        commaList = list()
 
         # for operator priority
         oprRisingBeginPosList: typing.List[expparser.__OprPriorityLeap] = list()
@@ -1077,17 +1081,23 @@ class expparser:
             # cache the section to use easily pop and push
             section = tokenList[begin:end]
             while True:
+                # cleaning backwards, which makes it right-nested as a tree
+                # backwards is actually for unary operators
                 if len(section) == 1:
                     break
                 val2 = section.pop()
+                assert val2.type == expparser.TokenType.NUMLIKE
                 opr = section.pop()
                 assert opr.type == expparser.TokenType.OPR
                 if opr.value.isUnary():
-                    val2.value = opr.value.do(arg=[val2])
+                    val2.value = expparser.evaluator.ofOpr(opr.value, [val2.value])
                     section.append(val2)
                 else:
                     val1 = section.pop()
-                    val1.value = opr.value.do(arg=[val1, val2])
+                    assert val1.type == expparser.TokenType.NUMLIKE
+                    val1.value = expparser.evaluator.ofOpr(
+                        opr.value, [val1.value, val2.value]
+                    )
                     section.append(val1)
             tokenList = tokenList[:begin] + section + tokenList[end:]
             RemapToken()
@@ -1119,8 +1129,8 @@ class expparser:
                     [], peekToken.end, expparser.TokenType.KET
                 )
             else:
-                subresult = expparser.__expparse_recursive_comma_collector_wrapped(
-                    s, varList, funcList, token.end
+                subresult = expparser.__expparse_recursive__comma_collector_wrapper(
+                    s, token.end
                 )
             tokenList.pop()  # remove the bra
             AddNewVirtualTokenValuedByCalculation(subresult)
@@ -1131,30 +1141,24 @@ class expparser:
             if peekToken.type == expparser.TokenType.BRA:
                 # its a call
                 fooName = token.value
-                assert fooName in funcList
                 # manually move on
                 MoveForwardToNextToken()
                 DealWithBra()
                 para = tokenList[-1].value
-                if (
-                    expparser.NumLikeUnionUtil.TypeOf(para)
-                    == expparser.NumLikeUnionUtil.NumLikeType.LIST
-                ):
-                    value = funcList[fooName](*para)
+                if para.type == expparser.evaluator.EvalType.lyst:
+                    # unpack list evaluator to param
+                    para = para.value
                 else:
-                    value = funcList[fooName](para)
-                tokenList[-1].value = expparser.NumLikeUnionUtil.ToProperFormFromAny(
-                    value
-                )
+                    # single param call, to standard param list form
+                    para = [para]
+                value = expparser.evaluator.ofFunc(fooName, para)
+                tokenList[-1].value = value
                 tokenList = tokenList[:-2] + tokenList[-1:]  # remove the func name
                 RemapToken()
             else:
                 # its a var
-                assert token.value in varList
                 # overwrite the identifier with num
-                token.value = expparser.NumLikeUnionUtil.ToProperFormFromAny(
-                    varList[token.value]
-                )
+                token.value = expparser.evaluator.ofVar(token.value)
                 token.type = expparser.TokenType.NUMLIKE
             state = expparser.__State.NUM
 
@@ -1229,7 +1233,7 @@ class expparser:
             RemapToken()
             if len(tokenList) == 0:
                 # empty
-                val = None
+                val = expparser.evaluator.ofLiteral(None)
             else:
                 # clear all
                 while True:
@@ -1254,6 +1258,7 @@ class expparser:
                 if token.type == expparser.TokenType.BRA:
                     DealWithBra()
                 elif token.type == expparser.TokenType.NUMLIKE:
+                    token.value = expparser.evaluator.ofLiteral(token.value)
                     state = expparser.__State.NUM
                 elif token.type == expparser.TokenType.IDR:
                     DealWithIdentifier()
@@ -1314,8 +1319,14 @@ class expparser:
         return var, func
 
     @staticmethod
-    def expparse(s, var={}, func={}):
-        return expparser.__expparse_recursive_comma_collector_wrapped(s, var, func).val
+    def expparse(s, var, func):
+        return expparser.__expparse_recursive__comma_collector_wrapper(s).val.eval(
+            var, func
+        )
+
+    @staticmethod
+    def compile(s):
+        return expparser.__expparse_recursive__comma_collector_wrapper(s).val
 
     class Utils:
         class NonOptionalException(Exception):

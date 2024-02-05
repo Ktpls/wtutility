@@ -1,7 +1,7 @@
 from utilref import *
 
 
-def test():
+def unitTest():
     def vecadd(va: typing.List, vb: typing.List):
         assert len(va) == len(vb)
         return list(map(lambda x, y: x + y, va, vb))
@@ -91,16 +91,28 @@ def benchMark():
     var = {**expparser.BasicConstantLib}
     func = {**expparser.BasicFunctionLib}
     exps = ["1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20"]
-    turnNum = 1_000
+    exps = [expparser.compile(e) for e in exps]
+    turnNum = 1_00000
     ps = perf_statistic()
     pg = Progress(turnNum)
     ps.start()
     for t in range(turnNum):
         for e in exps:
-            result = expparser.expparse(e, var=var, func=func)
+            # result = expparser.expparse(e, var=var, func=func)
+            result = e.eval(var=var, func=func)
         pg.update(t)
     ps.stop()
     print(ps.time() / turnNum)
 
 
-test()
+def playground():
+
+    var = {**expparser.BasicConstantLib}
+    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y}
+    exp = "f(1,1),f(2,2),sin(pi/2),pi,"
+    result = expparser.compile(exp)
+    print(result)
+    print(result.eval(var, func))
+
+
+benchMark()
