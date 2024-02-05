@@ -12,6 +12,8 @@ import win32api
 import win32con
 import win32gui
 import win32ui
+import subprocess
+import regex
 
 
 class screenshoter:
@@ -392,9 +394,11 @@ class HotkeyManager:
             self.continiousPress = continiousPress if continiousPress else False
             self.stage = 0
             self.keyChangeOnStageChange = [
-                ListEq(self.key[i], self.key[i - 1])
-                if i != 0
-                else ListEq(self.key[0], self.key[-1])
+                (
+                    ListEq(self.key[i], self.key[i - 1])
+                    if i != 0
+                    else ListEq(self.key[0], self.key[-1])
+                )
                 for i, k in enumerate(self.key)
             ]
 
@@ -498,9 +502,11 @@ class HotkeyManager:
             unknown = 2
 
         respondtable = [
-            respondstate.unknown
-            if not cchblocked or hk.continiousPress
-            else respondstate.false
+            (
+                respondstate.unknown
+                if not cchblocked or hk.continiousPress
+                else respondstate.false
+            )
             for hk in self.hktl
         ]
 
@@ -859,130 +865,27 @@ def ReadFileInZip(zipf, filename: str | list[str] | tuple[str]):
     return file
 
 
-class FileProcessor:
-    class FileSource:
-        class EndOfSource:
-            ...
-
-        def get(self) -> bytes:
-            ...
-
-        def size(self):
-            ...
-
-        def nowProgress(self):
-            ...
-
-    class Path2FileSource(FileSource):
-        def getPath(self):
-            ...
-
-        def get(self) -> bytes:
-            path = self.getPath()
-            if isinstance(path, FileProcessor.FileSource.EndOfSource):
-                return path
-            else:
-                return ReadFile(path)
-
-    class Path2FileInZipSource(Path2FileSource):
-        def get(self) -> bytes:
-            path = self.getPath()
-            if isinstance(path, FileProcessor.FileSource.EndOfSource):
-                return path
-            else:
-                return ReadFile(path)
-
-    class IndexedFileSource(FileSource):
-        def __init__(self, maxSize):
-            self.idx = 0
-            self.maxSize = maxSize
-
-        def size(self):
-            return self.maxSize
-
-        def nowProgress(self):
-            return self.idx
-
-        def isEnd(self):
-            return self.idx >= self.maxSize
-
-        def idxInc(self):
-            self.idx += 1
-
-    class AllFileInFolderSource(Path2FileSource,IndexedFileSource):
-        def __init__(self, folder):
-            self.path = folder
-            self.filelist = AllFileIn(folder)
-            FileProcessor.IndexedFileSource.__init__(self, len(self.filelist))
-
-        def get(self):
-            if self.isEnd():
-                ret = self.filelist[self.idx]
-                self.idxInc
-                return ret
-            else:
-                return FileProcessor.FileSource.EndOfSource()
-
-    class FileFromXlsxSource(Path2FileSource,IndexedFileSource):
-        def __init__(self, xlspath):
-            xls = Xls2ListList(xlspath)
-            xls = [row[0] for row in xls]
-            self.xls = xls
-            FileProcessor.IndexedFileSource.__init__(self, len(self.xls))
-
-        def get(self):
-            if self.isEnd():
-                ret = self.xls[self.idx]
-                self.idxInc()
-                return ret
-            else:
-                return FileProcessor.FileSource.EndOfSource()
-
-    class FileDest:
-        def put(self, file: "FileProcessor.FileInfo"):
-            ...
-
-    class FileWriteDest(FileDest):
-        def put(self, file: "FileProcessor.FileInfo"):
-            WriteFile(file.path, file.content)
-
-    class FileDest2DiskAndXls(FileWriteDest):
-        def __init__(self, xlsPath) -> None:
-            super().__init__()
-            self.rows = []
-            self.xlsPath = xlsPath
-
-        def put(self, file: "FileProcessor.FileInfo"):
-            self.rows.append(file.path)
-            return super().put(file)
-
-        def flush(self):
-            save_list_to_xls(self.rows, self.xlsPath)
-
-        def __del__(self):
-            self.flush()
-
-    @dataclasses.dataclass
-    class FileInfo:
-        path: str
-        content: bytes
-
+class WifiRefresher:
     @staticmethod
-    def Go(
-        fileSource: "FileProcessor.FileSource",
-        fileDest: "FileProcessor.FileDest",
-        proc: "typing.Callable[[FileProcessor.FileInfo],list[FileProcessor.FileInfo]|tuple[FileProcessor.FileInfo]|FileProcessor.FileInfo]",
-        progress: Progress = None,
-    ):
-        while True:
-            file = fileSource.get()
-            if isinstance(file, FileProcessor.FileSource.EndOfSource):
-                break
-            proced = proc(file)
-            if not isinstance(proced, [tuple, list]):
-                proced = [proced]
-            for f in proced:
-                f: FileProcessor.FileInfo
-                fileDest.put(fileDest)
-            if progress is not None:
-                progress.update(fileSource.nowProgress() / fileSource.size())
+    def __getNowWlanProfileName():
+        output = subprocess.check_output(
+            "netsh wlan show interface", shell=True
+        ).decode("GBK")
+        m = regex.findall(
+            r"(?<=^\s*SSID\s*:\s)(.+?)(?=\s*$)", output, flags=regex.MULTILINE
+        )
+        assert len(m) == 1
+        return m[0]
+
+    def __init__(self):
+        self.name = WifiRefresher.__getNowWlanProfileName()
+
+    def setOn(self):
+        os.system(f'netsh wlan connect name="{self.name}"')
+        os.system(
+            f'netsh wlan set profileparameter name="{self.name}" connectionMode=auto'
+        )
+        # set auto so it will be auto connected the next time u boot
+
+    def setOff(self):
+        os.system(f"netsh wlan disconnect")

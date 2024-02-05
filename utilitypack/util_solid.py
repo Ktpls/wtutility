@@ -1,11 +1,15 @@
 from concurrent.futures import ThreadPoolExecutor
-import enum
+from datetime import datetime
 from time import sleep
+import copy
 import ctypes
 import dataclasses
-import itertools
+import enum
 import functools
+import inspect
+import itertools
 import math
+import multiprocessing
 import os
 import random
 import re
@@ -14,10 +18,6 @@ import threading
 import time
 import traceback
 import typing
-import inspect
-import multiprocessing
-from datetime import datetime
-import copy
 
 """
 solid
@@ -1149,6 +1149,8 @@ class expparser:
                 para = tokenList[-1].value
                 if para.type == expparser.evaluator.EvalType.lyst:
                     # unpack list evaluator to param
+                    # it could possibly be the single param, but which is actually a list, like f(list(1,2,3))
+                    # and it will be unpacked weirdly here
                     para = para.value
                 else:
                     # single param call, to standard param list form

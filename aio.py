@@ -148,6 +148,16 @@ def main():
 
             app.bulletin.putup(f"launch done")
 
+        @app.Hotkey("RefreshWifi", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, ord("K")])
+        @app.AsyncLongScript()
+        def refreshWifi(self: StoppableSomewhat):
+            app.bulletin.putup("refreshing wifi")
+            wifi=WifiRefresher()
+            wifi.setOff()
+            sleep(1)
+            wifi.setOn()
+            app.bulletin.putup(f"refresh done")
+
         for key, dire, name in [
             [
                 win32con.VK_UP,

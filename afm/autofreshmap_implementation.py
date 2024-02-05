@@ -64,85 +64,6 @@ else:
         pass
 
 
-class networkOperationImplementationSuite:
-    @staticmethod
-    def setoffwifi():
-        pass
-
-    @staticmethod
-    def setonwifi():
-        pass
-
-
-class networkOperationImplementation_ipconfigrelease(
-    networkOperationImplementationSuite
-):
-    @staticmethod
-    def setoffwifi():
-        os.system('ipconfig /release "WLAN"')
-
-    @staticmethod
-    def setonwifi():
-        os.system('ipconfig /renew "WLAN"')
-
-
-class networkOperationImplementation_netshinterfacesetinterfacedisable(
-    networkOperationImplementationSuite
-):
-    @staticmethod
-    def setoffwifi():
-        os.system(
-            f'netsh interface set interface name="{wlanname4netshinterface}" admin=disable'
-        )
-
-    @staticmethod
-    def setonwifi():
-        os.system(
-            f'netsh interface set interface name="{wlanname4netshinterface}" admin=enable'
-        )
-
-
-class networkOperationImplementation_netshwlandisconnect(
-    networkOperationImplementationSuite
-):
-    @staticmethod
-    def setoffwifi():
-        os.system(f"netsh wlan disconnect")
-
-    @staticmethod
-    def setonwifi():
-        os.system(f'netsh wlan connect name="{wlanname4netshwlan}"')
-        os.system(
-            f'netsh wlan set profileparameter name="{wlanname4netshwlan}" connectionMode=auto'
-        )
-        # set auto so it will be auto connected the next time u boot
-
-
-networkOperationImplementationAvailableList = [
-    "ipconfigrelease",
-    "netshinterfacesetinterfacedisable",
-    "netshwlandisconnect",
-]
-
-networkOperationImplementationName = networkOperationImplementationAvailableList[2]
-
-
-def setoffwifi():
-    exec(
-        "networkOperationImplementation_{}.setoffwifi()".format(
-            networkOperationImplementationName
-        )
-    )
-
-
-def setonwifi():
-    exec(
-        "networkOperationImplementation_{}.setonwifi()".format(
-            networkOperationImplementationName
-        )
-    )
-
-
 def assetpath2realpath(ap):
     return os.path.join(afmassetroot, ap)
 
@@ -495,6 +416,7 @@ class freshAMap(StoppableThread):
         loadAssetsNeeded4FreshAMap()
         assert stateDetector is not None and whitelistedmapdetector is not None
         ss = screenshoter(0)
+        wifi=WifiRefresher()
 
         def shot():
             shot = ss.shotbgr()
@@ -576,7 +498,7 @@ class freshAMap(StoppableThread):
                 return True
 
             # detected banned map
-            setoffwifi()
+            wifi.setOff()
             RythmNotify.play()
             allchanneloutput("bad map")
 
@@ -585,7 +507,6 @@ class freshAMap(StoppableThread):
                 assert stateDetector is not None
                 if not stateDetector["LoadingMap"].detect(scr):
                     return True
-                # setoffwifi()
                 return False
 
             # sleep at least some time
@@ -604,10 +525,10 @@ class freshAMap(StoppableThread):
                     successCond=detectGameCanceled,
                     sleeptime=2,
                 )
-                setonwifi()
+                wifi.setOn()
                 return False
 
-            setonwifi()
+            wifi.setOn()
             RythmNotify.play()
             allchanneloutput("canceled")
             # for not enter game too soon after wifi on
@@ -711,7 +632,9 @@ class VehicleInfo:
 
     @staticmethod
     def detectAnyInOutputOfTesseract(
-        players: str, vi: typing.List["VehicleInfo"], asg: ApproximateStandardizationGuide
+        players: str,
+        vi: typing.List["VehicleInfo"],
+        asg: ApproximateStandardizationGuide,
     ):
         playerlist = [asg.do(t) for t in players.split("\n")]
         ret = VehicleInfo.matchPlayerVehicleListAndVehicleInfoList(playerlist, vi)
