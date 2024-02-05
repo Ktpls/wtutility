@@ -4,14 +4,6 @@ from utilref import *
 from nntracker_common import labeldataset
 import hashlib
 
-# train_data = labeldataset().init(
-#     r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip",
-#     r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx",
-#     8192,
-#     "zip",
-#     stdShape=[128, 128],
-# )
-
 
 def anySeed(seed):
     seed = hashlib.sha256(str(seed).encode()).digest()
@@ -253,14 +245,16 @@ class SampleLabelPair:
 
 
 def performDataEnh():
-    nameList=[]
+    nameList = []
+
     def saveFiles(para):
         name = DataCollector.geneName() + ".png"
         savemat(para.sample * 255, name, rf"{dest}/spl")
         savemat(para.label * 255, name, rf"{dest}/lbl")
         nameList.append(name)
+
     def afterProc():
-        save_list_to_xls(nameList,rf"{dest}/all.xlsx")
+        save_list_to_xls(nameList, rf"{dest}/all.xlsx")
 
     source = Xls2ListList(xlsSource)
     # pick some

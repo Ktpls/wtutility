@@ -491,13 +491,12 @@ class Pipe:
     def get(self) -> typing.Any:
         return self.value
 
-    @FunctionalWrapper
     def set(self, val: typing.Any) -> None:
         self.value = val
         if self.printStep:
             print(self.value)
+        return self
 
-    @FunctionalWrapper
     def do(self, foo: typing.Callable[[typing.Any], typing.Any]) -> "Pipe":
         self.set(foo(self.get()))
         return self
@@ -525,6 +524,7 @@ class Stream:
         for i in self.content:
             pred(i)
         return self
+
     def filter(self, pred: typing.Callable[[typing.Any], bool]):
         self.content = list(filter(pred, self.content))
         return self
@@ -537,6 +537,10 @@ class Stream:
         self.content = list(
             itertools.chain.from_iterable([s.content for s in map(pred, self.content)])
         )
+        return self
+
+    def distinct(self):
+        self.content = deduplicate(self.content)
         return self
 
     class Collector:
