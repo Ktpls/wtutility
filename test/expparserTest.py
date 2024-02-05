@@ -92,13 +92,11 @@ def benchMark():
     func = {**expparser.BasicFunctionLib}
     exps = ["1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20"]
     exps = [expparser.compile(e) for e in exps]
-    turnNum = 1_00000
-    ps = perf_statistic()
+    turnNum = 10_0000
     pg = Progress(turnNum)
-    ps.start()
+    ps = perf_statistic().start()
     for t in range(turnNum):
         for e in exps:
-            # result = expparser.expparse(e, var=var, func=func)
             result = e.eval(var=var, func=func)
         pg.update(t)
     ps.stop()
@@ -106,10 +104,9 @@ def benchMark():
 
 
 def playground():
-
     var = {**expparser.BasicConstantLib}
-    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y}
-    exp = "f(1,1),f(2,2),sin(pi/2),pi,"
+    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y, 's3': lambda: 3}
+    exp = "f(1,1),f(2,2),sin(pi/2),pi,s3()"
     result = expparser.compile(exp)
     print(result)
     print(result.eval(var, func))

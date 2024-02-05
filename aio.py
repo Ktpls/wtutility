@@ -176,7 +176,7 @@ def main():
 
     # eagle eye
     if usingeagleeye:
-        import eagleeye
+        import eagleeye.eagleeye as eagleeye
 
         eedcstate = False
 

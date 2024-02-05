@@ -1122,11 +1122,13 @@ class expparser:
             nonlocal token, peekToken, state, tokenList
             if peekToken.type == expparser.TokenType.KET:
                 """
-                a no para call bracket pair
-                cant parse with recursive function, which expects a value
+                one empty list
+                cant eval with expparse recursive, 
+                cuz it returns with None if start follows by eof instantly
+                in this case () can be confused with List(None)
                 """
                 subresult = expparser.__ExpParserResult(
-                    [], peekToken.end, expparser.TokenType.KET
+                    expparser.evaluator.ofList([]), peekToken.end, expparser.TokenType.KET
                 )
             else:
                 subresult = expparser.__expparse_recursive__comma_collector_wrapper(
