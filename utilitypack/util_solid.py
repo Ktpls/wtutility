@@ -473,6 +473,12 @@ def WriteFile(path, content):
         f.write(content.encode("utf-8"))
 
 
+def AppendFile(path, content):
+    ensure_directory_exists(path)
+    with open(path, "ab+") as f:
+        f.write(content.encode("utf-8"))
+
+
 def ReadTextFile(path: str) -> str:
     return ReadFile(path).decode("utf-8")
 
@@ -1123,12 +1129,14 @@ class expparser:
             if peekToken.type == expparser.TokenType.KET:
                 """
                 one empty list
-                cant eval with expparse recursive, 
+                cant eval with expparse recursive,
                 cuz it returns with None if start follows by eof instantly
                 in this case () can be confused with List(None)
                 """
                 subresult = expparser.__ExpParserResult(
-                    expparser.evaluator.ofList([]), peekToken.end, expparser.TokenType.KET
+                    expparser.evaluator.ofList([]),
+                    peekToken.end,
+                    expparser.TokenType.KET,
                 )
             else:
                 subresult = expparser.__expparse_recursive__comma_collector_wrapper(

@@ -881,11 +881,11 @@ class WifiRefresher:
         self.name = WifiRefresher.__getNowWlanProfileName()
 
     def setOn(self):
-        os.system(f'netsh wlan connect name="{self.name}"')
-        os.system(
+        subprocess.Popen(f'netsh wlan connect name="{self.name}"')
+        subprocess.Popen(
             f'netsh wlan set profileparameter name="{self.name}" connectionMode=auto'
         )
         # set auto so it will be auto connected the next time u boot
 
     def setOff(self):
-        os.system(f"netsh wlan disconnect")
+        subprocess.Popen(f"netsh wlan disconnect")
