@@ -14,7 +14,9 @@ def anySeed(seed):
 generator = np.random.default_rng(seed=anySeed(42))
 
 
-def dataEnhance(src, lbl):
+def dataEnhance(src, lbl, prog:Progress=None):
+    if prog is not None:
+        prog.update(prog.cur+1)
     backcolor = np.mean(src, axis=(0, 1), keepdims=True)
 
     planeColor = np.sum(src * lbl, axis=(0, 1), keepdims=True) / np.sum(
@@ -102,7 +104,7 @@ def dataEnhance(src, lbl):
             cv.line(image, start_point, end_point, color, 1)
         return image
 
-    # src = draw_random_line(src, 5)
+    src = draw_random_line(src, 5)
 
     # rand spot
     def randSpot(spl, lbl):
@@ -235,7 +237,7 @@ xlsSource = r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx"
 zipSource = (
     r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip"
 )
-dest = r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\enhanced"
+dest = r".\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
 
 
 @dataclasses.dataclass
@@ -283,11 +285,13 @@ def performDataEnh():
         )
         .collect(Stream.Collector.toList())
     )
-    imgRandomDraws = list((np.random.random(1024) * len(source)).astype(np.int32))
+    sampleNum=8192
+    deProg=Progress(sampleNum)
+    imgRandomDraws = list((np.random.random(sampleNum) * len(source)).astype(np.int32))
     (
         Stream(imgRandomDraws)
         .map(lambda i: source[i])
-        .map(lambda p: SampleLabelPair(*dataEnhance(p.sample, p.label)))
+        .map(lambda p: SampleLabelPair(*dataEnhance(p.sample, p.label, deProg)))
         .peek(saveFiles)
     )
     afterProc()

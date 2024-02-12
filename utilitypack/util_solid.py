@@ -590,12 +590,14 @@ class Progress:
     irreversable!
     """
 
-    def __init__(self, total: float, printPercentageStep: float = 0.1) -> None:
+    def __init__(self, total: float, cur=0, printPercentageStep: float = 0.1) -> None:
         self.total = total
         self.nowStage = 0
         self.printPercentageStep = printPercentageStep
+        self.cur = cur
 
     def update(self, current: float) -> None:
+        self.cur = current
         while True:
             if current / self.total > self.nowStage * self.printPercentageStep:
                 self.nowStage += 1

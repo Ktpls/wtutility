@@ -110,5 +110,7 @@ def main():
 
     app.go()
 
+def emotion():
+    app=BulletinApp()
 
 main()
