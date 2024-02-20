@@ -18,7 +18,7 @@ def main():
 
     hotkeySwitch = Switch(True)
 
-    @WrapperAsMyTaste
+    @EasyWrapper
     def WithHotkeySwitch(f):
         def foo(*arg, **kw):
             if hotkeySwitch():

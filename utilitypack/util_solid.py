@@ -95,7 +95,7 @@ def UnfinishedWrapper(msg=None) -> typing.Callable[..., typing.Any]:
     return f2
 
 
-def WrapperAsMyTaste(wrappedLogic=None):
+def EasyWrapper(wrappedLogic=None):
     """
     use like this
         @WrapperAsMyTaste()
@@ -273,7 +273,7 @@ class StoppableSomewhat:
     def timeToStop(self) -> bool: ...
 
     @staticmethod
-    @WrapperAsMyTaste
+    @EasyWrapper
     def EasyUse(f, implType=None, **kwStoppableSomewhat):
         """
         wrapper on function, and ready for use
@@ -655,7 +655,7 @@ class expparser:
         def ofList(var):
             return expparser.evaluator(expparser.evaluator.EvalType.lyst, var, None)
 
-        def eval(self, var, func):
+        def eval(self, var=dict(), func=dict()):
             if self.type == expparser.evaluator.EvalType.literal:
                 return self.value
             elif self.type == expparser.evaluator.EvalType.operator:
@@ -1333,7 +1333,7 @@ class expparser:
         return var, func
 
     @staticmethod
-    def expparse(s, var, func):
+    def expparse(s, var=dict(), func=dict()):
         return expparser.__expparse_recursive__comma_collector_wrapper(s).val.eval(
             var, func
         )
@@ -1685,7 +1685,7 @@ class SyncExecutable:
         self.state = self.STATE.running
 
     # available in main
-    def delay(self, delaytime):
+    def sleep(self, delaytime):
         self.sleepUntil(lambda: False, delaytime)
 
     # available in main
@@ -1843,7 +1843,7 @@ class BeanUtil:
             BeanUtil.__DictOrObj2DictOrObjCopy(src, dst, option)
 
 
-@WrapperAsMyTaste
+@EasyWrapper
 def AllOptionalInit(clz):
     oldInit = clz.__init__
     kws = [k for k in oldInit.__annotations__.keys() if k != "return"]
