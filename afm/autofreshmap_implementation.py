@@ -433,7 +433,7 @@ class freshAMap(StoppableThread):
 
             allchanneloutput(str("detecting loading map"))
 
-            RythmNotify.play()
+            Rythm.RythmNotify.play()
 
             def detectLoadingMap(scr):
                 assert stateDetector is not None
@@ -474,10 +474,10 @@ class freshAMap(StoppableThread):
                 ):
                     # clear matching state
                     press(keycode.key_Esc)
-                RythmCancel.play()
+                Rythm.RythmCancel.play()
                 return False
 
-            RythmNotify.play()
+            Rythm.RythmNotify.play()
             allchanneloutput("loading map")
 
             # determine if map desired
@@ -493,13 +493,13 @@ class freshAMap(StoppableThread):
             allchanneloutput(str(ret))
             if ret:
                 # enter game
-                RythmSuccess.play()
+                Rythm.RythmSuccess.play()
                 allchanneloutput("good map")
                 return True
 
             # detected banned map
             wifi.setOff()
-            RythmNotify.play()
+            Rythm.RythmNotify.play()
             allchanneloutput("bad map")
 
             # detect game canceled, which is not in loading map scence
@@ -520,7 +520,7 @@ class freshAMap(StoppableThread):
                 task canceld, do the cleanning
                 set on wifi after fully exit the game match
                 """
-                RythmCancel.play()
+                Rythm.RythmCancel.play()
                 KeepDetecting(
                     successCond=detectGameCanceled,
                     sleeptime=2,
@@ -529,7 +529,7 @@ class freshAMap(StoppableThread):
                 return False
 
             wifi.setOn()
-            RythmNotify.play()
+            Rythm.RythmNotify.play()
             allchanneloutput("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
@@ -782,7 +782,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         if detectPlayerVehicleResult == DetectPlayerVehicleResult.good:
             # good
-            RythmSuccess.play()
+            Rythm.RythmSuccess.play()
             import subprocess
 
             files = AllFileIn(musicPath)
@@ -803,7 +803,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             or detectPlayerVehicleResult == DetectPlayerVehicleResult.timeout
         ):
             # bad
-            RythmBadNotify.play()
+            Rythm.RythmBadNotify.play()
         elif detectPlayerVehicleResult == DetectPlayerVehicleResult.unset:
             raise Exception("detectPlayerVehicleResult is unset")
 

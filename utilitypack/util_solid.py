@@ -1541,9 +1541,9 @@ class PIDController:
         integral: float
         derivative: float
 
-    kp: float
-    ki: float
-    kd: float
+    kp: float = 0
+    ki: float = 0
+    kd: float = 0
     integralLimitMin: float = None
     integralLimitMax: float = None
     analizerMode: bool = False
@@ -1591,6 +1591,13 @@ class Stage:
     t = property(fget=lambda self: None)
 
 
+class TimeNonconcernedStage(Stage):
+    def step(self, dt):
+        pass
+
+    t = property(fget=lambda self: 0)
+
+
 class SyncExecutableManager:
     def __init__(self, pool: ThreadPoolExecutor) -> None:
         self.pool = pool
@@ -1608,10 +1615,14 @@ class SyncExecutableManager:
                 # knowing not satisfied, skip waking up
                 if se.waitWhat():
                     se.cond.notify_all()
-                    se.cond.wait()
-            else:
+                    se.cond.wait()  # consider wait asyncly here and below
+            elif se.state == SyncExecutable.STATE.running:
                 se.cond.notify_all()
                 se.cond.wait()
+            elif se.state == SyncExecutable.STATE.stopped:
+                pass
+            else:
+                pass
             se.cond.release()
 
     def submit(self, se: "SyncExecutable", foo: typing.Callable):
@@ -1790,7 +1801,16 @@ class BeanUtil:
 
     @staticmethod
     def __GetEmptyInstance(cls):
-        return cls()
+        args = inspect.getargs(cls.__init__.__code__)
+        if len(args) > 1:
+            # found init with arg more than self
+            inst = object.__new__(cls)
+            fields = cls.__annotations__
+            for f, t in fields.items():
+                setattr(inst, f, None)
+            return inst
+        else:
+            return cls()
 
     @staticmethod
     def __FieldConversionFunc(obj, field):
@@ -1836,7 +1856,7 @@ class BeanUtil:
         return dstobj
 
     @staticmethod
-    def BeanCopy(src, dst: object, option: "BeanUtil.Option" = Option()):
+    def copyProperties(src, dst: object, option: "BeanUtil.Option" = Option()):
         if inspect.isclass(dst):
             return BeanUtil.__DictOrObj2ClassCopy(src, dst, option)
         else:
@@ -1895,3 +1915,16 @@ def inProbability(p: float) -> bool:
 
 def flipCoin() -> bool:
     return inProbability(0.5)
+
+
+@EasyWrapper
+def Singleton(cls):
+    cls.__singleton_instance__ = None
+
+    def fooNew(cls):
+        if cls.__singleton_instance__ is None:
+            cls.__singleton_instance__ = object.__new__(cls)
+        return cls.__singleton_instance__
+
+    cls.__new__ = fooNew
+    return cls

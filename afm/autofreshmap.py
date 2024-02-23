@@ -33,7 +33,7 @@ def main():
             os.system("pause")
     except Exception as err:
         traceback.print_exc()
-        RythmError.play()
+        Rythm.RythmError.play()
         if throwerrinmain:
             raise err
         system("pause")

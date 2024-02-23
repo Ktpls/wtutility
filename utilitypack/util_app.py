@@ -53,7 +53,7 @@ class BulletinApp:
             strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
             strategy_error=StoppableSomewhat.StrategyError.print_error,
         )
-        self.hud: fullScrHUD = fullScrHUD().setup()
+        self.hud: fullScrHUD = fullScrHUD()
 
         def swapHKM(newHkm):
             old = self.hkm
@@ -94,7 +94,9 @@ class BulletinApp:
             self.hud.update()
 
         self.hkm = HotkeyManager(self.hotkeytask)
-
+        self.hud.setup()
+        activeWindow(self.hud.hwnd)
+        
         # main loop
         while True:
             self.fpsm.WaitUntilNextFrame()
@@ -107,7 +109,7 @@ class BulletinApp:
             except SystemExit as e:
                 raise e
             except Exception as e:
-                RythmError.play()
+                Rythm.RythmError.play()
                 print("#" * 10)
                 traceback.print_exc()
                 print("#" * 10)
@@ -116,7 +118,7 @@ class BulletinApp:
                 try:
                     bus()
                 except Exception as e:
-                    RythmError.play()
+                    Rythm.RythmError.play()
                     print("#" * 10)
                     traceback.print_exc()
                     print("#" * 10)

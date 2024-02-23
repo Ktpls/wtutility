@@ -134,8 +134,8 @@ def main():
         @app.AsyncLongScript()
         def launchSeriesGo(self: StoppableSomewhat):
             app.bulletin.putup("launching series")
-            interval = 0.01
-            num = 29 + 3
+            interval = 0.1
+            num = 29 + 10
             keyshortcut.keydown(keycode.key_LeftControl)
             for i in range(num):
                 if self.timeToStop():
@@ -228,7 +228,7 @@ def main():
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
-        RythmReboot.play()
+        Rythm.RythmReboot.play()
         sys.exit()
 
     app.go()

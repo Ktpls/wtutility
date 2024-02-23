@@ -97,7 +97,7 @@ def main():
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
-        RythmReboot.play()
+        Rythm.RythmReboot.play()
         sys.exit()
 
     @app.Hotkey("HKDisable", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11])

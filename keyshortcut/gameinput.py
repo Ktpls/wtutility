@@ -1,6 +1,7 @@
 import time
 import utilitypack.util_windows
 import keyshortcut.keycodeWinCode as keycode
+import dataclasses
 from ctypes import (
     POINTER,
     c_ulong,
@@ -109,7 +110,14 @@ def key_press(k):
     utilitypack.util_windows.PreciseSleep(0.2)
     keyup(k)
     
-
+@dataclasses.dataclass
+class HoldingKey:
+    key: int
+    def __enter__(self):
+        keydown(self.key)
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        keyup(self.key)
 
 def moveto(p):
     windll.user32.SetCursorPos(int(p[0]), int(p[1]))

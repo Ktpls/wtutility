@@ -43,7 +43,7 @@ class GPush(StoppableProcess):
     def foo(self):
         def report():
             if not GPush.isZero(ratio):
-                RythmNotify.play()
+                Rythm.RythmNotify.play()
             if print_ctrl_ratio:
                 print(f"ratio: {self.ratio.value}")
 

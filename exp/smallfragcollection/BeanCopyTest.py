@@ -6,6 +6,7 @@ from utilref import *
 class clz1:
     a: int
     b: int
+    c: int
 
 
 @AllOptionalInit
@@ -13,11 +14,23 @@ class clz1:
 class clz2:
     a: int
     b: str
+    c: int
 
 
-i1 = clz1(b=2)
-i2 = BeanUtil.BeanCopy(i1, clz2)
-i3 = clz2()
-BeanUtil.BeanCopy(i1, i3)
-print(f'{i1=}, {i2=}, {i3=}')
+@dataclasses.dataclass
+class classWithArgedInitFunc:
+    a: int
+    b: str
+    c: int
+
+    def __init__(self, some_val_required_in_init) -> None:
+        pass
+
+
+dataSource = clz1(a=1,c=2)
+copied = clz2()
+BeanUtil.copyProperties(dataSource, copied)
+copiedWithoutInit = BeanUtil.copyProperties(dataSource, clz2)
+copiedWithoutInitWithArgedInitFunc=BeanUtil.copyProperties(dataSource, classWithArgedInitFunc)
+print(f"{dataSource=}, {copiedWithoutInit=}, {copied=}, {copiedWithoutInitWithArgedInitFunc=}")
 pass

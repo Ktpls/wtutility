@@ -1,19 +1,19 @@
 from .util_solid import *
 from .util_np import *
 from .util_ocv import *
-
-"""
-windows
-"""
-
 from ctypes import windll, byref, c_ubyte
 from ctypes.wintypes import RECT, HWND
+from zipfile import ZipFile
 import win32api
 import win32con
 import win32gui
 import win32ui
 import subprocess
 import regex
+
+"""
+windows
+"""
 
 
 class screenshoter:
@@ -704,6 +704,10 @@ class HotkeyManager:
             self.hotkeymanagerStack.append(old)
 
 
+def NormalizeCrlf(s: str):
+    return s.replace("\r\n", "\n").replace("\r", "\n")
+
+
 """
 xls
 """
@@ -761,7 +765,7 @@ class Rythm:
 
     @staticmethod
     def fromString(s: str, default_dur: int = 100):
-        lines = s.splitlines()
+        lines = regex.split(r"\s+", NormalizeCrlf(s))
         tones = []
         for l in lines:
             arg = l.split(",")
@@ -780,78 +784,16 @@ class Rythm:
         strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
         implType=StoppableThread,
     )
-    def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm):
+    def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm: "Rythm"):
         selfRythm.play()
 
-
-RythmSuccess = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-1000
-500
-1000
-"""
-    ),
-    default_dur=100,
-)
-RythmError = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-1000,1000
-500,1000
-"""
-    ),
-    default_dur=100,
-)
-RythmCancel = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-1000
-500
-500
-"""
-    ),
-    default_dur=100,
-)
-RythmNotify = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-500
-"""
-    ),
-    default_dur=100,
-)
-RythmGoodNotify = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-1000
-"""
-    ),
-    default_dur=100,
-)
-RythmBadNotify = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-500
-500
-500
-"""
-    ),
-    default_dur=100,
-)
-RythmReboot = Rythm.fromString(
-    WrapperOfMultiLineText(
-        """
-500
-750
-400
-"""
-    ),
-    default_dur=100,
-)
-
-
-from zipfile import ZipFile
+    RythmSuccess = fromString("1000 500 1000", default_dur=100)
+    RythmError = fromString("1000,1000 500,1000", default_dur=100)
+    RythmCancel = fromString("1000 500 500", default_dur=100)
+    RythmNotify = fromString("500", default_dur=100)
+    RythmGoodNotify = fromString("1000", default_dur=100)
+    RythmBadNotify = fromString("500 500 500", default_dur=100)
+    RythmReboot = fromString("500 750 400", default_dur=100)
 
 
 def ReadFileInZip(zipf, filename: str | list[str] | tuple[str]):

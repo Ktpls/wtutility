@@ -7,7 +7,7 @@ hud.setup()
 
 
 def beepOnErr():
-    RythmError.play()
+    Rythm.RythmError.play()
 
 
 throwErrorInHotkey = True
@@ -27,7 +27,7 @@ def main():
             tracking = True
         else:
             tracking = False
-            RythmNotify.play()
+            Rythm.RythmNotify.play()
 
     hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], trackswitch))
 
@@ -36,7 +36,7 @@ def main():
 
     def holdCAndTell():
         keyshortcut.holdC()
-        RythmNotify.play()
+        Rythm.RythmNotify.play()
 
     hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
     hkm = HotkeyManager(hklist)
@@ -223,7 +223,7 @@ def main():
         hud.addcontent(output)  # cuz its full screenly overlayer
         hud.update()
 
-    RythmCancel.play()
+    Rythm.RythmCancel.play()
     # for i,ps in enumerate(perfst):
     #   print(ps.read_ave_t())
 
