@@ -36,6 +36,7 @@ class Port8111:
             ):
                 raise Port8111.FetchFailure()
             return self
+
     # consider get an easy way to collect all possible fields for various vehicles
     @dataclasses.dataclass
     class BeanIndicatorAir(BeanIndicatorBase, ValidBean):

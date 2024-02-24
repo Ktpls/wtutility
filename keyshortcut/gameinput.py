@@ -71,9 +71,7 @@ class Vk2Sk:
 def keydown(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(
-        0, Vk2Sk().tr(hexKeyCode), 0x0008, 0, pointer(extra)
-    )
+    ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
@@ -81,9 +79,7 @@ def keydown(hexKeyCode):
 def keyup(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(
-        0, Vk2Sk().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra)
-    )
+    ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 

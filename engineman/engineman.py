@@ -22,7 +22,7 @@ class AxisUnsupported(Exception):
 @AnnotationUtil.Annotation(fetchInterval=0.25)
 class Port8111Cache:
     # use cache to cancel complex coupling between various data consumers under requirement of reducing http request cost
-    typcCache: "dict[Port8111.QueryType, Port8111Cache.SingleTypeCache]" = dict()
+    typeCache: "dict[Port8111.QueryType, Port8111Cache.SingleTypeCache]" = dict()
 
     @dataclasses.dataclass
     class SingleTypeCache:
@@ -47,12 +47,12 @@ class Port8111Cache:
             return self.value
 
     def get(self, queryType: Port8111.QueryType, mustUpdate=None):
-        if queryType not in self.typcCache:
-            self.typcCache[queryType] = self.SingleTypeCache(queryType)
-        return self.typcCache[queryType].get(mustUpdate=mustUpdate)
+        if queryType not in self.typeCache:
+            self.typeCache[queryType] = self.SingleTypeCache(queryType)
+        return self.typeCache[queryType].get(mustUpdate=mustUpdate)
 
 
-@AnnotationUtil.Annotation(PRESS_TIME=0.05)
+@AnnotationUtil.Annotation(pressTime=0.05)
 class FunctionalKey:
     key: list[int]
 
@@ -68,11 +68,47 @@ class FunctionalKey:
             keyshortcut.keyup(k)
 
     def press(self):
-        self.hold(AnnotationUtil.getAnnotations(FunctionalKey).PRESS_TIME)
+        self.hold(AnnotationUtil.getAnnotations(FunctionalKey).pressTime)
 
     @staticmethod
     def Unbounded():
         return ClassNone()
+
+
+@dataclasses.dataclass
+class Solution:
+    toEnable: typing.Callable
+    toDisable: typing.Callable
+
+    @staticmethod
+    def tryAction(
+        action: typing.Callable,
+        solution: "Solution | list[Solution]",
+    ):
+        solution = NormalizeIterableOrSingleArgToIterable(solution)
+        # iterate all possible solution combination to finish action successfully
+        solutionCombinationMax = 2 ** len(solution) - 1
+
+        def applySolByIdx(idx):
+            for i in range(len(solution)):
+                if idx & (1 << i):
+                    solution[i].toEnable()
+
+        def unapplySolByIdx(idx):
+            for i in range(len(solution)):
+                if idx & (1 << i):
+                    solution[i].toDisable()
+
+        nowSolCombIdx = 0
+        while True:
+            applySolByIdx(nowSolCombIdx)
+            if action():
+                break
+            unapplySolByIdx(nowSolCombIdx)
+            if nowSolCombIdx < solutionCombinationMax:
+                nowSolCombIdx += 1
+            else:
+                raise AxisUnsupported()
 
 
 @dataclasses.dataclass
@@ -89,10 +125,10 @@ class Axis:
     switchTapPositionKey: FunctionalKey = dataclasses.field(
         default_factory=FunctionalKey.Unbounded
     )
+    solution: Solution | list[Solution] = dataclasses.field(default_factory=list)
 
     def switchManualControl(self):
         self.switchManualControlKey.press()
-        Rhythms.Notify.play()
 
     def setTo(self, target):
         pass
@@ -100,71 +136,51 @@ class Axis:
     def getVal(self, mustUpdate=None):
         pass
 
-    @staticmethod
-    def tryAction(
-        action: typing.Callable,
-        solutionOnFailure: typing.Callable | list[typing.Callable],
-    ):
-        solutionOnFailure = NormalizeIterableOrSingleArgToIterable(solutionOnFailure)
-        nextSolIdx = 0
-        while True:
-            if not action():
-                if nextSolIdx < len(solutionOnFailure):
-                    solutionOnFailure[nextSolIdx]()
-                    nextSolIdx += 1
-                else:
-                    raise AxisUnsupported()
-            else:
-                break
+    def tryChange(self, action):
+        def inner():
+            prev = self.getVal()
+            if prev is None:
+                raise AxisUnsupported()
+            action()
+            PreciseSleep(0.1)
+            after = self.getVal(mustUpdate=True)
+            if after is None:
+                raise AxisUnsupported()
+            return not FloatEq(prev, after)
+
+        Solution.tryAction(inner, self.solution)
 
 
 class DiscreteAxis(Axis):
     def switch(self):
-        self.switchTapPositionKey.press()
+        self.tryChange(lambda: self.switchTapPositionKey.press())
+
+    def setTo(self, target):
+        while True:
+            nowVal = self.getVal()
+            if nowVal is None:
+                raise AxisUnsupported()
+            if nowVal != target:
+                self.switch()
+            else:
+                break
 
 
 @AnnotationUtil.Annotation(errAllowed=0.01, keyboardSensitivity=0.03)
 class ContiniousAxis(Axis):
-    # expects axis value to be in [0,1]
+    # pid params expect axis value within [0,1]
     controller = PIDController(3, 0, 0.25)
 
     def turnUp(self, holdTime):
-        def inner():
-            prev = self.getVal()
-            if prev is None or FloatEq(prev, 1):
-                raise AxisUnsupported()
-            self.turnUpKey.hold(holdTime)
-            PreciseSleep(0.1)
-            after = self.getVal(mustUpdate=True)
-            if after is None:
-                raise AxisUnsupported()
-            return (
-                not FloatEq(prev, after)
-                or holdTime
-                < AnnotationUtil.getAnnotations(ContiniousAxis).keyboardSensitivity
-            )
-
-        self.tryAction(inner, self.switchManualControl)
+        self.tryChange(lambda: self.turnUpKey.hold(holdTime))
 
     def turnDown(self, holdTime):
-        def inner():
-            prev = self.getVal()
-            if prev is None or FloatEq(prev, 0):
-                raise AxisUnsupported()
-            self.turnDownKey.hold(holdTime)
-            PreciseSleep(0.1)
-            after = self.getVal(mustUpdate=True)
-            if after is None:
-                raise AxisUnsupported()
-            return (
-                not FloatEq(prev, after)
-                or holdTime
-                < AnnotationUtil.getAnnotations(ContiniousAxis).keyboardSensitivity
-            )
-
-        self.tryAction(inner, self.switchManualControl)
+        self.tryChange(lambda: self.turnDownKey.hold(holdTime))
 
     def setTo(self, target):
+        keyboardSensitivity = AnnotationUtil.getAnnotations(
+            ContiniousAxis
+        ).keyboardSensitivity
         while True:
             nowVal = self.getVal()
             if nowVal is None:
@@ -173,10 +189,22 @@ class ContiniousAxis(Axis):
             if abs(err) <= AnnotationUtil.getAnnotations(ContiniousAxis).errAllowed:
                 break
             ctrl = self.controller.update(err)
+            if abs(ctrl) < keyboardSensitivity:
+                # keyboard can't respond fast enough
+                # may cause bouncing, but will be safe if errAllowed is big enough
+                ctrl = ctrl / abs(ctrl) * keyboardSensitivity
             if ctrl > 0:
                 self.turnUp(ctrl)
             else:
                 self.turnDown(abs(ctrl))
+
+
+SwitchManualEngineControl = FunctionalKey(
+    [
+        keyshortcut.win32conComp.VK_LCONTROL,
+        keyshortcut.win32conComp.VK_OEM_MINUS,
+    ]
+)
 
 
 class OilRadiator(ContiniousAxis):
@@ -187,9 +215,19 @@ class OilRadiator(ContiniousAxis):
             switchManualControlKey=FunctionalKey(
                 [
                     win32con.VK_RMENU,
-                    keyshortcut.win32conComp.VK_OEM_6,
+                    keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
+            solution=[
+                Solution(
+                    toEnable=lambda: SwitchManualEngineControl.press(),
+                    toDisable=lambda: SwitchManualEngineControl.press(),
+                ),
+                Solution(
+                    toEnable=lambda: self.switchManualControl(),
+                    toDisable=lambda: self.switchManualControl(),
+                ),
+            ],
         )
 
     def getVal(self, mustUpdate=None):
@@ -210,6 +248,16 @@ class Radiator(ContiniousAxis):
                     keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
+            solution=[
+                Solution(
+                    toEnable=lambda: SwitchManualEngineControl.press(),
+                    toDisable=lambda: SwitchManualEngineControl.press(),
+                ),
+                Solution(
+                    toEnable=lambda: self.switchManualControl(),
+                    toDisable=lambda: self.switchManualControl(),
+                ),
+            ],
         )
 
     def getVal(self, mustUpdate=None):
@@ -236,6 +284,16 @@ class PropPitch(ContiniousAxis):
             switchManualControlKey=FunctionalKey(
                 [win32con.VK_RMENU, keyshortcut.win32conComp.VK_QUOTE]
             ),
+            solution=[
+                Solution(
+                    toEnable=lambda: SwitchManualEngineControl.press(),
+                    toDisable=lambda: SwitchManualEngineControl.press(),
+                ),
+                Solution(
+                    toEnable=lambda: self.switchManualControl(),
+                    toDisable=lambda: self.switchManualControl(),
+                ),
+            ],
         )
 
     def getVal(self, mustUpdate=None):
@@ -263,8 +321,28 @@ class Supercharger(DiscreteAxis):
                     win32con.VK_LMENU,
                     keyshortcut.win32conComp.VK_OEM_PLUS,
                 ]
-            )
+            ),
+            solution=[
+                Solution(
+                    toEnable=lambda: SwitchManualEngineControl.press(),
+                    toDisable=lambda: SwitchManualEngineControl.press(),
+                ),
+            ],
         )
+
+    def getVal(self, mustUpdate=None):
+        try:
+            result = (
+                Port8111Cache()
+                .get(Port8111.QueryType.state, mustUpdate)
+                .expectValid()
+                .engine.compressor_stage.value[0]
+            )
+            if result is not None:
+                return result
+            return None
+        except Port8111.FetchFailure:
+            return None
 
 
 class EngineMan:
@@ -272,6 +350,7 @@ class EngineMan:
     def setEngineStatusDemo(self):
         Radiator().setTo(0.75)
         PropPitch().setTo(0.75)
+        Supercharger().setTo(2)
 
 
 activeWindow(GetWtHwnd())
