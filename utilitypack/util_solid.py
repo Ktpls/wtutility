@@ -1944,6 +1944,14 @@ def NormalizeIterableOrSingleArgToIterable(arg):
     return arg
 
 
+class DictAsAnObject:
+    def __init__(self, data):
+        self.__dict__ = data
+
+    def __getattr__(self, attr):
+        return self.__dict__.get(attr)
+
+
 class AnnotationUtil:
     @staticmethod
     def __checkAnnoNonexisted(obj):
@@ -1961,4 +1969,4 @@ class AnnotationUtil:
     def getAnnotations(obj):
         if AnnotationUtil.__checkAnnoNonexisted(obj):
             return dict()
-        return obj.__ExtraAnnotations__
+        return DictAsAnObject(obj.__ExtraAnnotations__)

@@ -41,7 +41,7 @@ class Port8111Cache:
                 mustUpdate
                 or self.lastUpdateTime is None
                 or time.perf_counter() - self.lastUpdateTime
-                > AnnotationUtil.getAnnotations(Port8111Cache)["fetchInterval"]
+                > AnnotationUtil.getAnnotations(Port8111Cache).fetchInterval
             ):
                 self.update()
             return self.value
@@ -52,8 +52,8 @@ class Port8111Cache:
         return self.typcCache[queryType].get(mustUpdate=mustUpdate)
 
 
+@AnnotationUtil.Annotation(PRESS_TIME=0.05)
 class FunctionalKey:
-    PRESS_TIME = 0.01
     key: list[int]
 
     def __init__(self, key: int | list[int]) -> None:
@@ -68,7 +68,7 @@ class FunctionalKey:
             keyshortcut.keyup(k)
 
     def press(self):
-        self.hold(FunctionalKey.PRESS_TIME)
+        self.hold(AnnotationUtil.getAnnotations(FunctionalKey).PRESS_TIME)
 
     @staticmethod
     def Unbounded():
@@ -92,6 +92,7 @@ class Axis:
 
     def switchManualControl(self):
         self.switchManualControlKey.press()
+        Rhythms.Notify.play()
 
     def setTo(self, target):
         pass
@@ -105,12 +106,16 @@ class Axis:
         solutionOnFailure: typing.Callable | list[typing.Callable],
     ):
         solutionOnFailure = NormalizeIterableOrSingleArgToIterable(solutionOnFailure)
-        for i in solutionOnFailure:
+        nextSolIdx = 0
+        while True:
             if not action():
-                i()
+                if nextSolIdx < len(solutionOnFailure):
+                    solutionOnFailure[nextSolIdx]()
+                    nextSolIdx += 1
+                else:
+                    raise AxisUnsupported()
             else:
-                return
-        raise AxisUnsupported()
+                break
 
 
 class DiscreteAxis(Axis):
@@ -118,41 +123,60 @@ class DiscreteAxis(Axis):
         self.switchTapPositionKey.press()
 
 
+@AnnotationUtil.Annotation(errAllowed=0.01, keyboardSensitivity=0.03)
 class ContiniousAxis(Axis):
-    controller = PIDController(0.1, 0, 0.1)
-    errAllowed = 0.01
+    # expects axis value to be in [0,1]
+    controller = PIDController(3, 0, 0.25)
 
     def turnUp(self, holdTime):
-        self.turnUpKey.hold(holdTime)
-
-    def turnDown(self, holdTime):
-        def turnDown_inner():
+        def inner():
             prev = self.getVal()
-            if prev is None:
+            if prev is None or FloatEq(prev, 1):
                 raise AxisUnsupported()
-            self.turnDownKey.hold(holdTime)
+            self.turnUpKey.hold(holdTime)
+            PreciseSleep(0.1)
             after = self.getVal(mustUpdate=True)
             if after is None:
                 raise AxisUnsupported()
-            return FloatEq(prev, after) and not FloatEq(prev, 0)
+            return (
+                not FloatEq(prev, after)
+                or holdTime
+                < AnnotationUtil.getAnnotations(ContiniousAxis).keyboardSensitivity
+            )
 
-        self.tryAction(turnDown_inner, self.switchManualControl)
+        self.tryAction(inner, self.switchManualControl)
+
+    def turnDown(self, holdTime):
+        def inner():
+            prev = self.getVal()
+            if prev is None or FloatEq(prev, 0):
+                raise AxisUnsupported()
+            self.turnDownKey.hold(holdTime)
+            PreciseSleep(0.1)
+            after = self.getVal(mustUpdate=True)
+            if after is None:
+                raise AxisUnsupported()
+            return (
+                not FloatEq(prev, after)
+                or holdTime
+                < AnnotationUtil.getAnnotations(ContiniousAxis).keyboardSensitivity
+            )
+
+        self.tryAction(inner, self.switchManualControl)
 
     def setTo(self, target):
-        count = 0
         while True:
             nowVal = self.getVal()
             if nowVal is None:
                 raise AxisUnsupported()
             err = target - nowVal
-            if abs(err) <= ContiniousAxis.errAllowed:
+            if abs(err) <= AnnotationUtil.getAnnotations(ContiniousAxis).errAllowed:
                 break
             ctrl = self.controller.update(err)
             if ctrl > 0:
                 self.turnUp(ctrl)
             else:
                 self.turnDown(abs(ctrl))
-            count += 1
 
 
 class OilRadiator(ContiniousAxis):
@@ -192,18 +216,10 @@ class Radiator(ContiniousAxis):
         try:
             result = (
                 Port8111Cache()
-                .get(Port8111.QueryType.indicator, mustUpdate)
-                .expectValid()
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-                .radiator
-            )
-            if result is not None:
-                return result
-            result = (
-                Port8111Cache()
                 .get(Port8111.QueryType.state, mustUpdate)
                 .expectValid()
                 .engine.radiator.value[0]
+                / 100
             )
             if result is not None:
                 return result
@@ -226,10 +242,10 @@ class PropPitch(ContiniousAxis):
         try:
             result = (
                 Port8111Cache()
-                .get(Port8111.QueryType.indicator, mustUpdate)
+                .get(Port8111.QueryType.state, mustUpdate)
                 .expectValid()
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-                .prop_pitch
+                .engine.RPM_throttle.value[0]
+                / 100
             )
             if result is not None:
                 return result
@@ -254,22 +270,14 @@ class Supercharger(DiscreteAxis):
 class EngineMan:
 
     def setEngineStatusDemo(self):
-        Radiator().setTo(0)
-        PropPitch().setTo(0)
+        Radiator().setTo(0.75)
+        PropPitch().setTo(0.75)
 
 
-"""
-playground here
-wdD4d4=-=-=
-"""
-
-# activeWindow(GetWtHwnd())
-# for i in range(2):
-#     PreciseSleep(1)
-#     Rhythms.Notify.play()
-keyshortcut.press(187)
-# with keyshortcut.HoldingKey(win32con.VK_LWIN):
-#     keyshortcut.press(ord("D"))
-# EngineMan().setEngineStatusDemo()
-
+activeWindow(GetWtHwnd())
+for i in range(2):
+    PreciseSleep(1)
+    Rhythms.Notify.play()
+EngineMan().setEngineStatusDemo()
+Rhythms.Success.play()
 pass

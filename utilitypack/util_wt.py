@@ -36,17 +36,30 @@ class Port8111:
             ):
                 raise Port8111.FetchFailure()
             return self
-
+    # consider get an easy way to collect all possible fields for various vehicles
     @dataclasses.dataclass
     class BeanIndicatorAir(BeanIndicatorBase, ValidBean):
         valid: bool = None
         army: str = None
         type: str = None
         speed: float = None
+        ammo_counter1: float = None
+        ammo_counter1_lamp: float = None
+        ammo_counter2: float = None
+        ammo_counter2_lamp: float = None
+        ammo_counter3: float = None
+        ammo_counter3_lamp: float = None
+        oxygen: float = None
+        prop_pitch_hour: float = None
+        prop_pitch_min: float = None
         pedals1: float = None
         pedals2: float = None
         pedals3: float = None
         pedals4: float = None
+        pedals5: float = None
+        pedals6: float = None
+        pedals7: float = None
+        pedals8: float = None
         stick_elevator: float = None
         stick_elevator1: float = None
         stick_ailerons: float = None
@@ -79,7 +92,7 @@ class Port8111:
         oil_temperature2: float = None
         oil_temperature3: float = None
         mixture: float = None
-        mixture1: float = None
+        mixture_1: float = None
         carb_temperature: float = None
         carb_temperature1: float = None
         fuel: float = None
@@ -95,8 +108,10 @@ class Port8111:
         flaps: float = None
         trimmer: float = None
         throttle: float = None
-        throttle1: float = None
+        throttle_1: float = None
         weapon1: float = None
+        weapon2: float = None
+        weapon3: float = None
         prop_pitch: float = None
         prop_pitch1: float = None
         supercharger: float = None
@@ -296,15 +311,15 @@ class Port8111:
         def parseJson(self, json_obj):
             if self == self.indicator:
                 if json_obj["valid"] == False:
-                    return Port8111.BeanIndicatorAir(**json_obj)
+                    return BeanUtil.copyProperties(json_obj, Port8111.BeanIndicatorAir)
                 army = json_obj["army"]
                 if army == "air":
-                    return Port8111.BeanIndicatorAir(**json_obj)
+                    return BeanUtil.copyProperties(json_obj, Port8111.BeanIndicatorAir)
                 elif army == "tank":
-                    return Port8111.BeanIndicatorTank(**json_obj)
+                    return BeanUtil.copyProperties(json_obj, Port8111.BeanIndicatorTank)
                 Port8111.QueryType.__throwEnumNotFound()
             elif self == self.map_info:
-                return Port8111.BeanMapInfo(**json_obj)
+                return BeanUtil.copyProperties(json_obj, Port8111.BeanMapInfo)
             elif self == self.state:
                 return Port8111.BeanState.fromDict(json_obj)
             Port8111.QueryType.__throwEnumNotFound()
