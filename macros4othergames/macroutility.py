@@ -18,7 +18,7 @@ def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
         except SystemExit as e:
             raise e
         except Exception as e:
-            Rythm.RythmError.play()
+            Rhythms.Error.play()
             print("#" * 10)
             traceback.print_exc()
             print("#" * 10)
@@ -27,14 +27,14 @@ def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
             try:
                 bus()
             except Exception as e:
-                Rythm.RythmError.play()
+                Rhythms.Error.play()
                 print("#" * 10)
                 traceback.print_exc()
                 print("#" * 10)
 
 
 def AllTheWayOnErr(msg):
-    Rythm.RythmError.play()
+    Rhythms.Error.play()
     print(msg)
     os.system("pause")
     exit()
@@ -81,10 +81,10 @@ class ExecutableCommand:
     def autoSwitch(self):
         if self.TestNop():
             self.SetCmd()
-            Rythm.RythmCancel.play()
+            Rhythms.Cancel.play()
         else:
             self.SetNop()
-            Rythm.RythmGoodNotify.play()
+            Rhythms.GoodNotify.play()
 
 
 class KeyPressRepeater(StoppableThread):
@@ -103,7 +103,7 @@ class KeyPressRepeater(StoppableThread):
     def autoSwitch(self):
         if not self.getRunning():
             self.go()
-            Rythm.RythmGoodNotify.play()
+            Rhythms.GoodNotify.play()
         else:
             self.stop()
-            Rythm.RythmCancel.play()
+            Rhythms.Cancel.play()

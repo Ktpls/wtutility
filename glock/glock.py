@@ -43,7 +43,7 @@ class GPush(StoppableProcess):
     def foo(self):
         def report():
             if not GPush.isZero(ratio):
-                Rythm.RythmNotify.play()
+                Rhythms.Notify.play()
             if print_ctrl_ratio:
                 print(f"ratio: {self.ratio.value}")
 
@@ -56,12 +56,12 @@ class GPush(StoppableProcess):
                 PreciseSleep(period)
             elif GPush.isFull(ratio):
                 # key will be realeased until some point that not full
-                gameinput.keydown(gameinput.keycode.key_S)
+                gameinput.keydown(ord("S"))
                 PreciseSleep(period)
             else:
                 topush = ratio * period
                 torelax = (1 - ratio) * period
-                gameinput.hold(gameinput.keycode.key_S, topush)
+                gameinput.hold(ord("S"), topush)
                 # PreciseSleep(topush)
                 PreciseSleep(torelax)
             reporter.update()
@@ -97,7 +97,7 @@ class Sampler(StoppableProcess):
     def foo(self):
         GMax = 13
         pushMax = (self.lim - GMax) * (-0.5) / (GMax - 1)
-        fullPushExceed = (GMax - self.lim)*0.75
+        fullPushExceed = (GMax - self.lim) * 0.75
         controller = PIDController(
             kp=0.05 * 1 / fullPushExceed,
             ki=1.0 * 1 / fullPushExceed,
@@ -227,5 +227,5 @@ class Puller(StoppableProcess):
         while not self.timeToStop():
             ontime = ratio * period
             offtime = (1 - ratio) * period
-            gameinput.hold(gameinput.keycode.key_W, ontime)
+            gameinput.hold(ord("W"), ontime)
             PreciseSleep(offtime)

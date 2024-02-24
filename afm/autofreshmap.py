@@ -33,7 +33,7 @@ def main():
             os.system("pause")
     except Exception as err:
         traceback.print_exc()
-        Rythm.RythmError.play()
+        Rhythms.Error.play()
         if throwerrinmain:
             raise err
         system("pause")
@@ -49,4 +49,4 @@ def main():
 def test():
     activeWindow(GetWtHwnd())
     sleep(1)
-    press(keycode.key_Enter)
+    press(win32con.VK_RETURN)

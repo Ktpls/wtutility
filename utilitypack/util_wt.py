@@ -13,17 +13,45 @@ def GetWtHwnd():
 
 
 class Port8111:
+    class FetchFailure(Exception): ...
+
+    class ValidBean:
+        def expectValid(self):
+            if not self.valid:
+                raise Port8111.FetchFailure()
+            return self
+
+    class BeanIndicatorBase:
+        class IndicatorType(enum.Enum):
+            air = 0
+            tank = 1
+
+        def expectToBe(self, type):
+            if (
+                type == Port8111.BeanIndicatorBase.IndicatorType.air
+                and not isinstance(self, Port8111.BeanIndicatorAir)
+            ) or (
+                type == Port8111.BeanIndicatorBase.IndicatorType.tank
+                and not isinstance(self, Port8111.BeanIndicatorTank)
+            ):
+                raise Port8111.FetchFailure()
+            return self
+
     @dataclasses.dataclass
-    class BeanIndicatorAir:
+    class BeanIndicatorAir(BeanIndicatorBase, ValidBean):
         valid: bool = None
         army: str = None
         type: str = None
         speed: float = None
         pedals1: float = None
         pedals2: float = None
+        pedals3: float = None
+        pedals4: float = None
         stick_elevator: float = None
+        stick_elevator1: float = None
         stick_ailerons: float = None
         vario: float = None
+        altitude_10k: float = None
         altitude_hour: float = None
         altitude_min: float = None
         aviahorizon_roll: float = None
@@ -35,9 +63,11 @@ class Port8111:
         compass: float = None
         compass1: float = None
         clock_hour: float = None
+        clock_min: float = None
         clock_sec: float = None
         manifold_pressure: float = None
         manifold_pressure1: float = None
+        rpm: float = None
         rpm_min: float = None
         rpm1_min: float = None
         rpm_hour: float = None
@@ -53,10 +83,15 @@ class Port8111:
         carb_temperature: float = None
         carb_temperature1: float = None
         fuel: float = None
+        fuel1: float = None
+        fuel2: float = None
         fuel_pressure: float = None
         fuel_pressure1: float = None
         gears: float = None
         gears1: float = None
+        gear_lamp_down: float = None
+        gear_lamp_off: float = None
+        gear_lamp_up: float = None
         flaps: float = None
         trimmer: float = None
         throttle: float = None
@@ -66,9 +101,10 @@ class Port8111:
         prop_pitch1: float = None
         supercharger: float = None
         radiator: float = None
+        water_temperature: float = None
 
     @dataclasses.dataclass
-    class BeanIndicatorTank:
+    class BeanIndicatorTank(BeanIndicatorBase, ValidBean):
         valid: bool = None
         army: str = None
         type: str = None
@@ -102,11 +138,11 @@ class Port8111:
         valid: bool = None
 
     @dataclasses.dataclass
-    class BeanState:
+    class BeanState(ValidBean):
         @dataclasses.dataclass
         class UnitValue:
             unit: str
-            value: typing.Union[float, typing.List[float]]
+            value: typing.List[float]
 
         @dataclasses.dataclass
         class Engine:
@@ -141,7 +177,7 @@ class Port8111:
         Wx: UnitValue = None
         Mfuel: UnitValue = None
         Mfuel0: UnitValue = None
-        engine: Engine = None
+        engine: Engine = dataclasses.field(default_factory=Engine)
 
         @staticmethod
         def fromDict(data_dict: typing.Dict[str, float]) -> "Port8111.BeanState":
@@ -191,11 +227,7 @@ class Port8111:
                 for name, keys in grouped_keys.items():
                     # Assuming all units are the same for each key in the same group
                     unit = keys[0].unit
-                    values = (
-                        [data_dict[key.originalKey] for key in keys]
-                        if len(keys) != 1
-                        else data_dict[keys[0].originalKey]
-                    )
+                    values = [data_dict[key.originalKey] for key in keys]
                     aircraft_fields[name] = Port8111.BeanState.UnitValue(unit, values)
 
                 # Create Engine instance
@@ -253,7 +285,7 @@ class Port8111:
 
         def getPath(self):
             if self == self.indicator:
-                return "indicator"
+                return "indicators"
             elif self == self.map_info:
                 return "map_info.json"
             elif self == self.state:
@@ -263,6 +295,8 @@ class Port8111:
 
         def parseJson(self, json_obj):
             if self == self.indicator:
+                if json_obj["valid"] == False:
+                    return Port8111.BeanIndicatorAir(**json_obj)
                 army = json_obj["army"]
                 if army == "air":
                     return Port8111.BeanIndicatorAir(**json_obj)
@@ -279,7 +313,7 @@ class Port8111:
     def get_raw_json(queryType: "Port8111.QueryType", timeout=None):
         try:
             response = requests.get(
-                "http://localhost:8111/" + queryType.getPath(),
+                "http://127.0.0.1:8111/" + queryType.getPath(),
                 timeout=timeout if timeout is not None else 1,
             )
         except (requests.ConnectionError, requests.ReadTimeout):

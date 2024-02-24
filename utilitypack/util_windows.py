@@ -729,9 +729,7 @@ def save_list_to_xls(
 
     # Iterate over the list and write each item to a new row
     for row, rowcontent in enumerate(data_list):
-        # formalize format
-        if not isinstance(rowcontent, (list, tuple)):
-            rowcontent = [rowcontent]
+        rowcontent=NormalizeIterableOrSingleArgToIterable(rowcontent)
         for col, item in enumerate(rowcontent):
             ws.cell(row=row + 1, column=col + 1, value=item)
 
@@ -755,13 +753,13 @@ def Xls2ListList(path=None, sheetname=None, killNones=True):
 
 
 @dataclasses.dataclass
-class Rythm:
+class Rhythm:
     @dataclasses.dataclass
     class BeepTone:
         freq: int
         dur: int = 100
 
-    tones: typing.List["Rythm.BeepTone"]
+    tones: typing.List["Rhythm.BeepTone"]
 
     @staticmethod
     def fromString(s: str, default_dur: int = 100):
@@ -770,11 +768,11 @@ class Rythm:
         for l in lines:
             arg = l.split(",")
             tones.append(
-                Rythm.BeepTone(
+                Rhythm.BeepTone(
                     int(arg[0]), dur=int(arg[1]) if len(arg) > 1 else default_dur
                 )
             )
-        return Rythm(tones)
+        return Rhythm(tones)
 
     def play(self):
         for t in self.tones:
@@ -784,16 +782,18 @@ class Rythm:
         strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
         implType=StoppableThread,
     )
-    def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm: "Rythm"):
+    def asyncPlay(selfStoppable: StoppableSomewhat, selfRythm: "Rhythm"):
         selfRythm.play()
 
-    RythmSuccess = fromString("1000 500 1000", default_dur=100)
-    RythmError = fromString("1000,1000 500,1000", default_dur=100)
-    RythmCancel = fromString("1000 500 500", default_dur=100)
-    RythmNotify = fromString("500", default_dur=100)
-    RythmGoodNotify = fromString("1000", default_dur=100)
-    RythmBadNotify = fromString("500 500 500", default_dur=100)
-    RythmReboot = fromString("500 750 400", default_dur=100)
+
+class Rhythms:
+    Success = Rhythm.fromString("1000 500 1000", default_dur=100)
+    Error = Rhythm.fromString("1000,1000 500,1000", default_dur=100)
+    Cancel = Rhythm.fromString("1000 500 500", default_dur=100)
+    Notify = Rhythm.fromString("500", default_dur=100)
+    GoodNotify = Rhythm.fromString("1000", default_dur=100)
+    BadNotify = Rhythm.fromString("500 500 500", default_dur=100)
+    Reboot = Rhythm.fromString("500 750 400", default_dur=100)
 
 
 def ReadFileInZip(zipf, filename: str | list[str] | tuple[str]):

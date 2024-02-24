@@ -40,7 +40,7 @@ def onClick():
         return
     eedc.save(cachedShots[i].m)
     lastSaveTime=nowtime
-    Rythm.RythmNotify.play()
+    Rhythms.Notify.play()
 
 
 def onFrame():

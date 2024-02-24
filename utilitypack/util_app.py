@@ -109,7 +109,7 @@ class BulletinApp:
             except SystemExit as e:
                 raise e
             except Exception as e:
-                Rythm.RythmError.play()
+                Rhythms.Error.play()
                 print("#" * 10)
                 traceback.print_exc()
                 print("#" * 10)
@@ -118,7 +118,7 @@ class BulletinApp:
                 try:
                     bus()
                 except Exception as e:
-                    Rythm.RythmError.play()
+                    Rhythms.Error.play()
                     print("#" * 10)
                     traceback.print_exc()
                     print("#" * 10)

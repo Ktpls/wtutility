@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinCode as keycode
+import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinScanCode as keycode
 from utilitypack.utility import *
 from utilitypack.util_app import *
 from aio_config import *
@@ -75,14 +75,14 @@ def main():
                     result = numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
                     app.bulletin.putup(f"plotting scale locked at {result}")
-                    gameinput.key_press(keycode.key_Enter)
-                    gameinput.key_press(keycode.key_1)
+                    gameinput.key_press(win32con.VK_RETURN)
+                    gameinput.key_press(ord("1"))
                 elif (
                     session.sessionEndType
                     == HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL
                 ):
                     app.bulletin.putup("plotting scale canceled")
-                    gameinput.key_press(keycode.key_Esc)
+                    gameinput.key_press(win32con.VK_ESCAPE)
 
             app.inputSession.IntoSession(
                 SetPlottingScaleLock,
@@ -136,15 +136,15 @@ def main():
             app.bulletin.putup("launching series")
             interval = 0.1
             num = 29 + 10
-            keyshortcut.keydown(keycode.key_LeftControl)
+            keyshortcut.keydown(win32con.VK_LCONTROL)
             for i in range(num):
                 if self.timeToStop():
                     break
-                keyshortcut.keydown(keycode.key_Spacebar)
+                keyshortcut.keydown(win32con.VK_SPACE)
                 PreciseSleep(0.03)
-                keyshortcut.keyup(keycode.key_Spacebar)
+                keyshortcut.keyup(win32con.VK_SPACE)
                 PreciseSleep(interval)
-            keyshortcut.keyup(keycode.key_LeftControl)
+            keyshortcut.keyup(win32con.VK_LCONTROL)
 
             app.bulletin.putup(f"launch done")
 
@@ -228,7 +228,7 @@ def main():
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
-        Rythm.RythmReboot.play()
+        Rhythms.Reboot.play()
         sys.exit()
 
     app.go()

@@ -44,6 +44,10 @@ def ListEq(a: typing.List, b: typing.List):
     return True
 
 
+def FloatEq(a, b, eps=1e-6):
+    return abs(a - b) < eps
+
+
 def deduplicate(l: typing.List):
     return list(set(l))
 
@@ -470,7 +474,7 @@ def ensure_directory_exists(file_path):
 def WriteFile(path, content):
     ensure_directory_exists(path)
     with open(path, "wb+") as f:
-        f.write(content.encode("utf-8"))
+        f.write(content)
 
 
 def AppendFile(path, content):
@@ -1814,7 +1818,11 @@ class BeanUtil:
 
     @staticmethod
     def __FieldConversionFunc(obj, field):
-        return obj.__annotations__.get(field, IdentityMapping)
+        taipe = obj.__annotations__.get(field, None)
+        if taipe is None or isinstance(taipe, str):
+            # not type annotated, or annotated like field:"some class"
+            return IdentityMapping
+        return taipe
 
     @staticmethod
     def __GetterOf(obj):
@@ -1928,3 +1936,29 @@ def Singleton(cls):
 
     cls.__new__ = fooNew
     return cls
+
+
+def NormalizeIterableOrSingleArgToIterable(arg):
+    if not isinstance(arg, typing.Iterable):
+        return [arg]
+    return arg
+
+
+class AnnotationUtil:
+    @staticmethod
+    def __checkAnnoNonexisted(obj):
+        return not hasattr(obj, "__ExtraAnnotations__")
+
+    @staticmethod
+    @EasyWrapper
+    def Annotation(obj, **kwargs):
+        if AnnotationUtil.__checkAnnoNonexisted(obj):
+            obj.__ExtraAnnotations__ = dict()
+        obj.__ExtraAnnotations__.update(kwargs)
+        return obj
+
+    @staticmethod
+    def getAnnotations(obj):
+        if AnnotationUtil.__checkAnnoNonexisted(obj):
+            return dict()
+        return obj.__ExtraAnnotations__

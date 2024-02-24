@@ -273,10 +273,7 @@ class MapDetectorImpled(detector, MapDetector):
         after that assetpath2realpath will be done in matcher
         """
         if para.map is not None:
-            map = para.map
-            # formalize to list
-            if type(map) is str:
-                map = [map]
+            map = NormalizeIterableOrSingleArgToIterable(para.map)
             map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
                 FixedPositionImgMatcher(
@@ -316,8 +313,7 @@ class MapDetectorImpled(detector, MapDetector):
             if ptype is None:
                 # fall back to all
                 ptype = [k for k in Asset4PointDetection_Template.keys()]
-            if type(ptype) is str:
-                ptype = [ptype]
+            ptype=NormalizeIterableOrSingleArgToIterable(ptype)
             result = [
                 threshedmatchtemplate(
                     mapcut,
@@ -416,7 +412,7 @@ class freshAMap(StoppableThread):
         loadAssetsNeeded4FreshAMap()
         assert stateDetector is not None and whitelistedmapdetector is not None
         ss = screenshoter(0)
-        wifi=WifiRefresher()
+        wifi = WifiRefresher()
 
         def shot():
             shot = ss.shotbgr()
@@ -433,7 +429,7 @@ class freshAMap(StoppableThread):
 
             allchanneloutput(str("detecting loading map"))
 
-            Rythm.RythmNotify.play()
+            Rhythms.Notify.play()
 
             def detectLoadingMap(scr):
                 assert stateDetector is not None
@@ -451,7 +447,7 @@ class freshAMap(StoppableThread):
                         ]
                     ]
                 ):
-                    press(keycode.key_Enter)
+                    press(win32con.VK_RETURN)
                     return False
                 return False
 
@@ -473,11 +469,11 @@ class freshAMap(StoppableThread):
                     ]
                 ):
                     # clear matching state
-                    press(keycode.key_Esc)
-                Rythm.RythmCancel.play()
+                    press(win32con.VK_ESCAPE)
+                Rhythms.Cancel.play()
                 return False
 
-            Rythm.RythmNotify.play()
+            Rhythms.Notify.play()
             allchanneloutput("loading map")
 
             # determine if map desired
@@ -493,13 +489,13 @@ class freshAMap(StoppableThread):
             allchanneloutput(str(ret))
             if ret:
                 # enter game
-                Rythm.RythmSuccess.play()
+                Rhythms.Success.play()
                 allchanneloutput("good map")
                 return True
 
             # detected banned map
             wifi.setOff()
-            Rythm.RythmNotify.play()
+            Rhythms.Notify.play()
             allchanneloutput("bad map")
 
             # detect game canceled, which is not in loading map scence
@@ -520,7 +516,7 @@ class freshAMap(StoppableThread):
                 task canceld, do the cleanning
                 set on wifi after fully exit the game match
                 """
-                Rythm.RythmCancel.play()
+                Rhythms.Cancel.play()
                 KeepDetecting(
                     successCond=detectGameCanceled,
                     sleeptime=2,
@@ -529,7 +525,7 @@ class freshAMap(StoppableThread):
                 return False
 
             wifi.setOn()
-            Rythm.RythmNotify.play()
+            Rhythms.Notify.play()
             allchanneloutput("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
@@ -724,10 +720,10 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 "MissionCanceled"
             ].detect(scr):
                 # piority lower than statistics, so the to battle button on spawn scence wont confuse
-                press(keycode.key_Enter)
+                press(win32con.VK_RETURN)
                 return False
             if stateDetector["OK"].detect(scr):
-                press(keycode.key_Esc)
+                press(win32con.VK_ESCAPE)
                 longDelay(15)
                 return False
             return False
@@ -782,7 +778,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         if detectPlayerVehicleResult == DetectPlayerVehicleResult.good:
             # good
-            Rythm.RythmSuccess.play()
+            Rhythms.Success.play()
             import subprocess
 
             files = AllFileIn(musicPath)
@@ -803,37 +799,37 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             or detectPlayerVehicleResult == DetectPlayerVehicleResult.timeout
         ):
             # bad
-            Rythm.RythmBadNotify.play()
+            Rhythms.BadNotify.play()
         elif detectPlayerVehicleResult == DetectPlayerVehicleResult.unset:
             raise Exception("detectPlayerVehicleResult is unset")
 
         KEY_OP_INTERVAL = 0.3
         # bad
         # exit statistics
-        press(keycode.key_Esc)
+        press(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         # to menu
-        press(keycode.key_Esc)
+        press(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         moveto((0, 0))
 
         # select return to hanger
         for i in range(5):
-            press(keycode.key_Down)
+            press(win32con.VK_DOWN)
             time.sleep(KEY_OP_INTERVAL)
 
         # click it
-        press(keycode.key_Enter)
+        press(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         # select yes
-        press(keycode.key_Left)
+        press(win32con.VK_LEFT)
         time.sleep(KEY_OP_INTERVAL)
 
         # click
-        press(keycode.key_Enter)
+        press(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         moveMouseAway()
@@ -843,7 +839,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         def detectMissionCanceled(scr):
             assert stateDetector is not None
             if stateDetector["MissionCanceled"].detect(scr):
-                press(keycode.key_Esc)
+                press(win32con.VK_ESCAPE)
                 return True
             return False
 

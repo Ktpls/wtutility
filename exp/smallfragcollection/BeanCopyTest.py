@@ -7,6 +7,7 @@ class clz1:
     a: int
     b: int
     c: int
+    d: int
 
 
 @AllOptionalInit
@@ -22,15 +23,20 @@ class classWithArgedInitFunc:
     a: int
     b: str
     c: int
+    d: "classWithArgedInitFunc"
 
     def __init__(self, some_val_required_in_init) -> None:
         pass
 
 
-dataSource = clz1(a=1,c=2)
+dataSource = clz1(a=1, c=2, d=3)
 copied = clz2()
 BeanUtil.copyProperties(dataSource, copied)
 copiedWithoutInit = BeanUtil.copyProperties(dataSource, clz2)
-copiedWithoutInitWithArgedInitFunc=BeanUtil.copyProperties(dataSource, classWithArgedInitFunc)
-print(f"{dataSource=}, {copiedWithoutInit=}, {copied=}, {copiedWithoutInitWithArgedInitFunc=}")
+copiedWithoutInitWithArgedInitFunc = BeanUtil.copyProperties(
+    dataSource, classWithArgedInitFunc
+)
+print(
+    f"{dataSource=}, {copiedWithoutInit=}, {copied=}, {copiedWithoutInitWithArgedInitFunc=}"
+)
 pass

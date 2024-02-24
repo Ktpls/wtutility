@@ -8,7 +8,7 @@ def holdMouseLeft():
 
 
 def holdC():
-    keydown(keycode.key_C)
+    keydown(ord("C"))
 
 class MoveMouseDirection(enum.Enum):
     up = 1

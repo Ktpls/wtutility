@@ -40,9 +40,9 @@ def main():
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(bulletinBoard.Poster("waiting", 1))
         for i in range(5):
-            keyshortcut.keydown(keyshortcut.keycode.key_W)
+            keyshortcut.keydown(ord("W"))
             time.sleep(0.1)
-        keyshortcut.keydown(keyshortcut.keycode.key_W)
+        keyshortcut.keydown(ord("W"))
         app.bulletin.putup(bulletinBoard.Poster("wHolding", 1))
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
@@ -50,17 +50,17 @@ def main():
     @WithHotkeySwitch()
     def bestJumpOnHorse(*arg, **kw) -> None:
         app.bulletin.putup(bulletinBoard.Poster("going", 1))
-        keyshortcut.keydown(keyshortcut.keycode.key_Spacebar)
+        keyshortcut.keydown(win32con.VK_SPACE)
         PreciseSleep(0.55)
-        keyshortcut.keyup(keyshortcut.keycode.key_Spacebar)
+        keyshortcut.keyup(win32con.VK_SPACE)
 
     @app.Hotkey("TakeOff", [win32con.VK_CONTROL, ord("G")])
     @app.AsyncLongScript()
     @WithHotkeySwitch()
     def takeOff(*arg, **kw) -> None:
-        keyshortcut.press(keyshortcut.keycode.key_Spacebar)
+        keyshortcut.press(win32con.VK_SPACE)
         PreciseSleep(0.25)
-        keyshortcut.press(keyshortcut.keycode.key_Spacebar)
+        keyshortcut.press(win32con.VK_SPACE)
         PreciseSleep(0.05)
         keyshortcut.mouse.click(1)
 
@@ -97,7 +97,7 @@ def main():
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
-        Rythm.RythmReboot.play()
+        Rhythms.Reboot.play()
         sys.exit()
 
     @app.Hotkey("HKDisable", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11])

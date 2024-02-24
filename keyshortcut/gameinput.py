@@ -1,6 +1,6 @@
 import time
 import utilitypack.util_windows
-import keyshortcut.keycodeWinCode as keycode
+import win32conComp
 import dataclasses
 from ctypes import (
     POINTER,
@@ -59,7 +59,7 @@ class Input(Structure):
 def keydown(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008, 0, pointer(extra))
+    ii_.ki = KeyBdInput(hexKeyCode, 0, 0x0000, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
@@ -67,7 +67,7 @@ def keydown(hexKeyCode):
 def keyup(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, pointer(extra))
+    ii_.ki = KeyBdInput(hexKeyCode, 0, 0x0002, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
@@ -109,15 +109,18 @@ def key_press(k):
     keydown(k)
     utilitypack.util_windows.PreciseSleep(0.2)
     keyup(k)
-    
+
+
 @dataclasses.dataclass
 class HoldingKey:
     key: int
+
     def __enter__(self):
         keydown(self.key)
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         keyup(self.key)
+
 
 def moveto(p):
     windll.user32.SetCursorPos(int(p[0]), int(p[1]))
