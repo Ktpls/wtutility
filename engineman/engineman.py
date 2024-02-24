@@ -85,29 +85,48 @@ class Solution:
         action: typing.Callable,
         solution: "Solution | list[Solution]",
     ):
+        """
+        got some problems with this
+        one cant set radiator to manual mode when in auto engine control mode
+        so solutions are not independent, they are coupled with each other
+        """
         solution = NormalizeIterableOrSingleArgToIterable(solution)
         # iterate all possible solution combination to finish action successfully
         solutionCombinationMax = 2 ** len(solution) - 1
 
-        def applySolByIdx(idx):
+        def getSolState(comb, idx):
+            return comb & (1 << idx)
+
+        def applySolComb(idx):
             for i in range(len(solution)):
-                if idx & (1 << i):
+                if getSolState(idx, i):
                     solution[i].toEnable()
 
-        def unapplySolByIdx(idx):
+        def unapplySolComb(idx):
             for i in range(len(solution)):
-                if idx & (1 << i):
+                if getSolState(idx, i):
                     solution[i].toDisable()
 
-        nowSolCombIdx = 0
+        def transferSol(idxOld, idxNew):
+            for i in range(len(solution)):
+                old = getSolState(idxOld, i)
+                new = getSolState(idxNew, i)
+                if old == new:
+                    pass
+                elif old and not new:
+                    solution[i].toDisable()
+                elif not old and new:
+                    solution[i].toEnable()
+
+        nowSolComb = 0
         while True:
-            applySolByIdx(nowSolCombIdx)
             if action():
                 break
-            unapplySolByIdx(nowSolCombIdx)
-            if nowSolCombIdx < solutionCombinationMax:
-                nowSolCombIdx += 1
+            if nowSolComb < solutionCombinationMax:
+                transferSol(nowSolComb, nowSolComb + 1)
+                nowSolComb += 1
             else:
+                unapplySolComb(nowSolComb)
                 raise AxisUnsupported()
 
 
@@ -235,6 +254,9 @@ class OilRadiator(ContiniousAxis):
         if Axis.checkIfNotAirIndicator(got):
             return None
         return got.__dict__["oilradiator"]  # which will fail
+
+    def setToMaxAnyway(self):
+        self.turnUp(5)
 
 
 class Radiator(ContiniousAxis):

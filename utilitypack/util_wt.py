@@ -50,6 +50,11 @@ class Port8111:
         ammo_counter2_lamp: float = None
         ammo_counter3: float = None
         ammo_counter3_lamp: float = None
+        ammo_counter4: float = None
+        ammo_counter5: float = None
+        ammo_counter6: float = None
+        ammo_counter7: float = None
+        ammo_counter8: float = None
         oxygen: float = None
         prop_pitch_hour: float = None
         prop_pitch_min: float = None
@@ -93,6 +98,7 @@ class Port8111:
         oil_temperature2: float = None
         oil_temperature3: float = None
         mixture: float = None
+        mixture1: float = None
         mixture_1: float = None
         carb_temperature: float = None
         carb_temperature1: float = None
@@ -117,7 +123,14 @@ class Port8111:
         prop_pitch1: float = None
         supercharger: float = None
         radiator: float = None
+        oil_radiator_indicator: float = None
+        oil_radiator_lever1_1: float = None
+        radiator_indicator: float = None
+        radiator_lever1_1: float = None
         water_temperature: float = None
+        blister1: float = None
+        blister2: float = None
+        blister3: float = None
 
     @dataclasses.dataclass
     class BeanIndicatorTank(BeanIndicatorBase, ValidBean):
