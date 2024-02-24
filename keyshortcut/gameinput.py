@@ -1,7 +1,7 @@
 import time
 from utilitypack.util_solid import *
 from utilitypack.util_windows import *
-import win32conComp
+from . import win32conComp
 import dataclasses
 from ctypes import (
     POINTER,
@@ -58,7 +58,7 @@ class Input(Structure):
 
 
 @Singleton
-class VirtualKeyCode2ScanCode:
+class Vk2Sk:
     def __init__(self):
         from . import virtualKeyCode2ScanCode
 
@@ -71,7 +71,9 @@ class VirtualKeyCode2ScanCode:
 def keydown(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, VirtualKeyCode2ScanCode().tr(hexKeyCode), 0x0008, 0, pointer(extra))
+    ii_.ki = KeyBdInput(
+        0, Vk2Sk().tr(hexKeyCode), 0x0008, 0, pointer(extra)
+    )
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
@@ -79,7 +81,9 @@ def keydown(hexKeyCode):
 def keyup(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, VirtualKeyCode2ScanCode().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra))
+    ii_.ki = KeyBdInput(
+        0, Vk2Sk().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra)
+    )
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
