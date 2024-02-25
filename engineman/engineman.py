@@ -1,5 +1,6 @@
 from utilref import *
 import keyshortcut.keyshortcut as keyshortcut
+from enginemanConfig import *
 
 
 class ClassNone:
@@ -12,10 +13,6 @@ class ClassNone:
 
     def __getattr__(self, name: str):
         return ClassNone.__func_none
-
-
-class AxisUnsupported(Exception):
-    pass
 
 
 @Singleton
@@ -130,8 +127,13 @@ class Solution:
                 raise AxisUnsupported()
 
 
+class ReadOnlyAxis(Axis):
+    def set(self, target):
+        raise AxisUnsupported()
+
+
 @dataclasses.dataclass
-class Axis:
+class ControlableEngineAxis(Axis):
     switchManualControlKey: FunctionalKey = dataclasses.field(
         default_factory=FunctionalKey.Unbounded
     )
@@ -149,20 +151,14 @@ class Axis:
     def switchManualControl(self):
         self.switchManualControlKey.press()
 
-    def setTo(self, target):
-        pass
-
-    def getVal(self, mustUpdate=None):
-        pass
-
     def tryChange(self, action):
         def inner():
-            prev = self.getVal()
+            prev = self.get()
             if prev is None:
                 raise AxisUnsupported()
             action()
             PreciseSleep(0.1)
-            after = self.getVal(mustUpdate=True)
+            after = self.get(mustUpdate=True)
             if after is None:
                 raise AxisUnsupported()
             return not FloatEq(prev, after)
@@ -170,13 +166,13 @@ class Axis:
         Solution.tryAction(inner, self.solution)
 
 
-class DiscreteAxis(Axis):
+class DiscreteCEAxis(ControlableEngineAxis):
     def switch(self):
         self.tryChange(lambda: self.switchTapPositionKey.press())
 
-    def setTo(self, target):
+    def set(self, target):
         while True:
-            nowVal = self.getVal()
+            nowVal = self.get()
             if nowVal is None:
                 raise AxisUnsupported()
             if nowVal != target:
@@ -186,7 +182,7 @@ class DiscreteAxis(Axis):
 
 
 @AnnotationUtil.Annotation(errAllowed=0.01, keyboardSensitivity=0.03)
-class ContiniousAxis(Axis):
+class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
     controller = PIDController(3, 0, 0.25)
 
@@ -196,16 +192,16 @@ class ContiniousAxis(Axis):
     def turnDown(self, holdTime):
         self.tryChange(lambda: self.turnDownKey.hold(holdTime))
 
-    def setTo(self, target):
+    def set(self, target):
         keyboardSensitivity = AnnotationUtil.getAnnotations(
-            ContiniousAxis
+            ContiniousCEAxis
         ).keyboardSensitivity
         while True:
-            nowVal = self.getVal()
+            nowVal = self.get()
             if nowVal is None:
                 raise AxisUnsupported()
             err = target - nowVal
-            if abs(err) <= AnnotationUtil.getAnnotations(ContiniousAxis).errAllowed:
+            if abs(err) <= AnnotationUtil.getAnnotations(ContiniousCEAxis).errAllowed:
                 break
             ctrl = self.controller.update(err)
             if abs(ctrl) < keyboardSensitivity:
@@ -226,7 +222,8 @@ SwitchManualEngineControl = FunctionalKey(
 )
 
 
-class OilRadiator(ContiniousAxis):
+@Singleton
+class OilRadiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
             turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_OEM_PLUS),
@@ -243,23 +240,33 @@ class OilRadiator(ContiniousAxis):
                     toDisable=lambda: SwitchManualEngineControl.press(),
                 ),
                 Solution(
-                    toEnable=lambda: self.switchManualControl(),
-                    toDisable=lambda: self.switchManualControl(),
+                    toEnable=lambda: OilRadiator.switchManualControl(),
+                    toDisable=lambda: OilRadiator.switchManualControl(),
                 ),
             ],
         )
 
-    def getVal(self, mustUpdate=None):
-        got = Port8111Cache().get(Port8111.QueryType.indicator)
-        if Axis.checkIfNotAirIndicator(got):
+    def get(self, mustUpdate=None):
+        try:
+            return (
+                Port8111Cache()
+                .get(Port8111.QueryType.indicator, mustUpdate)
+                .expectValid()
+                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+                .oil_radiator_indicator
+            )
+        except Port8111.FetchFailure:
             return None
-        return got.__dict__["oilradiator"]  # which will fail
 
     def setToMaxAnyway(self):
-        self.turnUp(5)
+        if self.get() is not None:
+            self.set(1.0)
+        else:
+            self.turnUpKey.hold(5)
 
 
-class Radiator(ContiniousAxis):
+@Singleton
+class Radiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
             turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET),
@@ -282,23 +289,21 @@ class Radiator(ContiniousAxis):
             ],
         )
 
-    def getVal(self, mustUpdate=None):
+    def get(self, mustUpdate=None):
         try:
-            result = (
+            return (
                 Port8111Cache()
                 .get(Port8111.QueryType.state, mustUpdate)
                 .expectValid()
                 .engine.radiator.value[0]
                 / 100
             )
-            if result is not None:
-                return result
-            return None
         except Port8111.FetchFailure:
             return None
 
 
-class PropPitch(ContiniousAxis):
+@Singleton
+class PropPitch(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
             turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_QUOTE),
@@ -318,23 +323,21 @@ class PropPitch(ContiniousAxis):
             ],
         )
 
-    def getVal(self, mustUpdate=None):
+    def get(self, mustUpdate=None):
         try:
-            result = (
+            return (
                 Port8111Cache()
                 .get(Port8111.QueryType.state, mustUpdate)
                 .expectValid()
                 .engine.RPM_throttle.value[0]
                 / 100
             )
-            if result is not None:
-                return result
-            return None
         except Port8111.FetchFailure:
             return None
 
 
-class Supercharger(DiscreteAxis):
+@Singleton
+class Supercharger(DiscreteCEAxis):
     def __init__(self):
         super().__init__(
             switchTapPositionKey=FunctionalKey(
@@ -352,28 +355,118 @@ class Supercharger(DiscreteAxis):
             ],
         )
 
-    def getVal(self, mustUpdate=None):
+    def get(self, mustUpdate=None):
         try:
-            result = (
+            return (
                 Port8111Cache()
                 .get(Port8111.QueryType.state, mustUpdate)
                 .expectValid()
                 .engine.compressor_stage.value[0]
             )
-            if result is not None:
-                return result
-            return None
         except Port8111.FetchFailure:
             return None
 
 
+@Singleton
+class Altitude(ReadOnlyAxis):
+
+    def get(self, mustUpdate=None):
+        try:
+            indi = (
+                Port8111Cache()
+                .get(Port8111.QueryType.indicator, mustUpdate)
+                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+                .expectValid()
+            )
+            return indi.altitude_hour or indi.altitude_min or indi.altitude_10k
+        except Port8111.FetchFailure:
+            return None
+
+
+@Singleton
 class EngineMan:
+    planeName: str = None
+    serviceClass: typing.Callable = None
+    serviceInstance: EngineConfig = None
+    lastCheckTime: float = None
+    services: dict[str, EngineConfigBean] = dict()
+
+    def __init__(self):
+        for i in engineConfigHost.configs:
+            service: EngineConfigBean = i
+            service.planeName = NormalizeIterableOrSingleArgToIterable(
+                service.planeName
+            )
+            for p in service.planeName:
+                self.services[p] = service
+
+    def terminateService(self):
+        if self.seviceNowValid():
+            self.planeName = None
+            self.serviceClass = None
+            self.serviceInstance = None
+            self.lastCheckTime = None
+
+    def initializeService(self, planeName):
+        if planeName not in self.services:
+            return
+        self.planeName = planeName
+        self.serviceClass = self.services[planeName].clazz
+        self.serviceInstance = self.serviceClass()
+        self.serviceDoCheck()
+
+    def seviceNowValid(self):
+        return self.serviceInstance is not None
+
+    def serviceDoCheck(self):
+        if self.seviceNowValid():
+            self.lastCheckTime = time.perf_counter()
+            self.serviceInstance.check(
+                Gauges(
+                    oilRadiator=OilRadiator(),
+                    radiator=Radiator(),
+                    propPitch=PropPitch(),
+                    supercharger=Supercharger(),
+                    altitude=Altitude(),
+                )
+            )
+
+    def setService(self, planeName):
+        if self.planeName == planeName or (
+            planeName in self.services
+            and self.serviceClass == self.services[planeName].clazz
+        ):
+            pass
+        else:
+            self.terminateService()
+
+    def check(self):
+        planeName = None
+        try:
+            planeName = (
+                Port8111.get(Port8111.QueryType.indicator)
+                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+                .expectValid()
+                .type
+            )
+        except Port8111.FetchFailure:
+            pass
+        self.setService(planeName)
+        if self.seviceNowValid():
+            if (
+                time.perf_counter() - self.lastCheckTime
+                > self.services[planeName].checkRate
+            ):
+                self.serviceDoCheck()
 
     def setEngineStatusDemo(self):
-        Radiator().setTo(0.75)
-        PropPitch().setTo(0.75)
-        Supercharger().setTo(2)
+        OilRadiator().setToMaxAnyway()
+        Radiator().set(0.75)
+        PropPitch().set(0.75)
+        Supercharger().set(2)
 
+
+pass
 
 activeWindow(GetWtHwnd())
 for i in range(2):
@@ -381,4 +474,3 @@ for i in range(2):
     Rhythms.Notify.play()
 EngineMan().setEngineStatusDemo()
 Rhythms.Success.play()
-pass

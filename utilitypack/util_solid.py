@@ -1802,6 +1802,19 @@ class BeanUtil:
     """
     have to deal with dict, object, and class(only on dest)
     """
+    
+    @staticmethod
+    def __GetFields(obj):
+        parents=NormalizeIterableOrSingleArgToIterable(obj.__base__)
+        result=dict()
+        for p in parents:
+            if p==object:
+                continue
+            result.update(BeanUtil.__GetFields(p))
+            if hasattr(p, "__annotations__"):
+                # override
+                result.update(p.__annotations__)
+        return result
 
     @staticmethod
     def __GetEmptyInstance(cls):
@@ -1809,9 +1822,9 @@ class BeanUtil:
         if len(args) > 1:
             # found init with arg more than self
             inst = object.__new__(cls)
-            fields = cls.__annotations__
-            for f, t in fields.items():
-                setattr(inst, f, None)
+            fields = BeanUtil.__GetFields(cls)
+            for name, taipe in fields.items():
+                setattr(inst, name, None)
             return inst
         else:
             return cls()
