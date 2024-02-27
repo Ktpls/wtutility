@@ -20,6 +20,10 @@ class Port8111:
             if not self.valid:
                 raise Port8111.FetchFailure()
             return self
+    
+    class BeanInvalid(ValidBean):
+        def expectValid(self):
+            raise Port8111.FetchFailure()
 
     class BeanIndicatorBase:
         class IndicatorType(enum.Enum):
@@ -323,6 +327,9 @@ class Port8111:
             return ""
 
         def parseJson(self, json_obj):
+            if json_obj is None:
+                # may happen when reading json failed
+                return Port8111.BeanInvalid()
             if self == self.indicator:
                 if json_obj["valid"] == False:
                     return BeanUtil.copyProperties(json_obj, Port8111.BeanIndicatorAir)
@@ -353,6 +360,4 @@ class Port8111:
     @staticmethod
     def get(queryType: "Port8111.QueryType", timeout=None):
         json_data = Port8111.get_raw_json(queryType, timeout=timeout)
-        if json_data is None:
-            return None
         return queryType.parseJson(json_data)

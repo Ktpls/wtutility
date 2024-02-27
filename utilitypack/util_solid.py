@@ -125,6 +125,14 @@ def EasyWrapper(wrappedLogic=None):
     ###############
     note that python design is piece of shlt
     ###############
+    
+    known issue
+        @app.Business
+        def something(...): ...
+        wont work, but
+        @app.Business()
+        def something(...): ...
+        works
     """
 
     def toGetWrapperLogic(wrappedLogic):
@@ -319,7 +327,7 @@ class StoppableThread(StoppableSomewhat):
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
         self.running: bool = False
-        self.stopsignal: bool = True
+        self.__stopsignal: bool = True
         self.pool: ThreadPoolExecutor = (
             pool if pool is not None else ThreadPoolExecutor()
         )
@@ -351,7 +359,7 @@ class StoppableThread(StoppableSomewhat):
             ):
                 return
         self.running = True
-        self.stopsignal = False
+        self.__stopsignal = False
 
         def call() -> None:
             """
@@ -376,13 +384,13 @@ class StoppableThread(StoppableSomewhat):
     def stop(self) -> None:
         if self.submit is None:
             return
-        self.stopsignal = True
+        self.__stopsignal = True
         self.submit.result()
         self.running = False
         self.submit = None
 
     def timeToStop(self) -> bool:
-        return self.stopsignal
+        return self.__stopsignal
 
 
 class StoppableProcess(StoppableSomewhat):
@@ -1802,18 +1810,18 @@ class BeanUtil:
     """
     have to deal with dict, object, and class(only on dest)
     """
-    
+
     @staticmethod
-    def __GetFields(obj):
-        parents=NormalizeIterableOrSingleArgToIterable(obj.__base__)
-        result=dict()
+    def __GetFields(clz):
+        parents = NormalizeIterableOrSingleArgToIterable(clz.__base__)
+        result = dict()
         for p in parents:
-            if p==object:
+            if p == object:
                 continue
             result.update(BeanUtil.__GetFields(p))
-            if hasattr(p, "__annotations__"):
-                # override
-                result.update(p.__annotations__)
+        if hasattr(clz, "__annotations__"):
+            # override
+            result.update(clz.__annotations__)
         return result
 
     @staticmethod
@@ -1952,7 +1960,7 @@ def Singleton(cls):
 
 
 def NormalizeIterableOrSingleArgToIterable(arg):
-    if not isinstance(arg, typing.Iterable):
+    if not isinstance(arg, (list, tuple)):
         return [arg]
     return arg
 
@@ -1983,3 +1991,35 @@ class AnnotationUtil:
         if AnnotationUtil.__checkAnnoNonexisted(obj):
             return dict()
         return DictAsAnObject(obj.__ExtraAnnotations__)
+
+
+class Cache:
+    def __init__(self, toFetch, isValid=None, outdatedTime=None):
+        self.toFetch = toFetch
+        self.isValid = isValid
+        self.outdatedTime = outdatedTime
+        self.val = None
+        self.lastUpdateTime = None
+
+    def isOutdated(self):
+        if self.outdatedTime is None:
+            return False
+        if self.lastUpdateTime is None:
+            return True
+        return time.perf_counter() - self.lastUpdateTime > self.outdatedTime
+
+    def testValid(self):
+        if self.isValid is None:
+            return True
+        return self.isValid(self.val)
+
+    def update(self):
+        self.lastUpdateTime = time.perf_counter()
+        self.val = self.toFetch()
+
+    def get(self, newest=None):
+        if newest is None:
+            newest = False
+        if newest or self.isOutdated() or not self.testValid():
+            self.update()
+        return self.val

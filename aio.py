@@ -152,7 +152,7 @@ def main():
         @app.AsyncLongScript()
         def refreshWifi(self: StoppableSomewhat):
             app.bulletin.putup("refreshing wifi")
-            wifi=WifiRefresher()
+            wifi = WifiRefresher()
             wifi.setOff()
             sleep(1)
             wifi.setOn()
@@ -223,6 +223,25 @@ def main():
             else:
                 gl.setOn()
                 app.bulletin.putup(bulletinBoard.Poster("glock started"))
+
+    if usingengineman:
+        print("engineman activated")
+        import engineman.engineman as engineman
+
+        em = engineman.DetachedEngineMan()
+        emSwitch = Switch()
+
+        @app.Hotkey(
+            "EngineManSwitch", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10]
+        )
+        def emSwitchBusiness():
+            emSwitch.switch()
+            if emSwitch():
+                em.go()
+                app.bulletin.putup(bulletinBoard.Poster("engineman started"))
+            else:
+                em.stop()
+                app.bulletin.putup(bulletinBoard.Poster("engineman stopped"))
 
     @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
     def rebootfoo():

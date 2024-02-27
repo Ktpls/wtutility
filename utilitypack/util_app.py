@@ -95,7 +95,7 @@ class BulletinApp:
 
         self.hkm = HotkeyManager(self.hotkeytask)
         self.hud.setup()
-        activeWindow(self.hud.hwnd)
+        # activeWindow(self.hud.hwnd)
         
         # main loop
         while True:

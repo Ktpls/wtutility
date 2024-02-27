@@ -1,7 +1,7 @@
-from enginemanConfigInclude import *
+from .engineConfigInclude import *
+from utilitypack import *
 
-
-@engineConfigHost.Register(planeName="g_55s", engineConfigName="g55s", checkRate=60)
+@engineConfigHost.Register(planeName="g_55s", checkRate=60)
 class G55S(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.oilRadiator.setToMaxAnyway()
@@ -9,9 +9,10 @@ class G55S(EngineConfig):
         gauges.propPitch.set(0.95)
 
 
-@engineConfigHost.Register(planeName="yak-3_france", engineConfigName="yak3")
+@engineConfigHost.Register(planeName="yak-3_france")
 class Yak3(EngineConfig):
     def check(self, gauges: Gauges):
+        Rhythms.Success.play()
         gauges.radiator.set(0.50)
         gauges.propPitch.set(0.95)
         alt = gauges.altitude.get()

@@ -682,7 +682,7 @@ class LoadCalibrationOperator(StoppableThread):
                 pass
 
         while True:
-            if self.stopsignal:
+            if self.__stopsignal:
                 # forced stop
                 log(self.result)
                 return

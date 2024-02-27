@@ -1,6 +1,7 @@
-from utilref import *
+from utilitypack import *
 import keyshortcut.keyshortcut as keyshortcut
-from enginemanConfig import *
+from .engineConfig import *
+from .engineman_config import *
 
 
 class ClassNone:
@@ -16,37 +17,55 @@ class ClassNone:
 
 
 @Singleton
-@AnnotationUtil.Annotation(fetchInterval=0.25)
+class WarthunderWindow(Cache):
+    def __init__(self):
+        def toFetch():
+            try:
+                return GetWtHwnd()
+            except:
+                return None
+
+        def isValid(hwnd):
+            try:
+                return hwnd is None and hwnd != 0 and win32gui.IsWindow(hwnd)
+            except:
+                return False
+
+        super().__init__(
+            toFetch=toFetch,
+            isValid=isValid,
+            outdatedTime=10,
+        )
+
+    def isFocus(self):
+        hwnd = self.get()
+        try:
+            # GetFocus not working
+            return self.testValid() and win32api.GetFocus() == self.get()
+        except Exception as e:
+            return False
+
+
+@Singleton
+@AnnotationUtil.Annotation(fetchInterval=1)
 class Port8111Cache:
     # use cache to cancel complex coupling between various data consumers under requirement of reducing http request cost
     typeCache: "dict[Port8111.QueryType, Port8111Cache.SingleTypeCache]" = dict()
 
-    @dataclasses.dataclass
-    class SingleTypeCache:
+    class SingleTypeCache(Cache):
         queryType: Port8111.QueryType
-        lastUpdateTime: float = dataclasses.field(init=False, default=None)
-        value: typing.Any = dataclasses.field(init=False, default=None)
 
-        def update(self):
-            self.value = Port8111.get(self.queryType)
-            self.lastUpdateTime = time.perf_counter()
-
-        def get(self, mustUpdate=None):
-            if mustUpdate is None:
-                mustUpdate = False
-            if (
-                mustUpdate
-                or self.lastUpdateTime is None
-                or time.perf_counter() - self.lastUpdateTime
-                > AnnotationUtil.getAnnotations(Port8111Cache).fetchInterval
-            ):
-                self.update()
-            return self.value
+        def __init__(self, queryType):
+            super().__init__(
+                toFetch=lambda: Port8111.get(queryType),
+                outdatedTime=AnnotationUtil.getAnnotations(Port8111Cache).fetchInterval,
+            )
+            self.queryType = queryType
 
     def get(self, queryType: Port8111.QueryType, mustUpdate=None):
         if queryType not in self.typeCache:
             self.typeCache[queryType] = self.SingleTypeCache(queryType)
-        return self.typeCache[queryType].get(mustUpdate=mustUpdate)
+        return self.typeCache[queryType].get(newest=mustUpdate)
 
 
 @AnnotationUtil.Annotation(pressTime=0.05)
@@ -58,6 +77,9 @@ class FunctionalKey:
         assert len(self.key) >= 1
 
     def hold(self, holdTime):
+        if not WarthunderWindow().isFocus():
+            print("badFocus")
+            raise AxisUnsupported()
         for k in self.key:
             keyshortcut.keydown(k)
         PreciseSleep(holdTime)
@@ -392,6 +414,13 @@ class EngineMan:
     services: dict[str, EngineConfigBean] = dict()
 
     def __init__(self):
+        self.gauges = Gauges(
+            oilRadiator=OilRadiator(),
+            radiator=Radiator(),
+            propPitch=PropPitch(),
+            supercharger=Supercharger(),
+            altitude=Altitude(),
+        )
         for i in engineConfigHost.configs:
             service: EngineConfigBean = i
             service.planeName = NormalizeIterableOrSingleArgToIterable(
@@ -421,15 +450,10 @@ class EngineMan:
     def serviceDoCheck(self):
         if self.seviceNowValid():
             self.lastCheckTime = time.perf_counter()
-            self.serviceInstance.check(
-                Gauges(
-                    oilRadiator=OilRadiator(),
-                    radiator=Radiator(),
-                    propPitch=PropPitch(),
-                    supercharger=Supercharger(),
-                    altitude=Altitude(),
-                )
-            )
+            try:
+                self.serviceInstance.check(self.gauges)
+            except AxisUnsupported:
+                pass
 
     def setService(self, planeName):
         if self.planeName == planeName or (
@@ -439,12 +463,15 @@ class EngineMan:
             pass
         else:
             self.terminateService()
+            if planeName is not None and planeName in self.services:
+                self.initializeService(planeName)
 
     def check(self):
         planeName = None
         try:
             planeName = (
-                Port8111.get(Port8111.QueryType.indicator)
+                Port8111Cache()
+                .get(Port8111.QueryType.indicator)
                 .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
                 .expectValid()
                 .type
@@ -466,11 +493,21 @@ class EngineMan:
         Supercharger().set(2)
 
 
+class DetachedEngineMan(StoppableThread):
+    def main(self):
+        em = EngineMan()
+        while True:
+            if self.timeToStop():
+                break
+            em.check()
+            PreciseSleep(detachedEngineManLoopInterval)
+
+
 pass
 
-activeWindow(GetWtHwnd())
-for i in range(2):
-    PreciseSleep(1)
-    Rhythms.Notify.play()
-EngineMan().setEngineStatusDemo()
-Rhythms.Success.play()
+# activeWindow(GetWtHwnd())
+# for i in range(2):
+#     PreciseSleep(1)
+#     Rhythms.Notify.play()
+# EngineMan().setEngineStatusDemo()
+# Rhythms.Success.play()
