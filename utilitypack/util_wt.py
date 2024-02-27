@@ -20,7 +20,7 @@ class Port8111:
             if not self.valid:
                 raise Port8111.FetchFailure()
             return self
-    
+
     class BeanInvalid(ValidBean):
         def expectValid(self):
             raise Port8111.FetchFailure()
@@ -280,25 +280,35 @@ class Port8111:
                     efficiency=aircraft_fields.get("efficiency", None),
                 )
 
+                def getFromAircraftFields_NoniterableValueDesired(name):
+                    ret = aircraft_fields.get(name, None)
+                    if (
+                        ret is not None
+                        and isinstance(ret, Port8111.BeanState.UnitValue)
+                        and isinstance(ret.value, typing.Iterable)
+                    ):
+                        ret.value = ret.value[0]
+                    return ret
+
                 # Create Aircraft instance
                 aircraft = Port8111.BeanState(
-                    valid=aircraft_fields.get("valid", None),
-                    aileron=aircraft_fields.get("aileron", None),
-                    elevator=aircraft_fields.get("elevator", None),
-                    rudder=aircraft_fields.get("rudder", None),
-                    flaps=aircraft_fields.get("flaps", None),
-                    gear=aircraft_fields.get("gear", None),
-                    H=aircraft_fields.get("H", None),
-                    TAS=aircraft_fields.get("TAS", None),
-                    IAS=aircraft_fields.get("IAS", None),
-                    M=aircraft_fields.get("M", None),
-                    AoA=aircraft_fields.get("AoA", None),
-                    AoS=aircraft_fields.get("AoS", None),
-                    Ny=aircraft_fields.get("Ny", None),
-                    Vy=aircraft_fields.get("Vy", None),
-                    Wx=aircraft_fields.get("Wx", None),
-                    Mfuel=aircraft_fields.get("Mfuel", None),
-                    Mfuel0=aircraft_fields.get("Mfuel0", None),
+                    valid=getFromAircraftFields_NoniterableValueDesired("valid"),
+                    aileron=getFromAircraftFields_NoniterableValueDesired("aileron"),
+                    elevator=getFromAircraftFields_NoniterableValueDesired("elevator"),
+                    rudder=getFromAircraftFields_NoniterableValueDesired("rudder"),
+                    flaps=getFromAircraftFields_NoniterableValueDesired("flaps"),
+                    gear=getFromAircraftFields_NoniterableValueDesired("gear"),
+                    H=getFromAircraftFields_NoniterableValueDesired("H"),
+                    TAS=getFromAircraftFields_NoniterableValueDesired("TAS"),
+                    IAS=getFromAircraftFields_NoniterableValueDesired("IAS"),
+                    M=getFromAircraftFields_NoniterableValueDesired("M"),
+                    AoA=getFromAircraftFields_NoniterableValueDesired("AoA"),
+                    AoS=getFromAircraftFields_NoniterableValueDesired("AoS"),
+                    Ny=getFromAircraftFields_NoniterableValueDesired("Ny"),
+                    Vy=getFromAircraftFields_NoniterableValueDesired("Vy"),
+                    Wx=getFromAircraftFields_NoniterableValueDesired("Wx"),
+                    Mfuel=getFromAircraftFields_NoniterableValueDesired("Mfuel"),
+                    Mfuel0=getFromAircraftFields_NoniterableValueDesired("Mfuel0"),
                     engine=engine,
                 )
             else:

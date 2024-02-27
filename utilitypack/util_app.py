@@ -105,7 +105,7 @@ class BulletinApp:
             decideresult = self.hkm.decideAllHotKey()
 
             try:
-                self.hkm.doAllDecidedKey(decideresult, True, False)
+                self.hkm.doAllDecidedKey(decideresult, True, True)
             except SystemExit as e:
                 raise e
             except Exception as e:

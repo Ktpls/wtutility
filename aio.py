@@ -4,6 +4,7 @@ from utilitypack.utility import *
 from utilitypack.util_app import *
 from aio_config import *
 import functools
+import keyshortcut.keyshortcut as keyshortcut
 
 telescopepos = (100, 100)
 
@@ -17,14 +18,8 @@ def main():
         import wtdmp.wtdistmeaspy as wtdistmeaspy
 
         wtdmp = wtdistmeaspy.wtdistmeaspy()
-        """
-        VK_OEM_3=0xC0
-        Used for miscellaneous characters; it can vary by keyboard.
-        For the US standard keyboard, the '`~' key
-        """
-        OEM3 = 0xC0
 
-        @app.Hotkey("PlottingScaleLock", [ord("L"), OEM3])
+        @app.Hotkey("PlottingScaleLock", [ord("L"), keyshortcut.win32conComp.VK_OEM_3])
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
@@ -34,7 +29,7 @@ def main():
             else:
                 app.bulletin.putup("plotting scale unlocked")
 
-        @app.Hotkey("DistMeas&Cali", OEM3)
+        @app.Hotkey("DistMeas&Cali", keyshortcut.win32conComp.VK_OEM_3)
         @app.AsyncLongScript()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
@@ -44,7 +39,9 @@ def main():
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
 
-        @app.Hotkey("StartCali", [win32con.VK_CONTROL, OEM3])
+        @app.Hotkey(
+            "StartCali", [win32con.VK_CONTROL, keyshortcut.win32conComp.VK_OEM_3]
+        )
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
@@ -54,12 +51,15 @@ def main():
             app.bulletin.putup(f"caliberating to {lastStaged}")
 
         # not used that much. normally just switch out from snip mode
-        # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, OEM3])
+        # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, keyshortcut.win32conComp.VK_OEM_3])
         def stopCali():
             wtdmp.caliOperator.stop()
             app.bulletin.putup(f"cali stopped")
 
-        @app.Hotkey("SetPlottingScale", [win32con.VK_CONTROL, win32con.VK_MENU, OEM3])
+        @app.Hotkey(
+            "SetPlottingScale",
+            [win32con.VK_CONTROL, win32con.VK_MENU, keyshortcut.win32conComp.VK_OEM_3],
+        )
         def SetPlottingScale():
             app.bulletin.putup("input plotting scale")
 
@@ -89,7 +89,10 @@ def main():
                 [HotkeyManager.InputSession.InputTypeEnabled.NUMBER],
             )
 
-        @app.Hotkey("FreshPlottingScale", [ord("L"), ord("K"), OEM3])
+        @app.Hotkey(
+            "FreshPlottingScale",
+            [ord("L"), ord("K"), keyshortcut.win32conComp.VK_OEM_3],
+        )
         @app.AsyncLongScript()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp
@@ -118,7 +121,6 @@ def main():
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        import keyshortcut.keyshortcut as keyshortcut
 
         @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
@@ -228,20 +230,24 @@ def main():
         print("engineman activated")
         import engineman.engineman as engineman
 
-        em = engineman.DetachedEngineMan()
-        emSwitch = Switch()
+        em = engineman.DetachedEngineMan(pool=app.threadpool)
+
+        def on():
+            em.go()
+            app.bulletin.putup(bulletinBoard.Poster("engineman started"))
+
+        def off():
+            em.stop()
+            app.bulletin.putup(bulletinBoard.Poster("engineman stopped"))
+
+        emSwitch = Switch(onSetOn=on, onSetOff=off)
 
         @app.Hotkey(
-            "EngineManSwitch", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10]
+            "EngineManSwitch",
+            [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10],
         )
         def emSwitchBusiness():
             emSwitch.switch()
-            if emSwitch():
-                em.go()
-                app.bulletin.putup(bulletinBoard.Poster("engineman started"))
-            else:
-                em.stop()
-                app.bulletin.putup(bulletinBoard.Poster("engineman stopped"))
 
     @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
     def rebootfoo():

@@ -106,26 +106,31 @@ def EasyWrapper(wrappedLogic=None):
         def yourWrapper(f, some_arg_your_wrapper_needs):
             ...
         @yourWrapper(some_arg_your_wrapper_needs)
-        def RealFunc(func_arg):
+        def foo(func_arg):
             ...
     or
         @yourWrapper # if no arg for yourWrapper
-        def RealFunc(func_arg):
+        def foo(func_arg):
             ...
     note that this is forbiden:
         @yourWrapper(some_callable)
-        def RealFunc(func_arg):
-            ...
-    cuz wrapper is confused with if its processing the wrapped function or callable in arg
-    use this instead if wrapper needs another callable more than the one you are wrapping
-        @yourWrapper(keyword=some_callable)
-        def RealFunc(func_arg):
-            ...
+        def foo(func_arg): ...
+            cuz wrapper is confused with if its processing the wrapped function or callable in arg
+            use this instead if wrapper needs another callable more than the one you are wrapping
+                @yourWrapper(keyword=some_callable)
+                def foo(func_arg): ...
+        @someClassInstance.methodDecorator
+        def foo(...): ...
+            cuz wrapper will recieve the instance as the first arg, and the foo as the second
+            making easywrapper confused with wrapping a class with a method as arg
+            use this instead
+                @someClassInstance.methodDecorator()
+                def foo(func_arg): .
 
     ###############
     note that python design is piece of shlt
     ###############
-    
+
     known issue
         @app.Business
         def something(...): ...
@@ -140,7 +145,11 @@ def EasyWrapper(wrappedLogic=None):
             def toGetFLogic(fLogic):
                 return wrappedLogic(fLogic, *arg, **kw)
 
-            if len(arg) == 1 and isinstance(arg[0], typing.Callable) and len(kw) == 0:
+            if (
+                len(arg) == 1
+                and (inspect.isfunction(arg[0]) or inspect.isclass(arg[0]))
+                and len(kw) == 0
+            ):
                 # calling without parens
                 return wrappedLogic(arg[0])
             else:
@@ -1922,17 +1931,26 @@ class Container:
 
 
 class Switch:
-    def __init__(self, initial=False):
+    def __init__(self, onSetOn=None, onSetOff=None, initial=False):
         self.__value = initial
+        self.onSetOn = onSetOn
+        self.onSetOff = onSetOff
 
     def on(self):
         self.__value = True
+        if self.onSetOn is not None:
+            self.onSetOn()
 
     def off(self):
         self.__value = False
+        if self.onSetOff is not None:
+            self.onSetOff()
 
     def switch(self):
-        self.__value = not self.__value
+        if self():
+            self.off()
+        else:
+            self.on()
 
     def __call__(self) -> bool:
         return self.__value
@@ -2011,7 +2029,7 @@ class Cache:
     def testValid(self):
         if self.isValid is None:
             return True
-        return self.isValid(self.val)
+        return self.isValid(self.get())
 
     def update(self):
         self.lastUpdateTime = time.perf_counter()
@@ -2020,6 +2038,6 @@ class Cache:
     def get(self, newest=None):
         if newest is None:
             newest = False
-        if newest or self.isOutdated() or not self.testValid():
+        if newest or self.isOutdated():
             self.update()
         return self.val

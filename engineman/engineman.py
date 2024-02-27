@@ -27,7 +27,7 @@ class WarthunderWindow(Cache):
 
         def isValid(hwnd):
             try:
-                return hwnd is None and hwnd != 0 and win32gui.IsWindow(hwnd)
+                return hwnd is not None and hwnd != 0 and win32gui.IsWindow(hwnd) != 0
             except:
                 return False
 
@@ -38,10 +38,10 @@ class WarthunderWindow(Cache):
         )
 
     def isFocus(self):
-        hwnd = self.get()
         try:
             # GetFocus not working
-            return self.testValid() and win32api.GetFocus() == self.get()
+            fore = win32gui.GetForegroundWindow()
+            return self.testValid() and fore == self.get()
         except Exception as e:
             return False
 
@@ -78,7 +78,6 @@ class FunctionalKey:
 
     def hold(self, holdTime):
         if not WarthunderWindow().isFocus():
-            print("badFocus")
             raise AxisUnsupported()
         for k in self.key:
             keyshortcut.keydown(k)
@@ -94,6 +93,9 @@ class FunctionalKey:
         return ClassNone()
 
 
+SolutionInterval = 0.5
+
+
 @dataclasses.dataclass
 class Solution:
     toEnable: typing.Callable
@@ -106,47 +108,24 @@ class Solution:
     ):
         """
         got some problems with this
-        one cant set radiator to manual mode when in auto engine control mode
+        one can not set radiator to manual mode when in auto engine control mode
         so solutions are not independent, they are coupled with each other
         """
         solution = NormalizeIterableOrSingleArgToIterable(solution)
-        # iterate all possible solution combination to finish action successfully
-        solutionCombinationMax = 2 ** len(solution) - 1
-
-        def getSolState(comb, idx):
-            return comb & (1 << idx)
-
-        def applySolComb(idx):
-            for i in range(len(solution)):
-                if getSolState(idx, i):
-                    solution[i].toEnable()
-
-        def unapplySolComb(idx):
-            for i in range(len(solution)):
-                if getSolState(idx, i):
-                    solution[i].toDisable()
-
-        def transferSol(idxOld, idxNew):
-            for i in range(len(solution)):
-                old = getSolState(idxOld, i)
-                new = getSolState(idxNew, i)
-                if old == new:
-                    pass
-                elif old and not new:
-                    solution[i].toDisable()
-                elif not old and new:
-                    solution[i].toEnable()
-
-        nowSolComb = 0
+        solId = -1  # not with any solution initially
         while True:
-            if action():
-                break
-            if nowSolComb < solutionCombinationMax:
-                transferSol(nowSolComb, nowSolComb + 1)
-                nowSolComb += 1
+            if not action():
+                if solId >= 0:
+                    solution[solId].toDisable()
+                    PreciseSleep(SolutionInterval)
+                solId += 1
+                if solId < len(solution):
+                    solution[solId].toEnable()
+                    PreciseSleep(SolutionInterval)
+                else:
+                    raise AxisUnsupported()
             else:
-                unapplySolComb(nowSolComb)
-                raise AxisUnsupported()
+                break
 
 
 class ReadOnlyAxis(Axis):
@@ -244,6 +223,29 @@ SwitchManualEngineControl = FunctionalKey(
 )
 
 
+def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
+    return [
+        Solution(
+            toEnable=lambda: [
+                SwitchManualEngineControl.press(),
+                yourself.switchManualControl(),
+            ],
+            toDisable=lambda: [
+                yourself.switchManualControl(),
+                SwitchManualEngineControl.press(),
+            ],
+        ),
+        Solution(
+            toEnable=lambda: yourself.switchManualControl(),
+            toDisable=lambda: yourself.switchManualControl(),
+        ),
+        Solution(
+            toEnable=lambda: SwitchManualEngineControl.press(),
+            toDisable=lambda: SwitchManualEngineControl.press(),
+        ),
+    ]
+
+
 @Singleton
 class OilRadiator(ContiniousCEAxis):
     def __init__(self):
@@ -256,16 +258,7 @@ class OilRadiator(ContiniousCEAxis):
                     keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
-            solution=[
-                Solution(
-                    toEnable=lambda: SwitchManualEngineControl.press(),
-                    toDisable=lambda: SwitchManualEngineControl.press(),
-                ),
-                Solution(
-                    toEnable=lambda: OilRadiator.switchManualControl(),
-                    toDisable=lambda: OilRadiator.switchManualControl(),
-                ),
-            ],
+            solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
     def get(self, mustUpdate=None):
@@ -299,16 +292,7 @@ class Radiator(ContiniousCEAxis):
                     keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
-            solution=[
-                Solution(
-                    toEnable=lambda: SwitchManualEngineControl.press(),
-                    toDisable=lambda: SwitchManualEngineControl.press(),
-                ),
-                Solution(
-                    toEnable=lambda: self.switchManualControl(),
-                    toDisable=lambda: self.switchManualControl(),
-                ),
-            ],
+            solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
     def get(self, mustUpdate=None):
@@ -333,16 +317,7 @@ class PropPitch(ContiniousCEAxis):
             switchManualControlKey=FunctionalKey(
                 [win32con.VK_RMENU, keyshortcut.win32conComp.VK_QUOTE]
             ),
-            solution=[
-                Solution(
-                    toEnable=lambda: SwitchManualEngineControl.press(),
-                    toDisable=lambda: SwitchManualEngineControl.press(),
-                ),
-                Solution(
-                    toEnable=lambda: self.switchManualControl(),
-                    toDisable=lambda: self.switchManualControl(),
-                ),
-            ],
+            solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
     def get(self, mustUpdate=None):
@@ -397,8 +372,8 @@ class Altitude(ReadOnlyAxis):
             indi = (
                 Port8111Cache()
                 .get(Port8111.QueryType.indicator, mustUpdate)
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
                 .expectValid()
+                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
             )
             return indi.altitude_hour or indi.altitude_min or indi.altitude_10k
         except Port8111.FetchFailure:
@@ -472,8 +447,8 @@ class EngineMan:
             planeName = (
                 Port8111Cache()
                 .get(Port8111.QueryType.indicator)
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
                 .expectValid()
+                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
                 .type
             )
         except Port8111.FetchFailure:
@@ -494,7 +469,14 @@ class EngineMan:
 
 
 class DetachedEngineMan(StoppableThread):
-    def main(self):
+    def __init__(self, pool: keyshortcut.ThreadPoolExecutor = None) -> None:
+        super().__init__(
+            StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
+            StoppableSomewhat.StrategyError.print_error,
+            pool,
+        )
+
+    def foo(self):
         em = EngineMan()
         while True:
             if self.timeToStop():
