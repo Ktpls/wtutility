@@ -111,7 +111,7 @@ def SolveMap_BottomRightSmallMap(
             nonlocal dbglogpath
             exec("{}(m,path=dbglogpath,name=name)".format(method))
 
-        logg = logger(os.path.join(dbglogpath, "log.log"))
+        logg = Logger(os.path.join(dbglogpath, "log.log"))
 
         def log(s):
             logg(s)
@@ -666,7 +666,7 @@ class LoadCalibrationOperator(StoppableThread):
                 nonlocal dbglogpath
                 exec("{}(m,path=dbglogpath,name=name)".format(method))
 
-            logg = logger(os.path.join(dbglogpath, "log.log"))
+            logg = Logger(os.path.join(dbglogpath, "log.log"))
 
             def log(s):
                 logg(s)

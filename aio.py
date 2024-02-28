@@ -72,7 +72,7 @@ def main():
                 ):
                     nonlocal wtdmp
                     wtdmp.psLocked = True
-                    result = numinstr(session.content)
+                    result = Numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
                     app.bulletin.putup(f"plotting scale locked at {result}")
                     gameinput.key_press(win32con.VK_RETURN)
@@ -125,12 +125,12 @@ def main():
         @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
-            app.bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
+            app.bulletin.putup(BulletinBoard.Poster("LeftHolding", 1))
 
         @app.Hotkey("HoldCAndTell", win32con.VK_F11)
         def holdCAndTell():
             keyshortcut.holdC()
-            app.bulletin.putup(bulletinBoard.Poster("CHolding", 1))
+            app.bulletin.putup(BulletinBoard.Poster("CHolding", 1))
 
         @app.Hotkey("LaunchSeries", [win32con.VK_RCONTROL, ord("K"), ord("O")])
         @app.AsyncLongScript()
@@ -198,10 +198,10 @@ def main():
             if eedcstate:
                 eagleeye.cachedShots = []
                 eedcstate = False
-                app.bulletin.putup(bulletinBoard.Poster("eedc off", 1))
+                app.bulletin.putup(BulletinBoard.Poster("eedc off", 1))
             else:
                 eedcstate = True
-                app.bulletin.putup(bulletinBoard.Poster("eedc on", 1))
+                app.bulletin.putup(BulletinBoard.Poster("eedc on", 1))
 
         @app.Hotkey("EagleEyeOnClick", win32con.VK_LBUTTON)
         def eedcOnClickWithSwitch():
@@ -219,12 +219,12 @@ def main():
         @app.Hotkey("Glock", [win32con.VK_RSHIFT, win32con.VK_F9])
         def glSwitchBusiness():
             if gl.isRunning():
-                app.bulletin.putup(bulletinBoard.Poster("glock stopping"))
+                app.bulletin.putup(BulletinBoard.Poster("glock stopping"))
                 gl.setOff()
-                app.bulletin.putup(bulletinBoard.Poster("glock stopped"))
+                app.bulletin.putup(BulletinBoard.Poster("glock stopped"))
             else:
                 gl.setOn()
-                app.bulletin.putup(bulletinBoard.Poster("glock started"))
+                app.bulletin.putup(BulletinBoard.Poster("glock started"))
 
     if usingengineman:
         print("engineman activated")
@@ -234,11 +234,11 @@ def main():
 
         def on():
             em.go()
-            app.bulletin.putup(bulletinBoard.Poster("engineman started"))
+            app.bulletin.putup(BulletinBoard.Poster("engineman started"))
 
         def off():
             em.stop()
-            app.bulletin.putup(bulletinBoard.Poster("engineman stopped"))
+            app.bulletin.putup(BulletinBoard.Poster("engineman stopped"))
 
         emSwitch = Switch(onSetOn=on, onSetOff=off)
 

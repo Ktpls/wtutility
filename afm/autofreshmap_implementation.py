@@ -41,7 +41,7 @@ else:
 
 if dbglog:
     if log2file:
-        logg = logger(
+        logg = Logger(
             os.path.join(
                 afmassetroot,
                 rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log',
@@ -357,7 +357,7 @@ class MapDetectorImpled(detector, MapDetector):
 
 
 def maplist2detectorlist(ml):
-    ml = deduplicate(ml)
+    ml = Deduplicate(ml)
     dl = {
         m: MapDetectorImpled(
             specialmapdetectors[m]
@@ -529,7 +529,7 @@ class freshAMap(StoppableThread):
             allchanneloutput("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
-            sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
+            SleepUntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
 
 
 class ApproximateStandardizationGuide:
@@ -724,7 +724,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 return False
             if stateDetector["OK"].detect(scr):
                 press(win32con.VK_ESCAPE)
-                longDelay(15)
+                LongDelay(15)
                 return False
             return False
 
@@ -845,4 +845,4 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         keepdetecting(detectMissionCanceled)
 
-        longDelay(5 * 60)
+        LongDelay(5 * 60)

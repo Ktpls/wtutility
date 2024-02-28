@@ -17,8 +17,7 @@ class Gauges:
     altitude: Axis
 
 
-class AxisUnsupported(Exception):
-    pass
+class AxisUnsupported(Exception):...
 
 
 class EngineConfig:

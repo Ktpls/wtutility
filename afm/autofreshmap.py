@@ -19,7 +19,7 @@ def main():
 
         hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
 
-        fpsm = fpsmanager(5)
+        fpsm = FpsManager(5)
         activeWindow(GetWtHwnd())
         mouse.mov(*(0, 0))
         afm.go()

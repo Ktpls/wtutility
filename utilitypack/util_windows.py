@@ -457,7 +457,7 @@ class HotkeyManager:
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
-        keyconcerned = deduplicate(keyconcerned)
+        keyconcerned = Deduplicate(keyconcerned)
         self.kc = [HotkeyManager.Key(k) for k in keyconcerned]
 
         # clear all previous state
@@ -589,12 +589,12 @@ class HotkeyManager:
             def backSpace(self):
                 self.content = self.content[:-1]
 
-            def putup(self, bulletin: bulletinBoard):
+            def putup(self, bulletin: BulletinBoard):
                 bulletin.putup(self.content)
 
         # foo that sets hkm and returns older hkm
         FooSwapHKM: typing.Callable[["HotkeyManager"], "HotkeyManager"]
-        bulletin: bulletinBoard
+        bulletin: BulletinBoard
         RunningSessionInstance: SessionInstance = dataclasses.field(
             default_factory=SessionInstance
         )

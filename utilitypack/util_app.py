@@ -34,7 +34,7 @@ class BulletinApp:
         seed = time.strftime("%Y-%m-%d", time.localtime()).encode("utf-8")
         seed = hashlib.md5(seed).digest()
         seed = int.from_bytes(seed[:8], "big")
-        self.bulletin = bulletinBoard(
+        self.bulletin = BulletinBoard(
             idlebulletincontents[
                 summonCard(
                     [c[1] for c in idlebulletincontents],
@@ -42,7 +42,7 @@ class BulletinApp:
                 )
             ][0]
         )
-        self.fpsm = fpsmanager(fps)
+        self.fpsm = FpsManager(fps)
 
         self.threadpool = threadpool
 

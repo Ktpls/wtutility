@@ -110,7 +110,7 @@ class Sampler(StoppableProcess):
         oolfi = OneOrderLinearFilter(0, 0)
         # control filter
         oolfc = OneOrderLinearFilter(0, 0)
-        fps = fpsmanager(10)
+        fps = FpsManager(10)
 
         def calcEnerge(h, tas):
             return h * 9.8 + 0.5 * tas**2

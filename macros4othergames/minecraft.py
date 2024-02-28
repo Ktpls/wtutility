@@ -24,7 +24,7 @@ def main():
             if hotkeySwitch():
                 f(*arg, **kw)
             else:
-                app.bulletin.putup(bulletinBoard.Poster("hotkey disabled", 1))
+                app.bulletin.putup(BulletinBoard.Poster("hotkey disabled", 1))
 
         return foo
 
@@ -32,24 +32,24 @@ def main():
     @WithHotkeySwitch()
     def holdLeft():
         keyshortcut.mouse.down(0)
-        app.bulletin.putup(bulletinBoard.Poster("leftHolding", 1))
+        app.bulletin.putup(BulletinBoard.Poster("leftHolding", 1))
 
     @app.Hotkey("HoldW", [win32con.VK_MENU, ord("W")])
     @app.AsyncLongScript()
     @WithHotkeySwitch()
     def holdW(*arg, **kw) -> None:
-        app.bulletin.putup(bulletinBoard.Poster("waiting", 1))
+        app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
         for i in range(5):
             keyshortcut.keydown(ord("W"))
             time.sleep(0.1)
         keyshortcut.keydown(ord("W"))
-        app.bulletin.putup(bulletinBoard.Poster("wHolding", 1))
+        app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
     @app.AsyncLongScript()
     @WithHotkeySwitch()
     def bestJumpOnHorse(*arg, **kw) -> None:
-        app.bulletin.putup(bulletinBoard.Poster("going", 1))
+        app.bulletin.putup(BulletinBoard.Poster("going", 1))
         keyshortcut.keydown(win32con.VK_SPACE)
         PreciseSleep(0.55)
         keyshortcut.keyup(win32con.VK_SPACE)
@@ -64,7 +64,7 @@ def main():
         PreciseSleep(0.05)
         keyshortcut.mouse.click(1)
 
-        app.bulletin.putup(bulletinBoard.Poster("takeOff"))
+        app.bulletin.putup(BulletinBoard.Poster("takeOff"))
 
     for key, dire, name in [
         [
@@ -104,9 +104,9 @@ def main():
     def taskSwitch():
         hotkeySwitch.switch()
         if hotkeySwitch():
-            app.bulletin.putup(bulletinBoard.Poster("hkmEnabled"))
+            app.bulletin.putup(BulletinBoard.Poster("hkmEnabled"))
         else:
-            app.bulletin.putup(bulletinBoard.Poster("hkmDisabled"))
+            app.bulletin.putup(BulletinBoard.Poster("hkmDisabled"))
 
     app.go()
 

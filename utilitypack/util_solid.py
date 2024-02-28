@@ -48,27 +48,27 @@ def FloatEq(a, b, eps=1e-6):
     return abs(a - b) < eps
 
 
-def deduplicate(l: typing.List):
+def Deduplicate(l: typing.List):
     return list(set(l))
 
 
-def flatten(iterable):
+def Flatten(iterable):
     result = []
     for item in iterable:
         if isinstance(item, (list, tuple)):
-            result.extend(flatten(item))
+            result.extend(Flatten(item))
         else:
             result.append(item)
     return result
 
 
-def digitsof(s: str):
+def Digitsof(s: str):
     return "".join(list(filter(str.isdigit, list(s))))
 
 
-def numinstr(s: str):
+def Numinstr(s: str):
     # wont consider negative
-    s = digitsof(s)
+    s = Digitsof(s)
     return int(s) if len(s) > 0 else 0
 
 
@@ -132,12 +132,7 @@ def EasyWrapper(wrappedLogic=None):
     ###############
 
     known issue
-        @app.Business
-        def something(...): ...
-        wont work, but
-        @app.Business()
-        def something(...): ...
-        works
+
     """
 
     def toGetWrapperLogic(wrappedLogic):
@@ -164,7 +159,7 @@ def EasyWrapper(wrappedLogic=None):
         return toGetWrapperLogic(wrappedLogic)
 
 
-class logger:
+class Logger:
     def __init__(self, path):
         self.path = path
         # wont fail
@@ -184,7 +179,7 @@ class logger:
         self.log(content)
 
 
-def quickSummonCard(inteprob):
+def QuickSummonCard(inteprob):
     # faster summon using division
     pos = random.random() * inteprob[-1]
     section = [0, len(inteprob)]
@@ -210,7 +205,7 @@ def quickSummonCard(inteprob):
             return mid
 
 
-class bulletinBoard:
+class BulletinBoard:
     @dataclasses.dataclass
     class Poster:
         content: str
@@ -226,11 +221,11 @@ class bulletinBoard:
 
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
-        self.content: typing.List["bulletinBoard.Poster"] = []
+        self.content: typing.List["BulletinBoard.Poster"] = []
 
     def putup(self, poster: typing.Union[Poster, str]):
         if type(poster) == str:
-            poster = bulletinBoard.Poster(poster)
+            poster = BulletinBoard.Poster(poster)
         self.content.append(poster)
 
     def read(self):
@@ -480,7 +475,7 @@ def ReadFile(path):
         return f.read()
 
 
-def ensure_directory_exists(file_path):
+def EnsureDirectoryExists(file_path):
     directory = os.path.dirname(file_path)
     if len(directory) == 0:
         return
@@ -489,13 +484,13 @@ def ensure_directory_exists(file_path):
 
 
 def WriteFile(path, content):
-    ensure_directory_exists(path)
+    EnsureDirectoryExists(path)
     with open(path, "wb+") as f:
         f.write(content)
 
 
 def AppendFile(path, content):
-    ensure_directory_exists(path)
+    EnsureDirectoryExists(path)
     with open(path, "ab+") as f:
         f.write(content.encode("utf-8"))
 
@@ -567,7 +562,7 @@ class Stream:
         return self
 
     def distinct(self):
-        self.content = deduplicate(self.content)
+        self.content = Deduplicate(self.content)
         return self
 
     class Collector:
@@ -1424,7 +1419,7 @@ class expparser:
     }
 
 
-def sleepuntil(con: typing.Callable, dt=None, sleepImpl=None):
+def SleepUntil(con: typing.Callable, dt=None, sleepImpl=None):
     if sleepImpl is None:
         sleepImpl = time.sleep
     if dt is None:
@@ -1480,13 +1475,13 @@ class perf_statistic:
         )
 
 
-class fpsmanager:
+class FpsManager:
     def __init__(self, fps=60):
         self.lt = time.perf_counter()
         self.frametime = 1 / fps
 
     def WaitUntilNextFrame(self, sleepImpl=None):
-        sleepuntil(
+        SleepUntil(
             lambda: time.perf_counter() - self.lt > self.frametime,
             dt=0.5 * self.frametime,
             sleepImpl=sleepImpl,
@@ -1509,7 +1504,7 @@ class fpsmanager:
         self.lt = time.perf_counter()
 
 
-def longDelay(t, interval=0.5):
+def LongDelay(t, interval=0.5):
     round = math.ceil(t / interval)
     for i in range(round):
         time.sleep(interval)
@@ -1530,12 +1525,6 @@ def PreciseSleep(t):
         sleep(t)
     else:
         CostlySleep(t)
-
-
-def longDelay(t, interval=0.5):
-    round = math.ceil(t / interval)
-    for i in range(round):
-        time.sleep(interval)
 
 
 def WrapperOfMultiLineText(s):
@@ -1956,12 +1945,12 @@ class Switch:
         return self.__value
 
 
-def inProbability(p: float) -> bool:
+def InProbability(p: float) -> bool:
     return random.random() < p
 
 
-def flipCoin() -> bool:
-    return inProbability(0.5)
+def FlipCoin() -> bool:
+    return InProbability(0.5)
 
 
 @EasyWrapper

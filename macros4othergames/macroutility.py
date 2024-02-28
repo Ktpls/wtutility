@@ -6,7 +6,7 @@ import win32process
 
 
 def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
-    fps = fpsmanager(fps)
+    fps = FpsManager(fps)
     # main loop
     hkm = HotkeyManager(hotkeyactionlist)
 

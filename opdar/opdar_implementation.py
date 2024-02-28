@@ -531,7 +531,7 @@ class tracker:
 
         self.trackbuildinguptimer = 2 * fps
 
-        self.lazyplanetrackerfpsmanager = fpsmanager(fps=trackFps)
+        self.lazyplanetrackerfpsmanager = FpsManager(fps=trackFps)
 
         self.mtif = MtiFilter(mtiQueueSize)
         self.mtif.update(curr, None)

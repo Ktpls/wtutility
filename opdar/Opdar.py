@@ -42,7 +42,7 @@ def main():
     hkm = HotkeyManager(hklist)
 
     while True:
-        sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
+        SleepUntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
         nowtime = time.perf_counter()
         frametime = nowtime - lastT
         lastT = nowtime
