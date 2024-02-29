@@ -81,7 +81,7 @@ class stablizerNd(stablizer_base):
 # assume a remains almost constant
 
 
-class Estimator:
+class BayesEstimator:
     # lamb is N/(N+1)
     def __init__(self, lamb, X, T):
         assert len(X) >= 3 and len(T) == len(X)

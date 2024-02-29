@@ -8,6 +8,9 @@ import numpy as np
 
 np.seterr(all="raise")
 
+EPS = 1e-10
+LOGEPS = -10
+
 
 def forceviewmaxmin(m):
     ma = m.max()
@@ -97,5 +100,52 @@ def randomString(charset, length):
         ]
     )
 
+
 def ReLU(x):
     return np.maximum(0, x)
+
+
+def SafeExp(x):
+    x[x < LOGEPS] = LOGEPS
+    y = np.exp(x)
+    y[x < LOGEPS] = 0
+    return y
+
+
+def SafeLog(x):
+    x[x < EPS] = EPS
+    y = np.log(x)
+    return y
+
+def NormalizeIterableOrSingleArgToNdarray(x):
+    if type(x) is np.ndarray:
+        return x
+    return np.array(NormalizeIterableOrSingleArgToIterable(x))
+
+@dataclasses.dataclass
+class BayesEstimator:
+    xspace: np.ndarray
+    distributionModel: typing.Callable  # to calc P(measuredVal=B|val=A)
+    logPBASum: np.ndarray = dataclasses.field(init=False, default=None)
+
+    logSumLowerLimit = -500
+
+    def __post_init__(self):
+        self.logPBASum = np.zeros_like(self.xspace)
+
+    def update(self, measuredValue: float | list[float] | np.ndarray):
+        measuredValue = NormalizeIterableOrSingleArgToNdarray(measuredValue)
+        measuredValue = np.array(measuredValue)
+        PBA = self.distributionModel(
+            self.xspace.reshape((-1, 1)), measuredValue.reshape((1, -1))
+        )
+        self.logPBASum += np.sum(SafeLog(PBA), axis=1)
+        self.logPBASum -= np.max(self.logPBASum)
+        self.logPBASum[self.logPBASum < BayesEstimator.logSumLowerLimit] = (
+            BayesEstimator.logSumLowerLimit
+        )
+
+    def getPossibility(self):
+        possibility = SafeExp(self.logPBASum)
+        possibility /= np.sum(possibility)
+        return possibility

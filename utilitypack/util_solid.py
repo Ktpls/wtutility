@@ -2001,32 +2001,45 @@ class AnnotationUtil:
 
 
 class Cache:
-    def __init__(self, toFetch, isValid=None, outdatedTime=None):
-        self.toFetch = toFetch
-        self.isValid = isValid
-        self.outdatedTime = outdatedTime
-        self.val = None
-        self.lastUpdateTime = None
+    class UpdateStrategey:
+        class UpdateStrategeyBase:
+            def test(self, cache: "Cache") -> bool: ...
+            def updated(self, cache: "Cache") -> None: ...
+        @dataclasses.dataclass
+        class Outdated(UpdateStrategeyBase):
+            outdatedTime: float
+            __lastUpdateTime: float = dataclasses.field(init=False, default=None)
 
-    def isOutdated(self):
-        if self.outdatedTime is None:
-            return False
-        if self.lastUpdateTime is None:
-            return True
-        return time.perf_counter() - self.lastUpdateTime > self.outdatedTime
+            def test(self, cache: "Cache"):
+                if self.__lastUpdateTime is None:
+                    return True
+                return time.perf_counter() - self.__lastUpdateTime > self.outdatedTime
 
-    def testValid(self):
-        if self.isValid is None:
-            return True
-        return self.isValid(self.get())
+            def updated(self, cache: "Cache"):
+                self.__lastUpdateTime = time.perf_counter()
+
+        @dataclasses.dataclass
+        class Invalid(UpdateStrategeyBase):
+            isValid: typing.Callable[[typing.Any], bool]
+
+            def test(self, cache: "Cache"):
+                return self.isValid(cache.__val)
+
+    def __init__(
+        self,
+        toFetch,
+        updateStrategey: "Cache.UpdateStrategey.UpdateStrategeyBase | list[Cache.UpdateStrategey.UpdateStrategeyBase]",
+    ):
+        self.__toFetch = toFetch
+        self.updateStrategey = NormalizeIterableOrSingleArgToIterable(updateStrategey)
+        self.__val = None
 
     def update(self):
-        self.lastUpdateTime = time.perf_counter()
-        self.val = self.toFetch()
+        self.__val = self.__toFetch()
+        for u in self.updateStrategey:
+            u.updated(self)
 
     def get(self, newest=None):
-        if newest is None:
-            newest = False
-        if newest or self.isOutdated():
+        if any([u.test(self) for u in self.updateStrategey]):
             self.update()
-        return self.val
+        return self.__val

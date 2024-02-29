@@ -49,21 +49,27 @@ class GPush(StoppableProcess):
 
         reporter = Reporter(5, report)
         period = 0.025
+        wtWindow = WarthunderWindow()
         while not self.timeToStop() and not self.bad8111Exit.is_set():
             ratio = self.ratio.value
-            if GPush.isZero(ratio):
-                # diabled
-                PreciseSleep(period)
-            elif GPush.isFull(ratio):
-                # key will be realeased until some point that not full
-                gameinput.keydown(ord("S"))
-                PreciseSleep(period)
+            if wtWindow.isFocus():
+
+                if GPush.isZero(ratio):
+                    # diabled
+                    PreciseSleep(period)
+                elif GPush.isFull(ratio):
+                    # key will be realeased until some point that not full
+                    gameinput.keydown(ord("S"))
+                    PreciseSleep(period)
+                    gameinput.keyup(ord("S"))
+                else:
+                    topush = ratio * period
+                    torelax = (1 - ratio) * period
+                    gameinput.hold(ord("S"), topush)
+                    # PreciseSleep(topush)
+                    PreciseSleep(torelax)
             else:
-                topush = ratio * period
-                torelax = (1 - ratio) * period
-                gameinput.hold(ord("S"), topush)
-                # PreciseSleep(topush)
-                PreciseSleep(torelax)
+                PreciseSleep(period)
             reporter.update()
 
 

@@ -17,37 +17,6 @@ class ClassNone:
 
 
 @Singleton
-class WarthunderWindow(Cache):
-    def __init__(self):
-        def toFetch():
-            try:
-                return GetWtHwnd()
-            except:
-                return None
-
-        def isValid(hwnd):
-            try:
-                return hwnd is not None and hwnd != 0 and win32gui.IsWindow(hwnd) != 0
-            except:
-                return False
-
-        super().__init__(
-            toFetch=toFetch,
-            isValid=isValid,
-            outdatedTime=10,
-        )
-
-    def isFocus(self):
-        try:
-            # GetFocus not working
-            fore = win32gui.GetForegroundWindow()
-            return self.testValid() and fore == self.get()
-        except Exception as e:
-            return False
-
-
-@Singleton
-@AnnotationUtil.Annotation(fetchInterval=1)
 class Port8111Cache:
     # use cache to cancel complex coupling between various data consumers under requirement of reducing http request cost
     typeCache: "dict[Port8111.QueryType, Port8111Cache.SingleTypeCache]" = dict()
@@ -58,14 +27,14 @@ class Port8111Cache:
         def __init__(self, queryType):
             super().__init__(
                 toFetch=lambda: Port8111.get(queryType),
-                outdatedTime=AnnotationUtil.getAnnotations(Port8111Cache).fetchInterval,
+                updateStrategey=Cache.UpdateStrategey.Outdated(fetch8111Interval),
             )
             self.queryType = queryType
 
-    def get(self, queryType: Port8111.QueryType, mustUpdate=None):
+    def get(self, queryType: Port8111.QueryType, newest=None):
         if queryType not in self.typeCache:
             self.typeCache[queryType] = self.SingleTypeCache(queryType)
-        return self.typeCache[queryType].get(newest=mustUpdate)
+        return self.typeCache[queryType].get(newest=newest)
 
 
 @AnnotationUtil.Annotation(pressTime=0.05)
@@ -91,9 +60,6 @@ class FunctionalKey:
     @staticmethod
     def Unbounded():
         return ClassNone()
-
-
-SolutionInterval = 0.5
 
 
 @dataclasses.dataclass
@@ -159,7 +125,7 @@ class ControlableEngineAxis(Axis):
                 raise AxisUnsupported()
             action()
             PreciseSleep(0.1)
-            after = self.get(mustUpdate=True)
+            after = self.get(newest=True)
             if after is None:
                 raise AxisUnsupported()
             return not FloatEq(prev, after)
@@ -182,7 +148,6 @@ class DiscreteCEAxis(ControlableEngineAxis):
                 break
 
 
-@AnnotationUtil.Annotation(errAllowed=0.01, keyboardSensitivity=0.03)
 class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
     controller = PIDController(3, 0, 0.25)
@@ -194,15 +159,12 @@ class ContiniousCEAxis(ControlableEngineAxis):
         self.tryChange(lambda: self.turnDownKey.hold(holdTime))
 
     def set(self, target):
-        keyboardSensitivity = AnnotationUtil.getAnnotations(
-            ContiniousCEAxis
-        ).keyboardSensitivity
         while True:
             nowVal = self.get()
             if nowVal is None:
                 raise AxisUnsupported()
             err = target - nowVal
-            if abs(err) <= AnnotationUtil.getAnnotations(ContiniousCEAxis).errAllowed:
+            if abs(err) <= continousControlableEngineAxisErrorAllowed:
                 break
             ctrl = self.controller.update(err)
             if abs(ctrl) < keyboardSensitivity:
@@ -261,11 +223,11 @@ class OilRadiator(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
-    def get(self, mustUpdate=None):
+    def get(self, newest=None):
         try:
             return (
                 Port8111Cache()
-                .get(Port8111.QueryType.indicator, mustUpdate)
+                .get(Port8111.QueryType.indicator, newest)
                 .expectValid()
                 .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
                 .oil_radiator_indicator
@@ -295,11 +257,11 @@ class Radiator(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
-    def get(self, mustUpdate=None):
+    def get(self, newest=None):
         try:
             return (
                 Port8111Cache()
-                .get(Port8111.QueryType.state, mustUpdate)
+                .get(Port8111.QueryType.state, newest)
                 .expectValid()
                 .engine.radiator.value[0]
                 / 100
@@ -320,11 +282,11 @@ class PropPitch(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
-    def get(self, mustUpdate=None):
+    def get(self, newest=None):
         try:
             return (
                 Port8111Cache()
-                .get(Port8111.QueryType.state, mustUpdate)
+                .get(Port8111.QueryType.state, newest)
                 .expectValid()
                 .engine.RPM_throttle.value[0]
                 / 100
@@ -352,11 +314,11 @@ class Supercharger(DiscreteCEAxis):
             ],
         )
 
-    def get(self, mustUpdate=None):
+    def get(self, newest=None):
         try:
             return (
                 Port8111Cache()
-                .get(Port8111.QueryType.state, mustUpdate)
+                .get(Port8111.QueryType.state, newest)
                 .expectValid()
                 .engine.compressor_stage.value[0]
             )
@@ -367,11 +329,11 @@ class Supercharger(DiscreteCEAxis):
 @Singleton
 class Altitude(ReadOnlyAxis):
 
-    def get(self, mustUpdate=None):
+    def get(self, newest=None):
         try:
             indi = (
                 Port8111Cache()
-                .get(Port8111.QueryType.indicator, mustUpdate)
+                .get(Port8111.QueryType.indicator, newest)
                 .expectValid()
                 .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
             )
@@ -396,7 +358,7 @@ class EngineMan:
             supercharger=Supercharger(),
             altitude=Altitude(),
         )
-        for i in engineConfigHost.configs:
+        for i in EngineConfigHost.GetConfigs():
             service: EngineConfigBean = i
             service.planeName = NormalizeIterableOrSingleArgToIterable(
                 service.planeName
@@ -483,13 +445,3 @@ class DetachedEngineMan(StoppableThread):
                 break
             em.check()
             PreciseSleep(detachedEngineManLoopInterval)
-
-
-pass
-
-# activeWindow(GetWtHwnd())
-# for i in range(2):
-#     PreciseSleep(1)
-#     Rhythms.Notify.play()
-# EngineMan().setEngineStatusDemo()
-# Rhythms.Success.play()

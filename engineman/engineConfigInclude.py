@@ -5,7 +5,7 @@ import typing
 class Axis:
     def set(self, target): ...
 
-    def get(self, mustUpdate=None): ...
+    def get(self, newest=None): ...
 
 
 @dataclasses.dataclass
@@ -17,7 +17,7 @@ class Gauges:
     altitude: Axis
 
 
-class AxisUnsupported(Exception):...
+class AxisUnsupported(Exception): ...
 
 
 class EngineConfig:
@@ -34,21 +34,33 @@ class EngineConfigBean:
 
 
 class EngineConfigHost:
-    configs: "list[EngineConfigHost.EngineConfigBean]" = list()
 
+    @staticmethod
     def Register(
-        self,
         planeName: str | list[str],
         checkRate: float = 10,
         engineConfigName: str = "",
     ):
         def toGetLogic(engineConfig: typing.Callable):
-            self.configs.append(
+            if not hasattr(EngineConfigHost, "__configs__"):
+                EngineConfigHost.__configs__ = list()
+            EngineConfigHost.__configs__.append(
                 EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
             )
             return engineConfig
 
         return toGetLogic
 
+    @staticmethod
+    def GetConfigs():
+        return EngineConfigHost.__configs__
 
-engineConfigHost = EngineConfigHost()
+
+def SetSuperchargerByAlt(gauges: Gauges, switchAlt: list):
+    alt = gauges.altitude.get()
+    if alt is not None:
+        destStage = 0
+        for i, a in enumerate(switchAlt):
+            if alt > a:
+                destStage = i
+        gauges.supercharger.set(destStage + 1)

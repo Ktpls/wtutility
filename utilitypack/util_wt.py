@@ -12,6 +12,35 @@ def GetWtHwnd():
     return ret
 
 
+@Singleton
+class WarthunderWindow(Cache):
+    def __init__(self):
+        def toFetch():
+            try:
+                return GetWtHwnd()
+            except:
+                return None
+
+        super().__init__(
+            toFetch=toFetch,
+            updateStrategey=Cache.UpdateStrategey.Outdated(10),
+        )
+
+    def isValid(self):
+        hwnd = self.get()
+        try:
+            return hwnd is not None and hwnd != 0 and win32gui.IsWindow(hwnd) != 0
+        except:
+            return False
+
+    def isFocus(self):
+        try:
+            fore = win32gui.GetForegroundWindow()
+            return self.isValid() and fore == self.get()
+        except Exception as e:
+            return False
+
+
 class Port8111:
     class FetchFailure(Exception): ...
 
