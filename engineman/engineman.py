@@ -1,4 +1,4 @@
-from utilitypack import *
+from utilitypack.utility import *
 import keyshortcut.keyshortcut as keyshortcut
 from .engineConfig import *
 from .engineman_config import *
@@ -164,7 +164,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
 
 class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
-    controller = PIDController(6, 0, 0.5)
+    controller = PIDController(5, 0, 0.5)
     valMax = 1
     valMin = 0
 
@@ -252,13 +252,13 @@ class OilRadiator(ContiniousCEAxis):
 
     def get(self, newest=None):
         try:
-            return (
+            indicator = (
                 Port8111Cache()
                 .get(Port8111.QueryType.indicator, newest)
                 .expectValid()
                 .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-                .oil_radiator_indicator
             )
+            return indicator.oil_radiator_indicator or indicator.oil_radiator_lever1_1
         except Port8111.FetchFailure:
             return None
 

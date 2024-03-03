@@ -69,3 +69,11 @@ class I29(EngineConfig):
 class P63A5(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(1.0)
+
+
+@EngineConfigHost.Register(planeName="saab_j21a_1")
+class SaabJ21A(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.oilRadiator.set(1.0)
+        gauges.radiator.set(1.0)
+        gauges.propPitch.set(0.75)
