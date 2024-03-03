@@ -11,3 +11,4 @@ try:
 except Port8111.FetchFailure:
     ...
 print(result)
+os.system('pause')

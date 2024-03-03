@@ -380,7 +380,7 @@ class HotkeyManager:
                 return True
 
     class hotkeytask:
-        key: typing.List[typing.List[int]]
+        key: list[list[int]]
 
         def __init__(
             self,
@@ -453,7 +453,7 @@ class HotkeyManager:
         def GetKeyDown(self):
             return isKBDown(self.code)
 
-    def __init__(self, hotkeytasklist: typing.List[hotkeytask]):
+    def __init__(self, hotkeytasklist: list[hotkeytask]):
         keyconcerned = [hka.key for hka in hotkeytasklist]
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
         keyconcerned = list(itertools.chain.from_iterable(keyconcerned))
@@ -492,7 +492,7 @@ class HotkeyManager:
             for bidx, b in enumerate(self.hktl)
         ]
 
-    def decideAllHotKey(self) -> typing.List[bool]:
+    def decideAllHotKey(self) -> list[bool]:
         keystate = {k.code: k.GetKeyDown() for k in self.kc}
         cchblocked = not self.cch.updateState(keystate)
 
@@ -598,7 +598,7 @@ class HotkeyManager:
         RunningSessionInstance: SessionInstance = dataclasses.field(
             default_factory=SessionInstance
         )
-        hotkeymanagerStack: typing.List["HotkeyManager"] = dataclasses.field(
+        hotkeymanagerStack: list["HotkeyManager"] = dataclasses.field(
             default_factory=list
         )
 
@@ -606,7 +606,7 @@ class HotkeyManager:
             NUMBER = 0
             LETTER = 1
 
-        def __GetHotkeyReg(self, ite: typing.List[InputTypeEnabled]):
+        def __GetHotkeyReg(self, ite: list[InputTypeEnabled]):
             @dataclasses.dataclass
             class KeyMapping:
                 char: str
@@ -689,7 +689,7 @@ class HotkeyManager:
             return HotkeyReg
 
         def IntoSession(
-            self, callback, allowedInputType: typing.List[InputTypeEnabled] = None
+            self, callback, allowedInputType: list[InputTypeEnabled] = None
         ):
             self.RunningSessionInstance = HotkeyManager.InputSession.SessionInstance(
                 callback
@@ -759,7 +759,7 @@ class Rhythm:
         freq: int
         dur: int = 100
 
-    tones: typing.List["Rhythm.BeepTone"]
+    tones: list["Rhythm.BeepTone"]
 
     @staticmethod
     def fromString(s: str, default_dur: int = 100):

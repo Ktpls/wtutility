@@ -100,7 +100,7 @@ class FixedPositionImgMatcher:
 
     def __init__(
         self,
-        leftTop: typing.List,
+        leftTop: list,
         path: str,
         thresh: float | None = None,
         maskpath: str | None = None,
@@ -558,7 +558,7 @@ class ApproximateStandardizationGuide:
             guideSourceCode (str): The source code of the guide.
         """
         self.guideSourceCode = guideSourceCode
-        guideitem: typing.List[ApproximateStandardizationGuide.GuideItem] = []
+        guideitem: list[ApproximateStandardizationGuide.GuideItem] = []
         for g in guideSourceCode.split("\n"):
             if len(g) == 0:
                 continue
@@ -599,7 +599,7 @@ class VehicleInfo:
     @staticmethod
     def compile(
         sourceCode: str, asg: ApproximateStandardizationGuide
-    ) -> typing.List["VehicleInfo"]:
+    ) -> list["VehicleInfo"]:
         ret = []
         for t in sourceCode.split("\n"):
             if len(t) == 0:
@@ -617,9 +617,9 @@ class VehicleInfo:
 
     @staticmethod
     def matchPlayerVehicleListAndVehicleInfoList(
-        players: typing.List[str], vi: typing.List["VehicleInfo"]
+        players: list[str], vi: list["VehicleInfo"]
     ):
-        ret: typing.List[VehicleInfo.MatchResult] = []
+        ret: list[VehicleInfo.MatchResult] = []
         for l, p in enumerate(players):
             for v in vi:
                 if re.match(v.pattern, p) is not None:
@@ -629,7 +629,7 @@ class VehicleInfo:
     @staticmethod
     def detectAnyInOutputOfTesseract(
         players: str,
-        vi: typing.List["VehicleInfo"],
+        vi: list["VehicleInfo"],
         asg: ApproximateStandardizationGuide,
     ):
         playerlist = [asg.do(t) for t in players.split("\n")]

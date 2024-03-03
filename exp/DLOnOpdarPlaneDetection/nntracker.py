@@ -295,55 +295,74 @@ def SofterMax(x, dim):
 
 class nntracker_simple(torch.nn.Module, BaseModule4NNTracker):
     def __init__(self) -> None:
+        useBn = True
+        incver = "v3"
         super().__init__()
         self.preproc = torch.nn.Sequential(
             cbr(3, 8, 9),
             res_through(
-                inception.even(8, 8),
-                inception.even(8, 8),
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
             ),
         )
         # downsampling 16x in total
         self.contentway = torch.nn.Sequential(
-            inception.even(8, 8),
             res_through(
-                nn.Sequential(
-                    nn.MaxPool2d(4),
-                    # 32
-                    inception.even(8, 16),
-                    res_through(
-                        nn.Sequential(
-                            nn.MaxPool2d(4),
-                            inception.even(16, 64),
-                            # 8
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
+                res_through(
+                    nn.Sequential(
+                        nn.MaxPool2d(4),
+                        inception.even(8, 16, bn=useBn, version=incver),
+                        res_through(
+                            inception.even(16, 16, bn=useBn, version=incver),
+                            inception.even(16, 16, bn=useBn, version=incver),
                             res_through(
-                                inception.even(64, 64),
-                                inception.even(64, 64),
-                                inception.even(64, 64),
-                                inception.even(64, 64),
+                                nn.Sequential(
+                                    nn.MaxPool2d(4),
+                                    inception.even(16, 64, bn=useBn, version=incver),
+                                    res_through(
+                                        inception.even(
+                                            64, 64, bn=useBn, version=incver
+                                        ),
+                                        inception.even(
+                                            64, 64, bn=useBn, version=incver
+                                        ),
+                                        inception.even(
+                                            64, 64, bn=useBn, version=incver
+                                        ),
+                                        inception.even(
+                                            64, 64, bn=useBn, version=incver
+                                        ),
+                                    ),
+                                    nn.ConvTranspose2d(64, 16, 4, stride=4),
+                                ),
+                                combiner=SemanticInjectionModule(16),
                             ),
-                            nn.ConvTranspose2d(64, 16, 4, stride=4),
+                            inception.even(16, 16, bn=useBn, version=incver),
+                            inception.even(16, 16, bn=useBn, version=incver),
                         ),
-                        combiner=SemanticInjectionModule(16),
+                        nn.ConvTranspose2d(16, 8, 4, stride=4),
                     ),
-                    nn.ConvTranspose2d(16, 8, 4, stride=4),
+                    combiner=SemanticInjectionModule(8),
                 ),
-                combiner=SemanticInjectionModule(8),
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
             ),
             torch.nn.LeakyReLU(),
         )
         self.positionway = torch.nn.Sequential(
             res_through(
-                inception.even(8, 8),
-                inception.even(8, 8),
-                inception.even(8, 8),
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
             ),
         )
         self.deco = torch.nn.Sequential(
-            inception.even(2 * 8 + 3, 8),
+            inception.even(2 * 8 + 3, 8, bn=useBn, version=incver),
             res_through(
-                inception.even(8, 8),
-                inception.even(8, 8),
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
             ),
             torch.nn.Conv2d(8, 1, 1, padding="same"),
             torch.nn.LeakyReLU(),

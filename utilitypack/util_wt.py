@@ -190,13 +190,13 @@ class Port8111:
 
     @dataclasses.dataclass
     class BeanMapInfo:
-        grid_size: typing.List[float] = None
-        grid_steps: typing.List[float] = None
-        grid_zero: typing.List[float] = None
+        grid_size: list[float] = None
+        grid_steps: list[float] = None
+        grid_zero: list[float] = None
         hud_type: int = None
         map_generation: int = None
-        map_max: typing.List[float] = None
-        map_min: typing.List[float] = None
+        map_max: list[float] = None
+        map_min: list[float] = None
         valid: bool = None
 
     @dataclasses.dataclass
@@ -204,7 +204,7 @@ class Port8111:
         @dataclasses.dataclass
         class UnitValue:
             unit: str
-            value: typing.List[float]
+            value: list[float]
 
         @dataclasses.dataclass
         class Engine:

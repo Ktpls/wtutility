@@ -16,7 +16,11 @@ def main():
     print("keyshortcut activated")
     import keyshortcut.keyshortcut as keyshortcut
 
-    hotkeySwitch = Switch(True)
+    hotkeySwitch = Switch(
+        onSetOn=lambda: app.bulletin.putup(BulletinBoard.Poster("hkmEnabled")),
+        onSetOff=lambda: app.bulletin.putup(BulletinBoard.Poster("hkmDisabled")),
+        initial=True,
+    )
 
     @EasyWrapper
     def WithHotkeySwitch(f):
@@ -103,14 +107,12 @@ def main():
     @app.Hotkey("HKDisable", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F11])
     def taskSwitch():
         hotkeySwitch.switch()
-        if hotkeySwitch():
-            app.bulletin.putup(BulletinBoard.Poster("hkmEnabled"))
-        else:
-            app.bulletin.putup(BulletinBoard.Poster("hkmDisabled"))
 
     app.go()
 
+
 def emotion():
-    app=BulletinApp()
+    app = BulletinApp()
+
 
 main()

@@ -55,23 +55,25 @@ print("load finished")
 # %%
 # dataloader
 # for easier modify batchsize without reloading all samples
-batch_size = 2
+batch_size = 1
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
+
 # %%
-# train
+# lossFunc
 
 
 def calclose(lbl, lblhat):
-    X = torch.arange(lbl.shape[-1]).view(-1, 1, 1, lbl.shape[-1]).to(device)
-    Y = torch.arange(lbl.shape[-2]).view(-1, 1, lbl.shape[-2], 1).to(device)
-    lblsurface = lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1
-    meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True)
-    meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True)
-    radius = torch.sqrt(lblsurface / torch.pi)
-    dist2 = torch.sqrt((X - meanX) ** 2 + (Y - meanY) ** 2) / radius
-    coef = 1 + 0.5 * (dist2 > 1)  # /(radius)
+    # X = torch.arange(lbl.shape[-1]).view(-1, 1, 1, lbl.shape[-1]).to(device)
+    # Y = torch.arange(lbl.shape[-2]).view(-1, 1, lbl.shape[-2], 1).to(device)
+    # lblsurface = lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1
+    # meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True) / lblsurface
+    # meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True) / lblsurface
+    # radius = torch.sqrt(lblsurface / torch.pi)
+    # dist2 = torch.sqrt((X - meanX) ** 2 + (Y - meanY) ** 2) / radius
+    # coef = 1 + 0 * (dist2 > 2)  # /(radius)
+    coef=1
     # coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
     # [b,d,h,w]
     loss = (
@@ -85,6 +87,10 @@ def calclose(lbl, lblhat):
         ).sum()
     )
     return loss
+
+
+# %%
+# train
 
 
 def trainmainprogress(batch, datatuple):

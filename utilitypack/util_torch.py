@@ -181,6 +181,8 @@ class inception(torch.nn.Module):
                 torch.nn.Conv2d(outfeat55, outfeat55, [3, 1], padding="same"),
                 torch.nn.LeakyReLU(),
             )
+        else:
+            raise ValueError(f"{version} not supported")
         if isbn is not None and isbn:
             self.bn = torch.nn.BatchNorm2d(
                 outfeat11 + outfeatpool + outfeat33 + outfeat55

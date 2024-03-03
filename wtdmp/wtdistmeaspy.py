@@ -57,7 +57,7 @@ class wtdistmeaspy:
                 spliter = "\n"
             return spliter.join([e.__repr__() for e in el])
 
-        exception: typing.List[SMException] = []
+        exception: list[SMException] = []
         prompt = ""
 
         # check if fall back to last result

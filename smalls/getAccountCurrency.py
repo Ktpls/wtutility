@@ -74,7 +74,6 @@ def main():
         MyItem("id50236_ki_48_ii_otsu_japan", 4),
         MyItem("id50226_b7a2_homare_23_japan", 2),
         MyItem("items_Matilda+Hedgehog+(Britain)", 1),
-        MyItem("Richard+Bong's+P-38J-15+Lightning(USA)", 1),
     ]
 
     token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjM4MTQ3NiIsInR5cCI6IkpXVCJ9.eyJhdXRoIjoibG9naW4iLCJjbnRyeSI6IkhLIiwiZXhwIjoxNzA5Nzg1NTQxLCJmYWMiOiJjYTdkMWQ4Mzk5ZTg0OGM2YTNiYTBkYjM2NzQwZWM2NjMzYzE5N2RkYzZmM2EzODM5ZWU2ZWI4YTdkNmU2OWU5IiwiaWF0IjoxNzA3MTkzNTQxLCJpc3MiOiIxIiwia2lkIjoiMzgxNDc2IiwibG5nIjoiZW4iLCJsb2MiOiIzOGQ3MTA3NWI5ZGE2ZjUyYjk3MTc5MWIzNTg2MWU4NDU5OWJlMWNiNjc1OTZhYzRhOGNmYmFjY2M5ZjM5OTA1IiwibmljayI6IlNlbGVuYWJ1bm55Iiwic2x0IjoiVk92TXhuQnYiLCJ0Z3MiOiIyc3RlcCwyc3RlcF90b3RwLGN1c3RvbWVyLGN1c3RvbWVyX3d0LGRpZmZjdXJyLGVtYWlsX2RlbGl2ZXJlZCxlbWFpbF92ZXJpZmllZCxsYW5nX2VuLHBhcnRuZXJfc3RlYW0scGF5X2NueSxwaG9uZV92ZXJpZmllZCxwbGF5ZXJfZWwscGxheWVyX3d0LHNzb19hbGxvd2VkX3Bvc3Qsc3RlYW0sc3RlYW1nZW4sd3RfZW4sd3RfZmlyc3RfbG9naW4sd3RfcXVpel9zdWNjZXNzIiwidWlkIjoiODMzMjI5MDQifQ.FhYg7otRLpW3kimriwcT9Urr4wcLsm3mVEJJ9tgeYJIAUgqE1dD8h_Zps_4MVIm4zUgwMR7-P9RHukIvYdwSo3NocIdiob-ZcoLQz7zcnLtu1Z7MvjmtVoPL0Pws3sY4BrNvXl8lCzksdEcjO_n8OMxpx-fSIokuhTPDsLO9wFqqQEX_FjwjpwjWhXP8679-H7snAnZ7KfYn5GHIm5fSt_5X04sAypp9GUgFU-gpGuwI91KQd1wdRtDRTKMMW3OMDecnhduQJGJm9Cu7pDsuq4_gUh94rppP1JeD-K6xqxzKyMAEZstxFMug7LKvWRNQCZqFiWieAZMMS50BPwDnqA"
@@ -83,7 +82,7 @@ def main():
         print(i.itemCode)
         i.price = tgn.getSellPrice(i.itemCode)
 
-    total = np.sum([i.price * i.amount for i in inventory])
+    total = np.sum([i.price * i.amount for i in inventory]) + 32
     line = [GetTimeString(), int(time.time()), total]
     line = [str(c) for c in line]
     AppendFile("asset/statistics/inventoryAccount.csv", ",".join(line) + "\n")

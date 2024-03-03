@@ -38,7 +38,7 @@ class EngineConfigHost:
     @staticmethod
     def Register(
         planeName: str | list[str],
-        checkRate: float = 10,
+        checkRate: float = 5,
         engineConfigName: str = "",
     ):
         def toGetLogic(engineConfig: typing.Callable):
@@ -64,3 +64,30 @@ def SetSuperchargerByAlt(gauges: Gauges, switchAlt: list):
             if alt > a:
                 destStage = i
         gauges.supercharger.set(destStage + 1)
+
+
+def MappingByStage(sections: list[tuple[float, float]]):
+    """
+    [
+        [None, 1],
+        [1000, 2],
+        [2000, 3],
+    ]
+    """
+
+    def mapping(x):
+        ret = None
+        for i, (spliter, val) in enumerate(sections):
+            if i == 0:
+                ret = val
+            elif x >= spliter:
+                ret = val
+            else:
+                break
+        assert ret is not None
+        return ret
+    return mapping
+
+
+def MappingAxis(axSrc: Axis, axDest: Axis, mapping: typing.Callable):
+    axDest.set(mapping(axSrc.get()))

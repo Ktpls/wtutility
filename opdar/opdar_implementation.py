@@ -430,7 +430,7 @@ class MtiFilter:
         """
         self.filter = interpolate.interp1d([0, 0.3, 0.75, 1], [1, 1, 0, 0])
         # fake type notation in order to scam ide type analysis
-        self.mtiQueue: typing.List[
+        self.mtiQueue: list[
             MtiFilter.MtiStorage
         ] | AccessibleQueue = AccessibleQueue(mtiQueueSize)
 

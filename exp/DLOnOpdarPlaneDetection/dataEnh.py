@@ -14,9 +14,9 @@ def anySeed(seed):
 generator = np.random.default_rng(seed=anySeed(42))
 
 
-def dataEnhance(src, lbl, prog:Progress=None):
+def dataEnhance(src, lbl, prog: Progress = None):
     if prog is not None:
-        prog.update(prog.cur+1)
+        prog.update(prog.cur + 1)
     backcolor = np.mean(src, axis=(0, 1), keepdims=True)
 
     planeColor = np.sum(src * lbl, axis=(0, 1), keepdims=True) / np.sum(
@@ -45,7 +45,7 @@ def dataEnhance(src, lbl, prog:Progress=None):
         Y = Yp
         Y += l0 * 0.5
         X += l0 * 0.5
-        m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR)
+        m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
         return m
 
     the = np.random.uniform(-np.pi / 3, np.pi / 3)
@@ -59,7 +59,7 @@ def dataEnhance(src, lbl, prog:Progress=None):
         XY -= l0 / 2
         XY /= rate
         XY += l0 / 2
-        return cv.remap(m, *XY, cv.INTER_LINEAR)
+        return cv.remap(m, *XY, cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
 
     rate = np.random.uniform(0.8, 1.2)
 
@@ -75,7 +75,7 @@ def dataEnhance(src, lbl, prog:Progress=None):
     # mov
     def mov(m, vec):
         mattr = np.array([[1, 0, vec[0]], [0, 1, vec[1]]]).astype("float")
-        m = cv.warpAffine(m, mattr, np.flip(m.shape[0:2]))
+        m = cv.warpAffine(m, mattr, np.flip(m.shape[0:2]), borderMode=cv.BORDER_REPLICATE)
         return m
 
     vec = np.random.uniform(-50, 50, size=2)
@@ -204,7 +204,7 @@ def dataEnhance(src, lbl, prog:Progress=None):
             # no plane
             return spl
         # thresh controls the area ratio of noise
-        thresh = 0.8
+        thresh = 0.95
         pointNum1d = 2 * 0.5 * (1 - thresh) / planeRadius
         sampleBaseFreq = (
             Interpolated2d.SuggestedFreqAccordingToPointNum(pointNum1d**2) * 2
@@ -226,6 +226,12 @@ def dataEnhance(src, lbl, prog:Progress=None):
         return spl
 
     src = randSpot(src, lbl)
+
+    def gaussianNoise(spl):
+        spl = spl + np.random.normal(0, 0.1, spl.shape)
+        return spl
+
+    src = gaussianNoise(src)
 
     lbl[lbl < 0.5] = 0
     lbl[lbl >= 0.5] = 1  # thresh
@@ -285,8 +291,8 @@ def performDataEnh():
         )
         .collect(Stream.Collector.toList())
     )
-    sampleNum=8192
-    deProg=Progress(sampleNum)
+    sampleNum = 2**10 *8
+    deProg = Progress(sampleNum)
     imgRandomDraws = list((np.random.random(sampleNum) * len(source)).astype(np.int32))
     (
         Stream(imgRandomDraws)

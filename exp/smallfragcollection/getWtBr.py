@@ -10,7 +10,7 @@ import time
 @dataclass
 class Vehicle:
     name: str
-    br: typing.List[str]
+    br: list[str]
 
 
 def completeUrl(leftover, base="https://wiki.warthunder.com"):

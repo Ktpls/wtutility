@@ -53,6 +53,7 @@ class FunctionalKey:
         PreciseSleep(holdTime)
         for k in reversed(self.key):
             keyshortcut.keyup(k)
+        PreciseSleep(keyPressInterval)
 
     def press(self):
         self.hold(AnnotationUtil.getAnnotations(FunctionalKey).pressTime)
@@ -118,19 +119,32 @@ class ControlableEngineAxis(Axis):
     def switchManualControl(self):
         self.switchManualControlKey.press()
 
-    def tryChange(self, action):
+    def tryChange(
+        self,
+        action,
+        issuccessful: typing.Callable[[float, float], bool] = None,
+    ):
+        if issuccessful is None:
+            issuccessful = ControlableEngineAxis.trychange_issuccessful_eq
+
         def inner():
             prev = self.get()
             if prev is None:
                 raise AxisUnsupported()
             action()
-            PreciseSleep(0.1)
+            PreciseSleep(delayAfterAction)
             after = self.get(newest=True)
             if after is None:
                 raise AxisUnsupported()
-            return not FloatEq(prev, after)
+            issu = issuccessful(prev, after)
+            # print(action, prev, after, issu)
+            return issu
 
         Solution.tryAction(inner, self.solution)
+
+    @staticmethod
+    def trychange_issuccessful_eq(prev, after):
+        return not FloatEq(prev, after)
 
 
 class DiscreteCEAxis(ControlableEngineAxis):
@@ -150,13 +164,29 @@ class DiscreteCEAxis(ControlableEngineAxis):
 
 class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
-    controller = PIDController(3, 0, 0.25)
+    controller = PIDController(6, 0, 0.5)
+    valMax = 1
+    valMin = 0
 
     def turnUp(self, holdTime):
-        self.tryChange(lambda: self.turnUpKey.hold(holdTime))
+        self.tryChange(
+            lambda: self.turnUpKey.hold(holdTime),
+            lambda prev, after: ControlableEngineAxis.trychange_issuccessful_eq(
+                prev, after
+            )
+            or FloatEq(prev, self.valMax)
+            or holdTime <= continousCeAxisMinSensitivity,
+        )
 
     def turnDown(self, holdTime):
-        self.tryChange(lambda: self.turnDownKey.hold(holdTime))
+        self.tryChange(
+            lambda: self.turnDownKey.hold(holdTime),
+            lambda prev, after: ControlableEngineAxis.trychange_issuccessful_eq(
+                prev, after
+            )
+            or FloatEq(prev, self.valMin)
+            or holdTime <= continousCeAxisMinSensitivity,
+        )
 
     def set(self, target):
         while True:
@@ -167,14 +197,11 @@ class ContiniousCEAxis(ControlableEngineAxis):
             if abs(err) <= continousControlableEngineAxisErrorAllowed:
                 break
             ctrl = self.controller.update(err)
-            if abs(ctrl) < keyboardSensitivity:
-                # keyboard can't respond fast enough
-                # may cause bouncing, but will be safe if errAllowed is big enough
-                ctrl = ctrl / abs(ctrl) * keyboardSensitivity
+            absctrl = abs(ctrl)
             if ctrl > 0:
-                self.turnUp(ctrl)
+                self.turnUp(absctrl)
             else:
-                self.turnDown(abs(ctrl))
+                self.turnDown(absctrl)
 
 
 SwitchManualEngineControl = FunctionalKey(

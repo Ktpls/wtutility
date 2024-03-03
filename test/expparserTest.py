@@ -2,7 +2,7 @@ from utilref import *
 
 
 def unitTest():
-    def vecadd(va: typing.List, vb: typing.List):
+    def vecadd(va: list, vb: list):
         assert len(va) == len(vb)
         return list(map(lambda x, y: x + y, va, vb))
 
@@ -51,7 +51,7 @@ def unitTest():
                 print(f"    result: {self.result}")
                 return False
 
-    exp: typing.List[TestUnit] = [
+    exp: list[TestUnit] = [
         TestUnit(r"CStr(1)", "1.0"),
         TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
         TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),

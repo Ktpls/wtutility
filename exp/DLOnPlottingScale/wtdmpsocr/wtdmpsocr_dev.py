@@ -235,7 +235,7 @@ class labeldataset(Dataset):
         idx = int(ifrac * len(self.piclist[t]))
         return self.readSample(t, idx)
 
-    def draw_SpecifiedType(self, ifrac, type: typing.List):
+    def draw_SpecifiedType(self, ifrac, type: list):
         while (True):
             # to skip empty
             t = int(np.random.choice(type))

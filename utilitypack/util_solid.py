@@ -22,6 +22,7 @@ import typing
 """
 solid
 """
+EPS = 1e-10
 
 
 def DictEq(a: typing.Dict, b: typing.Dict):
@@ -35,7 +36,7 @@ def DictEq(a: typing.Dict, b: typing.Dict):
     return True
 
 
-def ListEq(a: typing.List, b: typing.List):
+def ListEq(a: list, b: list):
     if len(a) != len(b):
         return False
     for i in range(len(a)):
@@ -48,7 +49,7 @@ def FloatEq(a, b, eps=1e-6):
     return abs(a - b) < eps
 
 
-def Deduplicate(l: typing.List):
+def Deduplicate(l: list):
     return list(set(l))
 
 
@@ -221,7 +222,7 @@ class BulletinBoard:
 
     def __init__(self, idlecontent):
         self.idlecontent = idlecontent
-        self.content: typing.List["BulletinBoard.Poster"] = []
+        self.content: list["BulletinBoard.Poster"] = []
 
     def putup(self, poster: typing.Union[Poster, str]):
         if type(poster) == str:
@@ -331,7 +332,7 @@ class StoppableThread(StoppableSomewhat):
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
         self.running: bool = False
-        self.__stopsignal: bool = True
+        self.stopsignal: bool = True
         self.pool: ThreadPoolExecutor = (
             pool if pool is not None else ThreadPoolExecutor()
         )
@@ -363,7 +364,7 @@ class StoppableThread(StoppableSomewhat):
             ):
                 return
         self.running = True
-        self.__stopsignal = False
+        self.stopsignal = False
 
         def call() -> None:
             """
@@ -388,13 +389,13 @@ class StoppableThread(StoppableSomewhat):
     def stop(self) -> None:
         if self.submit is None:
             return
-        self.__stopsignal = True
+        self.stopsignal = True
         self.submit.result()
         self.running = False
         self.submit = None
 
     def timeToStop(self) -> bool:
-        return self.__stopsignal
+        return self.stopsignal
 
 
 class StoppableProcess(StoppableSomewhat):
@@ -529,6 +530,7 @@ class Pipe:
 
 class Stream:
     content: list
+    actions: list
 
     def __init__(self, iter: list | tuple | dict) -> None:
         if isinstance(iter, (list, tuple)):
@@ -611,13 +613,26 @@ class Progress:
         self.nowStage = 0
         self.printPercentageStep = printPercentageStep
         self.cur = cur
+        self.ps = perf_statistic()
 
     def update(self, current: float) -> None:
         self.cur = current
         while True:
             if current / self.total > self.nowStage * self.printPercentageStep:
                 self.nowStage += 1
-                print(f"{100 * current / self.total:>3.2f}%", end="\r")
+                self.ps.stop()
+                if current > 1:
+                    # not the first time
+                    instantSpeed = (self.printPercentageStep * self.total) / (
+                        self.ps.time() + EPS
+                    )
+                else:
+                    instantSpeed = 1
+                self.ps.clear().start()
+                print(
+                    f"{100 * current / self.total:>3.2f}% of {self.total}, {instantSpeed:.2f}it/s",
+                    end="\r",
+                )
             else:
                 break
 
@@ -1090,10 +1105,10 @@ class expparser:
         peekToken = expparser.__NextToken(s, startPos)
 
         # buffer
-        tokenList: typing.List[expparser.Token] = list()
+        tokenList: list[expparser.Token] = list()
 
         # for operator priority
-        oprRisingBeginPosList: typing.List[expparser.__OprPriorityLeap] = list()
+        oprRisingBeginPosList: list[expparser.__OprPriorityLeap] = list()
 
         def RaiseTokenException(token: expparser.Token):
             raise expparser.ParseException(
@@ -1329,7 +1344,7 @@ class expparser:
     @staticmethod
     def elementparse(s):
         i = 0
-        tokenList: typing.List[expparser.Token] = []
+        tokenList: list[expparser.Token] = []
         while True:
             token = expparser.__NextToken(s, i)
             tokenList.append(token)
@@ -1373,7 +1388,7 @@ class expparser:
                 return paramList
 
         @staticmethod
-        def OptionalFunc(defaultParam: typing.List, func: typing.Callable):
+        def OptionalFunc(defaultParam: list, func: typing.Callable):
             def newFunc(*param):
                 newParam = [
                     a if a is not None else d for a, d in zip(param, defaultParam)
@@ -1611,7 +1626,7 @@ class TimeNonconcernedStage(Stage):
 class SyncExecutableManager:
     def __init__(self, pool: ThreadPoolExecutor) -> None:
         self.pool = pool
-        self.selist: typing.List[SyncExecutable] = []
+        self.selist: list[SyncExecutable] = []
 
     def step(self):
         # call this on wolf update
@@ -1719,7 +1734,7 @@ class SyncExecutable:
 
 
 class AccessibleQueue:
-    Annotation = lambda T: typing.List[T]
+    Annotation = lambda T: list[T]
 
     class AQException(Exception):
         pass
@@ -1841,6 +1856,9 @@ class BeanUtil:
         if taipe is None or isinstance(taipe, str):
             # not type annotated, or annotated like field:"some class"
             return IdentityMapping
+        if hasattr(taipe, "__origin__"):
+            # typing.GenericAlias
+            taipe = taipe.__origin__
         return taipe
 
     @staticmethod
@@ -2040,6 +2058,13 @@ class Cache:
             u.updated(self)
 
     def get(self, newest=None):
-        if any([u.test(self) for u in self.updateStrategey]):
+        if newest is None:
+            newest = False
+        if newest or any([u.test(self) for u in self.updateStrategey]):
             self.update()
         return self.__val
+
+
+def printAndRet(val):
+    print(val)
+    return val
