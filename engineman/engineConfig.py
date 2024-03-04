@@ -1,8 +1,8 @@
-from .engineConfigInclude import *
+from engineConfigInclude import *
 
 """
 in game control setting
-Relative control step of radiator, oilRadiator, propPitch should set to 2%
+Relative control step of radiator, oilRadiator, propPitch should set to 1%
 """
 
 
@@ -22,12 +22,10 @@ class Yak3(EngineConfig):
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
-            MappingByStage(
-                [
-                    [None, 1],
-                    [1700, 2],
-                ]
-            ),
+            [
+                [None, 1],
+                [1700, 2],
+            ],
         )
 
 
@@ -39,12 +37,10 @@ class Raiden(EngineConfig):
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
-            MappingByStage(
-                [
-                    [None, 1],
-                    [2500, 2],
-                ]
-            ),
+            [
+                [None, 1],
+                [2500, 2],
+            ],
         )
 
 
@@ -56,12 +52,10 @@ class I29(EngineConfig):
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
-            MappingByStage(
-                [
-                    [None, 1],
-                    [3500, 2],
-                ]
-            ),
+            [
+                [None, 1],
+                [3500, 2],
+            ],
         )
 
 

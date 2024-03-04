@@ -34,6 +34,7 @@ class EngineConfigBean:
 
 
 class EngineConfigHost:
+    __configs__ = list()
 
     @staticmethod
     def Register(
@@ -42,8 +43,6 @@ class EngineConfigHost:
         engineConfigName: str = "",
     ):
         def toGetLogic(engineConfig: typing.Callable):
-            if not hasattr(EngineConfigHost, "__configs__"):
-                EngineConfigHost.__configs__ = list()
             EngineConfigHost.__configs__.append(
                 EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
             )
@@ -56,38 +55,23 @@ class EngineConfigHost:
         return EngineConfigHost.__configs__
 
 
-def SetSuperchargerByAlt(gauges: Gauges, switchAlt: list):
-    alt = gauges.altitude.get()
-    if alt is not None:
-        destStage = 0
-        for i, a in enumerate(switchAlt):
-            if alt > a:
-                destStage = i
-        gauges.supercharger.set(destStage + 1)
-
-
-def MappingByStage(sections: list[tuple[float, float]]):
+def MappingAxis(axSrc: Axis, axDest: Axis, mapping: list[tuple[float, float]]):
     """
+    mapping is like:
     [
         [None, 1],
         [1000, 2],
         [2000, 3],
     ]
     """
-
-    def mapping(x):
-        ret = None
-        for i, (spliter, val) in enumerate(sections):
-            if i == 0:
-                ret = val
-            elif x >= spliter:
-                ret = val
-            else:
-                break
-        assert ret is not None
-        return ret
-    return mapping
-
-
-def MappingAxis(axSrc: Axis, axDest: Axis, mapping: typing.Callable):
-    axDest.set(mapping(axSrc.get()))
+    assert len(mapping) >= 1
+    val = axSrc.get()
+    mapped = mapping[0][1]
+    for i in range(0, len(mapping)):
+        if i + 1 >= len(mapping):
+            mapped = mapping[i][1]
+            break
+        elif val <= mapping[i + 1][0]:
+            mapped = mapping[i][1]
+            break
+    axDest.set(mapped)

@@ -4,6 +4,30 @@ from .engineConfig import *
 from .engineman_config import *
 
 
+def AxisUnsupportedProcessed(f):
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except AxisUnsupported as err:
+            ...
+
+    return wrapper
+
+
+def GetFailureToAxisUnsupported(f):
+    def wrapper(*args, **kwargs):
+        ret = None
+        try:
+            ret = f(*args, **kwargs)
+        except Port8111.FetchFailure as err:
+            raise AxisUnsupported()
+        if ret is None:
+            # f returing None means no such field in 8111
+            raise AxisUnsupported()
+
+    return wrapper
+
+
 class ClassNone:
     def __init__(self, *args, **kwargs):
         pass
@@ -151,6 +175,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
     def switch(self):
         self.tryChange(lambda: self.switchTapPositionKey.press())
 
+    @AxisUnsupportedProcessed
     def set(self, target):
         while True:
             nowVal = self.get()
@@ -188,11 +213,10 @@ class ContiniousCEAxis(ControlableEngineAxis):
             or holdTime <= continousCeAxisMinSensitivity,
         )
 
+    @AxisUnsupportedProcessed
     def set(self, target):
         while True:
             nowVal = self.get()
-            if nowVal is None:
-                raise AxisUnsupported()
             err = target - nowVal
             if abs(err) <= continousControlableEngineAxisErrorAllowed:
                 break
@@ -250,20 +274,24 @@ class OilRadiator(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
+    @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        try:
-            indicator = (
-                Port8111Cache()
-                .get(Port8111.QueryType.indicator, newest)
-                .expectValid()
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-            )
-            return indicator.oil_radiator_indicator or indicator.oil_radiator_lever1_1
-        except Port8111.FetchFailure:
-            return None
+        indicator = (
+            Port8111Cache()
+            .get(Port8111.QueryType.indicator, newest)
+            .expectValid()
+            .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+        )
+        return indicator.oil_radiator_indicator or indicator.oil_radiator_lever1_1
 
     def setToMaxAnyway(self):
-        if self.get() is not None:
+        getSupported = False
+        try:
+            self.get()
+            getSupported = True
+        except AxisUnsupported:
+            getSupported = False
+        if getSupported:
             self.set(1.0)
         else:
             self.turnUpKey.hold(5)
@@ -284,17 +312,15 @@ class Radiator(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
+    @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        try:
-            return (
-                Port8111Cache()
-                .get(Port8111.QueryType.state, newest)
-                .expectValid()
-                .engine.radiator.value[0]
-                / 100
-            )
-        except Port8111.FetchFailure:
-            return None
+        return (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest)
+            .expectValid()
+            .engine.radiator.value[0]
+            / 100
+        )
 
 
 @Singleton
@@ -309,17 +335,15 @@ class PropPitch(ContiniousCEAxis):
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
 
+    @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        try:
-            return (
-                Port8111Cache()
-                .get(Port8111.QueryType.state, newest)
-                .expectValid()
-                .engine.RPM_throttle.value[0]
-                / 100
-            )
-        except Port8111.FetchFailure:
-            return None
+        return (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest)
+            .expectValid()
+            .engine.RPM_throttle.value[0]
+            / 100
+        )
 
 
 @Singleton
@@ -341,32 +365,28 @@ class Supercharger(DiscreteCEAxis):
             ],
         )
 
+    @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        try:
-            return (
-                Port8111Cache()
-                .get(Port8111.QueryType.state, newest)
-                .expectValid()
-                .engine.compressor_stage.value[0]
-            )
-        except Port8111.FetchFailure:
-            return None
+        return (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest)
+            .expectValid()
+            .engine.compressor_stage.value[0]
+        )
 
 
 @Singleton
 class Altitude(ReadOnlyAxis):
 
+    @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        try:
-            indi = (
-                Port8111Cache()
-                .get(Port8111.QueryType.indicator, newest)
-                .expectValid()
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-            )
-            return indi.altitude_hour or indi.altitude_min or indi.altitude_10k
-        except Port8111.FetchFailure:
-            return None
+        indi = (
+            Port8111Cache()
+            .get(Port8111.QueryType.indicator, newest)
+            .expectValid()
+            .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+        )
+        return indi.altitude_hour or indi.altitude_min or indi.altitude_10k
 
 
 @Singleton
@@ -416,8 +436,14 @@ class EngineMan:
             self.lastCheckTime = time.perf_counter()
             try:
                 self.serviceInstance.check(self.gauges)
-            except AxisUnsupported:
-                pass
+            except Exception as err:
+                '''
+                get failure and axisunsupported failure are processed in get and set,
+                config.check wont need to face them
+                '''
+                print(err)
+                traceback.print_exc()
+                raise err
 
     def setService(self, planeName):
         if self.planeName == planeName or (
