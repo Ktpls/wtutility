@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
@@ -18,14 +18,15 @@
         },
         {
             "name": "Python: AFM",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/afm/autofreshmap.py",
             "console": "integratedTerminal",
+            "justMyCode": false,
         },
         {
             "name": "Python: AIO",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/aio.py",
             "console": "integratedTerminal",
@@ -33,7 +34,7 @@
         },
         {
             "name": "Python: Opdar",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/Opdar/Opdar.py",
             "console": "integratedTerminal",

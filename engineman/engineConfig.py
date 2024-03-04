@@ -1,4 +1,4 @@
-from engineConfigInclude import *
+from .engineConfigInclude import *
 
 """
 in game control setting

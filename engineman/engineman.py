@@ -390,6 +390,20 @@ class Altitude(ReadOnlyAxis):
 
 
 @Singleton
+class VehicleName(ReadOnlyAxis):
+
+    @GetFailureToAxisUnsupported
+    def get(self, newest=None):
+        return (
+            Port8111Cache()
+            .get(Port8111.QueryType.indicator, newest)
+            .expectValid()
+            .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+            .type
+        )
+
+
+@Singleton
 class EngineMan:
     planeName: str = None
     serviceClass: typing.Callable = None
@@ -437,10 +451,10 @@ class EngineMan:
             try:
                 self.serviceInstance.check(self.gauges)
             except Exception as err:
-                '''
+                """
                 get failure and axisunsupported failure are processed in get and set,
                 config.check wont need to face them
-                '''
+                """
                 print(err)
                 traceback.print_exc()
                 raise err
@@ -459,14 +473,8 @@ class EngineMan:
     def check(self):
         planeName = None
         try:
-            planeName = (
-                Port8111Cache()
-                .get(Port8111.QueryType.indicator)
-                .expectValid()
-                .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
-                .type
-            )
-        except Port8111.FetchFailure:
+            planeName = VehicleName().get()
+        except AxisUnsupported:
             pass
         self.setService(planeName)
         if self.seviceNowValid():
