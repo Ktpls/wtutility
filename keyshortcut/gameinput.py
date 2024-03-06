@@ -68,7 +68,7 @@ class Vk2Sk:
         return self.d.get(vk, 0)
 
 
-def keydown(hexKeyCode):
+def KeyDown(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
     ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008, 0, pointer(extra))
@@ -76,7 +76,7 @@ def keydown(hexKeyCode):
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
 
-def keyup(hexKeyCode):
+def KeyUp(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
     ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra))
@@ -86,41 +86,31 @@ def keyup(hexKeyCode):
 
 import pyautogui
 
-# def keydown(keycode):
-#     pyautogui.keyDown(keycode)
 
-
-# def keyup(keycode):
-#     pyautogui.keyUp(keycode)
-
-
-def press(k, interval=0.1):
-    keydown(k)
-    PreciseSleep(interval)
-    keyup(k)
-    # time.sleep(0.4)
-
-
-def hold(k, t):
-    keydown(k)
+def KeyHold(k, t):
+    KeyDown(k)
     PreciseSleep(t)
-    keyup(k)
+    KeyUp(k)
+
+
+def KeyPress(k, interval=0.1):
+    KeyHold(k, interval)
 
 
 def key_down(k):
-    keydown(k)
+    KeyDown(k)
     PreciseSleep(0.1)
 
 
 def key_up(k):
-    keyup(k)
+    KeyUp(k)
     PreciseSleep(0.1)
 
 
 def key_press(k):
-    keydown(k)
+    KeyDown(k)
     PreciseSleep(0.2)
-    keyup(k)
+    KeyUp(k)
 
 
 @dataclasses.dataclass
@@ -128,10 +118,10 @@ class HoldingKey:
     key: int
 
     def __enter__(self):
-        keydown(self.key)
+        KeyDown(self.key)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        keyup(self.key)
+        KeyUp(self.key)
 
 
 def moveto(p):
@@ -197,3 +187,23 @@ def click(p):
     time.sleep(0.01)
     mouseup()
     time.sleep(0.1)
+
+
+class FunctionalKey:
+    key: list[int]
+
+    def __init__(self, key: int | list[int]) -> None:
+        self.key = NormalizeIterableOrSingleArgToIterable(key)
+        assert len(self.key) >= 1
+
+    def hold(self, holdTime):
+        for k in self.key:
+            KeyDown(k)
+        PreciseSleep(holdTime)
+        for k in reversed(self.key):
+            KeyUp(k)
+
+    def press(self, pressTime=None):
+        if pressTime is None:
+            pressTime = 0.05
+        self.hold(pressTime)

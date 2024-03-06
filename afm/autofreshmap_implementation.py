@@ -447,7 +447,7 @@ class freshAMap(StoppableThread):
                         ]
                     ]
                 ):
-                    press(win32con.VK_RETURN)
+                    KeyPress(win32con.VK_RETURN)
                     return False
                 return False
 
@@ -469,7 +469,7 @@ class freshAMap(StoppableThread):
                     ]
                 ):
                     # clear matching state
-                    press(win32con.VK_ESCAPE)
+                    KeyPress(win32con.VK_ESCAPE)
                 Rhythms.Cancel.play()
                 return False
 
@@ -720,10 +720,10 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 "MissionCanceled"
             ].detect(scr):
                 # piority lower than statistics, so the to battle button on spawn scence wont confuse
-                press(win32con.VK_RETURN)
+                KeyPress(win32con.VK_RETURN)
                 return False
             if stateDetector["OK"].detect(scr):
-                press(win32con.VK_ESCAPE)
+                KeyPress(win32con.VK_ESCAPE)
                 LongDelay(15)
                 return False
             return False
@@ -806,30 +806,30 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         KEY_OP_INTERVAL = 0.3
         # bad
         # exit statistics
-        press(win32con.VK_ESCAPE)
+        KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         # to menu
-        press(win32con.VK_ESCAPE)
+        KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         moveto((0, 0))
 
         # select return to hanger
         for i in range(5):
-            press(win32con.VK_DOWN)
+            KeyPress(win32con.VK_DOWN)
             time.sleep(KEY_OP_INTERVAL)
 
         # click it
-        press(win32con.VK_RETURN)
+        KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         # select yes
-        press(win32con.VK_LEFT)
+        KeyPress(win32con.VK_LEFT)
         time.sleep(KEY_OP_INTERVAL)
 
         # click
-        press(win32con.VK_RETURN)
+        KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         moveMouseAway()
@@ -839,7 +839,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         def detectMissionCanceled(scr):
             assert stateDetector is not None
             if stateDetector["MissionCanceled"].detect(scr):
-                press(win32con.VK_ESCAPE)
+                KeyPress(win32con.VK_ESCAPE)
                 return True
             return False
 

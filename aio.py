@@ -136,18 +136,7 @@ def main():
         @app.AsyncLongScript()
         def launchSeriesGo(self: StoppableSomewhat):
             app.bulletin.putup("launching series")
-            interval = 0.1
-            num = 29 + 10
-            keyshortcut.keydown(win32con.VK_LCONTROL)
-            for i in range(num):
-                if self.timeToStop():
-                    break
-                keyshortcut.keydown(win32con.VK_SPACE)
-                PreciseSleep(0.03)
-                keyshortcut.keyup(win32con.VK_SPACE)
-                PreciseSleep(interval)
-            keyshortcut.keyup(win32con.VK_LCONTROL)
-
+            keyshortcut.launchSeriesGo(self)
             app.bulletin.putup(f"launch done")
 
         @app.Hotkey("RefreshWifi", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, ord("K")])

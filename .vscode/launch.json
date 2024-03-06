@@ -13,7 +13,8 @@
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
-                "C:/Users/KITA/Desktop/PortNovorossiyskBattle#1.png"
+                "-e",
+                "30000/3.6-5679"
             ]
         },
         {

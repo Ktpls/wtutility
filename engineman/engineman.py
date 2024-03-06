@@ -61,26 +61,12 @@ class Port8111Cache:
         return self.typeCache[queryType].get(newest=newest)
 
 
-@AnnotationUtil.Annotation(pressTime=0.05)
-class FunctionalKey:
-    key: list[int]
-
-    def __init__(self, key: int | list[int]) -> None:
-        self.key = NormalizeIterableOrSingleArgToIterable(key)
-        assert len(self.key) >= 1
-
+class WtFunctionalKey(keyshortcut.FunctionalKey):
     def hold(self, holdTime):
         if not WarthunderWindow().isFocus():
             raise AxisUnsupported()
-        for k in self.key:
-            keyshortcut.keydown(k)
-        PreciseSleep(holdTime)
-        for k in reversed(self.key):
-            keyshortcut.keyup(k)
+        super().hold(holdTime)
         PreciseSleep(keyPressInterval)
-
-    def press(self):
-        self.hold(AnnotationUtil.getAnnotations(FunctionalKey).pressTime)
 
     @staticmethod
     def Unbounded():
@@ -94,29 +80,24 @@ class Solution:
 
     @staticmethod
     def tryAction(
-        action: typing.Callable,
+        action: typing.Callable[[], bool], # return bool indicating if success
         solution: "Solution | list[Solution]",
     ):
-        """
-        got some problems with this
-        one can not set radiator to manual mode when in auto engine control mode
-        so solutions are not independent, they are coupled with each other
-        """
         solution = NormalizeIterableOrSingleArgToIterable(solution)
         solId = -1  # not with any solution initially
-        while True:
-            if not action():
-                if solId >= 0:
-                    solution[solId].toDisable()
-                    PreciseSleep(SolutionInterval)
-                solId += 1
+        if not action():
+            while True:
                 if solId < len(solution):
                     solution[solId].toEnable()
                     PreciseSleep(SolutionInterval)
+                    if not action():
+                        solution[solId].toDisable()
+                        PreciseSleep(SolutionInterval)
+                        solId += 1
+                    else:
+                        break
                 else:
                     raise AxisUnsupported()
-            else:
-                break
 
 
 class ReadOnlyAxis(Axis):
@@ -126,17 +107,17 @@ class ReadOnlyAxis(Axis):
 
 @dataclasses.dataclass
 class ControlableEngineAxis(Axis):
-    switchManualControlKey: FunctionalKey = dataclasses.field(
-        default_factory=FunctionalKey.Unbounded
+    switchManualControlKey: WtFunctionalKey = dataclasses.field(
+        default_factory=WtFunctionalKey.Unbounded
     )
-    turnUpKey: FunctionalKey = dataclasses.field(
-        default_factory=FunctionalKey.Unbounded
+    turnUpKey: WtFunctionalKey = dataclasses.field(
+        default_factory=WtFunctionalKey.Unbounded
     )
-    turnDownKey: FunctionalKey = dataclasses.field(
-        default_factory=FunctionalKey.Unbounded
+    turnDownKey: WtFunctionalKey = dataclasses.field(
+        default_factory=WtFunctionalKey.Unbounded
     )
-    switchTapPositionKey: FunctionalKey = dataclasses.field(
-        default_factory=FunctionalKey.Unbounded
+    switchTapPositionKey: WtFunctionalKey = dataclasses.field(
+        default_factory=WtFunctionalKey.Unbounded
     )
     solution: Solution | list[Solution] = dataclasses.field(default_factory=list)
 
@@ -228,7 +209,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
                 self.turnDown(absctrl)
 
 
-SwitchManualEngineControl = FunctionalKey(
+SwitchManualEngineControl = WtFunctionalKey(
     [
         keyshortcut.win32conComp.VK_LCONTROL,
         keyshortcut.win32conComp.VK_OEM_MINUS,
@@ -263,9 +244,9 @@ def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
 class OilRadiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_OEM_PLUS),
-            turnDownKey=FunctionalKey(keyshortcut.win32conComp.VK_OEM_MINUS),
-            switchManualControlKey=FunctionalKey(
+            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_OEM_PLUS),
+            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_OEM_MINUS),
+            switchManualControlKey=WtFunctionalKey(
                 [
                     win32con.VK_RMENU,
                     keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
@@ -301,9 +282,9 @@ class OilRadiator(ContiniousCEAxis):
 class Radiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET),
-            turnDownKey=FunctionalKey(keyshortcut.win32conComp.VK_LEFT_MID_BRACKET),
-            switchManualControlKey=FunctionalKey(
+            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET),
+            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_LEFT_MID_BRACKET),
+            switchManualControlKey=WtFunctionalKey(
                 [
                     win32con.VK_RMENU,
                     keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
@@ -327,9 +308,9 @@ class Radiator(ContiniousCEAxis):
 class PropPitch(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=FunctionalKey(keyshortcut.win32conComp.VK_QUOTE),
-            turnDownKey=FunctionalKey(keyshortcut.win32conComp.VK_SEMICOLON),
-            switchManualControlKey=FunctionalKey(
+            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_QUOTE),
+            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_SEMICOLON),
+            switchManualControlKey=WtFunctionalKey(
                 [win32con.VK_RMENU, keyshortcut.win32conComp.VK_QUOTE]
             ),
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
@@ -350,7 +331,7 @@ class PropPitch(ContiniousCEAxis):
 class Supercharger(DiscreteCEAxis):
     def __init__(self):
         super().__init__(
-            switchTapPositionKey=FunctionalKey(
+            switchTapPositionKey=WtFunctionalKey(
                 [
                     win32con.VK_LCONTROL,
                     win32con.VK_LMENU,

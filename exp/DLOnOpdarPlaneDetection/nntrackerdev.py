@@ -73,7 +73,7 @@ def calclose(lbl, lblhat):
     # radius = torch.sqrt(lblsurface / torch.pi)
     # dist2 = torch.sqrt((X - meanX) ** 2 + (Y - meanY) ** 2) / radius
     # coef = 1 + 0 * (dist2 > 2)  # /(radius)
-    coef=1
+    coef = 1
     # coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
     # [b,d,h,w]
     loss = (
@@ -161,9 +161,8 @@ def viewmodel():
     model.eval()
 
     samplenum = 3 * 4
-    npp = nestedPyPlot([3, 4], [2, 2], plt.figure(figsize=(16, 16)))
-    imshowconfig = {"cmap": "gray", "vmin": 0, "vmax": 1}
-    imshowconfignonnorm = {"cmap": "gray"}
+    npp = nestedPyPlot([8, 4], [1, 2], plt.figure(figsize=(16, 16)))
+    imshowconfig = {"vmin": 0, "vmax": 1}
     totalinferencetime = 0
     infecount = 0
     with torch.no_grad():
@@ -186,12 +185,11 @@ def viewmodel():
             npp.subplot(i, 0)
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
-            lblhat = cv.threshold(lblhat, 0.5, 1, cv.THRESH_BINARY)[1]
-            plt.imshow(lblhat, **imshowconfig)
-            npp.subplot(i, 2)
-            plt.imshow(lbl, **imshowconfig)
-            # npp.subplot(i, 3)
-            # plt.imshow(cv.cvtColor(srcatte, cv.COLOR_BGR2RGB))
+            lblComparasion = np.array([lblhat, lbl, np.zeros_like(lbl)]).squeeze(-1).transpose(
+                [1, 2, 0]
+            )
+            np.moveaxis(lblComparasion, 0, -1)
+            plt.imshow(lblComparasion, **imshowconfig)
     print(f"average inference time={totalinferencetime / samplenum}")
 
 

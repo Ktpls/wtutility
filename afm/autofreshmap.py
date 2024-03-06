@@ -38,15 +38,8 @@ def main():
             raise err
         system("pause")
 
-    # testOneRaw()
-    # addCutNewMap('Normandy')
-    # setonwifi()
-    # outputMapSpawnPointCenter(r".\asset\autofreshmap\map\Poland.png")
-
-    # system('pause')
-
 
 def test():
     activeWindow(GetWtHwnd())
     sleep(1)
-    press(win32con.VK_RETURN)
+    KeyPress(win32con.VK_RETURN)

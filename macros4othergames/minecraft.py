@@ -44,9 +44,9 @@ def main():
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
         for i in range(5):
-            keyshortcut.keydown(ord("W"))
+            keyshortcut.KeyDown(ord("W"))
             time.sleep(0.1)
-        keyshortcut.keydown(ord("W"))
+        keyshortcut.KeyDown(ord("W"))
         app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
@@ -54,17 +54,17 @@ def main():
     @WithHotkeySwitch()
     def bestJumpOnHorse(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("going", 1))
-        keyshortcut.keydown(win32con.VK_SPACE)
+        keyshortcut.KeyDown(win32con.VK_SPACE)
         PreciseSleep(0.55)
-        keyshortcut.keyup(win32con.VK_SPACE)
+        keyshortcut.KeyUp(win32con.VK_SPACE)
 
     @app.Hotkey("TakeOff", [win32con.VK_CONTROL, ord("G")])
     @app.AsyncLongScript()
     @WithHotkeySwitch()
     def takeOff(*arg, **kw) -> None:
-        keyshortcut.press(win32con.VK_SPACE)
+        keyshortcut.KeyPress(win32con.VK_SPACE)
         PreciseSleep(0.25)
-        keyshortcut.press(win32con.VK_SPACE)
+        keyshortcut.KeyPress(win32con.VK_SPACE)
         PreciseSleep(0.05)
         keyshortcut.mouse.click(1)
 

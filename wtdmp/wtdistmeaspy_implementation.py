@@ -614,7 +614,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
 
 def switchNightMode():
-    gameinput.press(win32con.VK_F6)
+    gameinput.KeyPress(win32con.VK_F6)
 
 
 def adjustCaliberation(pidoutput):
@@ -630,12 +630,11 @@ def adjustCaliberation(pidoutput):
 
     # try if get improvement in the case of no response
     for k in [win32con.VK_PRIOR, win32con.VK_NEXT]:
-        gameinput.keydown(k)
-        gameinput.keyup(k)
+        gameinput.KeyPress(k)
 
-    gameinput.keydown(keycode2press)
+    gameinput.KeyDown(keycode2press)
     PreciseSleep(control)
-    gameinput.keyup(keycode2press)
+    gameinput.KeyUp(keycode2press)
     return control
 
 

@@ -59,13 +59,12 @@ class GPush(StoppableProcess):
                     PreciseSleep(period)
                 elif GPush.isFull(ratio):
                     # key will be realeased until some point that not full
-                    gameinput.keydown(ord("S"))
-                    PreciseSleep(period)
-                    gameinput.keyup(ord("S"))
+                    with gameinput.HoldingKey(ord("S")):
+                        PreciseSleep(period)
                 else:
                     topush = ratio * period
                     torelax = (1 - ratio) * period
-                    gameinput.hold(ord("S"), topush)
+                    gameinput.KeyHold(ord("S"), topush)
                     # PreciseSleep(topush)
                     PreciseSleep(torelax)
             else:
@@ -233,5 +232,5 @@ class Puller(StoppableProcess):
         while not self.timeToStop():
             ontime = ratio * period
             offtime = (1 - ratio) * period
-            gameinput.hold(ord("W"), ontime)
+            gameinput.KeyHold(ord("W"), ontime)
             PreciseSleep(offtime)
