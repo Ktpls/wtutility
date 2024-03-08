@@ -1457,26 +1457,26 @@ class perf_statistic:
         if startnow:
             self.start()
 
-    @FunctionalWrapper
     def clear(self):
         self._starttime = None
         self._stagedtime = 0
         self._cycle = 0
+        return self
 
-    @FunctionalWrapper
     def start(self):
         self._starttime = time.perf_counter()
+        return self
 
-    @FunctionalWrapper
     def countcycle(self):
         self._cycle += 1
+        return self
 
-    @FunctionalWrapper
     def stop(self):
         if self._starttime is None:
             return
         self._stagedtime += self._timeCurrentlyCounting()
         self._starttime = None
+        return self
 
     def time(self):
         return self._stagedtime + self._timeCurrentlyCounting()

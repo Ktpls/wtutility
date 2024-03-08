@@ -1,6 +1,5 @@
 # neural network tracker
-# %%
-# basics
+# %% basics
 
 from nntracker import *
 from torch.utils.tensorboard import SummaryWriter
@@ -10,100 +9,118 @@ from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import time
 
-# %%
-# nn def
+# %%  nn def
 modelpath = r"nntracker.pth"
 model = getmodel(modelpath)
 writer = SummaryWriter(
     f"runs/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
 )  # 存放log文件的目录
 
-# %%\
-# dataset
-from nntracker_common import labeldataset
+# %% dataset
+from nntracker_common import *
+
+
+@dataclasses.dataclass
+class NnTrackerDataset:
+    path: str
+    sel: str
+    datasettype: str
+
 
 print("loading dataset")
-datasetname = "LE2REnh"
+datasetname = "SmallAug"
 datasetroot = r"C:\file\code\wtutility/exp/DLOnOpdarPlaneDetection/dataset/"
-if datasetname == "LE2REnh":
-    path = r"LE2REnh/"
-    sel = r"LE2REnh/all.xlsx"
-    datasettype = "fld"
-if datasetname == "LE2RAREnh":
-    path = r"LE2RAREnh/LE2RAREnh.zip"
-    sel = r"LE2RAREnh/all.xlsx"
-    datasettype = "zip"
-elif datasetname == "largeEnoughToRecon":
-    path = r"largeEnoughToRecon/largeEnoughToRecon.zip"
-    sel = r"largeEnoughToRecon/all.xlsx"
-    datasettype = "zip"
-elif datasetname == "origins_nntracker":
-    path = r"origins_nntracker\origins_nntracker.zip"
-    sel = r"origins_nntracker/hardones.xlsx"
-    datasettype = "zip"
-elif datasetname == "withaimingring":
-    path = r"withaimingring/withaimingring.zip"
-    sel = r"withaimingring/xls.xlsx"
-    datasettype = "zip"
-
+datasets = {
+    "LE2REnh": NnTrackerDataset(r"LE2REnh/", r"LE2REnh/all.xlsx", "fld"),
+    "SmallAug": NnTrackerDataset(r"SmallAug/", r"SmallAug/all.xlsx", "fld"),
+    "largeEnoughToRecon": NnTrackerDataset(
+        r"largeEnoughToRecon/largeEnoughToRecon.zip",
+        r"largeEnoughToRecon/all.xlsx",
+        "zip",
+    ),
+    "origins_nntracker": NnTrackerDataset(
+        r"origins_nntracker/origins_nntracker.zip",
+        r"origins_nntracker/hardones.xlsx",
+        "zip",
+    ),
+}
+train_data = datasets[datasetname]
 train_data = labeldataset().init(
-    datasetroot + path, datasetroot + sel, 2048, datasettype, None, [96] * 2
+    os.path.join(datasetroot, train_data.path),
+    os.path.join(datasetroot, train_data.sel),
+    8192,
+    train_data.datasettype,
+    None,
+    BaseModule4NNTracker.stdShape,
+    rtDataAugOn=True,
 )
-test_data = train_data
+test_data = datasets["largeEnoughToRecon"]
+test_data = labeldataset().init(
+    os.path.join(datasetroot, test_data.path),
+    os.path.join(datasetroot, test_data.sel),
+    32,
+    test_data.datasettype,
+    None,
+    BaseModule4NNTracker.stdShape,
+    rtDataAugOn=False,
+)
 print("load finished")
 
-# %%
-# dataloader
+# %%  dataloader
 # for easier modify batchsize without reloading all samples
-batch_size = 1
+batch_size = 2
 train_dataloader = DataLoader(train_data, batch_size=batch_size)
-test_dataloader = DataLoader(test_data, batch_size=batch_size)
+test_dataloader = DataLoader(test_data, batch_size=32)
 
 
-# %%
-# lossFunc
+# %% lossFunc
 
 
-def calclose(lbl, lblhat):
-    # X = torch.arange(lbl.shape[-1]).view(-1, 1, 1, lbl.shape[-1]).to(device)
-    # Y = torch.arange(lbl.shape[-2]).view(-1, 1, lbl.shape[-2], 1).to(device)
-    # lblsurface = lbl.sum(dim=[-1, -2, -3], keepdim=True) + 1
-    # meanX = (lbl * X).sum(dim=(-1, -2), keepdim=True) / lblsurface
-    # meanY = (lbl * Y).sum(dim=(-1, -2), keepdim=True) / lblsurface
-    # radius = torch.sqrt(lblsurface / torch.pi)
-    # dist2 = torch.sqrt((X - meanX) ** 2 + (Y - meanY) ** 2) / radius
-    # coef = 1 + 0 * (dist2 > 2)  # /(radius)
-    coef = 1
-    # coef[lblsurface[:, 0, 0, 0] < 3, :, :, :] = 3  # clear sky
-    # [b,d,h,w]
-    loss = (
-        1
-        * (
-            (
-                (coef * (lbl - lblhat) ** 2).sum(dim=[-1, -2, -3])
-                #     /
-                # (np.sqrt(lblsurface[:,0,0,0]) + 0.01) #emphasize large ons more
-            )  # **2
-        ).sum()
+def calclose(pi, pihat):
+    loss = torch.sum(
+        (
+            torch.tensor(
+                [
+                    [1, 1, 3],
+                ],
+                dtype=torch.float32,
+                device=device,
+                requires_grad=False,
+            )
+        )
+        * (pihat - pi) ** 2
     )
+    # loss = torch.log10(loss + 1e-10)
     return loss
 
 
-# %%
-# train
+# %% train
 
 
 def trainmainprogress(batch, datatuple):
     model.train()
-    datatuple = [d.to(device) for d in datatuple]
-    src, lbl = datatuple
-    lblhat = model.forward(src)
-    loss = calclose(lbl, lblhat)
+    src, lbl, pi = datatuple
+    src = src.to(device)
+    lbl = lbl.to(device)
+    pi = pi.to(device)
+    pihat = model.forward(src)
+    loss = calclose(pi, pihat)
     return loss
 
 
 def onoutput(batch, aveerr):
-    writer.add_scalar("aveerr", aveerr, batch)
+    # return
+    with torch.no_grad():
+        model.eval()
+        lossTotal = 0
+        for src, lbl, pi in test_dataloader:
+            src = src.to(device)
+            lbl = lbl.to(device)
+            pi = pi.to(device)
+            pihat = model.forward(src)
+            lossTotal += calclose(pi, pihat).item()
+    print(f"testaveerr: {lossTotal/len(test_data)}")
+    # writer.add_scalar("aveerr", aveerr, batch)
 
 
 trainpipe.train(
@@ -119,84 +136,63 @@ if __name__ == "__main__":
     exit()
 
 
-# %%
-# view effect
+# %% view effect
 
 
-def evalOnAll(updateSampleList=False):
-    rawlength = train_data.rawlength()
-    nowpercentage = 0
-    totaltime = 0
-    model.eval()
-    loss = []
-    with torch.no_grad():
-        for pi in range(rawlength):
-            spl, lbl = train_data.rawgetitem(pi)
-
-            def dataPreperation(d):
-                return ToTensor()(d).to(device).unsqueeze(0)
-
-            spl = dataPreperation(spl)
-            lbl = dataPreperation(lbl)
-            starttime = time.time()
-            lblhat = model.forward(spl)
-            totaltime += time.time() - starttime
-            curloss = calclose(lbl, lblhat).item()
-            loss.append(curloss)
-            if nowpercentage <= pi / rawlength * 100:
-                nowpercentage += 1
-                print(f"{nowpercentage}%")
-        aveloss = np.average(loss)
-    print(f"average loss{aveloss}")
-    print(f"inference time{totaltime/rawlength}")
-    if updateSampleList:
-        train_data.pairs = [
-            train_data.pairs[i] for i, l in enumerate(loss) if l >= aveloss
-        ]
-        print(f"samplelist update done,wrong samples:{len(train_data.pairs)}")
-
-
-def viewmodel():
-    datasetusing = train_data
+def viewmodel(datasetusing):
     model.eval()
 
-    samplenum = 3 * 4
-    npp = nestedPyPlot([8, 4], [1, 2], plt.figure(figsize=(16, 16)))
+    plotShape = [8, 4]
+    subplotShape = [1, 2]
+    samplenum = np.prod(plotShape)
+    npp = nestedPyPlot(plotShape, subplotShape, plt.figure(figsize=(16, 16)))
     imshowconfig = {"vmin": 0, "vmax": 1}
     totalinferencetime = 0
-    infecount = 0
+    infercount = 0
     with torch.no_grad():
         for i in range(samplenum):
-            src, lbl = datasetusing[0]
-
-            tsrc = src.reshape((1,) + src.shape).to(device)
+            src, lbl, pi = datasetusing[0]
+            src = src.to(device)
+            lbl = lbl.to(device)
+            pi = pi.to(device)
+            batchedsrc = src.reshape((1,) + src.shape)
             tstart = time.perf_counter()
-            lblhat = model.forward(tsrc)
+            pihat = model.forward(batchedsrc)
             totalinferencetime += time.perf_counter() - tstart
-            infecount += 1
-            lblhat = np.array(lblhat[0, :, :, :].cpu())
-            srcatte = np.zeros_like(src)
+            infercount += 1
+            pihat = np.array(pihat[0].cpu())
             # to ndarray
 
-            datatuple = [src, lbl, lblhat, srcatte]
+            datatuple = [src, lbl]
             datatuple = [tensorimg2ndarray(d) for d in datatuple]
-            src, lbl, lblhat, srcatte = datatuple
-
+            src, lbl = datatuple
+            lblhat = planeInfo2Lbl(pihat, BaseModule4NNTracker.stdShape)
             npp.subplot(i, 0)
+            meanX, meanY, wingSpan = pi
+            plt.title(f"{meanX:.2f},{meanY:.2f},{wingSpan:.2f}")
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
-            lblComparasion = np.array([lblhat, lbl, np.zeros_like(lbl)]).squeeze(-1).transpose(
-                [1, 2, 0]
+            lblComparasion = (
+                np.array(
+                    [
+                        lbl,
+                        np.zeros_like(lbl),
+                        lblhat,
+                    ]
+                )
+                .squeeze(-1)
+                .transpose([1, 2, 0])
             )
-            np.moveaxis(lblComparasion, 0, -1)
-            plt.imshow(lblComparasion, **imshowconfig)
+
+            meanX, meanY, wingSpan = pihat
+            plt.title(f"{meanX:.2f},{meanY:.2f},{wingSpan:.2f}")
+            plt.imshow(lblComparasion, label="lblComparasion", **imshowconfig)
     print(f"average inference time={totalinferencetime / samplenum}")
 
 
-viewmodel()
+viewmodel(datasetusing=test_data)
 
-# %%
-# save
+# %% save
 
 
 def savemodel(path):
@@ -211,3 +207,8 @@ writer.close()
 
 # %%
 os.system("pause")
+
+
+# %%
+def rmModel():
+    os.remove(modelpath)

@@ -1,5 +1,5 @@
 from .engineConfigInclude import *
-
+from .utilref import *
 """
 in game control setting
 Relative control step of radiator, oilRadiator, propPitch should set to 1%
@@ -9,22 +9,22 @@ Relative control step of radiator, oilRadiator, propPitch should set to 1%
 @EngineConfigHost.Register(planeName="g_55s", checkRate=60)
 class G55S(EngineConfig):
     def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
         gauges.oilRadiator.setToMaxAnyway()
         gauges.radiator.set(0.80)
-        gauges.propPitch.set(0.95)
 
 
 @EngineConfigHost.Register(planeName="yak-3_france")
 class Yak3(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.radiator.set(0.20)
         gauges.propPitch.set(1.00)
+        gauges.radiator.set(0.25)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
             [
                 [None, 1],
-                [1700, 2],
+                [2350, 2],
             ],
         )
 
@@ -32,8 +32,8 @@ class Yak3(EngineConfig):
 @EngineConfigHost.Register(planeName="j2m5_30mm")
 class Raiden(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.radiator.set(0.30)
         gauges.propPitch.set(0.95)
+        gauges.radiator.set(0.30)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -47,8 +47,8 @@ class Raiden(EngineConfig):
 @EngineConfigHost.Register(planeName="i_29")
 class I29(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.radiator.set(0.60)
         gauges.propPitch.set(1.00)
+        gauges.radiator.set(0.60)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -68,6 +68,6 @@ class P63A5(EngineConfig):
 @EngineConfigHost.Register(planeName="saab_j21a_1")
 class SaabJ21A(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.oilRadiator.set(1.0)
-        gauges.radiator.set(1.0)
         gauges.propPitch.set(0.75)
+        # gauges.oilRadiator.set(1.0)
+        gauges.radiator.set(1.0)

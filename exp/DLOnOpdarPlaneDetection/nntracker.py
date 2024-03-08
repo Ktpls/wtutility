@@ -1,6 +1,3 @@
-# warthunder distance measurement plotting scale optical character reconginization
-
-RunOnWtUtilityEnviroment = True
 # %%
 # basics
 from utilref import *
@@ -8,6 +5,7 @@ from utilitypack.util_torch import *
 from torch import nn
 import torch.nn.functional as F
 import functools
+from nntracker_common import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
@@ -23,136 +21,30 @@ class BaseModule4NNTracker:
     stdShape = [128, 128]
 
 
-class SelfAttention(torch.nn.Module):
-    def __init__(self, dim, heads=8, dim_head=64, dropout=0):
-        # dim, the channel depth
-        super().__init__()
-        assert dim_head // heads == 0  # ill split out dim into several heads
-        self.heads = heads
-        self.dim_head = dim_head
-        # define linear layers
-        self.to_qkv = torch.nn.Linear(dim, 3 * dim_head, bias=False)
-        self.to_out = torch.nn.Linear(dim_head, dim)
-        # self.dropout = torch.nn.Dropout(dropout)
+def PositionalEmbedding2D(shape, depth, len_max=None):
+    if len_max is None:
+        len_max = 10000
+    h, w = shape
+    y = np.arange(0, h).reshape([-1, 1, 1])
+    x = np.arange(0, w).reshape([1, -1, 1])
+    d = np.arange(0, depth).reshape([1, 1, -1])
+    pe = np.zeros(list(shape) + [depth], np.float32)
 
-        super().register_buffer(
-            "scaleFactor", torch.sqrt(torch.FloatTensor([dim_head]))
-        )
+    def BroadCastToBeLikePe(vec):
+        return np.zeros_like(pe) + vec
 
-    def forward(self, x):
-        # [batch size, sequence length, and feature dimensions]
-        B, N, C = x.shape
-        qkv = (
-            self.to_qkv(x)
-            .reshape(B, N, 3, self.heads, self.dim_head // self.heads)
-            .permute(2, 0, 3, 1, 4)
-        )
-        # [batch size, sequence length, 3 * dim_head]
-        # [batch size, sequence length, 3, num_heads, feature dimensions per head]
-        # [3, batch size, num_heads, sequence length, feature dimensions per head]
-        q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) / self.get_buffer("scaleFactor")
-        # [batch size, num_heads, sequence length, sequence length]
-        attn = attn.softmax(dim=-1)
-        attn = self.dropout(attn)
-        out = (attn @ v).permute(0, 2, 1, 3).reshape(B, N, self.dim_head)
-        # [batch size, num_heads, sequence length, feature dimensions per head]
-        # [batch size, sequence length, num_heads, feature dimensions per head]
-        # [batch size, sequence length, dim_head]
-        out = self.to_out(out)
-        # [batch size, sequence length, dim]
-        # out = self.dropout(out)
-        return out
+    d_like_pe = BroadCastToBeLikePe(d)
 
+    sinx = np.sin(x / (len_max ** (d / depth)))
+    cosx = np.cos(x / (len_max ** ((d - 1) / depth)))
+    siny = np.sin(y / (len_max ** (d / depth)))
+    cosy = np.cos(y / (len_max ** ((d - 1) / depth)))
+    evens = BroadCastToBeLikePe(sinx) + BroadCastToBeLikePe(siny)
+    odds = BroadCastToBeLikePe(cosx) + BroadCastToBeLikePe(cosy)
+    pe[d_like_pe % 2 == 0] = evens[d_like_pe % 2 == 0]
+    pe[d_like_pe % 2 == 1] = odds[d_like_pe % 2 == 1]
 
-def PositionalEmbedding2D(shape, depth):
-    assert depth % 2 == 0
-    depth_half = depth // 2
-    y = np.arange(0, shape[0]).reshape([shape[0], 1, 1])
-    x = np.arange(0, shape[1]).reshape([1, shape[1], 1])
-    d = np.arange(0, depth).reshape([1, 1, depth])
-    pe = np.zeros(shape + [depth], np.float32)
-
-    mask_even = np.logical_and(d % 2 == 0, d < depth_half)[0, 0, :]
-    mask_odd = np.logical_and(d % 2 == 1, d < depth_half)[0, 0, :]
-    mask_even_half = np.logical_and((d - depth_half) % 2 == 0, d >= depth_half)[0, 0, :]
-    mask_odd_half = np.logical_and((d - depth_half) % 2 == 1, d >= depth_half)[0, 0, :]
-
-    pe[:, :, mask_even] = np.sin(2 * np.pi * x / 10000 ** ((d + 1) / depth_half))[
-        :, :, mask_even
-    ]
-    pe[:, :, mask_odd] = np.cos(2 * np.pi * x / 10000 ** ((d - 1 + 1) / depth_half))[
-        :, :, mask_odd
-    ]
-    pe[:, :, mask_even_half] = np.sin(
-        2 * np.pi * y / 10000 ** (((d + 1) - depth_half) / depth_half)
-    )[:, :, mask_even_half]
-    pe[:, :, mask_odd_half] = np.cos(
-        2 * np.pi * y / 10000 ** ((d - depth_half - 1 + 1) / depth_half)
-    )[:, :, mask_odd_half]
-
-    return pe
-
-
-class SelfAttentionOfConv(torch.nn.Module):
-    # inshape:[C,H,W]
-    def __init__(self, dim, inshape, subshape=[10, 10], nhead=4, dim_feedforward=64):
-        super().__init__()
-        self.inshape = inshape
-        self.subshape = subshape
-        super().register_buffer(
-            "positionalEmbedding",
-            torch.tensor(PositionalEmbedding2D(self.subshape, dim), dtype=torch.float32)
-            .permute(2, 0, 1)
-            .reshape([1, dim] + self.subshape),
-        )
-        self.dim = dim
-        self.sa = torch.nn.TransformerEncoderLayer(dim, nhead, dim_feedforward)
-
-    def forward(self, x):
-        x = F.interpolate(x, self.subshape, mode="bilinear")
-        x = x + self.positionalEmbedding
-        x = x.view(-1, self.dim, np.prod(self.subshape)).permute(0, 2, 1)
-        x = self.sa(x)
-        x = x.view(-1, self.dim, *self.subshape)
-        x = F.interpolate(x, size=self.inshape, mode="bilinear")
-        return x
-
-
-class SelfAttentionOfConvCustomResampler(torch.nn.Module):
-    # inshape:[C,H,W]
-    def __init__(
-        self,
-        dim,
-        inshape,
-        subshape,
-        downsampler,
-        upsampler,
-        nhead=4,
-        dim_feedforward=64,
-    ):
-        super().__init__()
-        self.inshape = inshape
-        self.subshape = subshape
-        super().register_buffer(
-            "positionalEmbedding",
-            torch.tensor(PositionalEmbedding2D(self.subshape, dim), dtype=torch.float32)
-            .permute(2, 0, 1)
-            .reshape([1, dim] + self.subshape),
-        )
-        self.dim = dim
-        self.sa = torch.nn.TransformerEncoderLayer(dim, nhead, dim_feedforward)
-        self.downsampler = downsampler
-        self.upsampler = upsampler
-
-    def forward(self, x):
-        x = self.downsampler(x)
-        x = x + self.positionalEmbedding
-        x = x.view(-1, self.dim, np.prod(self.subshape)).permute(0, 2, 1)
-        x = self.sa(x)
-        x = x.view(-1, self.dim, *self.subshape)
-        x = self.upsampler(x)
-        return x
+    return pe.reshape([1, -1, depth])
 
 
 class SemanticInjectionModule(torch.nn.Module):
@@ -184,250 +76,73 @@ class SemanticInjectionModule(torch.nn.Module):
         return self.bn(x)
 
 
-class VGGNet(nn.Module):
-    def __init__(self):
+class AddPositionalEmbedding(nn.Module):
+    def __init__(self, shape, depth, len_max=None):
         super().__init__()
-        self.comp = nn.Sequential(  # 100
-            inception.even(3, 64),
-            nn.MaxPool2d(3, 1, 1),  # 100
-            inception.even(64, 124),
-            nn.MaxPool2d(3, 1, 1),  # 100
-            inception.even(124, 256),
-            inception.even(256, 256),
-            nn.MaxPool2d(2),  # 50
-            inception.even(256, 512),
-            inception.even(512, 512),
-            nn.MaxPool2d(2),  # 25
-            inception.even(512, 512),
-            nn.ReLU(),
-            inception.even(512, 512),
-            nn.ReLU(),
-            nn.MaxPool2d(5),  # 5
-            nn.Flatten(1, -1),
-            nn.Linear(512 * 5**2, 4096),
-            nn.ReLU(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(),
-            nn.Linear(4096, 100),
-            nn.ReLU(),
+        self.pe = nn.Parameter(
+            torch.tensor(
+                PositionalEmbedding2D(shape, depth, len_max),
+                dtype=torch.float32,
+                requires_grad=False,
+            )
         )
-
-        # original one
-        # self.comp = nn.Sequential(  #100
-        #     nn.Conv2d(3, 64, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(3,1, 1),  #100
-        #     nn.Conv2d(64, 124, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(3,1, 1),  #100
-        #     nn.Conv2d(124, 256, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(256, 256, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2),  #50
-        #     nn.Conv2d(256, 512, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(512, 512, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2),  #25
-        #     nn.Conv2d(512, 512, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(512, 512, 3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(5),  #5
-        #     nn.Flatten(1, -1),
-        #     nn.Linear(512 * 5**2, 4096),
-        #     nn.ReLU(),
-        #     nn.Linear(4096, 4096),
-        #     nn.ReLU(),
-        #     nn.Linear(4096, 100),
-        #     nn.ReLU(),
-        # )
 
     def forward(self, x):
-        return self.comp(x)
+        return x + self.pe
 
 
-class nntracker_yolo(torch.nn.Module, BaseModule4NNTracker):
-    def __init__(self) -> None:
+class PermuteModule(nn.Module):
+    def __init__(self, dims):
         super().__init__()
-        picsurface = np.prod(nntracker_yolo.stdShape)
-        self.comp = torch.nn.Sequential(
-            cbrps(3, 8, 9, 9),
-            # res_through(
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            SelfAttentionOfConv(8, nntracker_yolo.stdShape),
-            # ),
-            torch.nn.Conv2d(8, 1, 1, padding="same"),
-            torch.nn.LeakyReLU(),
-            torch.nn.Flatten(1, -1),
-            torch.nn.Linear(np.prod(np.array(nntracker_yolo.stdShape)), 100),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(100, 10),
-            torch.nn.LeakyReLU(),
-            torch.nn.Linear(10, 5),
-        )
-        self.comp.modules
+        self.dims = dims
 
-    def forward(self, m):
-        normalizeCoef = (
-            nntracker_yolo.stdShape[1],
-            nntracker_yolo.stdShape[0],
-            nntracker_yolo.stdShape[1],
-            nntracker_yolo.stdShape[0],
-            1,
-        )
-        out = self.comp(m) * torch.tensor(normalizeCoef).view(1, 5).to(device)
-        return out
+    def forward(self, x):
+        return torch.permute(x, self.dims)
 
 
-def SofterMax(x, dim):
-    # so called inhred, but made suitable for leakyrelu
-    xmax = torch.max(torch.abs(x), dim=dim, keepdim=True)[0]
-    x = (x / (xmax + 1e-6)) ** 3
-    x = x / (torch.sqrt(torch.sum(x**2, dim=dim, keepdim=True)) + 1e-6)
-    return x
-
-
-class nntracker_simple(torch.nn.Module, BaseModule4NNTracker):
-    def __init__(self) -> None:
+class nntracker_pi(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
         useBn = True
         incver = "v3"
-        super().__init__()
-        self.preproc = torch.nn.Sequential(
-            cbr(3, 8, 9),
+        self.mod = nn.Sequential(
+            # 128
+            inception.even(3, 8, bn=useBn, version=incver),
             res_through(
                 inception.even(8, 8, bn=useBn, version=incver),
                 inception.even(8, 8, bn=useBn, version=incver),
             ),
-        )
-        # downsampling 16x in total
-        self.contentway = torch.nn.Sequential(
-            res_through(
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
-                res_through(
-                    nn.Sequential(
-                        nn.MaxPool2d(4),
-                        inception.even(8, 16, bn=useBn, version=incver),
-                        res_through(
-                            inception.even(16, 16, bn=useBn, version=incver),
-                            inception.even(16, 16, bn=useBn, version=incver),
-                            res_through(
-                                nn.Sequential(
-                                    nn.MaxPool2d(4),
-                                    inception.even(16, 64, bn=useBn, version=incver),
-                                    res_through(
-                                        inception.even(
-                                            64, 64, bn=useBn, version=incver
-                                        ),
-                                        inception.even(
-                                            64, 64, bn=useBn, version=incver
-                                        ),
-                                        inception.even(
-                                            64, 64, bn=useBn, version=incver
-                                        ),
-                                        inception.even(
-                                            64, 64, bn=useBn, version=incver
-                                        ),
-                                    ),
-                                    nn.ConvTranspose2d(64, 16, 4, stride=4),
-                                ),
-                                combiner=SemanticInjectionModule(16),
-                            ),
-                            inception.even(16, 16, bn=useBn, version=incver),
-                            inception.even(16, 16, bn=useBn, version=incver),
-                        ),
-                        nn.ConvTranspose2d(16, 8, 4, stride=4),
-                    ),
-                    combiner=SemanticInjectionModule(8),
-                ),
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
-            ),
-            torch.nn.LeakyReLU(),
-        )
-        self.positionway = torch.nn.Sequential(
-            res_through(
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
-            ),
-        )
-        self.deco = torch.nn.Sequential(
-            inception.even(2 * 8 + 3, 8, bn=useBn, version=incver),
+            nn.MaxPool2d(2),  # 64
             res_through(
                 inception.even(8, 8, bn=useBn, version=incver),
                 inception.even(8, 8, bn=useBn, version=incver),
             ),
-            torch.nn.Conv2d(8, 1, 1, padding="same"),
-            torch.nn.LeakyReLU(),
+            nn.MaxPool2d(2),  # 32
+            res_through(
+                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(8, 8, bn=useBn, version=incver),
+            ),
+            PermuteModule((0, 2, 3, 1)),
+            nn.Flatten(1, 2),  # keep depth unflattened
+            AddPositionalEmbedding((32, 32), 8, 32),
+            nn.TransformerEncoderLayer(8, 4, 32),
+            nn.TransformerEncoderLayer(8, 4, 32),
+            nn.Flatten(1, -1),
+            nn.Linear(8 * 32**2, 100),
+            nn.LeakyReLU(),
+            nn.Linear(100, 20),
+            nn.LeakyReLU(),
+            nn.Linear(20, 3),
+            nn.LeakyReLU(),
         )
 
     def forward(self, m):
-        pp = self.preproc(m)
-        cont = self.contentway(pp)
-        pos = self.positionway(pp)
-        out = self.deco(torch.concat([cont, pos, m], dim=1))
+        out = self.mod(m)
         return out
-
-
-class unet(nn.Module, BaseModule4NNTracker):
-    def __init__(self):
-        super().__init__()
-        self.comp = nn.Sequential(
-            # 100
-            inception.even(3, 64),
-            inception.even(64, 64),
-            res_through(
-                nn.Sequential(
-                    nn.MaxPool2d(2),
-                    # 50
-                    inception.even(64, 128),
-                    inception.even(128, 128),
-                    res_through(
-                        nn.Sequential(
-                            nn.MaxPool2d(2),
-                            # 25
-                            inception.even(128, 256),
-                            inception.even(256, 256),
-                            res_through(
-                                nn.Sequential(
-                                    nn.MaxPool2d(5),
-                                    # 5
-                                    inception.even(256, 512),
-                                    inception.even(512, 512),
-                                    res_through(
-                                        nn.Sequential(
-                                            nn.MaxPool2d(5),
-                                            # 1
-                                            inception.even(512, 1024),
-                                            inception.even(1024, 1024),
-                                            nn.ConvTranspose2d(1024, 512, 5, stride=5),
-                                        )
-                                    ),
-                                    nn.ConvTranspose2d(512, 256, 5, stride=5),
-                                )
-                            ),
-                            nn.ConvTranspose2d(256, 128, 2, stride=2),
-                        )
-                    ),
-                    nn.ConvTranspose2d(128, 64, 2, stride=2),
-                )
-            ),
-            nn.Conv2d(64, 1, kernel_size=3, padding="same"),
-        )
-
-    def forward(self, x):
-        return self.comp(x)
 
 
 def getmodel(modelpath):
-    model = setModule(nntracker_simple(), path=modelpath, device=device)
+    model = setModule(nntracker_pi(), path=modelpath, device=device)
     # print(model)
     return model
 

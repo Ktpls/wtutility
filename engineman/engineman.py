@@ -24,6 +24,7 @@ def GetFailureToAxisUnsupported(f):
         if ret is None:
             # f returing None means no such field in 8111
             raise AxisUnsupported()
+        return ret
 
     return wrapper
 
@@ -80,20 +81,20 @@ class Solution:
 
     @staticmethod
     def tryAction(
-        action: typing.Callable[[], bool], # return bool indicating if success
+        action: typing.Callable[[], bool],  # return bool indicating if success
         solution: "Solution | list[Solution]",
     ):
         solution = NormalizeIterableOrSingleArgToIterable(solution)
-        solId = -1  # not with any solution initially
+        nextSolId = 0
         if not action():
             while True:
-                if solId < len(solution):
-                    solution[solId].toEnable()
+                if nextSolId < len(solution):
+                    solution[nextSolId].toEnable()
                     PreciseSleep(SolutionInterval)
                     if not action():
-                        solution[solId].toDisable()
+                        solution[nextSolId].toDisable()
                         PreciseSleep(SolutionInterval)
-                        solId += 1
+                        nextSolId += 1
                     else:
                         break
                 else:
@@ -134,13 +135,9 @@ class ControlableEngineAxis(Axis):
 
         def inner():
             prev = self.get()
-            if prev is None:
-                raise AxisUnsupported()
             action()
             PreciseSleep(delayAfterAction)
             after = self.get(newest=True)
-            if after is None:
-                raise AxisUnsupported()
             issu = issuccessful(prev, after)
             # print(action, prev, after, issu)
             return issu
@@ -170,7 +167,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
 
 class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
-    controller = PIDController(5, 0, 0.5)
+    controller = PIDController(3.5, 0, 0.35)
     valMax = 1
     valMin = 0
 
@@ -218,20 +215,24 @@ SwitchManualEngineControl = WtFunctionalKey(
 
 
 def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
+    def enableManEngCtrl_ManAxisCtrl():
+        SwitchManualEngineControl.press()
+        PreciseSleep(0.5)
+        yourself.switchManualControl()
+
+    def disableManEngCtrl_ManAxisCtrl():
+        yourself.switchManualControl()
+        PreciseSleep(0.5)
+        SwitchManualEngineControl.press()
+
     return [
-        Solution(
-            toEnable=lambda: [
-                SwitchManualEngineControl.press(),
-                yourself.switchManualControl(),
-            ],
-            toDisable=lambda: [
-                yourself.switchManualControl(),
-                SwitchManualEngineControl.press(),
-            ],
-        ),
         Solution(
             toEnable=lambda: yourself.switchManualControl(),
             toDisable=lambda: yourself.switchManualControl(),
+        ),
+        Solution(
+            toEnable=enableManEngCtrl_ManAxisCtrl,
+            toDisable=disableManEngCtrl_ManAxisCtrl,
         ),
         Solution(
             toEnable=lambda: SwitchManualEngineControl.press(),

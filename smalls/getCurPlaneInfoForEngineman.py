@@ -12,12 +12,19 @@ def try8111(foo):
 
 
 def main():
-
+    UNSUP = "UNSUPPORTED"
     print(f"vehicleName")
-    print(VehicleName().get())
+    try:
+        print(VehicleName().get())
+    except AxisUnsupported as err:
+        print(UNSUP)
 
     print(f"withOilRadiator")
-    print(OilRadiator().get())
+    try:
+        print(OilRadiator().get())
+    except AxisUnsupported as err:
+        print(UNSUP)
+
     os.system("pause")
 
 
