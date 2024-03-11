@@ -28,11 +28,11 @@ class NnTrackerDataset:
 
 
 print("loading dataset")
-datasetname = "SmallAug"
+datasetname = "LE2REnh"
 datasetroot = r"C:\file\code\wtutility/exp/DLOnOpdarPlaneDetection/dataset/"
 datasets = {
-    "LE2REnh": NnTrackerDataset(r"LE2REnh/", r"LE2REnh/all.xlsx", "fld"),
-    "SmallAug": NnTrackerDataset(r"SmallAug/", r"SmallAug/all.xlsx", "fld"),
+    "LE2REnh": NnTrackerDataset(r"LE2REnh/LE2REnh.zip", r"LE2REnh/all.xlsx", "zip"),
+    "SmallAug": NnTrackerDataset(r"SmallAug/SmallAug.zip", r"SmallAug/all.xlsx", "zip"),
     "largeEnoughToRecon": NnTrackerDataset(
         r"largeEnoughToRecon/largeEnoughToRecon.zip",
         r"largeEnoughToRecon/all.xlsx",
@@ -54,7 +54,7 @@ train_data = labeldataset().init(
     BaseModule4NNTracker.stdShape,
     rtDataAugOn=True,
 )
-test_data = datasets["largeEnoughToRecon"]
+test_data = datasets["SmallAug"]
 test_data = labeldataset().init(
     os.path.join(datasetroot, test_data.path),
     os.path.join(datasetroot, test_data.sel),
@@ -77,18 +77,37 @@ test_dataloader = DataLoader(test_data, batch_size=32)
 
 
 def calclose(pi, pihat):
+    (
+        isObj,
+        meanX,
+        meanY,
+        wingSpan,
+    ) = (
+        pi[:, 0],
+        pi[:, 1],
+        pi[:, 2],
+        pi[:, 3],
+    )
+
+    isObjCoef = torch.ones_like(pi)
+    # dont estimate pos and size when is no object
+    isObjCoef[isObj != 1, 1:] = 0
+
     loss = torch.sum(
         (
-            torch.tensor(
-                [
-                    [1, 1, 3],
-                ],
-                dtype=torch.float32,
-                device=device,
-                requires_grad=False,
+            (
+                torch.tensor(
+                    [
+                        [1, 1, 1, 3],
+                    ],
+                    dtype=torch.float32,
+                    device=device,
+                    requires_grad=False,
+                )
             )
+            * (pihat - pi) ** 2
         )
-        * (pihat - pi) ** 2
+        * isObjCoef
     )
     # loss = torch.log10(loss + 1e-10)
     return loss
@@ -119,6 +138,7 @@ def onoutput(batch, aveerr):
             pi = pi.to(device)
             pihat = model.forward(src)
             lossTotal += calclose(pi, pihat).item()
+            break
     print(f"testaveerr: {lossTotal/len(test_data)}")
     # writer.add_scalar("aveerr", aveerr, batch)
 
@@ -142,13 +162,17 @@ if __name__ == "__main__":
 def viewmodel(datasetusing):
     model.eval()
 
-    plotShape = [8, 4]
+    plotShape = [4, 2]
     subplotShape = [1, 2]
     samplenum = np.prod(plotShape)
-    npp = nestedPyPlot(plotShape, subplotShape, plt.figure(figsize=(16, 16)))
+    npp = nestedPyPlot(plotShape, subplotShape, plt.figure(figsize=(20, 20)))
     imshowconfig = {"vmin": 0, "vmax": 1}
     totalinferencetime = 0
     infercount = 0
+
+    def PI2Str(pi):
+        return ",".join([f"{i:.2f}" for i in pi])
+
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl, pi = datasetusing[0]
@@ -168,8 +192,7 @@ def viewmodel(datasetusing):
             src, lbl = datatuple
             lblhat = planeInfo2Lbl(pihat, BaseModule4NNTracker.stdShape)
             npp.subplot(i, 0)
-            meanX, meanY, wingSpan = pi
-            plt.title(f"{meanX:.2f},{meanY:.2f},{wingSpan:.2f}")
+            plt.title(PI2Str(pi))
             plt.imshow(cv.cvtColor(src, cv.COLOR_BGR2RGB))
             npp.subplot(i, 1)
             lblComparasion = (
@@ -184,8 +207,7 @@ def viewmodel(datasetusing):
                 .transpose([1, 2, 0])
             )
 
-            meanX, meanY, wingSpan = pihat
-            plt.title(f"{meanX:.2f},{meanY:.2f},{wingSpan:.2f}")
+            plt.title(PI2Str(pihat))
             plt.imshow(lblComparasion, label="lblComparasion", **imshowconfig)
     print(f"average inference time={totalinferencetime / samplenum}")
 

@@ -189,20 +189,26 @@ def ObjectFilterNn(m: np.ndarray):
 
 
 def ObjectFilterTrad(m: np.ndarray):
+    # deambient
+    ambient = np.mean(m)
+    m = np.clip(m - ambient, 0, 1)
+
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange])
-    mAdat = m - ave
+    mAdat = (m - ave) / (ave + EPS)
     mAdat = (mAdat >= adptthresh).astype(np.uint8)
 
     # abs thresh
     mAbst = np.copy(m)
     mAbst = (mAbst >= abslthresh).astype(np.uint8)
 
-    # density thresh
-    rho = regionave(m, [backgroundrange, backgroundrange])
-    mRhoThreshed = (rho >= rhothresh).astype(np.uint8)
+    m = (mAdat).astype(np.float32)
 
-    m = (mAdat * mAbst * mRhoThreshed).astype(np.float32)
+    # # density thresh
+    # rho = regionave(m, [backgroundrange, backgroundrange])
+    # mRhoThreshed = (rho >= rhothresh).astype(np.uint8)
+
+    # m = (m * mRhoThreshed).astype(np.float32)
     return m
 
 
@@ -333,8 +339,7 @@ def GetObjectOnSignal(
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    savemat(m * 255)
-    savemat(obj[maxscorecontourid].shape * 255)
+    # savemat(obj[maxscorecontourid].shape * 255)
     return obj[maxscorecontourid]
 
 
@@ -430,9 +435,9 @@ class MtiFilter:
         """
         self.filter = interpolate.interp1d([0, 0.3, 0.75, 1], [1, 1, 0, 0])
         # fake type notation in order to scam ide type analysis
-        self.mtiQueue: list[
-            MtiFilter.MtiStorage
-        ] | AccessibleQueue = AccessibleQueue(mtiQueueSize)
+        self.mtiQueue: list[MtiFilter.MtiStorage] | AccessibleQueue = AccessibleQueue(
+            mtiQueueSize
+        )
 
         # try convienient type annotation but wont work
         # self.mtiQueue: AccessibleQueue.Annotation(
@@ -609,7 +614,7 @@ class tracker:
                 # not bad cut
                 ret = GetObjectOnSignal(
                     signal,
-                    preference,
+                    np.array([searchrange, searchrange]),  # at the center of cutted img
                     wingspanref=self.lastwingspan,
                     shaperef=self.lastshape,
                     mask=uimask.copy(),
@@ -634,8 +639,8 @@ class tracker:
                             + searchrange,
                             :,
                         ]
-                        odc[0].save(m4coll, name)
-                        odc[1].save(planemap * 255, name)
+                        odc[0].save(m4coll, datacoll_sampleFormat.format(name))
+                        odc[1].save(planemap * 255, datacoll_labelFormat.format(name))
 
         pomega = (ponshot - plastinthisframe) / tdelta
 

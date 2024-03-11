@@ -69,5 +69,5 @@ class P63A5(EngineConfig):
 class SaabJ21A(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.75)
-        # gauges.oilRadiator.set(1.0)
+        gauges.oilRadiator.set(1.0)
         gauges.radiator.set(1.0)

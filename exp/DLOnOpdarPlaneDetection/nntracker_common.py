@@ -90,12 +90,18 @@ def lbl2PlaneInfo(lbl: np.ndarray):
     meanX = meanX[0, 0, 0] / w
     meanY = meanY[0, 0, 0] / h
     wingSpan = estimateWingSpan(lbl) / w
-    return (meanX, meanY, wingSpan)
+    isObj = 1 if lbl.sum() > 10 else 0
+    return (
+        isObj,
+        meanX,
+        meanY,
+        wingSpan,
+    )
 
 
 def planeInfo2Lbl(tup, lblShape):
     h, w = lblShape
-    meanX, meanY, wingSpan = tup
+    isObj, meanX, meanY, wingSpan = tup
     meanX = meanX * w
     meanY = meanY * h
     wingSpan = wingSpan * w
@@ -114,7 +120,10 @@ class SampleItem:
     lbl: np.ndarray
     pi: tuple
 
+
 import copy
+
+
 class labeldataset(Dataset):
 
     def __init__(self) -> None:
@@ -166,12 +175,12 @@ class labeldataset(Dataset):
 
     def __len__(self):
         return self.size
-    
+
     def rtDataAug(self, item: SampleItem):
-        item=copy.deepcopy(item)
-        noise=np.random.normal(0,0.2,item.spl.shape)
-        item.spl+=noise
-        item.spl=np.clip(item.spl,0,1)
+        item = copy.deepcopy(item)
+        noise = np.random.normal(0, 0.2, item.spl.shape)
+        item.spl += noise
+        item.spl = np.clip(item.spl, 0, 1)
         return item
 
     @staticmethod

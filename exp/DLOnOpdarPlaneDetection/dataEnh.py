@@ -19,79 +19,75 @@ def dataEnhance(src, lbl, prog: Progress = None):
         prog.update(prog.cur + 1)
     backcolor = np.mean(src, axis=(0, 1), keepdims=True)
 
-    planeColor = np.sum(
-        src * (lbl.reshape(lbl.shape + (1,))), axis=(0, 1), keepdims=True
-    ) / np.sum(lbl, axis=(0, 1), keepdims=True)
+    lbl = NormalizeImgToChanneled_CvFormat(lbl)
 
-    # rot
-    def rot(m, the):
-        # theta in [-pi/2,pi/2]
-        # assert right squared img0 here
-        rotmat = np.array(
-            [
-                [np.cos(the), -np.sin(the)],
-                [np.sin(the), np.cos(the)],
-            ]
-        )
-
-        l0 = m.shape[0]
-        Y, X = np.arange(l0, dtype=np.float32), np.arange(l0, dtype=np.float32)
-        X, Y = np.meshgrid(X, Y)
-        Y -= l0 * 0.5
-        X -= l0 * 0.5
-        Xp = rotmat[0, 0] * X + rotmat[0, 1] * Y
-        Yp = rotmat[1, 0] * X + rotmat[1, 1] * Y
-        X = Xp
-        Y = Yp
-        Y += l0 * 0.5
-        X += l0 * 0.5
-        m = cv.remap(m, Xp, Yp, cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
-        return m
-
-    the = np.random.uniform(-np.pi / 3, np.pi / 3)
-
-    # zoom
-    def zoom(m, rate):
-        l0 = m.shape[0]
-        X = np.arange(l0).reshape([1, l0]).astype(np.float32)
-        Y = np.arange(l0).reshape([l0, 1]).astype(np.float32)
-        XY = np.array(np.meshgrid(X, Y))
-        XY -= l0 / 2
-        XY /= rate
-        XY += l0 / 2
-        return cv.remap(m, *XY, cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
-
-    rate = np.random.uniform(0.8, 1.2)
-
-    # flip
-    def flip(m, reallyflip: bool):
-        if reallyflip:
-            return np.flip(m, axis=1)  # flip lr
-        else:
-            return m
-
-    reallyflip = np.random.rand() < 0.5
-
-    # mov
-    def mov(m, vec):
-        mattr = np.array([[1, 0, vec[0]], [0, 1, vec[1]]]).astype("float")
-        m = cv.warpAffine(
-            m, mattr, np.flip(m.shape[0:2]), borderMode=cv.BORDER_REPLICATE
-        )
-        return m
-
-    vec = np.random.uniform(-50, 50, size=2)
-
-    src, lbl = (
-        Stream([src, lbl])
-        .map(lambda m: rot(m, the))
-        .map(lambda m: zoom(m, rate))
-        .map(lambda m: flip(m, reallyflip))
-        .map(lambda m: np.ascontiguousarray(m))
-        .map(lambda m: mov(m, vec))
-        .map(lambda m: m if len(m.shape) == 3 else m.reshape(m.shape + (1,)))
-        .collect(Stream.Collector.toList())  # add back channel
+    zoom = lambda rate: np.array(
+        [[rate, 0, 0], [0, rate, 0], [0, 0, 1]],
+        dtype=np.float32,
     )
+    shift = lambda x, y: np.array(
+        [[1, 0, x], [0, 1, y], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    flip = lambda lr, ud: np.array(
+        [[lr, 0, 0], [0, ud, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    rot = lambda the: np.array(
+        [[np.cos(the), np.sin(the), 0], [-np.sin(the), np.cos(the), 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    identity = lambda: np.array(
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+
+    h, w, c = lbl.shape
+
+    X = np.arange(w).reshape(1, w, 1)
+    Y = np.arange(h).reshape(h, 1, 1)
+    lblTouchingEdge = np.clip(
+        ((X == 0) + (X == w - 1) + (Y == 0) + (Y == h - 1)) * lbl, 0, 1
+    )
+
+    while True:
+
+        theta = np.random.uniform(-np.pi / 2, np.pi / 2)
+        zoomrate = np.random.uniform(0.75, 1.25)
+        ifflip = np.random.choice([1, -1], size=2, replace=True)
+        movvec = np.random.uniform(-50, 50, size=2)
+
+        src1, lbl1, lte1 = (
+            Stream([src, lbl, lblTouchingEdge])
+            .map(
+                lambda m: cv.warpAffine(
+                    m,
+                    (
+                        shift(0.5 * w, 0.5 * h)
+                        @ flip(*ifflip)
+                        @ shift(*movvec)
+                        @ zoom(zoomrate)
+                        @ rot(theta)
+                        @ shift(-0.5 * w, -0.5 * h)
+                    )[0:2, :],
+                    np.flip(m.shape[0:2]),
+                    borderMode=cv.BORDER_REPLICATE,
+                )
+            )
+            .map(NormalizeImgToChanneled_CvFormat)
+            .collect(Stream.Collector.toList())
+        )
+
+        lbl1[lbl1 < 0.5] = 0
+        lbl1[lbl1 >= 0.5] = 1  # thresh
+
+        # check
+        # expect edge of plane wont be processed with boundary technique
+        notTouching = np.sum(lte1) <= 8
+
+        if notTouching:
+            src, lbl = src1, lbl1
+            break
 
     black_pixels = np.where(np.sum(src, axis=2) < 0.1)
     src[black_pixels] = backcolor
@@ -111,6 +107,9 @@ def dataEnhance(src, lbl, prog: Progress = None):
     # # rand spot
     # def randSpot(spl, lbl):
     #     import scipy.interpolate as ipl
+    #     planeColor = np.sum(src * lbl, axis=(0, 1), keepdims=True) / np.sum(
+    #         lbl, axis=(0, 1), keepdims=True
+    #     )
 
     #     @dataclasses.dataclass
     #     class BaseFunc:
@@ -229,16 +228,6 @@ def dataEnhance(src, lbl, prog: Progress = None):
 
     # src = randSpot(src, lbl)
 
-    # # gaussian noise
-    # def gaussianNoise(spl):
-    #     spl = spl + np.random.normal(0, 0.1, spl.shape)
-    #     return spl
-
-    # src = gaussianNoise(src)
-
-    lbl[lbl < 0.5] = 0
-    lbl[lbl >= 0.5] = 1  # thresh
-
     return src, lbl
 
 
@@ -246,7 +235,7 @@ xlsSource = r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\all.xlsx"
 zipSource = (
     r".\exp\DLOnOpdarPlaneDetection\dataset\largeEnoughToRecon\largeEnoughToRecon.zip"
 )
-dest = r".\exp\DLOnOpdarPlaneDetection\dataset\SmallAug"
+dest = r".\exp\DLOnOpdarPlaneDetection\dataset\LE2REnh"
 
 
 def performDataEnh():
@@ -259,25 +248,35 @@ def performDataEnh():
     )
     nameList = []
 
-    def saveFiles(para):
+    def saveFiles(para: SampleItem):
         name = DataCollector.geneName() + ".png"
         savemat(para.spl * 255, name, rf"{dest}/spl")
         savemat(para.lbl * 255, name, rf"{dest}/lbl")
         nameList.append(name)
 
-    def afterProc():
+    def saveXls():
         save_list_to_xls(nameList, rf"{dest}/all.xlsx")
 
-    sampleNum = 2**7
+    # pltshape = (9, 9)
+    # fig = plt.figure(figsize=(20, 20))
+    # i = 0
+
+    # def showLbl(si: SampleItem):
+    #     nonlocal i
+    #     i += 1
+    #     ax = fig.add_subplot(pltshape[0], pltshape[1], i)
+    #     ax.imshow(si.lbl)
+
+    sampleNum = 6000
     deProg = Progress(sampleNum)
-    imgsrc = list([dataset.rawgetitem(dataset.rndIndex()) for i in range(sampleNum)])
-    (
-        Stream(imgsrc)
-        .map(lambda p: dataEnhance(p.spl, p.lbl, deProg))
-        .map(lambda p: SampleItem(name="", spl=p[0], lbl=p[1], pi=None))
-        .peek(saveFiles)
-    )
-    afterProc()
+    idxsrc = list([dataset.rndIndex() for i in range(sampleNum)])
+    for i, idx in enumerate(idxsrc):
+        p = dataset.rawgetitem(idx)
+        p = dataEnhance(p.spl, p.lbl, deProg)
+        p = SampleItem(name="", spl=p[0], lbl=p[1], pi=None)
+        saveFiles(p)
+        deProg.update(i)
+    saveXls()
 
 
 performDataEnh()

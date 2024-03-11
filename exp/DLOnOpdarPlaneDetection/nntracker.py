@@ -6,10 +6,10 @@ from torch import nn
 import torch.nn.functional as F
 import functools
 from nntracker_common import *
+import torchvision
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
-
 # %%
 # nn def
 
@@ -113,26 +113,36 @@ class nntracker_pi(torch.nn.Module):
                 inception.even(8, 8, bn=useBn, version=incver),
             ),
             nn.MaxPool2d(2),  # 64
+            inception.even(8, 16, bn=useBn, version=incver),
             res_through(
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(16, 16, bn=useBn, version=incver),
+                inception.even(16, 16, bn=useBn, version=incver),
             ),
             nn.MaxPool2d(2),  # 32
+            inception.even(16, 32, bn=useBn, version=incver),
             res_through(
-                inception.even(8, 8, bn=useBn, version=incver),
-                inception.even(8, 8, bn=useBn, version=incver),
+                inception.even(32, 32, bn=useBn, version=incver),
+                inception.even(32, 32, bn=useBn, version=incver),
+            ),
+            nn.MaxPool2d(2),  # 16
+            inception.even(32, 64, bn=useBn, version=incver),
+            res_through(
+                inception.even(64, 64, bn=useBn, version=incver),
+                inception.even(64, 64, bn=useBn, version=incver),
             ),
             PermuteModule((0, 2, 3, 1)),
             nn.Flatten(1, 2),  # keep depth unflattened
-            AddPositionalEmbedding((32, 32), 8, 32),
-            nn.TransformerEncoderLayer(8, 4, 32),
-            nn.TransformerEncoderLayer(8, 4, 32),
+            AddPositionalEmbedding((16, 16), 64, None),
+            nn.TransformerEncoderLayer(64, 8, 16),
+            nn.TransformerEncoderLayer(64, 8, 16),
+            nn.TransformerEncoderLayer(64, 8, 16),
+            nn.TransformerEncoderLayer(64, 8, 16),
             nn.Flatten(1, -1),
-            nn.Linear(8 * 32**2, 100),
+            nn.Linear(64 * 16**2, 4096),
             nn.LeakyReLU(),
-            nn.Linear(100, 20),
+            nn.Linear(4096, 1000),
             nn.LeakyReLU(),
-            nn.Linear(20, 3),
+            nn.Linear(1000, 4),
             nn.LeakyReLU(),
         )
 
@@ -141,8 +151,37 @@ class nntracker_pi(torch.nn.Module):
         return out
 
 
+class nntracker_respi(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.res18 = torchvision.models.resnet18(
+            weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
+        )
+        self.res18.eval()
+        self.res18preproc = torchvision.models.ResNet18_Weights.DEFAULT.transforms()
+
+        self.mod = nn.Sequential(
+            res_through(
+                nn.Linear(1000, 1000),
+                nn.LeakyReLU(),
+                nn.Linear(1000, 1000),
+                nn.LeakyReLU(),
+            ),
+            nn.Linear(1000, 4),
+            nn.LeakyReLU(),
+        )
+
+    def forward(self, m):
+        m = self.res18preproc(m)
+        m = self.res18(m)
+        m = m.detach()
+        m.requires_grad = False
+        out = self.mod(m)
+        return out
+
+
 def getmodel(modelpath):
-    model = setModule(nntracker_pi(), path=modelpath, device=device)
+    model = setModule(nntracker_respi(), path=modelpath, device=device)
     # print(model)
     return model
 
