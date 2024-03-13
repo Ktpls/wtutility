@@ -22,10 +22,10 @@
 (function () {
     'use strict';
 
-    var max = 80490
-    var min = 60010
-    var randomTime = parseInt(Math.random() * (max - min + 1) + min, 10)
-    console.log(randomTime)
+    var max = 80490;
+    var min = 60010;
+    var randomTime = parseInt(Math.random() * (max - min + 1) + min, 10);
+    console.log("click interval = " + randomTime);
 
     function ClickConnectColab() {
         colab.config
@@ -34,10 +34,10 @@
         console.log("Connnect Clicked - End");
     };
     function ClickConnectKaggle() {
-        console.log("Connnect Clicked - Start, kaggle");
-        let btn=document.querySelector('.mdc-dialog__surface > div:nth-of-type(2) > div:nth-of-type(3) > button:nth-of-type(2)');
+        console.log("Connnect Clicked - Start, kaggle, " + new Date().toLocaleString());
+        let btn = document.querySelector('.mdc-dialog__surface > div:nth-of-type(2) > div:nth-of-type(3) > button:nth-of-type(2)');
         console.log(btn);
-        if (btn!=null)
+        if (btn != null)
             btn.click();
         else
             console.log("btn is null");

@@ -124,6 +124,103 @@ class SampleItem:
 import copy
 
 
+def dataAug(src, lbl):
+    backcolor = np.mean(src, axis=(0, 1), keepdims=True)
+
+    lbl = NormalizeImgToChanneled_CvFormat(lbl)
+
+    zoom = lambda rate: np.array(
+        [[rate, 0, 0], [0, rate, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    shift = lambda x, y: np.array(
+        [[1, 0, x], [0, 1, y], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    flip = lambda lr, ud: np.array(
+        [[lr, 0, 0], [0, ud, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    rot = lambda the: np.array(
+        [[np.cos(the), np.sin(the), 0], [-np.sin(the), np.cos(the), 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    identity = lambda: np.array(
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+
+    h, w, c = lbl.shape
+
+    X = np.arange(w).reshape(1, w, 1)
+    Y = np.arange(h).reshape(h, 1, 1)
+    lblTouchingEdge = np.clip(
+        ((X == 0) + (X == w - 1) + (Y == 0) + (Y == h - 1)) * lbl, 0, 1
+    )
+
+    while True:
+
+        theta = np.random.uniform(-np.pi / 2, np.pi / 2)
+        zoomrate = np.random.uniform(0.75, 1.25)
+        ifflip = np.random.choice([1, -1], size=2, replace=True)
+        movvec = np.random.uniform(-50, 50, size=2)
+
+        src1, lbl1, lte1 = (
+            Stream([src, lbl, lblTouchingEdge])
+            .map(
+                lambda m: cv.warpAffine(
+                    m,
+                    (
+                        shift(0.5 * w, 0.5 * h)
+                        @ flip(*ifflip)
+                        @ shift(*movvec)
+                        @ zoom(zoomrate)
+                        @ rot(theta)
+                        @ shift(-0.5 * w, -0.5 * h)
+                    )[0:2, :],
+                    np.flip(m.shape[0:2]),
+                    borderMode=cv.BORDER_REPLICATE,
+                )
+            )
+            .map(NormalizeImgToChanneled_CvFormat)
+            .collect(Stream.Collector.toList())
+        )
+
+        lbl1 = np.where(lbl1 > 0.5, 1, 0)
+
+        # check
+        # expect edge of plane wont be processed with boundary technique
+        notTouching = np.sum(lte1) <= 8
+
+        if notTouching:
+            src, lbl = src1, lbl1
+            break
+
+    black_pixels = np.where(np.sum(src, axis=2) < 0.1)
+    src[black_pixels] = backcolor
+
+    # rand line
+    def draw_random_line(image, n):
+        height, width, _ = image.shape
+        color = (0, 0, 0)  # Black color
+        for l in range(n):
+            start_point = (np.random.randint(0, width), np.random.randint(0, height))
+            end_point = (np.random.randint(0, width), np.random.randint(0, height))
+            cv.line(image, start_point, end_point, color, 1)
+        return image
+
+    src = draw_random_line(src, 5)
+
+    def gaussianNoise(src):
+        noise = np.random.normal(0, 0.2, src.shape)
+        src = np.clip(src + noise, 0, 1, dtype=np.float32)
+        return src
+
+    src = gaussianNoise(src)
+
+    return src, lbl
+
+
 class labeldataset(Dataset):
 
     def __init__(self) -> None:
@@ -178,9 +275,9 @@ class labeldataset(Dataset):
 
     def rtDataAug(self, item: SampleItem):
         item = copy.deepcopy(item)
-        noise = np.random.normal(0, 0.2, item.spl.shape)
-        item.spl += noise
-        item.spl = np.clip(item.spl, 0, 1)
+        item.spl, item.lbl = dataAug(item.spl, item.lbl)
+        item.lbl = item.lbl[:, :, 0]
+        item.pi = lbl2PlaneInfo(item.lbl)
         return item
 
     @staticmethod

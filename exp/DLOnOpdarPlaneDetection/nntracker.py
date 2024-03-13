@@ -8,6 +8,7 @@ import functools
 from nntracker_common import *
 import torchvision
 
+print(getDeviceInfo())
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 # %%
@@ -152,36 +153,63 @@ class nntracker_pi(torch.nn.Module):
 
 
 class nntracker_respi(torch.nn.Module):
-    def __init__(self):
+    def __init__(
+        self,
+        frozenLayers=(
+            "conv1",
+            "bn1",
+            "relu",
+            "maxpool",
+            "layer1",
+            "layer2",
+            "layer3",
+            "layer4",
+        ),
+    ):
         super().__init__()
-        self.res18 = torchvision.models.resnet18(
-            weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
-        )
-        self.res18.eval()
-        self.res18preproc = torchvision.models.ResNet18_Weights.DEFAULT.transforms()
+        weights = torchvision.models.ResNet18_Weights.DEFAULT
+        backbone = torchvision.models.resnet18(weights=weights)
+        for name, param in backbone.named_parameters():
+            matched = False
+            for fl in frozenLayers:
+                if name.startswith(fl):
+                    param.requires_grad = False
+                    matched = True
+                    break
+            if not matched:
+                param.requires_grad = True
+        self.backbone = backbone
+        self.backbonepreproc = weights.transforms()
 
         self.mod = nn.Sequential(
             res_through(
-                nn.Linear(1000, 1000),
+                nn.Linear(512, 512),
                 nn.LeakyReLU(),
-                nn.Linear(1000, 1000),
+                nn.Linear(512, 512),
                 nn.LeakyReLU(),
             ),
-            nn.Linear(1000, 4),
+            nn.Linear(512, 4),
             nn.LeakyReLU(),
         )
 
     def forward(self, m):
-        m = self.res18preproc(m)
-        m = self.res18(m)
-        m = m.detach()
-        m.requires_grad = False
+        m = self.backbonepreproc(m)
+        m = self.backbone.conv1(m)
+        m = self.backbone.bn1(m)
+        m = self.backbone.relu(m)
+        m = self.backbone.maxpool(m)
+        m = self.backbone.layer1(m)
+        m = self.backbone.layer2(m)
+        m = self.backbone.layer3(m)
+        m = self.backbone.layer4(m)
+        m = self.backbone.avgpool(m)
+        m = torch.flatten(m, 1)
         out = self.mod(m)
         return out
 
 
-def getmodel(modelpath):
-    model = setModule(nntracker_respi(), path=modelpath, device=device)
+def getmodel(modelpath, **kwargs):
+    model = setModule(nntracker_respi(**kwargs), path=modelpath, device=device)
     # print(model)
     return model
 

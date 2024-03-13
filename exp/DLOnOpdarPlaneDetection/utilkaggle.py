@@ -1,11 +1,15 @@
+# %% utilkaggle
 import cv2 as cv
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import openpyxl as opx
 import os
-
+import platform
+import typing
 import dataclasses
+import functools
+import itertools
 
 
 from torch.utils.tensorboard import SummaryWriter
@@ -14,6 +18,9 @@ from datetime import datetime
 
 import time
 
+
+def NormalizeImgToChanneled_CvFormat(m:cv.Mat):
+    return m if len(m.shape) == 3 else m.reshape(m.shape + (1,))
 
 def Xls2ListList(path=None, sheetname=None, killNones=True):
     if path is None:
@@ -44,6 +51,23 @@ def AllFileIn(path, includeFileInSubDir=True):
 def batchsizeof(tensor):
     return tensor.shape[0]
 
+
+def getDeviceInfo():
+    # Get CPU info
+    cpu_info = platform.processor()
+    num_cores = os.cpu_count()
+    cpu_frequency = "Not available in Python standard library"
+
+    # Get GPU info
+    try:
+        gpu_info = torch.cuda.get_device_name()
+    except:
+        gpu_info = "No GPU detected"
+
+    return (
+        f"CPU Info: {cpu_info}, Cores: {num_cores}, Frequency: {cpu_frequency}\n"
+        + f"GPU Info: {gpu_info}"
+    )
 
 class nestedPyPlot:
 
@@ -141,7 +165,7 @@ def setModule(model, path=None, device=None):
 
 
 def tensorimg2ndarray(m):
-    m = np.array(m)
+    m = m.cpu().numpy()
     m = np.moveaxis(m, -3, -1)
     return m
 
@@ -361,3 +385,159 @@ class trainpipe:
 
         # win32api.Beep(1000, 1000)
         print("Done!")
+
+EPS = 1e-10
+import time
+class perf_statistic:
+    """
+    calculate the time past between start() to now, directly by perf_counter()-starttime
+    record all accumulated time before start(), but uncleared after stop()
+    so start and stop are also playing roles as resume and pause
+    countcycle() will increase the cycle count, helping to calculate average time in a loop-like task
+    clear() will clear all accumulated time, stops counting
+    """
+
+    def __init__(self, startnow=False):
+        self.clear()
+        if startnow:
+            self.start()
+
+    def clear(self):
+        self._starttime = None
+        self._stagedtime = 0
+        self._cycle = 0
+        return self
+
+    def start(self):
+        self._starttime = time.perf_counter()
+        return self
+
+    def countcycle(self):
+        self._cycle += 1
+        return self
+
+    def stop(self):
+        if self._starttime is None:
+            return
+        self._stagedtime += self._timeCurrentlyCounting()
+        self._starttime = None
+        return self
+
+    def time(self):
+        return self._stagedtime + self._timeCurrentlyCounting()
+
+    def aveTime(self):
+        return self.time() / (self._cycle if self._cycle > 0 else 1)
+
+    def _timeCurrentlyCounting(self):
+        return (
+            time.perf_counter() - self._starttime if self._starttime is not None else 0
+        )
+class Progress:
+    """
+    irreversable!
+    """
+
+    def __init__(self, total: float, cur=0, printPercentageStep: float = 0.1) -> None:
+        self.total = total
+        self.nowStage = 0
+        self.printPercentageStep = printPercentageStep
+        self.cur = cur
+        self.ps = perf_statistic()
+
+    def update(self, current: float) -> None:
+        self.cur = current
+        while True:
+            if current / self.total > self.nowStage * self.printPercentageStep:
+                self.nowStage += 1
+                self.ps.stop()
+                if current > 1:
+                    # not the first time
+                    instantSpeed = (self.printPercentageStep * self.total) / (
+                        self.ps.time() + EPS
+                    )
+                else:
+                    instantSpeed = 1
+                self.ps.clear().start()
+                print(
+                    f"{100 * current / self.total:>3.2f}% of {self.total}, {instantSpeed:.2f}it/s",
+                    end="\n",
+                )
+            else:
+                break
+
+    def setFinish(self):
+        self.update(self.total)
+        
+
+def Deduplicate(l: list):
+    return list(set(l))
+class Stream:
+    content: list
+    actions: list
+
+    def __init__(self, iter: list | tuple | dict) -> None:
+        if isinstance(iter, (list, tuple)):
+            self.content = iter
+        elif isinstance(iter, dict):
+            self.content = iter.items()
+        else:
+            raise TypeError("iter must be list|tuple|dict")
+
+    def sort(self, pred: typing.Callable[[typing.Any, typing.Any], int]):
+        self.content.sort(key=functools.cmp_to_key(pred))
+        return self
+
+    def peek(self, pred: typing.Callable[[typing.Any], None]):
+        for i in self.content:
+            pred(i)
+        return self
+
+    def filter(self, pred: typing.Callable[[typing.Any], bool]):
+        self.content = list(filter(pred, self.content))
+        return self
+
+    def map(self, pred: typing.Callable[[typing.Any], typing.Any]):
+        self.content = list(map(pred, self.content))
+        return self
+
+    def flatMap(self, pred: "typing.Callable[[typing.Any],Stream]"):
+        self.content = list(
+            itertools.chain.from_iterable([s.content for s in map(pred, self.content)])
+        )
+        return self
+
+    def distinct(self):
+        self.content = Deduplicate(self.content)
+        return self
+
+    class Collector:
+        def __init__(self, collectImpl):
+            self.collectImpl = collectImpl
+
+        def do(self, stream):
+            return self.collectImpl(stream)
+
+        @staticmethod
+        def toList():
+            return Stream.Collector(lambda stream: list(stream.content))
+
+        @staticmethod
+        def toDict(keyPred, valuePred):
+            return Stream.Collector(
+                lambda stream: {keyPred(i): valuePred(i) for i in stream.content}
+            )
+
+        @staticmethod
+        def groupBy(keyPred):
+            return Stream.Collector(
+                lambda stream: {
+                    key: list(group)
+                    for key, group in itertools.groupby(
+                        sorted(stream.content, key=keyPred), key=keyPred
+                    )
+                }
+            )
+
+    def collect(self, collector: "Stream.Collector"):
+        return collector.do(self)

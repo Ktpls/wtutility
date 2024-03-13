@@ -267,7 +267,7 @@ def performDataEnh():
     #     ax = fig.add_subplot(pltshape[0], pltshape[1], i)
     #     ax.imshow(si.lbl)
 
-    sampleNum = 6000
+    sampleNum = 10000
     deProg = Progress(sampleNum)
     idxsrc = list([dataset.rndIndex() for i in range(sampleNum)])
     for i, idx in enumerate(idxsrc):

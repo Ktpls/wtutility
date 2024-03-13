@@ -28,7 +28,7 @@ class NnTrackerDataset:
 
 
 print("loading dataset")
-datasetname = "LE2REnh"
+datasetname = "largeEnoughToRecon"
 datasetroot = r"C:\file\code\wtutility/exp/DLOnOpdarPlaneDetection/dataset/"
 datasets = {
     "LE2REnh": NnTrackerDataset(r"LE2REnh/LE2REnh.zip", r"LE2REnh/all.xlsx", "zip"),
@@ -62,7 +62,7 @@ test_data = labeldataset().init(
     test_data.datasettype,
     None,
     BaseModule4NNTracker.stdShape,
-    rtDataAugOn=False,
+    rtDataAugOn=True,
 )
 print("load finished")
 
@@ -89,26 +89,19 @@ def calclose(pi, pihat):
         pi[:, 3],
     )
 
-    isObjCoef = torch.ones_like(pi)
-    # dont estimate pos and size when is no object
-    isObjCoef[isObj != 1, 1:] = 0
-
-    loss = torch.sum(
-        (
-            (
-                torch.tensor(
-                    [
-                        [1, 1, 1, 3],
-                    ],
-                    dtype=torch.float32,
-                    device=device,
-                    requires_grad=False,
-                )
-            )
-            * (pihat - pi) ** 2
-        )
-        * isObjCoef
+    coef = torch.ones_like(
+        pi,
+        dtype=torch.float32,
+        device=device,
+        requires_grad=False,
     )
+    # enphasize wing span
+    coef[:, 3] = 3
+    # dont estimate pos and size when is no object
+    coef[isObj != 1, 1:] = 0
+    coef[isObj != 1, 0] = 3
+
+    loss = torch.sum(((pihat - pi) ** 2) * coef)
     # loss = torch.log10(loss + 1e-10)
     return loss
 
@@ -132,28 +125,34 @@ def onoutput(batch, aveerr):
     with torch.no_grad():
         model.eval()
         lossTotal = 0
+        numTotal = 0
         for src, lbl, pi in test_dataloader:
             src = src.to(device)
             lbl = lbl.to(device)
             pi = pi.to(device)
             pihat = model.forward(src)
             lossTotal += calclose(pi, pihat).item()
+            numTotal += batchsizeof(src)
             break
-    print(f"testaveerr: {lossTotal/len(test_data)}")
+    print(f"testaveerr: {lossTotal/numTotal}")
     # writer.add_scalar("aveerr", aveerr, batch)
 
 
-trainpipe.train(
-    train_dataloader,
-    torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2),
-    trainmainprogress,
-    customSubOnOutput=onoutput,
-)
+# trainpipe.train(
+#     train_dataloader,
+#     torch.optim.AdamW(
+#         filter(lambda x: x.requires_grad is not False, model.parameters()),
+#         lr=1e-4,
+#         weight_decay=1e-2,
+#     ),
+#     trainmainprogress,
+#     customSubOnOutput=onoutput,
+# )
 
 # %%
 # all the continious running should only be applied on codes above! plz stop here
-if __name__ == "__main__":
-    exit()
+# if __name__ == "__main__":
+#     exit()
 
 
 # %% view effect
@@ -176,20 +175,16 @@ def viewmodel(datasetusing):
     with torch.no_grad():
         for i in range(samplenum):
             src, lbl, pi = datasetusing[0]
-            src = src.to(device)
-            lbl = lbl.to(device)
-            pi = pi.to(device)
-            batchedsrc = src.reshape((1,) + src.shape)
             tstart = time.perf_counter()
-            pihat = model.forward(batchedsrc)
+            pihat = model.forward(src.reshape((1,) + src.shape).to(device))
             totalinferencetime += time.perf_counter() - tstart
             infercount += 1
-            pihat = np.array(pihat[0].cpu())
-            # to ndarray
+            pihat = pihat[0].cpu().numpy()
 
-            datatuple = [src, lbl]
-            datatuple = [tensorimg2ndarray(d) for d in datatuple]
-            src, lbl = datatuple
+            pi = pi.numpy()
+            src, lbl = [tensorimg2ndarray(d) for d in [src, lbl]]
+
+            # lblFromPi = planeInfo2Lbl(pi, BaseModule4NNTracker.stdShape)
             lblhat = planeInfo2Lbl(pihat, BaseModule4NNTracker.stdShape)
             npp.subplot(i, 0)
             plt.title(PI2Str(pi))
@@ -199,6 +194,7 @@ def viewmodel(datasetusing):
                 np.array(
                     [
                         lbl,
+                        # lblFromPi,
                         np.zeros_like(lbl),
                         lblhat,
                     ]
