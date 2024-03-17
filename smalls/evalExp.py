@@ -8,7 +8,7 @@ try:
         exp = sys.argv[i]
     else:
         exp = ReadTextFile(sys.argv[i])
-    print(expparser.expparse(sys.argv[i]))
+    print(expparser.expparse(exp))
 except Exception as err:
     print(err)
 os.system("pause")

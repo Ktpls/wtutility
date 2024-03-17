@@ -169,6 +169,7 @@ class nntracker_respi(torch.nn.Module):
         super().__init__()
         weights = torchvision.models.ResNet18_Weights.DEFAULT
         backbone = torchvision.models.resnet18(weights=weights)
+        backboneOutShape = 512
         for name, param in backbone.named_parameters():
             matched = False
             for fl in frozenLayers:
@@ -183,12 +184,12 @@ class nntracker_respi(torch.nn.Module):
 
         self.mod = nn.Sequential(
             res_through(
-                nn.Linear(512, 512),
+                nn.Linear(backboneOutShape, backboneOutShape),
                 nn.LeakyReLU(),
-                nn.Linear(512, 512),
+                nn.Linear(backboneOutShape, backboneOutShape),
                 nn.LeakyReLU(),
             ),
-            nn.Linear(512, 4),
+            nn.Linear(backboneOutShape, 4),
             nn.LeakyReLU(),
         )
 

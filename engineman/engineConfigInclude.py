@@ -37,22 +37,22 @@ class EngineConfigHost:
     __configs__ = list()
 
     @staticmethod
-    def Register(
-        planeName: str | list[str],
-        checkRate: float = 5,
-        engineConfigName: str = "",
-    ):
-        def toGetLogic(engineConfig: typing.Callable):
-            EngineConfigHost.__configs__.append(
-                EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
-            )
-            return engineConfig
-
-        return toGetLogic
-
-    @staticmethod
     def GetConfigs():
         return EngineConfigHost.__configs__
+
+
+def HostedEngineConfig(
+    planeName: str | list[str],
+    checkRate: float = 5,
+    engineConfigName: str = "",
+):
+    def toGetLogic(engineConfig: typing.Callable):
+        EngineConfigHost.__configs__.append(
+            EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
+        )
+        return engineConfig
+
+    return toGetLogic
 
 
 def MappingAxis(axSrc: Axis, axDest: Axis, mapping: list[tuple[float, float]]):

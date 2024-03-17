@@ -7,7 +7,7 @@ else:
     # from utilkaggle import *
     pass
 from torchvision.transforms import ToTensor
-
+import torchvision
 from torch.utils.data import Dataset
 import numpy as np
 
@@ -267,6 +267,8 @@ class labeldataset(Dataset):
             prog.update(i)
         self.items = items
         prog.setFinish()
+        self.augger = torchvision.transforms.AutoAugment()
+        self.totensor = torchvision.transforms.ToTensor()
 
         return self
 
@@ -288,12 +290,24 @@ class labeldataset(Dataset):
             torch.tensor(item.pi, dtype=torch.float32),
         )
 
+    def aug(self, img):
+        img *= 255
+        img = img.astype(np.uint8)
+        img = self.totensor(img).type(dtype=torch.uint8)
+        img = self.augger(img)
+        img = tensorimg2ndarray(img).astype(np.float32) / 255
+        return img
+
     def __getitem__(self, idx):
         index = self.rndIndex()
         item = self.items[index]
         if self.rtDataAugOn:
-            item = self.rtDataAug(item)
-        return labeldataset.procItemToTensor(item)
+            # item = self.rtDataAug(item)
+            item = copy.deepcopy(item)
+            item.spl = self.aug(item.spl)
+            item.lbl = self.aug(item.lbl)
+        tup = labeldataset.procItemToTensor(item)
+        return tup
 
     def rndIndex(self):
         return int(len(self.items) * np.random.random())

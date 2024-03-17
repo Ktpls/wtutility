@@ -1,7 +1,7 @@
 from utilref import *
 from engineman.engineman import *
-activeWindow(GetWtHwnd())
+# activeWindow(GetWtHwnd())
 PreciseSleep(1)
 Rhythms.GoodNotify.play()
-Radiator().set(0.75)
+PropPitch().set(0.75)
 Rhythms.GoodNotify.play()

@@ -1,7 +1,57 @@
 from utilitypack.utility import *
 import keyshortcut.keyshortcut as keyshortcut
+from .engineConfigInclude import *
 from .engineConfig import *
 from .engineman_config import *
+
+
+@Singleton
+class DetachedEngineManStopSignal:
+
+    class DetachedEngineManStopSignalCalledException(Exception): ...
+
+    def __init__(self):
+        self.val = False
+
+    def set(self):
+        self.val = True
+
+    def reset(self):
+        self.val = False
+
+    def get(self):
+        return self.val
+
+    def throwOnIsSet(self):
+        """
+        call this on check point in time consuming works
+        """
+        if self.get():
+            raise DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException()
+
+    @EasyWrapper
+    @staticmethod
+    def DEMSSCExceptionProcessed(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except (
+                DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException
+            ) as err:
+                ...
+
+        return wrapper
+
+
+def GetAllEngineConfig():
+    import engineman.engineConfig as engineConfig
+
+    ret = dict()
+    for k, v in engineConfig.__dict__.items():
+        if v.__class__ == type and issubclass(v, engineConfig.EngineConfig):
+            ret[k] = v
+    print(ret)
 
 
 def AxisUnsupportedProcessed(f):
@@ -88,6 +138,7 @@ class Solution:
         nextSolId = 0
         if not action():
             while True:
+                DetachedEngineManStopSignal().throwOnIsSet()
                 if nextSolId < len(solution):
                     solution[nextSolId].toEnable()
                     PreciseSleep(SolutionInterval)
@@ -134,6 +185,7 @@ class ControlableEngineAxis(Axis):
             issuccessful = ControlableEngineAxis.trychange_issuccessful_eq
 
         def inner():
+            DetachedEngineManStopSignal().throwOnIsSet()
             prev = self.get()
             action()
             PreciseSleep(delayAfterAction)
@@ -156,6 +208,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
     @AxisUnsupportedProcessed
     def set(self, target):
         while True:
+            DetachedEngineManStopSignal().throwOnIsSet()
             nowVal = self.get()
             if nowVal is None:
                 raise AxisUnsupported()
@@ -167,33 +220,35 @@ class DiscreteCEAxis(ControlableEngineAxis):
 
 class ContiniousCEAxis(ControlableEngineAxis):
     # pid params expect axis value within [0,1]
-    controller = PIDController(3.5, 0, 0.35)
+    controller = PIDController(4, 0, 0.1)
     valMax = 1
     valMin = 0
 
     def turnUp(self, holdTime):
+        if holdTime < keyPressMiniumHoldingTime:
+            holdTime = keyPressMiniumHoldingTime
         self.tryChange(
             lambda: self.turnUpKey.hold(holdTime),
-            lambda prev, after: ControlableEngineAxis.trychange_issuccessful_eq(
-                prev, after
-            )
-            or FloatEq(prev, self.valMax)
-            or holdTime <= continousCeAxisMinSensitivity,
+            lambda prev, after: (after > prev)
+            or holdTime <= continousCeAxisMinSensitivity
+            or FloatEq(prev, self.valMax),
         )
 
     def turnDown(self, holdTime):
+        if holdTime < keyPressMiniumHoldingTime:
+            holdTime = keyPressMiniumHoldingTime
+
         self.tryChange(
-            lambda: self.turnDownKey.hold(holdTime),
-            lambda prev, after: ControlableEngineAxis.trychange_issuccessful_eq(
-                prev, after
-            )
-            or FloatEq(prev, self.valMin)
-            or holdTime <= continousCeAxisMinSensitivity,
+            lambda: (self.turnDownKey.hold(holdTime)),
+            lambda prev, after: (after < prev)
+            or holdTime <= continousCeAxisMinSensitivity
+            or FloatEq(prev, self.valMin),
         )
 
     @AxisUnsupportedProcessed
     def set(self, target):
         while True:
+            DetachedEngineManStopSignal().throwOnIsSet()
             nowVal = self.get()
             err = target - nowVal
             if abs(err) <= continousControlableEngineAxisErrorAllowed:
@@ -436,10 +491,17 @@ class EngineMan:
                 """
                 get failure and axisunsupported failure are processed in get and set,
                 config.check wont need to face them
+                stop signal passes by to the outter loop
                 """
-                print(err)
-                traceback.print_exc()
-                raise err
+                if isinstance(
+                    err,
+                    DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException,
+                ):
+                    raise err
+                else:
+                    print(err)
+                    traceback.print_exc()
+                    raise err
 
     def setService(self, planeName):
         if self.planeName == planeName or (
@@ -481,10 +543,20 @@ class DetachedEngineMan(StoppableThread):
             pool,
         )
 
+    def stop(self):
+        DetachedEngineManStopSignal().set()
+        super().stop()
+
     def foo(self):
         em = EngineMan()
+        DetachedEngineManStopSignal().reset()
         while True:
             if self.timeToStop():
                 break
-            em.check()
+            try:
+                em.check()
+            except (
+                DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException
+            ):
+                ...
             PreciseSleep(detachedEngineManLoopInterval)

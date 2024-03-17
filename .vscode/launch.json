@@ -13,7 +13,7 @@
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
-                "-e",
+                "C:\\Users\\KITA\\Desktop\\新文件 6.txt",
                 "30000/3.6-5679"
             ]
         },
