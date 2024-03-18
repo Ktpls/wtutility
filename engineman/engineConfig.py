@@ -37,13 +37,13 @@ class Yak3(EngineConfig):
 class Raiden(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
-        gauges.radiator.set(0.30)
+        gauges.radiator.set(0.35)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
             [
                 [None, 1],
-                [2500, 2],
+                [2400, 2],
             ],
         )
 
@@ -66,7 +66,7 @@ class I29(EngineConfig):
 @HostedEngineConfig(planeName="p-63a-5_ussr")
 class P63A5(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.radiator.set(1.0)
+        gauges.radiator.set(0.4)
 
 
 @HostedEngineConfig(planeName="saab_j21a_1")
@@ -78,7 +78,7 @@ class SaabJ21A(EngineConfig):
 
 
 @HostedEngineConfig(planeName="il_8_1944")
-class IL8(EngineConfig):
+class Il8(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
         gauges.radiator.set(0.5)
@@ -89,3 +89,18 @@ class Be6(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.93)
         gauges.radiator.set(1.0)
+
+
+@HostedEngineConfig(planeName="itp_m1")
+class Itp(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.52)
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.set(1.0)
+
+
+@HostedEngineConfig(planeName="p-47d_ussr")
+class P47D(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.set(1.0)

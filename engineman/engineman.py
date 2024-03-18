@@ -319,8 +319,13 @@ class OilRadiator(ContiniousCEAxis):
             .expectValid()
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
-        return indicator.oil_radiator_indicator or indicator.oil_radiator_lever1_1
+        return FirstNonNone(
+            indicator.oil_radiator_indicator,
+            indicator.oil_radiator_lever,
+            indicator.oil_radiator_lever1_1,
+        )
 
+    @AxisUnsupportedProcessed
     def setToMaxAnyway(self):
         getSupported = False
         try:
@@ -423,7 +428,7 @@ class Altitude(ReadOnlyAxis):
             .expectValid()
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
-        return indi.altitude_hour or indi.altitude_min or indi.altitude_10k
+        return FirstNonNone(indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
 
 
 @Singleton
@@ -456,7 +461,7 @@ class EngineMan:
             supercharger=Supercharger(),
             altitude=Altitude(),
         )
-        for i in EngineConfigHost.GetConfigs():
+        for i in EngineConfigHost.GetConfig():
             service: EngineConfigBean = i
             service.planeName = NormalizeIterableOrSingleArgToIterable(
                 service.planeName

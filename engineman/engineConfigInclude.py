@@ -37,17 +37,21 @@ class EngineConfigHost:
     __configs__ = list()
 
     @staticmethod
-    def GetConfigs():
+    def PutConfig(config: EngineConfigBean):
+        EngineConfigHost.__configs__.append(config)
+
+    @staticmethod
+    def GetConfig():
         return EngineConfigHost.__configs__
 
 
 def HostedEngineConfig(
     planeName: str | list[str],
-    checkRate: float = 5,
+    checkRate: float = 10,
     engineConfigName: str = "",
 ):
     def toGetLogic(engineConfig: typing.Callable):
-        EngineConfigHost.__configs__.append(
+        EngineConfigHost.PutConfig(
             EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
         )
         return engineConfig
@@ -66,12 +70,9 @@ def MappingAxis(axSrc: Axis, axDest: Axis, mapping: list[tuple[float, float]]):
     """
     assert len(mapping) >= 1
     val = axSrc.get()
-    mapped = mapping[0][1]
+    mapped = None
     for i in range(0, len(mapping)):
-        if i + 1 >= len(mapping):
-            mapped = mapping[i][1]
-            break
-        elif val <= mapping[i + 1][0]:
+        if i + 1 >= len(mapping) or val <= mapping[i + 1][0]:
             mapped = mapping[i][1]
             break
     axDest.set(mapped)
