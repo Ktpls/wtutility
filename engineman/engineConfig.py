@@ -14,8 +14,8 @@ radiator, oilRadiator, propPitch
 class G55S(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
-        gauges.oilRadiator.setToMaxAnyway()
         gauges.radiator.set(0.80)
+        gauges.oilRadiator.setToMaxAnyway()
 
 
 @HostedEngineConfig(planeName="yak-3_france")

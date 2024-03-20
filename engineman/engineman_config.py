@@ -5,4 +5,4 @@ continousControlableEngineAxisErrorAllowed = 0.009
 continousCeAxisMinSensitivity = 0.0
 keyPressInterval = 0.1
 delayAfterAction = 1
-keyPressMiniumHoldingTime = 0.06
+keyPressMiniumHoldingTime = 0.075

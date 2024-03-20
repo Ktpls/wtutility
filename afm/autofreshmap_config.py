@@ -5,7 +5,6 @@ singlechanneleddetection = False
 subsampleddetection = True
 subsampleddetectionrate = 0.1
 
-log2file = False
 dbglog = True
 waitafterdone = False
 

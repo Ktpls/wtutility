@@ -10,6 +10,8 @@ from torchvision.transforms import ToTensor
 import torchvision
 from torch.utils.data import Dataset
 import numpy as np
+import torch
+import cv2 as cv
 
 
 class ImgReader:
@@ -124,10 +126,66 @@ class SampleItem:
 import copy
 
 
-def dataAug(src, lbl):
-    backcolor = np.mean(src, axis=(0, 1), keepdims=True)
+class NonAffineTorchAutoAugment(torchvision.transforms.AutoAugment):
+    def forward(self, img: torch.Tensor) -> torch.Tensor:
+        img = (img * 255).to(dtype=torch.uint8)
+        img = super().forward(img)
+        img = img.to(dtype=torch.float32) / 255
+        return img
 
-    lbl = NormalizeImgToChanneled_CvFormat(lbl)
+    def _get_policies(
+        self, policy: torchvision.transforms.autoaugment.AutoAugmentPolicy
+    ):
+        policies = [
+            [("AutoContrast", 0.5, None), ("Equalize", 0.9, None)],
+            [("AutoContrast", 0.8, None), ("Solarize", 0.2, 8)],
+            [("AutoContrast", 0.9, None), ("Solarize", 0.8, 3)],
+            [("Brightness", 0.1, 3), ("Color", 0.7, 0)],
+            [("Brightness", 0.9, 6), ("Color", 0.2, 8)],
+            [("Color", 0.4, 0), ("Equalize", 0.6, None)],
+            [("Color", 0.4, 3), ("Brightness", 0.6, 7)],
+            [("Color", 0.6, 4), ("Contrast", 1.0, 8)],
+            [("Color", 0.8, 8), ("Solarize", 0.8, 7)],
+            [("Color", 0.9, 9), ("Equalize", 0.6, None)],
+            [("Contrast", 0.6, 7), ("Sharpness", 0.6, 5)],
+            [("Equalize", 0.0, None), ("Equalize", 0.8, None)],
+            [("Equalize", 0.2, None), ("AutoContrast", 0.6, None)],
+            [("Equalize", 0.2, None), ("Equalize", 0.6, None)],
+            [("Equalize", 0.3, None), ("AutoContrast", 0.4, None)],
+            [("Equalize", 0.4, None), ("Solarize", 0.2, 4)],
+            [("Equalize", 0.6, None), ("Equalize", 0.5, None)],
+            [("Equalize", 0.6, None), ("Posterize", 0.4, 6)],
+            [("Equalize", 0.6, None), ("Solarize", 0.6, 6)],
+            [("Equalize", 0.8, None), ("Equalize", 0.6, None)],
+            [("Equalize", 0.8, None), ("Invert", 0.1, None)],
+            [("Invert", 0.1, None), ("Contrast", 0.2, 6)],
+            [("Invert", 0.6, None), ("Equalize", 1.0, None)],
+            [("Invert", 0.9, None), ("AutoContrast", 0.8, None)],
+            [("Invert", 0.9, None), ("Equalize", 0.6, None)],
+            [("Posterize", 0.6, 7), ("Posterize", 0.6, 6)],
+            [("Posterize", 0.8, 5), ("Equalize", 1.0, None)],
+            [("Sharpness", 0.3, 9), ("Brightness", 0.7, 9)],
+            [("Sharpness", 0.4, 7), ("Invert", 0.6, None)],
+            [("Sharpness", 0.8, 1), ("Sharpness", 0.9, 3)],
+            [("Solarize", 0.4, 5), ("AutoContrast", 0.9, None)],
+            [("Solarize", 0.5, 2), ("Invert", 0.0, None)],
+            [("Solarize", 0.6, 3), ("Equalize", 0.6, None)],
+            [("Solarize", 0.6, 5), ("AutoContrast", 0.6, None)],
+        ]
+        policies = [
+            [
+                s
+                for s in p
+                if s[0]
+                not in ["TranslateX", "TranslateY", "Rotate", "ShearX", "ShearY"]
+            ]
+            for p in policies
+        ]
+        policies = [p for p in policies if len(p) >= 2]
+        return policies
+
+
+def affineAugment(m, theta, zoomrate, ifflip, movvec):
 
     zoom = lambda rate: np.array(
         [[rate, 0, 0], [0, rate, 0], [0, 0, 1]],
@@ -150,55 +208,25 @@ def dataAug(src, lbl):
         dtype=np.float32,
     )
 
-    h, w, c = lbl.shape
+    h, w, c = m.shape
 
-    X = np.arange(w).reshape(1, w, 1)
-    Y = np.arange(h).reshape(h, 1, 1)
-    lblTouchingEdge = np.clip(
-        ((X == 0) + (X == w - 1) + (Y == 0) + (Y == h - 1)) * lbl, 0, 1
+    m = cv.warpAffine(
+        m,
+        (
+            shift(0.5 * w, 0.5 * h)
+            @ shift(*movvec)
+            @ flip(*ifflip)
+            @ zoom(zoomrate)
+            @ rot(theta)
+            @ shift(-0.5 * w, -0.5 * h)
+        )[0:2, :],
+        np.flip(m.shape[0:2]),
+        borderMode=cv.BORDER_REPLICATE,
     )
+    return m
 
-    while True:
 
-        theta = np.random.uniform(-np.pi / 2, np.pi / 2)
-        zoomrate = np.random.uniform(0.75, 1.25)
-        ifflip = np.random.choice([1, -1], size=2, replace=True)
-        movvec = np.random.uniform(-50, 50, size=2)
-
-        src1, lbl1, lte1 = (
-            Stream([src, lbl, lblTouchingEdge])
-            .map(
-                lambda m: cv.warpAffine(
-                    m,
-                    (
-                        shift(0.5 * w, 0.5 * h)
-                        @ flip(*ifflip)
-                        @ shift(*movvec)
-                        @ zoom(zoomrate)
-                        @ rot(theta)
-                        @ shift(-0.5 * w, -0.5 * h)
-                    )[0:2, :],
-                    np.flip(m.shape[0:2]),
-                    borderMode=cv.BORDER_REPLICATE,
-                )
-            )
-            .map(NormalizeImgToChanneled_CvFormat)
-            .collect(Stream.Collector.toList())
-        )
-
-        lbl1 = np.where(lbl1 > 0.5, 1, 0)
-
-        # check
-        # expect edge of plane wont be processed with boundary technique
-        notTouching = np.sum(lte1) <= 8
-
-        if notTouching:
-            src, lbl = src1, lbl1
-            break
-
-    black_pixels = np.where(np.sum(src, axis=2) < 0.1)
-    src[black_pixels] = backcolor
-
+def noiseAugment(m):
     # rand line
     def draw_random_line(image, n):
         height, width, _ = image.shape
@@ -209,16 +237,15 @@ def dataAug(src, lbl):
             cv.line(image, start_point, end_point, color, 1)
         return image
 
-    src = draw_random_line(src, 5)
+    m = draw_random_line(m, 5)
 
     def gaussianNoise(src):
-        noise = np.random.normal(0, 0.2, src.shape)
+        noise = np.random.normal(0, 0.1, src.shape)
         src = np.clip(src + noise, 0, 1, dtype=np.float32)
         return src
 
-    src = gaussianNoise(src)
-
-    return src, lbl
+    m = gaussianNoise(m)
+    return m
 
 
 class labeldataset(Dataset):
@@ -267,7 +294,7 @@ class labeldataset(Dataset):
             prog.update(i)
         self.items = items
         prog.setFinish()
-        self.augger = torchvision.transforms.AutoAugment()
+        self.augger = NonAffineTorchAutoAugment()
         self.totensor = torchvision.transforms.ToTensor()
 
         return self
@@ -276,11 +303,25 @@ class labeldataset(Dataset):
         return self.size
 
     def rtDataAug(self, item: SampleItem):
-        item = copy.deepcopy(item)
-        item.spl, item.lbl = dataAug(item.spl, item.lbl)
-        item.lbl = item.lbl[:, :, 0]
-        item.pi = lbl2PlaneInfo(item.lbl)
-        return item
+        spl, lbl = item.spl, item.lbl
+        lbl = NormalizeImgToChanneled_CvFormat(lbl)
+
+        h, w, c = spl.shape
+        theta = np.random.uniform(-np.pi / 2, np.pi / 2)
+        zoomrate = np.random.uniform(0.75, 1.25)
+        ifflip = np.random.choice([1, -1], size=2, replace=True)
+        movvec = np.random.uniform(-0.3, 0.3, size=2) * [w, h]
+        spl = affineAugment(spl, theta, zoomrate, ifflip, movvec)
+        lbl = affineAugment(lbl, theta, zoomrate, ifflip, movvec)
+        lbl = np.where(lbl > 0.5, 1, 0)
+
+        spl = noiseAugment(np.ascontiguousarray(spl))
+
+        spl = torchvision.transforms.ToTensor()(spl)
+        spl = self.augger(spl)
+        spl = tensorimg2ndarray(spl)
+
+        return SampleItem("", spl, lbl, lbl2PlaneInfo(item.lbl))
 
     @staticmethod
     def procItemToTensor(item):
@@ -290,22 +331,11 @@ class labeldataset(Dataset):
             torch.tensor(item.pi, dtype=torch.float32),
         )
 
-    def aug(self, img):
-        img *= 255
-        img = img.astype(np.uint8)
-        img = self.totensor(img).type(dtype=torch.uint8)
-        img = self.augger(img)
-        img = tensorimg2ndarray(img).astype(np.float32) / 255
-        return img
-
     def __getitem__(self, idx):
         index = self.rndIndex()
         item = self.items[index]
         if self.rtDataAugOn:
-            # item = self.rtDataAug(item)
-            item = copy.deepcopy(item)
-            item.spl = self.aug(item.spl)
-            item.lbl = self.aug(item.lbl)
+            item = self.rtDataAug(item)
         tup = labeldataset.procItemToTensor(item)
         return tup
 

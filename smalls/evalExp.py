@@ -1,5 +1,6 @@
 from utilref import *
 import sys
+import traceback
 
 text = ""
 print("input exp:")
@@ -8,5 +9,10 @@ while True:
     if line == "":
         break
     text += line + "\n"
-print(expparser.expparse(text))
+try:
+    result = expparser.expparse(text)
+except Exception as err:
+    traceback.print_exc()
+    result = str(err)
+print(result)
 os.system("pause")

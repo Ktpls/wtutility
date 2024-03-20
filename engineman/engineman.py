@@ -3,6 +3,7 @@ import keyshortcut.keyshortcut as keyshortcut
 from .engineConfigInclude import *
 from .engineConfig import *
 from .engineman_config import *
+from globalsys.globalsys import *
 
 
 @Singleton
@@ -27,6 +28,7 @@ class DetachedEngineManStopSignal:
         call this on check point in time consuming works
         """
         if self.get():
+            GSLogger().logger.debug("throw On DetachedEngineManStopSignal")
             raise DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException()
 
     @EasyWrapper
@@ -532,12 +534,6 @@ class EngineMan:
                 > self.services[planeName].checkRate
             ):
                 self.serviceDoCheck()
-
-    def setEngineStatusDemo(self):
-        OilRadiator().setToMaxAnyway()
-        Radiator().set(0.75)
-        PropPitch().set(0.75)
-        Supercharger().set(2)
 
 
 class DetachedEngineMan(StoppableThread):

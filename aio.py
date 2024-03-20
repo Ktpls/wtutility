@@ -5,6 +5,7 @@ from utilitypack.util_app import *
 from aio_config import *
 import functools
 import keyshortcut.keyshortcut as keyshortcut
+import globalsys.globalsys as globalsys
 
 telescopepos = (100, 100)
 
@@ -121,6 +122,10 @@ def main():
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
+        
+        @app.Hotkey("TestAsyncBulletin", win32con.VK_F7)
+        def testAsyncBulletin():
+            globalsys.GSLogger().logger.debug("dbgInfo")
 
         @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
@@ -244,6 +249,12 @@ def main():
         bootAsAdmin(__file__)
         Rhythms.Reboot.play()
         sys.exit()
+    
+    @app.Business()
+    def PullBulletinQueueToBulletin():
+        msg=globalsys.BulletinQueue().get()
+        if msg is not None:
+            app.bulletin.putup(msg)
 
     app.go()
 

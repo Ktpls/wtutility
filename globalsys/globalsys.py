@@ -1,4 +1,4 @@
-from utilitypack.utility import *
+from utilitypack.util_solid import *
 from .globalsys_config import *
 from .queue4Bulletin import *
 import logging
@@ -12,15 +12,16 @@ class GSLogger:
         logger = logging.getLogger()
         logger.setLevel(loggingLevel)
 
-        # Create a custom file handler
-        file_handler = BulletinHandler(logging.INFO)
-
-        # Create a formatter and add it to the handler
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-
         # Add the handler to the logger
-        logger.addHandler(file_handler)
+        bltHdl = BulletinHandler(logging.INFO)
+        fileHdl = logging.FileHandler(
+            os.path.join(logFilePath, f"{datetime.now().strftime('%Y-%m-%d')}.log")
+        )
+        fileHdl.setFormatter(logging.Formatter(loggingFormat))
+        for h in [
+            bltHdl,
+            fileHdl,
+        ]:
+            logger.addHandler(h)
 
-        # Logging information
-        logger.info("This is an informational message")
+        self.logger = logger

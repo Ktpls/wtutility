@@ -1,9 +1,9 @@
-from logging import exception
 
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
+from globalsys.globalsys import *
 
 
 def signName2Path(name):
@@ -38,30 +38,6 @@ elif resolution == "m1920x1080r1280x720":
     pointtemplatezoomrate = 1.5  # 1920/1280
 else:
     raise NotImplementedError("unknown resolution")
-
-if dbglog:
-    if log2file:
-        logg = Logger(
-            os.path.join(
-                afmassetroot,
-                rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log',
-            )
-        )
-
-        def allchanneloutput(s):
-            logg(s)
-            print(s)
-
-    else:
-        logg = None
-
-        def allchanneloutput(s):
-            print(s)
-
-else:
-
-    def allchanneloutput(s):
-        pass
 
 
 def assetpath2realpath(ap):
@@ -144,8 +120,7 @@ class FixedPositionImgMatcher:
         if cutRequired:
             mscr = self.cutroi(mscr)
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
-        if dbglog:
-            allchanneloutput(f"{self.path} detecting: s={s}")
+        GSLogger().logger.debug(f"{self.path} detecting: s={s}")
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
         return s < thresh
 
@@ -163,8 +138,7 @@ def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = 1 - cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
-    if dbglog:
-        allchanneloutput(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
+    GSLogger().logger.debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
     return minloc if minval <= simu else None
 
 
@@ -190,10 +164,9 @@ class UnlocatedFullScreenImgMatcher:
     def find(self, mscr, specifiedThresh=None):
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
-        if dbglog:
-            allchanneloutput(
-                f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
-            )
+        GSLogger().logger.debug(
+            f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
+        )
         return ret
 
     def detect(self, mscr, specifiedThresh=None):
@@ -291,17 +264,17 @@ class MapDetectorImpled(detector, MapDetector):
 
         def detectMapShape(mtcid=0, thresh=None):
             ret = self.mtc[mtcid].detect(mscr, thresh)
-            allchanneloutput(f"MapShapeResult={ret}")
+            GSLogger().logger.debug(f"MapShapeResult={ret}")
             return ret
 
         def distance(a, b):
             err = np.sqrt(((a - b) ** 2).sum())
-            allchanneloutput(f"dist={err}")
+            GSLogger().logger.debug(f"dist={err}")
             return err
 
         def detectSpawn():
             center = getMapSpawnCenter(mapcut)
-            allchanneloutput(f"spawn={center}")
+            GSLogger().logger.debug(f"spawn={center}")
             return center
 
         def spawnAround(point, err=None):
@@ -422,12 +395,12 @@ class freshAMap(StoppableThread):
             return ss.shotbgr()
 
         while True:
-            allchanneloutput("try matching")
+            GSLogger().logger.debug("try matching")
 
             # detect loading map
             loadingscreen = None
 
-            allchanneloutput(str("detecting loading map"))
+            GSLogger().logger.debug(str("detecting loading map"))
 
             Rhythms.Notify.play()
 
@@ -474,7 +447,7 @@ class freshAMap(StoppableThread):
                 return False
 
             Rhythms.Notify.play()
-            allchanneloutput("loading map")
+            GSLogger().logger.debug("loading map")
 
             # determine if map desired
             ret = False
@@ -482,21 +455,21 @@ class freshAMap(StoppableThread):
             for n, d in whitelistedmapdetector.items():
                 # done this by hand to get 2 times faster
                 if d.detect(loadingscreen):
-                    allchanneloutput(f"{n}")
+                    GSLogger().logger.debug(f"{n}")
                     ret = True
                     break
 
-            allchanneloutput(str(ret))
+            GSLogger().logger.debug(str(ret))
             if ret:
                 # enter game
                 Rhythms.Success.play()
-                allchanneloutput("good map")
+                GSLogger().logger.debug("good map")
                 return True
 
             # detected banned map
             wifi.setOff()
             Rhythms.Notify.play()
-            allchanneloutput("bad map")
+            GSLogger().logger.debug("bad map")
 
             # detect game canceled, which is not in loading map scence
             def detectGameCanceled(scr):
@@ -526,7 +499,7 @@ class freshAMap(StoppableThread):
 
             wifi.setOn()
             Rhythms.Notify.play()
-            allchanneloutput("canceled")
+            GSLogger().logger.debug("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
             SleepUntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)

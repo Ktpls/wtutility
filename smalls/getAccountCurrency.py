@@ -82,10 +82,11 @@ def main():
         print(i.itemCode)
         i.price = tgn.getSellPrice(i.itemCode)
 
-    total = np.sum([i.price * i.amount for i in inventory]) + 32
+    total = np.sum([i.price * i.amount for i in inventory]) + 49.2
     line = [GetTimeString(), int(time.time()), total]
     line = [str(c) for c in line]
     AppendFile("asset/statistics/inventoryAccount.csv", ",".join(line) + "\n")
+    print(total)
 
 
 main()
