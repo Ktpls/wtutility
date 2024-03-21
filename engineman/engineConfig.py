@@ -10,7 +10,7 @@ radiator, oilRadiator, propPitch
 """
 
 
-@HostedEngineConfig(planeName="g_55s", checkRate=60)
+@HostedEngineConfig(planeName="g_55s")
 class G55S(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
@@ -87,7 +87,14 @@ class Il8(EngineConfig):
 @HostedEngineConfig(planeName="be_6")
 class Be6(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.93)
+        MappingAxis(
+            gauges.altitude,
+            gauges.propPitch,
+            [
+                [None, 0.93],
+                [2000, 1.0],
+            ],
+        )
         gauges.radiator.set(1.0)
 
 
