@@ -1,11 +1,20 @@
 import dataclasses
 import typing
+import functools
 
 
 class Axis:
     def set(self, target): ...
 
     def get(self, newest=None): ...
+
+
+class LambdaAxis(Axis):
+    def __init__(self, func):
+        self.func = func
+
+    def get(self, newest=None):
+        return self.func()
 
 
 @dataclasses.dataclass
@@ -15,6 +24,8 @@ class Gauges:
     propPitch: Axis
     supercharger: Axis
     altitude: Axis
+    oilTemp: Axis
+    waterTemp: Axis
 
 
 class AxisUnsupported(Exception): ...
@@ -72,7 +83,7 @@ def MappingAxis(axSrc: Axis, axDest: Axis, mapping: list[tuple[float, float]]):
     val = axSrc.get()
     mapped = None
     for i in range(0, len(mapping)):
-        if i + 1 >= len(mapping) or val <= mapping[i + 1][0]:
+        if i + 1 >= len(mapping) or val < mapping[i + 1][0]:
             mapped = mapping[i][1]
             break
     axDest.set(mapped)

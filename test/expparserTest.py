@@ -100,16 +100,17 @@ def benchMark():
             result = e.eval(var=var, func=func)
         pg.update(t)
     ps.stop()
+    pg.setFinish()
     print(ps.time() / turnNum)
 
 
 def playground():
     var = {**expparser.BasicConstantLib}
-    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y, 's3': lambda: 3}
+    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y, "s3": lambda: 3}
     exp = "f(1,1),f(2,2),sin(pi/2),pi,s3()"
     result = expparser.compile(exp)
     print(result)
     print(result.eval(var, func))
 
 
-benchMark()
+unitTest()

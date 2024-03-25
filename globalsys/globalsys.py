@@ -9,7 +9,7 @@ class GSLogger:
 
     def __init__(self):
         # Create a logger
-        logger = logging.getLogger()
+        logger = logging.getLogger(globalSysLoggerName)
         logger.setLevel(loggingLevel)
 
         # Add the handler to the logger

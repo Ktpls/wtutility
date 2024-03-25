@@ -321,7 +321,7 @@ class OilRadiator(ContiniousCEAxis):
             .expectValid()
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
-        return FirstNonNone(
+        return Coalesce(
             indicator.oil_radiator_indicator,
             indicator.oil_radiator_lever,
             indicator.oil_radiator_lever1_1,
@@ -424,13 +424,41 @@ class Altitude(ReadOnlyAxis):
 
     @GetFailureToAxisUnsupported
     def get(self, newest=None):
-        indi = (
+        indi: Port8111.BeanIndicatorAir = (
             Port8111Cache()
             .get(Port8111.QueryType.indicator, newest)
             .expectValid()
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
-        return FirstNonNone(indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
+        return Coalesce(indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
+
+
+@Singleton
+class OilTemp(ReadOnlyAxis):
+
+    @GetFailureToAxisUnsupported
+    def get(self, newest=None):
+        indi: Port8111.BeanIndicatorAir = (
+            Port8111Cache()
+            .get(Port8111.QueryType.indicator, newest)
+            .expectValid()
+            .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+        )
+        return indi.oil_temperature
+
+
+@Singleton
+class WaterTemp(ReadOnlyAxis):
+
+    @GetFailureToAxisUnsupported
+    def get(self, newest=None):
+        indi: Port8111.BeanIndicatorAir = (
+            Port8111Cache()
+            .get(Port8111.QueryType.indicator, newest)
+            .expectValid()
+            .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
+        )
+        return indi.water_temperature
 
 
 @Singleton
@@ -447,6 +475,18 @@ class VehicleName(ReadOnlyAxis):
         )
 
 
+def getGauges():
+    return Gauges(
+        oilRadiator=OilRadiator(),
+        radiator=Radiator(),
+        propPitch=PropPitch(),
+        supercharger=Supercharger(),
+        altitude=Altitude(),
+        oilTemp=OilTemp(),
+        waterTemp=WaterTemp(),
+    )
+
+
 @Singleton
 class EngineMan:
     planeName: str = None
@@ -456,13 +496,7 @@ class EngineMan:
     services: dict[str, EngineConfigBean] = dict()
 
     def __init__(self):
-        self.gauges = Gauges(
-            oilRadiator=OilRadiator(),
-            radiator=Radiator(),
-            propPitch=PropPitch(),
-            supercharger=Supercharger(),
-            altitude=Altitude(),
-        )
+        self.gauges = getGauges()
         for i in EngineConfigHost.GetConfig():
             service: EngineConfigBean = i
             service.planeName = NormalizeIterableOrSingleArgToIterable(

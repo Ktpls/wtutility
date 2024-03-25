@@ -10,10 +10,12 @@ class BulletinQueue(queue.Queue):
         super().__init__(maxsize=queueBulletinMaxSize)
 
     def get(self):
-        try:
-            return super().get(False)
-        except queue.Empty:
-            return None
+        if not super().empty():
+            try:
+                return super().get(False)
+            except queue.Empty:
+                return None
+        return None
 
     def put(self, msg):
         super().put(msg)

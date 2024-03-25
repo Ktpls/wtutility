@@ -100,8 +100,24 @@ class Be6(EngineConfig):
 
 @HostedEngineConfig(planeName="itp_m1")
 class Itp(EngineConfig):
+    class HeatingLevel(LambdaAxis):
+        def __init__(self, gauges: Gauges):
+            super().__init__(
+                lambda: (
+                    1 if gauges.oilTemp.get() < 85 else (2 if gauges.oilTemp.get() < 87 else 3)
+                )
+            )
+
     def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.52)
+        MappingAxis(
+            gauges.altitude,
+            gauges.propPitch,
+            [
+                [None, 0.52],
+                [4000, 0.60],
+                [6000, 0.65],
+            ],
+        )
         gauges.radiator.set(1.0)
         gauges.oilRadiator.set(1.0)
 
@@ -111,3 +127,27 @@ class P47D(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(1.0)
         gauges.oilRadiator.set(1.0)
+
+
+@HostedEngineConfig(planeName="la-7b-20")
+class La5fn(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [3000, 2],
+            ],
+        )
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.setToMaxAnyway()
+
+
+@HostedEngineConfig(planeName="p-51d-20-na_j26")
+class P51C(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.setToMaxAnyway()
