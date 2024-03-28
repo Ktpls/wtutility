@@ -354,7 +354,7 @@ def loadAssetsNeeded4FreshAMap():
 
 
 def leaveButton():
-    sleep(1)
+    time.sleep(1)
     # move after click for not blocking next time detection
     moveto([0, 0])
 
@@ -379,7 +379,7 @@ class freshAMap(StoppableThread):
                     return False
                 if successCond(scr):
                     return True
-                sleep(sleeptime)
+                time.sleep(sleeptime)
 
         # init
         loadAssetsNeeded4FreshAMap()
@@ -479,7 +479,7 @@ class freshAMap(StoppableThread):
                 return False
 
             # sleep at least some time
-            sleep(minDelayAfterDisconnected)
+            time.sleep(minDelayAfterDisconnected)
             if not KeepDetecting(
                 successCond=detectGameCanceled,
                 cancelCond=lambda scr: self.timeToStop(),
@@ -635,7 +635,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             scr = shot()
             if foo(scr):
                 return True
-            sleep(sleeptime)
+            time.sleep(sleeptime)
 
     def moveMouseAway():
         moveto((0, 0))

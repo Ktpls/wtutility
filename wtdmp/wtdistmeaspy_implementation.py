@@ -709,4 +709,4 @@ class LoadCalibrationOperator(StoppableThread):
             log(f"control {control}")
             # get the real control, but without direction
             control = adjustCaliberation(control)
-            sleep(delayEveryCali)
+            time.sleep(delayEveryCali)

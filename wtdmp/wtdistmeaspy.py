@@ -24,7 +24,7 @@ class wtdistmeaspy:
     smallMapCollector = DataCollector(datacoll_smallmappath)
 
     def solveMapMainLogic(self):
-        sleep(measdelay)  # for network delay
+        time.sleep(measdelay)  # for network delay
 
         # solve as successfully as possible
         for i in range(retryOnFailure):
@@ -50,7 +50,7 @@ class wtdistmeaspy:
             # not found
             if ret.ym.state.smetype == SMException.SolveMapResultType.NO_ERR:
                 break
-            sleep(retryDelay)
+            time.sleep(retryDelay)
 
         def exceptionlist2str(el, spliter=None):
             if spliter is None:

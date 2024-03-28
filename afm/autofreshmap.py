@@ -41,5 +41,5 @@ def main():
 
 def test():
     activeWindow(GetWtHwnd())
-    sleep(1)
+    time.sleep(1)
     KeyPress(win32con.VK_RETURN)

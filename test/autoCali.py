@@ -2,7 +2,7 @@ from utilref import *
 import wtdmp.wtdistmeaspy
 
 activeWindow(GetWtHwnd())
-sleep(2)
+time.sleep(2)
 Rhythms.Notify.play()
 
 wtdmpv = wtdmp.wtdistmeaspy.wtdistmeaspy()

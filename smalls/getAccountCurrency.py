@@ -52,7 +52,7 @@ class TradeGaijinNet:
         if len(sells) == 0:
             return 0
         list.sort(sells, key=lambda x: x[0])
-        sleep(0.1)
+        time.sleep(0.1)
         return (sells[0][0]) / 10000
 
 
