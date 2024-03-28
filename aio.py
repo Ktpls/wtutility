@@ -122,7 +122,7 @@ def main():
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        
+
         @app.Hotkey("TestAsyncBulletin", win32con.VK_F7)
         def testAsyncBulletin():
             globalsys.GSLogger().logger.debug("dbgInfo")
@@ -150,7 +150,7 @@ def main():
             app.bulletin.putup("refreshing wifi")
             wifi = WifiRefresher()
             wifi.setOff()
-            sleep(1)
+            time.sleep(1)
             wifi.setOn()
             app.bulletin.putup(f"refresh done")
 
@@ -249,10 +249,10 @@ def main():
         bootAsAdmin(__file__)
         Rhythms.Reboot.play()
         sys.exit()
-    
+
     @app.Business()
     def PullBulletinQueueToBulletin():
-        msg=globalsys.BulletinQueue().get()
+        msg = globalsys.BulletinQueue().get()
         if msg is not None:
             app.bulletin.putup(msg)
 

@@ -104,20 +104,22 @@ class Itp(EngineConfig):
         def __init__(self, gauges: Gauges):
             super().__init__(
                 lambda: (
-                    1 if gauges.oilTemp.get() < 85 else (2 if gauges.oilTemp.get() < 87 else 3)
+                    1
+                    if gauges.oilTemp.get() < 85
+                    else (2 if gauges.oilTemp.get() < 87 else 3)
                 )
             )
 
     def check(self, gauges: Gauges):
-        MappingAxis(
-            gauges.altitude,
-            gauges.propPitch,
-            [
-                [None, 0.52],
-                [4000, 0.60],
-                [6000, 0.65],
-            ],
-        )
+        # MappingAxis(
+        # gauges.altitude,
+        # gauges.propPitch,
+        # [
+        # [None, 0.52],
+        # [4000, 0.60],
+        # [6000, 0.65],
+        # ],
+        # )
         gauges.radiator.set(1.0)
         gauges.oilRadiator.set(1.0)
 
@@ -129,8 +131,8 @@ class P47D(EngineConfig):
         gauges.oilRadiator.set(1.0)
 
 
-@HostedEngineConfig(planeName="la-7b-20")
-class La5fn(EngineConfig):
+@HostedEngineConfig(planeName=["la-7b-20", "la-5fn", "i_185_m82"])
+class M82Fn(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
         MappingAxis(

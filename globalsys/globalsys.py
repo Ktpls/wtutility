@@ -9,7 +9,7 @@ class GSLogger:
 
     def __init__(self):
         # Create a logger
-        logger = logging.getLogger(globalSysLoggerName)
+        logger = logging.getLogger(DefaultGlobalSysLoggerName)
         logger.setLevel(loggingLevel)
 
         # Add the handler to the logger
@@ -25,3 +25,21 @@ class GSLogger:
             logger.addHandler(h)
 
         self.logger = logger
+
+
+class WtUtilityModule:
+    def __init__(self):
+        pass
+
+    def load(*args, **kwargs):
+        pass
+
+    def unload(*args, **kwargs):
+        pass
+
+    @staticmethod
+    def RegisterModule(module):
+        if not hasattr(WtUtilityModule, "__modules__"):
+            WtUtilityModule.__modules__ = list()
+        WtUtilityModule.__modules__.append(module)
+        return module

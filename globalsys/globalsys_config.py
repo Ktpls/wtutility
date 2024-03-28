@@ -1,8 +1,8 @@
 import logging
 
-globalSysLoggerName="GLOBAL_SYS_LOGGER"
+DefaultGlobalSysLoggerName="GLOBAL_SYS_LOGGER"
 queueBulletinMaxSize = 0
 loggingFormat = "%(asctime)s - %(levelname)s - %(message)s"
 bulletinLogFormat="%(message)s"
-loggingLevel = logging.DEBUG
+loggingLevel = logging.INFO
 logFilePath='asset/log/'

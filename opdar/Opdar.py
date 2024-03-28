@@ -29,7 +29,9 @@ def main():
             tracking = False
             Rhythms.Notify.play()
 
-    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], trackswitch))
+    hklist.append(
+        HotkeyManager.hotkeytask([win32con.VK_RCONTROL, win32con.VK_F9], trackswitch)
+    )
 
     # key shortcuts
     import keyshortcut.keyshortcut as keyshortcut
@@ -38,7 +40,7 @@ def main():
         keyshortcut.holdC()
         Rhythms.Notify.play()
 
-    hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
+    # hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
     hkm = HotkeyManager(hklist)
 
     while True:

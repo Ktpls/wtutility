@@ -193,7 +193,6 @@ class ControlableEngineAxis(Axis):
             PreciseSleep(delayAfterAction)
             after = self.get(newest=True)
             issu = issuccessful(prev, after)
-            # print(action, prev, after, issu)
             return issu
 
         Solution.tryAction(inner, self.solution)
@@ -207,7 +206,6 @@ class DiscreteCEAxis(ControlableEngineAxis):
     def switch(self):
         self.tryChange(lambda: self.switchTapPositionKey.press())
 
-    @AxisUnsupportedProcessed
     def set(self, target):
         while True:
             DetachedEngineManStopSignal().throwOnIsSet()
@@ -229,25 +227,33 @@ class ContiniousCEAxis(ControlableEngineAxis):
     def turnUp(self, holdTime):
         if holdTime < keyPressMiniumHoldingTime:
             holdTime = keyPressMiniumHoldingTime
+
+        def issucc(prev, after):
+            GSLogger().logger.debug(
+                f"turnUpIsSucc {self=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
+            )
+            return a or b or c
+
         self.tryChange(
             lambda: self.turnUpKey.hold(holdTime),
-            lambda prev, after: (after > prev)
-            or holdTime <= continousCeAxisMinSensitivity
-            or FloatEq(prev, self.valMax),
+            issucc,
         )
 
     def turnDown(self, holdTime):
         if holdTime < keyPressMiniumHoldingTime:
             holdTime = keyPressMiniumHoldingTime
 
+        def issucc(prev, after):
+            GSLogger().logger.debug(
+                f"turnDownIsSucc {self=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
+            )
+            return a or b or c
+
         self.tryChange(
             lambda: (self.turnDownKey.hold(holdTime)),
-            lambda prev, after: (after < prev)
-            or holdTime <= continousCeAxisMinSensitivity
-            or FloatEq(prev, self.valMin),
+            issucc,
         )
 
-    @AxisUnsupportedProcessed
     def set(self, target):
         while True:
             DetachedEngineManStopSignal().throwOnIsSet()
@@ -398,7 +404,7 @@ class Supercharger(DiscreteCEAxis):
                 [
                     win32con.VK_LCONTROL,
                     win32con.VK_LMENU,
-                    keyshortcut.win32conComp.VK_OEM_PLUS,
+                    keyshortcut.win32conComp.VK_OEM_MINUS,
                 ]
             ),
             solution=[
@@ -528,6 +534,8 @@ class EngineMan:
             self.lastCheckTime = time.perf_counter()
             try:
                 self.serviceInstance.check(self.gauges)
+            except AxisUnsupported:
+                pass
             except Exception as err:
                 """
                 get failure and axisunsupported failure are processed in get and set,
