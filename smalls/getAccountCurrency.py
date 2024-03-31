@@ -87,6 +87,7 @@ def main():
     line = [str(c) for c in line]
     AppendFile("asset/statistics/inventoryAccount.csv", ",".join(line) + "\n")
     print(total)
+    os.system("pause")
 
 
 main()

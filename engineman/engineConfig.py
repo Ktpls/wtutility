@@ -18,7 +18,7 @@ class G55S(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-@HostedEngineConfig(planeName="yak-3_france")
+@HostedEngineConfig(planeName=["yak-3_france", "yak-9t"])
 class Yak3(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(1.00)

@@ -541,6 +541,18 @@ class tracker:
         self.mtif = MtiFilter(mtiQueueSize)
         self.mtif.update(curr, None)
 
+    def collectScreenInSearchRange(self):
+        if collectingPlaneSample and np.random.random() < collectingPlaneSampleRate:
+            curr = self.ss.shotbgr().astype("uint8")
+            ponshot = lockpoint_default
+            m4coll = curr[
+                int(ponshot[1]) - searchrange : int(ponshot[1]) + searchrange,
+                int(ponshot[0]) - searchrange : int(ponshot[0]) + searchrange,
+                :,
+            ]
+            name = DataCollector.geneName()
+            odc[0].save(m4coll, datacoll_sampleFormat.format(name))
+
     def track(self):
         curr = self.ss.shotbgr().astype("uint8")
         shottime = time.perf_counter()

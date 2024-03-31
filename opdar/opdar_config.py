@@ -19,7 +19,7 @@ useNnTracker = False
 trackFps = 15
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = "V"
-searchrange = 150 // 2  # -sr~+sr, must be 16n. as for sr, must be 8n
+searchrange = 128 // 2  # -sr~+sr, must be 16n. as for sr, must be 8n
 backgroundrange = 41
 adptthresh = 0.1
 abslthresh = 0.1
@@ -38,7 +38,7 @@ useThetaByPixCalcFromMil = False
 targetwingspan = 16.3e-3
 vbullet = 0.580
 screensize = np.array([w, h], np.int32)
-lockpoint_default = screensize * [0.5, 0.2]
+lockpoint_default = screensize * [0.5, 0.4]
 epsilon = 1e-3
 
 # render
@@ -57,8 +57,8 @@ lineheight = 25
 textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
 
 # datacollecting
-collectingPlaneSample = False
-collectingPlaneSampleRate = 0.1
+collectingPlaneSample = True
+collectingPlaneSampleRate = 0.05
 
 uimaskPath = r"./asset/opdar/UIMASK.png"
 datacoll_samplepath = "./output/opdar_plane/"
