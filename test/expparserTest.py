@@ -73,9 +73,12 @@ def unitTest():
         TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
         TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0, None], 1.0]"),
         TestUnit(r'''
-                 //line one
+                 //comment one
                  1
-                 //line two
+                 /*
+                 comment
+                 two
+                 */
                  +/*inline comment*/1
                  ''', "2.0"),
     ]
