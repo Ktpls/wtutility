@@ -123,10 +123,6 @@ def main():
     if usingkeyshortcut:
         print("keyshortcut activated")
 
-        @app.Hotkey("TestAsyncBulletin", win32con.VK_F7)
-        def testAsyncBulletin():
-            globalsys.GSLogger().logger.debug("dbgInfo")
-
         @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()

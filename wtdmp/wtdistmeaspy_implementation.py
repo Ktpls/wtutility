@@ -628,9 +628,9 @@ def adjustCaliberation(pidoutput):
     if control < nonlinearCaliStart:
         control = 1 / nonlinearCaliStart * control**2  # make it more precise
 
-    # try if get improvement in the case of no response
-    for k in [win32con.VK_PRIOR, win32con.VK_NEXT]:
-        gameinput.KeyPress(k)
+    # # try if get improvement in the case of no response
+    # for k in [win32con.VK_PRIOR, win32con.VK_NEXT]:
+    #     gameinput.KeyPress(k)
 
     gameinput.KeyDown(keycode2press)
     PreciseSleep(control)

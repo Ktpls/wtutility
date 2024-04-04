@@ -93,27 +93,6 @@ class ClassNone:
         return ClassNone.__func_none
 
 
-@Singleton
-class Port8111Cache:
-    # use cache to cancel complex coupling between various data consumers under requirement of reducing http request cost
-    typeCache: "dict[Port8111.QueryType, Port8111Cache.SingleTypeCache]" = dict()
-
-    class SingleTypeCache(Cache):
-        queryType: Port8111.QueryType
-
-        def __init__(self, queryType):
-            super().__init__(
-                toFetch=lambda: Port8111.get(queryType),
-                updateStrategey=Cache.UpdateStrategey.Outdated(fetch8111Interval),
-            )
-            self.queryType = queryType
-
-    def get(self, queryType: Port8111.QueryType, newest=None):
-        if queryType not in self.typeCache:
-            self.typeCache[queryType] = self.SingleTypeCache(queryType)
-        return self.typeCache[queryType].get(newest=newest)
-
-
 class WtFunctionalKey(keyshortcut.FunctionalKey):
     def hold(self, holdTime):
         if not WarthunderWindow().isFocus():
