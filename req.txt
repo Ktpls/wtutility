@@ -9,3 +9,4 @@ pyautogui
 pywin32
 tensorboard
 pytesseract
+regex
