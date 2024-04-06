@@ -16,15 +16,15 @@ stabaccepterrrelthr = 100  # not used
 stabaccepterrabsthr = 60
 # tracker
 useNnTracker = False
-trackFps = 20
+trackFps = 15
 camerestablizersubsamplerate = 0.1
 planetrackerchannel = "V"
-searchrange = 150 // 2  # -sr~+sr, must be 16n. as for sr, must be 8n
-backgroundrange = 21
+searchrange = 128 // 2  # -sr~+sr, must be 16n. as for sr, must be 8n
+backgroundrange = 41
 adptthresh = 0.1
-abslthresh = 0.15
+abslthresh = 0.1
+rhothresh = 0.1
 regionrange = 3
-rhothresh = 0.45
 posrellamb = getlambfromtarget(0.75, 1) # pos ref not so accurate
 wingspanrellamb = getlambfromtarget(0.5, 0.25)
 shapereallamb = getlambfromtarget(0.2, 1)
@@ -38,7 +38,7 @@ useThetaByPixCalcFromMil = False
 targetwingspan = 16.3e-3
 vbullet = 0.580
 screensize = np.array([w, h], np.int32)
-lockpoint_default = screensize * [0.5, 0.2]
+lockpoint_default = screensize * [0.5, 0.4]
 epsilon = 1e-3
 
 # render
@@ -57,9 +57,11 @@ lineheight = 25
 textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
 
 # datacollecting
-collectingPlaneSample = False
-collectingPlaneSampleRate = 0.1
+collectingPlaneSample = True
+collectingPlaneSampleRate = 0.05
 
 uimaskPath = r"./asset/opdar/UIMASK.png"
-datacoll_samplepath = "./output/opdar_plane/spl"
-datacoll_labelpath = "./output/opdar_plane/lbl"
+datacoll_samplepath = "./output/opdar_plane/"
+datacoll_labelpath = "./output/opdar_plane/"
+datacoll_sampleFormat="{}.png"
+datacoll_labelFormat="{}_mask_0.png"

@@ -1,6 +1,8 @@
 import time
-import utilitypack.util_windows
-import keyshortcut.keycodeWinCode as keycode
+from utilitypack.util_solid import *
+from utilitypack.util_windows import *
+from . import win32conComp
+import dataclasses
 from ctypes import (
     POINTER,
     c_ulong,
@@ -55,60 +57,71 @@ class Input(Structure):
 # Actuals Functions
 
 
-def keydown(hexKeyCode):
+@Singleton
+class Vk2Sk:
+    def __init__(self):
+        from . import virtualKeyCode2ScanCode
+
+        self.d = virtualKeyCode2ScanCode.virtualKeyCode2ScanCode
+
+    def tr(self, vk):
+        return self.d.get(vk, 0)
+
+
+def KeyDown(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008, 0, pointer(extra))
+    ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
 
-def keyup(hexKeyCode):
+def KeyUp(hexKeyCode):
     extra = c_ulong(0)
     ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, pointer(extra))
+    ii_.ki = KeyBdInput(0, Vk2Sk().tr(hexKeyCode), 0x0008 | 0x0002, 0, pointer(extra))
     x = Input(c_ulong(1), ii_)
     windll.user32.SendInput(1, pointer(x), sizeof(x))
 
 
 import pyautogui
 
-# def keydown(keycode):
-#     pyautogui.keyDown(keycode)
+
+def KeyHold(k, t):
+    KeyDown(k)
+    PreciseSleep(t)
+    KeyUp(k)
 
 
-# def keyup(keycode):
-#     pyautogui.keyUp(keycode)
-
-
-def press(k, interval=0.1):
-    keydown(k)
-    utilitypack.util_windows.PreciseSleep(interval)
-    keyup(k)
-    # time.sleep(0.4)
-
-
-def hold(k, t):
-    keydown(k)
-    utilitypack.util_windows.PreciseSleep(t)
-    keyup(k)
+def KeyPress(k, interval=0.1):
+    KeyHold(k, interval)
 
 
 def key_down(k):
-    keydown(k)
-    utilitypack.util_windows.PreciseSleep(0.1)
+    KeyDown(k)
+    PreciseSleep(0.1)
 
 
 def key_up(k):
-    keyup(k)
-    utilitypack.util_windows.PreciseSleep(0.1)
+    KeyUp(k)
+    PreciseSleep(0.1)
 
 
 def key_press(k):
-    keydown(k)
-    utilitypack.util_windows.PreciseSleep(0.2)
-    keyup(k)
-    
+    KeyDown(k)
+    PreciseSleep(0.2)
+    KeyUp(k)
+
+
+@dataclasses.dataclass
+class HoldingKey:
+    key: int
+
+    def __enter__(self):
+        KeyDown(self.key)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        KeyUp(self.key)
 
 
 def moveto(p):
@@ -145,7 +158,7 @@ class mouse:
     @staticmethod
     def click(key, interval=0.1):
         mouse.down(key)
-        utilitypack.util_windows.PreciseSleep(interval)
+        PreciseSleep(interval)
         mouse.up(key)
 
     @staticmethod
@@ -174,3 +187,23 @@ def click(p):
     time.sleep(0.01)
     mouseup()
     time.sleep(0.1)
+
+
+class FunctionalKey:
+    key: list[int]
+
+    def __init__(self, key: int | list[int]) -> None:
+        self.key = NormalizeIterableOrSingleArgToIterable(key)
+        assert len(self.key) >= 1
+
+    def hold(self, holdTime):
+        for k in self.key:
+            KeyDown(k)
+        PreciseSleep(holdTime)
+        for k in reversed(self.key):
+            KeyUp(k)
+
+    def press(self, pressTime=None):
+        if pressTime is None:
+            pressTime = 0.05
+        self.hold(pressTime)

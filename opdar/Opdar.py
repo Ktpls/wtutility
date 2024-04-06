@@ -7,10 +7,74 @@ hud.setup()
 
 
 def beepOnErr():
-    RythmError.play()
+    Rhythms.Error.play()
 
 
 throwErrorInHotkey = True
+
+
+def drawsearchrange(output, p):
+    # range it self
+    def square(m, center, halfWidth, color, thickness):
+        center = center.astype(np.int32)
+        plu = halfWidth * np.array([-1, -1])
+        pru = halfWidth * np.array([1, -1])
+        pld = halfWidth * np.array([-1, 1])
+        prd = halfWidth * np.array([1, 1])
+        m = cv.line(
+            m,
+            center + plu,
+            center + pru,
+            color=color,
+            thickness=thickness,
+        )
+        m = cv.line(
+            m,
+            center + plu,
+            center + pld,
+            color=color,
+            thickness=thickness,
+        )
+        m = cv.line(
+            m,
+            center + pru,
+            center + prd,
+            color=color,
+            thickness=thickness,
+        )
+        m = cv.line(
+            m,
+            center + pld,
+            center + prd,
+            color=color,
+            thickness=thickness,
+        )
+        return m
+
+    output = square(
+        output,
+        p,
+        searchrange,
+        lockcirclecolor,
+        lockcirclethickness,
+    )
+    # inner shadow
+    output = square(
+        output,
+        p,
+        searchrange - (2 * (lockcirclethickness - 1) + 1),
+        lockcirclecolorinner,
+        lockcirclethickness,
+    )
+    # outter shadow
+    output = square(
+        output,
+        p,
+        searchrange + (2 * (lockcirclethickness - 1) + 1),
+        lockcirclecoloroutter,
+        lockcirclethickness,
+    )
+    return output
 
 
 def main():
@@ -27,22 +91,24 @@ def main():
             tracking = True
         else:
             tracking = False
-            RythmNotify.play()
+            Rhythms.Notify.play()
 
-    hklist.append(HotkeyManager.hotkeytask([win32con.VK_F10], trackswitch))
+    hklist.append(
+        HotkeyManager.hotkeytask([win32con.VK_RCONTROL, win32con.VK_F9], trackswitch)
+    )
 
     # key shortcuts
     import keyshortcut.keyshortcut as keyshortcut
 
     def holdCAndTell():
         keyshortcut.holdC()
-        RythmNotify.play()
+        Rhythms.Notify.play()
 
-    hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
+    # hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
     hkm = HotkeyManager(hklist)
 
     while True:
-        sleepuntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
+        SleepUntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
         nowtime = time.perf_counter()
         frametime = nowtime - lastT
         lastT = nowtime
@@ -58,33 +124,6 @@ def main():
                     traceback.print_exc()
 
         output = np.zeros([h, w, 3], np.uint8)
-
-        def drawsearchrange(output, p):
-            # range it self
-            output = cv.circle(
-                output,
-                p.astype("int32"),
-                searchrange,
-                lockcirclecolor,
-                lockcirclethickness,
-            )
-            # inner shadow
-            output = cv.circle(
-                output,
-                p.astype("int32"),
-                searchrange - (2 * (lockcirclethickness - 1) + 1),
-                lockcirclecolorinner,
-                lockcirclethickness,
-            )
-            # outter shadow
-            output = cv.circle(
-                output,
-                p.astype("int32"),
-                searchrange + (2 * (lockcirclethickness - 1) + 1),
-                lockcirclecoloroutter,
-                lockcirclethickness,
-            )
-            return output
 
         if tracking:
             # track
@@ -223,9 +262,69 @@ def main():
         hud.addcontent(output)  # cuz its full screenly overlayer
         hud.update()
 
-    RythmCancel.play()
+    Rhythms.Cancel.play()
     # for i,ps in enumerate(perfst):
     #   print(ps.read_ave_t())
 
 
-main()
+def simplyCollectWhatInRange():
+    # the simplified copy of main()
+    tr = tracker()
+    tracking = False
+    lastT = time.perf_counter()
+
+    hklist = []
+
+    def trackswitch():
+        nonlocal tracking
+        if not tracking:
+            tr.setup(lockpoint_default)
+            Rhythms.Success.play()
+            tracking = True
+        else:
+            tracking = False
+            Rhythms.Cancel.play()
+
+    hklist.append(
+        HotkeyManager.hotkeytask([win32con.VK_RCONTROL, win32con.VK_F9], trackswitch)
+    )
+
+    # key shortcuts
+    import keyshortcut.keyshortcut as keyshortcut
+
+    def holdCAndTell():
+        keyshortcut.holdC()
+        Rhythms.Notify.play()
+
+    # hklist.append(HotkeyManager.hotkeytask(key=win32con.VK_F11, foo=holdCAndTell))
+    hkm = HotkeyManager(hklist)
+
+    while True:
+        SleepUntil(lambda: time.perf_counter() - lastT > 1.0 / fps, dt=0.25 * 1 / fps)
+        nowtime = time.perf_counter()
+        frametime = nowtime - lastT
+        lastT = nowtime
+        decideresult = hkm.decideAllHotKey()
+        for i in range(len(decideresult)):
+            if decideresult[i]:
+                try:
+                    hkm.hktl[i].foo()
+                except Exception as e:
+                    beepOnErr()
+                    if throwErrorInHotkey:
+                        raise e
+                    traceback.print_exc()
+
+        output = np.zeros([h, w, 3], np.uint8)
+
+        if tracking:
+            # collect
+            tr.collectScreenInSearchRange()
+        output = drawsearchrange(output, lockpoint_default)
+
+        hud.clear()
+        hud.addcontent(output)  # cuz its full screenly overlayer
+        hud.update()
+
+
+simplyCollectWhatInRange()

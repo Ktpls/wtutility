@@ -41,7 +41,7 @@ SAAB-105
 
     except Exception as err:
         traceback.print_exc()
-        RythmError.play()
+        Rhythms.Error.play()
         if throwerrinmain:
             raise err
         system("pause")

@@ -6,7 +6,7 @@ import win32process
 
 
 def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
-    fps = fpsmanager(fps)
+    fps = FpsManager(fps)
     # main loop
     hkm = HotkeyManager(hotkeyactionlist)
 
@@ -18,7 +18,7 @@ def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
         except SystemExit as e:
             raise e
         except Exception as e:
-            RythmError.play()
+            Rhythms.Error.play()
             print("#" * 10)
             traceback.print_exc()
             print("#" * 10)
@@ -27,14 +27,14 @@ def mainloop(fps, hotkeyactionlist=list(), businesslist=list()):
             try:
                 bus()
             except Exception as e:
-                RythmError.play()
+                Rhythms.Error.play()
                 print("#" * 10)
                 traceback.print_exc()
                 print("#" * 10)
 
 
 def AllTheWayOnErr(msg):
-    RythmError.play()
+    Rhythms.Error.play()
     print(msg)
     os.system("pause")
     exit()
@@ -81,10 +81,10 @@ class ExecutableCommand:
     def autoSwitch(self):
         if self.TestNop():
             self.SetCmd()
-            RythmCancel.play()
+            Rhythms.Cancel.play()
         else:
             self.SetNop()
-            RythmGoodNotify.play()
+            Rhythms.GoodNotify.play()
 
 
 class KeyPressRepeater(StoppableThread):
@@ -103,7 +103,7 @@ class KeyPressRepeater(StoppableThread):
     def autoSwitch(self):
         if not self.getRunning():
             self.go()
-            RythmGoodNotify.play()
+            Rhythms.GoodNotify.play()
         else:
             self.stop()
-            RythmCancel.play()
+            Rhythms.Cancel.play()

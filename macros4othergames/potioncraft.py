@@ -8,7 +8,7 @@ def main():
     def swing(t):
 
         def mydelay():
-            sleep(0.1)
+            time.sleep(0.1)
 
         mouse.down(0)
         mydelay()

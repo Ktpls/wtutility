@@ -111,7 +111,7 @@ def SolveMap_BottomRightSmallMap(
             nonlocal dbglogpath
             exec("{}(m,path=dbglogpath,name=name)".format(method))
 
-        logg = logger(os.path.join(dbglogpath, "log.log"))
+        logg = Logger(os.path.join(dbglogpath, "log.log"))
 
         def log(s):
             logg(s)
@@ -614,28 +614,27 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
 
 def switchNightMode():
-    gameinput.press(gameinput.keycode.key_F6)
+    gameinput.KeyPress(win32con.VK_F6)
 
 
 def adjustCaliberation(pidoutput):
     keycode2press = (
-        gameinput.keycode.key_PageUp
+        win32con.VK_PRIOR
         if pidoutput > 0
-        else gameinput.keycode.key_PageDown
+        else win32con.VK_NEXT
     )
 
     control = np.abs(pidoutput)
     if control < nonlinearCaliStart:
         control = 1 / nonlinearCaliStart * control**2  # make it more precise
 
-    # try if get improvement in the case of no response
-    for k in [gameinput.keycode.key_PageUp, gameinput.keycode.key_PageDown]:
-        gameinput.keydown(k)
-        gameinput.keyup(k)
+    # # try if get improvement in the case of no response
+    # for k in [win32con.VK_PRIOR, win32con.VK_NEXT]:
+    #     gameinput.KeyPress(k)
 
-    gameinput.keydown(keycode2press)
+    gameinput.KeyDown(keycode2press)
     PreciseSleep(control)
-    gameinput.keyup(keycode2press)
+    gameinput.KeyUp(keycode2press)
     return control
 
 
@@ -666,7 +665,7 @@ class LoadCalibrationOperator(StoppableThread):
                 nonlocal dbglogpath
                 exec("{}(m,path=dbglogpath,name=name)".format(method))
 
-            logg = logger(os.path.join(dbglogpath, "log.log"))
+            logg = Logger(os.path.join(dbglogpath, "log.log"))
 
             def log(s):
                 logg(s)
@@ -710,4 +709,4 @@ class LoadCalibrationOperator(StoppableThread):
             log(f"control {control}")
             # get the real control, but without direction
             control = adjustCaliberation(control)
-            sleep(delayEveryCali)
+            time.sleep(delayEveryCali)

@@ -16,7 +16,7 @@ eedc = DataCollector(r'./output/eagleeye/')
 cacheMaxNum = 10
 cacheRate = 2
 lastCacheTime = None
-cachedShots: typing.List[doShotCache] = []
+cachedShots: list[doShotCache] = []
 timeReverse=0.3
 lastSaveTime=None
 timeSaveInterval=3
@@ -40,7 +40,7 @@ def onClick():
         return
     eedc.save(cachedShots[i].m)
     lastSaveTime=nowtime
-    RythmNotify.play()
+    Rhythms.Notify.play()
 
 
 def onFrame():

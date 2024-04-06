@@ -3,7 +3,7 @@ import typing
 from utilref import *
 
 
-@WrapperAsMyTaste()
+@EasyWrapper()
 def printWrapperArg(f, essentialArg, optionalArg="default_prompt"):
     def f2():
         print(f'{essentialArg=}, {optionalArg=}')
@@ -12,7 +12,7 @@ def printWrapperArg(f, essentialArg, optionalArg="default_prompt"):
     return f2
 
 
-@WrapperAsMyTaste
+@EasyWrapper
 def myWrapperWithoutParens(f):
     def f2():
         print("in no parens wrapper")

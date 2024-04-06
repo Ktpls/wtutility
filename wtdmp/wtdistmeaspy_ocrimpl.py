@@ -63,7 +63,7 @@ class implTesseract(implocr):
         )
         log(f"plottingscalestr={plottingscalestr}")
 
-        plottingscale = numinstr(plottingscalestr)
+        plottingscale = Numinstr(plottingscalestr)
         plottingscalestr = str(plottingscale)
         log(f"plottingscaleToNumToStr={plottingscalestr}")
         if len(plottingscalestr) > 3:
@@ -73,7 +73,7 @@ class implTesseract(implocr):
             # blocks the 'm' in 'xxx m' and made it tough for ocr
             # but if arrow, or any tank icon blocking the digit chars this would have no way to fix
             plottingscalestr = plottingscalestr[:3]
-            plottingscale = numinstr(plottingscalestr)
+            plottingscale = Numinstr(plottingscalestr)
         log(f"plottingscaleFinal={plottingscale}")
         return plottingscale
 
@@ -97,6 +97,6 @@ class implCNN(implocr):
         assert model is not None
         result = wtdmpsocr(ps, model, cnnresultthresh)
         log(f"resultstr={result}")
-        result = numinstr(result)
+        result = Numinstr(result)
         log(f"resultnum={result}")
         return result

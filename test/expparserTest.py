@@ -2,7 +2,7 @@ from utilref import *
 
 
 def unitTest():
-    def vecadd(va: typing.List, vb: typing.List):
+    def vecadd(va: list, vb: list):
         assert len(va) == len(vb)
         return list(map(lambda x, y: x + y, va, vb))
 
@@ -51,7 +51,7 @@ def unitTest():
                 print(f"    result: {self.result}")
                 return False
 
-    exp: typing.List[TestUnit] = [
+    exp: list[TestUnit] = [
         TestUnit(r"CStr(1)", "1.0"),
         TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
         TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),
@@ -72,6 +72,12 @@ def unitTest():
         TestUnit(r"OptionalFunc(1,,)", "1.0"),
         TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
         TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0, None], 1.0]"),
+        TestUnit(r'''
+                 //line one
+                 1
+                 //line two
+                 +/*inline comment*/1
+                 ''', "2.0"),
     ]
 
     def splitline():
@@ -100,16 +106,17 @@ def benchMark():
             result = e.eval(var=var, func=func)
         pg.update(t)
     ps.stop()
+    pg.setFinish()
     print(ps.time() / turnNum)
 
 
 def playground():
     var = {**expparser.BasicConstantLib}
-    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y, 's3': lambda: 3}
+    func = {**expparser.BasicFunctionLib, "f": lambda x, y: x + y, "s3": lambda: 3}
     exp = "f(1,1),f(2,2),sin(pi/2),pi,s3()"
     result = expparser.compile(exp)
     print(result)
     print(result.eval(var, func))
 
 
-benchMark()
+unitTest()

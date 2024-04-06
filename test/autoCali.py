@@ -2,8 +2,8 @@ from utilref import *
 import wtdmp.wtdistmeaspy
 
 activeWindow(GetWtHwnd())
-sleep(2)
-RythmNotify.play()
+time.sleep(2)
+Rhythms.Notify.play()
 
 wtdmpv = wtdmp.wtdistmeaspy.wtdistmeaspy()
 wtdmpv.caliOperator.go(1200)
@@ -12,4 +12,4 @@ while True:
         break
     time.sleep(0.33)
 
-RythmNotify.play()
+Rhythms.Notify.play()

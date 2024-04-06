@@ -1,9 +1,9 @@
-from logging import exception
 
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
+from globalsys.globalsys import *
 
 
 def signName2Path(name):
@@ -38,30 +38,6 @@ elif resolution == "m1920x1080r1280x720":
     pointtemplatezoomrate = 1.5  # 1920/1280
 else:
     raise NotImplementedError("unknown resolution")
-
-if dbglog:
-    if log2file:
-        logg = logger(
-            os.path.join(
-                afmassetroot,
-                rf'log\{ time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())}.log',
-            )
-        )
-
-        def allchanneloutput(s):
-            logg(s)
-            print(s)
-
-    else:
-        logg = None
-
-        def allchanneloutput(s):
-            print(s)
-
-else:
-
-    def allchanneloutput(s):
-        pass
 
 
 def assetpath2realpath(ap):
@@ -100,7 +76,7 @@ class FixedPositionImgMatcher:
 
     def __init__(
         self,
-        leftTop: typing.List,
+        leftTop: list,
         path: str,
         thresh: float | None = None,
         maskpath: str | None = None,
@@ -144,8 +120,7 @@ class FixedPositionImgMatcher:
         if cutRequired:
             mscr = self.cutroi(mscr)
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
-        if dbglog:
-            allchanneloutput(f"{self.path} detecting: s={s}")
+        GSLogger().logger.debug(f"{self.path} detecting: s={s}")
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
         return s < thresh
 
@@ -163,8 +138,7 @@ def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = 1 - cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
-    if dbglog:
-        allchanneloutput(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
+    GSLogger().logger.debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
     return minloc if minval <= simu else None
 
 
@@ -190,10 +164,9 @@ class UnlocatedFullScreenImgMatcher:
     def find(self, mscr, specifiedThresh=None):
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
-        if dbglog:
-            allchanneloutput(
-                f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
-            )
+        GSLogger().logger.debug(
+            f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
+        )
         return ret
 
     def detect(self, mscr, specifiedThresh=None):
@@ -273,10 +246,7 @@ class MapDetectorImpled(detector, MapDetector):
         after that assetpath2realpath will be done in matcher
         """
         if para.map is not None:
-            map = para.map
-            # formalize to list
-            if type(map) is str:
-                map = [map]
+            map = NormalizeIterableOrSingleArgToIterable(para.map)
             map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
                 FixedPositionImgMatcher(
@@ -294,17 +264,17 @@ class MapDetectorImpled(detector, MapDetector):
 
         def detectMapShape(mtcid=0, thresh=None):
             ret = self.mtc[mtcid].detect(mscr, thresh)
-            allchanneloutput(f"MapShapeResult={ret}")
+            GSLogger().logger.debug(f"MapShapeResult={ret}")
             return ret
 
         def distance(a, b):
             err = np.sqrt(((a - b) ** 2).sum())
-            allchanneloutput(f"dist={err}")
+            GSLogger().logger.debug(f"dist={err}")
             return err
 
         def detectSpawn():
             center = getMapSpawnCenter(mapcut)
-            allchanneloutput(f"spawn={center}")
+            GSLogger().logger.debug(f"spawn={center}")
             return center
 
         def spawnAround(point, err=None):
@@ -316,8 +286,7 @@ class MapDetectorImpled(detector, MapDetector):
             if ptype is None:
                 # fall back to all
                 ptype = [k for k in Asset4PointDetection_Template.keys()]
-            if type(ptype) is str:
-                ptype = [ptype]
+            ptype=NormalizeIterableOrSingleArgToIterable(ptype)
             result = [
                 threshedmatchtemplate(
                     mapcut,
@@ -361,7 +330,7 @@ class MapDetectorImpled(detector, MapDetector):
 
 
 def maplist2detectorlist(ml):
-    ml = deduplicate(ml)
+    ml = Deduplicate(ml)
     dl = {
         m: MapDetectorImpled(
             specialmapdetectors[m]
@@ -385,7 +354,7 @@ def loadAssetsNeeded4FreshAMap():
 
 
 def leaveButton():
-    sleep(1)
+    time.sleep(1)
     # move after click for not blocking next time detection
     moveto([0, 0])
 
@@ -410,13 +379,13 @@ class freshAMap(StoppableThread):
                     return False
                 if successCond(scr):
                     return True
-                sleep(sleeptime)
+                time.sleep(sleeptime)
 
         # init
         loadAssetsNeeded4FreshAMap()
         assert stateDetector is not None and whitelistedmapdetector is not None
         ss = screenshoter(0)
-        wifi=WifiRefresher()
+        wifi = WifiRefresher()
 
         def shot():
             shot = ss.shotbgr()
@@ -426,14 +395,14 @@ class freshAMap(StoppableThread):
             return ss.shotbgr()
 
         while True:
-            allchanneloutput("try matching")
+            GSLogger().logger.debug("try matching")
 
             # detect loading map
             loadingscreen = None
 
-            allchanneloutput(str("detecting loading map"))
+            GSLogger().logger.debug(str("detecting loading map"))
 
-            RythmNotify.play()
+            Rhythms.Notify.play()
 
             def detectLoadingMap(scr):
                 assert stateDetector is not None
@@ -451,7 +420,7 @@ class freshAMap(StoppableThread):
                         ]
                     ]
                 ):
-                    press(keycode.key_Enter)
+                    KeyPress(win32con.VK_RETURN)
                     return False
                 return False
 
@@ -473,12 +442,12 @@ class freshAMap(StoppableThread):
                     ]
                 ):
                     # clear matching state
-                    press(keycode.key_Esc)
-                RythmCancel.play()
+                    KeyPress(win32con.VK_ESCAPE)
+                Rhythms.Cancel.play()
                 return False
 
-            RythmNotify.play()
-            allchanneloutput("loading map")
+            Rhythms.Notify.play()
+            GSLogger().logger.debug("loading map")
 
             # determine if map desired
             ret = False
@@ -486,21 +455,21 @@ class freshAMap(StoppableThread):
             for n, d in whitelistedmapdetector.items():
                 # done this by hand to get 2 times faster
                 if d.detect(loadingscreen):
-                    allchanneloutput(f"{n}")
+                    GSLogger().logger.debug(f"{n}")
                     ret = True
                     break
 
-            allchanneloutput(str(ret))
+            GSLogger().logger.debug(str(ret))
             if ret:
                 # enter game
-                RythmSuccess.play()
-                allchanneloutput("good map")
+                Rhythms.Success.play()
+                GSLogger().logger.debug("good map")
                 return True
 
             # detected banned map
             wifi.setOff()
-            RythmNotify.play()
-            allchanneloutput("bad map")
+            Rhythms.Notify.play()
+            GSLogger().logger.debug("bad map")
 
             # detect game canceled, which is not in loading map scence
             def detectGameCanceled(scr):
@@ -510,7 +479,7 @@ class freshAMap(StoppableThread):
                 return False
 
             # sleep at least some time
-            sleep(minDelayAfterDisconnected)
+            time.sleep(minDelayAfterDisconnected)
             if not KeepDetecting(
                 successCond=detectGameCanceled,
                 cancelCond=lambda scr: self.timeToStop(),
@@ -520,7 +489,7 @@ class freshAMap(StoppableThread):
                 task canceld, do the cleanning
                 set on wifi after fully exit the game match
                 """
-                RythmCancel.play()
+                Rhythms.Cancel.play()
                 KeepDetecting(
                     successCond=detectGameCanceled,
                     sleeptime=2,
@@ -529,11 +498,11 @@ class freshAMap(StoppableThread):
                 return False
 
             wifi.setOn()
-            RythmNotify.play()
-            allchanneloutput("canceled")
+            Rhythms.Notify.play()
+            GSLogger().logger.debug("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
-            sleepuntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
+            SleepUntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
 
 
 class ApproximateStandardizationGuide:
@@ -562,7 +531,7 @@ class ApproximateStandardizationGuide:
             guideSourceCode (str): The source code of the guide.
         """
         self.guideSourceCode = guideSourceCode
-        guideitem: typing.List[ApproximateStandardizationGuide.GuideItem] = []
+        guideitem: list[ApproximateStandardizationGuide.GuideItem] = []
         for g in guideSourceCode.split("\n"):
             if len(g) == 0:
                 continue
@@ -603,7 +572,7 @@ class VehicleInfo:
     @staticmethod
     def compile(
         sourceCode: str, asg: ApproximateStandardizationGuide
-    ) -> typing.List["VehicleInfo"]:
+    ) -> list["VehicleInfo"]:
         ret = []
         for t in sourceCode.split("\n"):
             if len(t) == 0:
@@ -621,9 +590,9 @@ class VehicleInfo:
 
     @staticmethod
     def matchPlayerVehicleListAndVehicleInfoList(
-        players: typing.List[str], vi: typing.List["VehicleInfo"]
+        players: list[str], vi: list["VehicleInfo"]
     ):
-        ret: typing.List[VehicleInfo.MatchResult] = []
+        ret: list[VehicleInfo.MatchResult] = []
         for l, p in enumerate(players):
             for v in vi:
                 if re.match(v.pattern, p) is not None:
@@ -633,7 +602,7 @@ class VehicleInfo:
     @staticmethod
     def detectAnyInOutputOfTesseract(
         players: str,
-        vi: typing.List["VehicleInfo"],
+        vi: list["VehicleInfo"],
         asg: ApproximateStandardizationGuide,
     ):
         playerlist = [asg.do(t) for t in players.split("\n")]
@@ -666,7 +635,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             scr = shot()
             if foo(scr):
                 return True
-            sleep(sleeptime)
+            time.sleep(sleeptime)
 
     def moveMouseAway():
         moveto((0, 0))
@@ -724,11 +693,11 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 "MissionCanceled"
             ].detect(scr):
                 # piority lower than statistics, so the to battle button on spawn scence wont confuse
-                press(keycode.key_Enter)
+                KeyPress(win32con.VK_RETURN)
                 return False
             if stateDetector["OK"].detect(scr):
-                press(keycode.key_Esc)
-                longDelay(15)
+                KeyPress(win32con.VK_ESCAPE)
+                LongDelay(15)
                 return False
             return False
 
@@ -782,7 +751,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         if detectPlayerVehicleResult == DetectPlayerVehicleResult.good:
             # good
-            RythmSuccess.play()
+            Rhythms.Success.play()
             import subprocess
 
             files = AllFileIn(musicPath)
@@ -803,37 +772,37 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
             or detectPlayerVehicleResult == DetectPlayerVehicleResult.timeout
         ):
             # bad
-            RythmBadNotify.play()
+            Rhythms.BadNotify.play()
         elif detectPlayerVehicleResult == DetectPlayerVehicleResult.unset:
             raise Exception("detectPlayerVehicleResult is unset")
 
         KEY_OP_INTERVAL = 0.3
         # bad
         # exit statistics
-        press(keycode.key_Esc)
+        KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         # to menu
-        press(keycode.key_Esc)
+        KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         moveto((0, 0))
 
         # select return to hanger
         for i in range(5):
-            press(keycode.key_Down)
+            KeyPress(win32con.VK_DOWN)
             time.sleep(KEY_OP_INTERVAL)
 
         # click it
-        press(keycode.key_Enter)
+        KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         # select yes
-        press(keycode.key_Left)
+        KeyPress(win32con.VK_LEFT)
         time.sleep(KEY_OP_INTERVAL)
 
         # click
-        press(keycode.key_Enter)
+        KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         moveMouseAway()
@@ -843,10 +812,10 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         def detectMissionCanceled(scr):
             assert stateDetector is not None
             if stateDetector["MissionCanceled"].detect(scr):
-                press(keycode.key_Esc)
+                KeyPress(win32con.VK_ESCAPE)
                 return True
             return False
 
         keepdetecting(detectMissionCanceled)
 
-        longDelay(5 * 60)
+        LongDelay(5 * 60)

@@ -6,26 +6,28 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
-                "C:/Users/KITA/Desktop/PortNovorossiyskBattle#1.png"
+                "C:\\Users\\KITA\\Desktop\\新文件 6.txt",
+                "30000/3.6-5679"
             ]
         },
         {
             "name": "Python: AFM",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/afm/autofreshmap.py",
             "console": "integratedTerminal",
+            "justMyCode": false,
         },
         {
             "name": "Python: AIO",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/aio.py",
             "console": "integratedTerminal",
@@ -33,7 +35,7 @@
         },
         {
             "name": "Python: Opdar",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${cwd}/Opdar/Opdar.py",
             "console": "integratedTerminal",

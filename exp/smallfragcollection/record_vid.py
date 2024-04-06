@@ -9,7 +9,7 @@ vidlen = 10
 out_gray = cv.VideoWriter(path, cv.VideoWriter.fourcc(*"XVID"), fps, screensize)
 hwnd = 0
 ss = screenshoter(hwnd)
-fpsm = fpsmanager(fps)
+fpsm = FpsManager(fps)
 timer = perf_statistic().start()
 print('start')
 while True:

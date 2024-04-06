@@ -81,7 +81,7 @@ class stablizerNd(stablizer_base):
 # assume a remains almost constant
 
 
-class Estimator:
+class BayesEstimator:
     # lamb is N/(N+1)
     def __init__(self, lamb, X, T):
         assert len(X) >= 3 and len(T) == len(X)
@@ -189,20 +189,26 @@ def ObjectFilterNn(m: np.ndarray):
 
 
 def ObjectFilterTrad(m: np.ndarray):
+    # deambient
+    ambient = np.mean(m)
+    m = np.clip(m - ambient, 0, 1)
+
     # adaptive thresh
     ave = regionave(m, [backgroundrange, backgroundrange])
-    mAdat = m - ave
+    mAdat = (m - ave) / (ave + EPS)
     mAdat = (mAdat >= adptthresh).astype(np.uint8)
 
     # abs thresh
     mAbst = np.copy(m)
     mAbst = (mAbst >= abslthresh).astype(np.uint8)
 
-    # density thresh
-    rho = regionave(m, [backgroundrange, backgroundrange])
-    mRhoThreshed = (rho >= rhothresh).astype(np.uint8)
+    m = (mAdat).astype(np.float32)
 
-    m = (mAdat * mAbst * mRhoThreshed).astype(np.float32)
+    # # density thresh
+    # rho = regionave(m, [backgroundrange, backgroundrange])
+    # mRhoThreshed = (rho >= rhothresh).astype(np.uint8)
+
+    # m = (m * mRhoThreshed).astype(np.float32)
     return m
 
 
@@ -333,8 +339,7 @@ def GetObjectOnSignal(
     if totalscore[maxscorecontourid] < scoreleast:
         return None
 
-    savemat(m * 255)
-    savemat(obj[maxscorecontourid].shape * 255)
+    # savemat(obj[maxscorecontourid].shape * 255)
     return obj[maxscorecontourid]
 
 
@@ -430,9 +435,9 @@ class MtiFilter:
         """
         self.filter = interpolate.interp1d([0, 0.3, 0.75, 1], [1, 1, 0, 0])
         # fake type notation in order to scam ide type analysis
-        self.mtiQueue: typing.List[
-            MtiFilter.MtiStorage
-        ] | AccessibleQueue = AccessibleQueue(mtiQueueSize)
+        self.mtiQueue: list[MtiFilter.MtiStorage] | AccessibleQueue = AccessibleQueue(
+            mtiQueueSize
+        )
 
         # try convienient type annotation but wont work
         # self.mtiQueue: AccessibleQueue.Annotation(
@@ -531,10 +536,22 @@ class tracker:
 
         self.trackbuildinguptimer = 2 * fps
 
-        self.lazyplanetrackerfpsmanager = fpsmanager(fps=trackFps)
+        self.lazyplanetrackerfpsmanager = FpsManager(fps=trackFps)
 
         self.mtif = MtiFilter(mtiQueueSize)
         self.mtif.update(curr, None)
+
+    def collectScreenInSearchRange(self):
+        if collectingPlaneSample and np.random.random() < collectingPlaneSampleRate:
+            curr = self.ss.shotbgr().astype("uint8")
+            ponshot = lockpoint_default
+            m4coll = curr[
+                int(ponshot[1]) - searchrange : int(ponshot[1]) + searchrange,
+                int(ponshot[0]) - searchrange : int(ponshot[0]) + searchrange,
+                :,
+            ]
+            name = DataCollector.geneName()
+            odc[0].save(m4coll, datacoll_sampleFormat.format(name))
 
     def track(self):
         curr = self.ss.shotbgr().astype("uint8")
@@ -609,7 +626,7 @@ class tracker:
                 # not bad cut
                 ret = GetObjectOnSignal(
                     signal,
-                    preference,
+                    np.array([searchrange, searchrange]),  # at the center of cutted img
                     wingspanref=self.lastwingspan,
                     shaperef=self.lastshape,
                     mask=uimask.copy(),
@@ -634,8 +651,8 @@ class tracker:
                             + searchrange,
                             :,
                         ]
-                        odc[0].save(m4coll, name)
-                        odc[1].save(planemap * 255, name)
+                        odc[0].save(m4coll, datacoll_sampleFormat.format(name))
+                        odc[1].save(planemap * 255, datacoll_labelFormat.format(name))
 
         pomega = (ponshot - plastinthisframe) / tdelta
 

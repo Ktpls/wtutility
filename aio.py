@@ -1,9 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
-import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinCode as keycode
+import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinScanCode as keycode
 from utilitypack.utility import *
 from utilitypack.util_app import *
 from aio_config import *
 import functools
+import keyshortcut.keyshortcut as keyshortcut
+import globalsys.globalsys as globalsys
 
 telescopepos = (100, 100)
 
@@ -17,14 +19,8 @@ def main():
         import wtdmp.wtdistmeaspy as wtdistmeaspy
 
         wtdmp = wtdistmeaspy.wtdistmeaspy()
-        """
-        VK_OEM_3=0xC0
-        Used for miscellaneous characters; it can vary by keyboard.
-        For the US standard keyboard, the '`~' key
-        """
-        OEM3 = 0xC0
 
-        @app.Hotkey("PlottingScaleLock", [ord("L"), OEM3])
+        @app.Hotkey("PlottingScaleLock", [ord("L"), keyshortcut.win32conComp.VK_OEM_3])
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
@@ -34,7 +30,7 @@ def main():
             else:
                 app.bulletin.putup("plotting scale unlocked")
 
-        @app.Hotkey("DistMeas&Cali", OEM3)
+        @app.Hotkey("DistMeas&Cali", keyshortcut.win32conComp.VK_OEM_3)
         @app.AsyncLongScript()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
@@ -44,7 +40,9 @@ def main():
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
 
-        @app.Hotkey("StartCali", [win32con.VK_CONTROL, OEM3])
+        @app.Hotkey(
+            "StartCali", [win32con.VK_CONTROL, keyshortcut.win32conComp.VK_OEM_3]
+        )
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
@@ -54,12 +52,15 @@ def main():
             app.bulletin.putup(f"caliberating to {lastStaged}")
 
         # not used that much. normally just switch out from snip mode
-        # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, OEM3])
+        # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, keyshortcut.win32conComp.VK_OEM_3])
         def stopCali():
             wtdmp.caliOperator.stop()
             app.bulletin.putup(f"cali stopped")
 
-        @app.Hotkey("SetPlottingScale", [win32con.VK_CONTROL, win32con.VK_MENU, OEM3])
+        @app.Hotkey(
+            "SetPlottingScale",
+            [win32con.VK_CONTROL, win32con.VK_MENU, keyshortcut.win32conComp.VK_OEM_3],
+        )
         def SetPlottingScale():
             app.bulletin.putup("input plotting scale")
 
@@ -72,24 +73,27 @@ def main():
                 ):
                     nonlocal wtdmp
                     wtdmp.psLocked = True
-                    result = numinstr(session.content)
+                    result = Numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
                     app.bulletin.putup(f"plotting scale locked at {result}")
-                    gameinput.key_press(keycode.key_Enter)
-                    gameinput.key_press(keycode.key_1)
+                    gameinput.key_press(win32con.VK_RETURN)
+                    gameinput.key_press(ord("1"))
                 elif (
                     session.sessionEndType
                     == HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL
                 ):
                     app.bulletin.putup("plotting scale canceled")
-                    gameinput.key_press(keycode.key_Esc)
+                    gameinput.key_press(win32con.VK_ESCAPE)
 
             app.inputSession.IntoSession(
                 SetPlottingScaleLock,
                 [HotkeyManager.InputSession.InputTypeEnabled.NUMBER],
             )
 
-        @app.Hotkey("FreshPlottingScale", [ord("L"), ord("K"), OEM3])
+        @app.Hotkey(
+            "FreshPlottingScale",
+            [ord("L"), ord("K"), keyshortcut.win32conComp.VK_OEM_3],
+        )
         @app.AsyncLongScript()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp
@@ -118,43 +122,31 @@ def main():
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        import keyshortcut.keyshortcut as keyshortcut
 
         @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
-            app.bulletin.putup(bulletinBoard.Poster("LeftHolding", 1))
+            app.bulletin.putup(BulletinBoard.Poster("LeftHolding", 1))
 
         @app.Hotkey("HoldCAndTell", win32con.VK_F11)
         def holdCAndTell():
             keyshortcut.holdC()
-            app.bulletin.putup(bulletinBoard.Poster("CHolding", 1))
+            app.bulletin.putup(BulletinBoard.Poster("CHolding", 1))
 
         @app.Hotkey("LaunchSeries", [win32con.VK_RCONTROL, ord("K"), ord("O")])
         @app.AsyncLongScript()
         def launchSeriesGo(self: StoppableSomewhat):
             app.bulletin.putup("launching series")
-            interval = 0.01
-            num = 29 + 3
-            keyshortcut.keydown(keycode.key_LeftControl)
-            for i in range(num):
-                if self.timeToStop():
-                    break
-                keyshortcut.keydown(keycode.key_Spacebar)
-                PreciseSleep(0.03)
-                keyshortcut.keyup(keycode.key_Spacebar)
-                PreciseSleep(interval)
-            keyshortcut.keyup(keycode.key_LeftControl)
-
+            keyshortcut.launchSeriesGo(self)
             app.bulletin.putup(f"launch done")
 
         @app.Hotkey("RefreshWifi", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, ord("K")])
         @app.AsyncLongScript()
         def refreshWifi(self: StoppableSomewhat):
             app.bulletin.putup("refreshing wifi")
-            wifi=WifiRefresher()
+            wifi = WifiRefresher()
             wifi.setOff()
-            sleep(1)
+            time.sleep(1)
             wifi.setOn()
             app.bulletin.putup(f"refresh done")
 
@@ -196,10 +188,10 @@ def main():
             if eedcstate:
                 eagleeye.cachedShots = []
                 eedcstate = False
-                app.bulletin.putup(bulletinBoard.Poster("eedc off", 1))
+                app.bulletin.putup(BulletinBoard.Poster("eedc off", 1))
             else:
                 eedcstate = True
-                app.bulletin.putup(bulletinBoard.Poster("eedc on", 1))
+                app.bulletin.putup(BulletinBoard.Poster("eedc on", 1))
 
         @app.Hotkey("EagleEyeOnClick", win32con.VK_LBUTTON)
         def eedcOnClickWithSwitch():
@@ -217,19 +209,48 @@ def main():
         @app.Hotkey("Glock", [win32con.VK_RSHIFT, win32con.VK_F9])
         def glSwitchBusiness():
             if gl.isRunning():
-                app.bulletin.putup(bulletinBoard.Poster("glock stopping"))
+                app.bulletin.putup(BulletinBoard.Poster("glock stopping"))
                 gl.setOff()
-                app.bulletin.putup(bulletinBoard.Poster("glock stopped"))
+                app.bulletin.putup(BulletinBoard.Poster("glock stopped"))
             else:
                 gl.setOn()
-                app.bulletin.putup(bulletinBoard.Poster("glock started"))
+                app.bulletin.putup(BulletinBoard.Poster("glock started"))
+
+    if usingengineman:
+        print("engineman activated")
+        import engineman.engineman as engineman
+
+        em = engineman.DetachedEngineMan(pool=app.threadpool)
+
+        def on():
+            em.go()
+            app.bulletin.putup(BulletinBoard.Poster("engineman started"))
+
+        def off():
+            em.stop()
+            app.bulletin.putup(BulletinBoard.Poster("engineman stopped"))
+
+        emSwitch = Switch(onSetOn=on, onSetOff=off)
+
+        @app.Hotkey(
+            "EngineManSwitch",
+            [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10],
+        )
+        def emSwitchBusiness():
+            emSwitch.switch()
 
     @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
-        RythmReboot.play()
+        Rhythms.Reboot.play()
         sys.exit()
+
+    @app.Business()
+    def PullBulletinQueueToBulletin():
+        msg = globalsys.BulletinQueue().get()
+        if msg is not None:
+            app.bulletin.putup(msg)
 
     app.go()
 

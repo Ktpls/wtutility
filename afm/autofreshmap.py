@@ -19,7 +19,7 @@ def main():
 
         hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
 
-        fpsm = fpsmanager(5)
+        fpsm = FpsManager(5)
         activeWindow(GetWtHwnd())
         mouse.mov(*(0, 0))
         afm.go()
@@ -33,20 +33,13 @@ def main():
             os.system("pause")
     except Exception as err:
         traceback.print_exc()
-        RythmError.play()
+        Rhythms.Error.play()
         if throwerrinmain:
             raise err
         system("pause")
 
-    # testOneRaw()
-    # addCutNewMap('Normandy')
-    # setonwifi()
-    # outputMapSpawnPointCenter(r".\asset\autofreshmap\map\Poland.png")
-
-    # system('pause')
-
 
 def test():
     activeWindow(GetWtHwnd())
-    sleep(1)
-    press(keycode.key_Enter)
+    time.sleep(1)
+    KeyPress(win32con.VK_RETURN)

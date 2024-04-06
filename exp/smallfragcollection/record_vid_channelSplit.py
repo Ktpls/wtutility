@@ -6,7 +6,7 @@ from utility import *
 
 def sleepuntil(con,dt=0.01):
     while(not con()):
-        sleep(dt)
+        time.sleep(dt)
 
 path=r"D:\output\pycammot\wtplane{}.avi"
 

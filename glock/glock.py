@@ -43,27 +43,32 @@ class GPush(StoppableProcess):
     def foo(self):
         def report():
             if not GPush.isZero(ratio):
-                RythmNotify.play()
+                Rhythms.Notify.play()
             if print_ctrl_ratio:
                 print(f"ratio: {self.ratio.value}")
 
         reporter = Reporter(5, report)
         period = 0.025
+        wtWindow = WarthunderWindow()
         while not self.timeToStop() and not self.bad8111Exit.is_set():
             ratio = self.ratio.value
-            if GPush.isZero(ratio):
-                # diabled
-                PreciseSleep(period)
-            elif GPush.isFull(ratio):
-                # key will be realeased until some point that not full
-                gameinput.keydown(gameinput.keycode.key_S)
-                PreciseSleep(period)
+            if wtWindow.isFocus():
+
+                if GPush.isZero(ratio):
+                    # diabled
+                    PreciseSleep(period)
+                elif GPush.isFull(ratio):
+                    # key will be realeased until some point that not full
+                    with gameinput.HoldingKey(ord("S")):
+                        PreciseSleep(period)
+                else:
+                    topush = ratio * period
+                    torelax = (1 - ratio) * period
+                    gameinput.KeyHold(ord("S"), topush)
+                    # PreciseSleep(topush)
+                    PreciseSleep(torelax)
             else:
-                topush = ratio * period
-                torelax = (1 - ratio) * period
-                gameinput.hold(gameinput.keycode.key_S, topush)
-                # PreciseSleep(topush)
-                PreciseSleep(torelax)
+                PreciseSleep(period)
             reporter.update()
 
 
@@ -97,7 +102,7 @@ class Sampler(StoppableProcess):
     def foo(self):
         GMax = 13
         pushMax = (self.lim - GMax) * (-0.5) / (GMax - 1)
-        fullPushExceed = (GMax - self.lim)*0.75
+        fullPushExceed = (GMax - self.lim) * 0.75
         controller = PIDController(
             kp=0.05 * 1 / fullPushExceed,
             ki=1.0 * 1 / fullPushExceed,
@@ -110,7 +115,7 @@ class Sampler(StoppableProcess):
         oolfi = OneOrderLinearFilter(0, 0)
         # control filter
         oolfc = OneOrderLinearFilter(0, 0)
-        fps = fpsmanager(10)
+        fps = FpsManager(10)
 
         def calcEnerge(h, tas):
             return h * 9.8 + 0.5 * tas**2
@@ -227,5 +232,5 @@ class Puller(StoppableProcess):
         while not self.timeToStop():
             ontime = ratio * period
             offtime = (1 - ratio) * period
-            gameinput.hold(gameinput.keycode.key_W, ontime)
+            gameinput.KeyHold(ord("W"), ontime)
             PreciseSleep(offtime)
