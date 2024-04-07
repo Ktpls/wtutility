@@ -12,4 +12,10 @@ scipy
 tensorboard
 torch
 torchvision
+openpyxl
+pyautogui
+pywin32
+tensorboard
+pytesseract
+regex
 yapf
