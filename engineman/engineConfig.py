@@ -127,8 +127,8 @@ class Itp(EngineConfig):
 @HostedEngineConfig(planeName="p-47d_ussr")
 class P47D(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.set(1.0)
+        gauges.radiator.set(0.45)
+        gauges.oilRadiator.set(0.45)
 
 
 @HostedEngineConfig(planeName=["la-7b-20", "la-5fn", "i_185_m82"])
@@ -153,3 +153,54 @@ class P51C(EngineConfig):
         gauges.propPitch.set(0.95)
         gauges.radiator.set(1.0)
         gauges.oilRadiator.setToMaxAnyway()
+
+
+@HostedEngineConfig(planeName="hp52_hampden_tbmk1_ussr_utk1")
+class Hampden(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+
+
+@HostedEngineConfig(planeName="tb_3_m17_32")
+class TB3(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.radiator.set(1.0)
+
+
+
+@HostedEngineConfig(planeName="i-153_m62_zhukovskiy")
+class i153(EngineConfig):
+    def check(self, gauges: Gauges):
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [2100, 2],
+            ],
+        )
+        MappingAxis(
+            gauges.supercharger,
+            gauges.propPitch,
+            [
+                [None, 1.0],
+                [2, 0.9],
+            ],
+        )
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.setToMaxAnyway()
+
+
+
+
+@HostedEngineConfig(planeName=["i-16_type10"])
+class i16NoPitch(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.radiator.set(1.0)
+
+@HostedEngineConfig(planeName=["i-16_type27"])
+class i16WithPitch(i16NoPitch):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.9)
+        super().check(gauges)

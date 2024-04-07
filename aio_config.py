@@ -7,7 +7,7 @@ class GameMode(enum.Enum):
     grb = 2
 
 
-gm = GameMode.grb
+gm = GameMode.arb
 
 
 def getByMode(d: dict):

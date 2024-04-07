@@ -543,6 +543,7 @@ class EngineMan:
                 self.initializeService(planeName)
 
     def check(self):
+        GSLogger().logger.debug("")
         planeName = None
         try:
             planeName = VehicleName().get()
@@ -554,6 +555,7 @@ class EngineMan:
                 time.perf_counter() - self.lastCheckTime
                 > self.services[planeName].checkRate
             ):
+                GSLogger().logger.debug(f"engineman service doing checking, {planeName=}")
                 self.serviceDoCheck()
 
 
