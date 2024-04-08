@@ -158,6 +158,14 @@ class P51C(EngineConfig):
 @HostedEngineConfig(planeName="hp52_hampden_tbmk1_ussr_utk1")
 class Hampden(EngineConfig):
     def check(self, gauges: Gauges):
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [2400, 2],
+            ],
+        )
         gauges.propPitch.set(0.95)
         gauges.radiator.set(1.0)
 
@@ -166,7 +174,6 @@ class Hampden(EngineConfig):
 class TB3(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(1.0)
-
 
 
 @HostedEngineConfig(planeName="i-153_m62_zhukovskiy")
@@ -184,7 +191,7 @@ class i153(EngineConfig):
             gauges.supercharger,
             gauges.propPitch,
             [
-                [None, 1.0],
+                [None, 0.95],
                 [2, 0.9],
             ],
         )
@@ -192,12 +199,11 @@ class i153(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-
-
 @HostedEngineConfig(planeName=["i-16_type10"])
 class i16NoPitch(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(1.0)
+
 
 @HostedEngineConfig(planeName=["i-16_type27"])
 class i16WithPitch(i16NoPitch):

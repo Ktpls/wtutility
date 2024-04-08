@@ -543,7 +543,6 @@ class EngineMan:
                 self.initializeService(planeName)
 
     def check(self):
-        GSLogger().logger.debug("")
         planeName = None
         try:
             planeName = VehicleName().get()
