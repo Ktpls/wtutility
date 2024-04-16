@@ -69,7 +69,6 @@ def gettelescopeview():
     return view
 
 
-@Singleton
 class MTI:
     def __init__(self):
         mtiSize = 5
@@ -78,13 +77,13 @@ class MTI:
         self.mtif = MtiFilter(
             mtiSize,
             filter=interpolate.interp1d(
-                [0, 0.2, 0.2, 1],
+                [0, 0.4, 0.6, 1],
                 [0, 0, 1, 1],
                 kind="linear",
                 assume_sorted=True,
             ),
         )
-        self.me = MotionEstimator(uimask, subsamplerate=0.2)
+        self.me = MotionEstimator(uimask, subsamplerate=0.1)
 
     def reset(self):
         self.mtif.mtiQueue.clear()
@@ -94,13 +93,7 @@ class MTI:
         view = screenshoter(0).shotbgr()[:, :, 2].astype(np.uint8)
         ret = self.me.update(view)
         if ret is None:
-            mo = np.array(
-                [
-                    [1, 0, 0],
-                    [0, 1, 0],
-                ],
-                np.float32,
-            )
+            mo = None
         else:
             _, mo = ret
         view = np.clip(view.astype(np.float32) / 255, 0, 1)
