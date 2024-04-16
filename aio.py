@@ -115,21 +115,16 @@ def main():
 
         app.Hotkey("SwitchTelescope", win32con.VK_F12)(lambda: teleSwitch.switch())
 
-        mtiIns = telescope.MTI()
+        mtiIns = telescope.MTI(app.threadpool)
 
-        mtiSwitch = Switch(onSetOn=lambda: mtiIns.reset())
+        mtiSwitch = Switch(onSetOn=lambda: mtiIns.go(), onSetOff=lambda: mtiIns.stop())
 
         @app.Business()
         def mtiMain():
             # TODO move into seperated thread
             if not mtiSwitch():
                 return
-            view = mtiIns.update()
-            view = view[
-                telescope.mtiRect[1] : telescope.mtiRect[3],
-                telescope.mtiRect[0] : telescope.mtiRect[2],
-            ]
-            view = np.repeat(np.expand_dims(view, axis=2), 3, axis=2)
+            view = mtiIns.getResult()
             app.hud.writecontent(np.flip(telescope.mtiRect[:2]), view)
 
         app.Hotkey("SwitchTelescope", [win32con.VK_RCONTROL, win32con.VK_F12])(

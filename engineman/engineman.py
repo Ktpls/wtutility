@@ -570,7 +570,7 @@ class EngineMan:
 
 
 class DetachedEngineMan(StoppableThread):
-    def __init__(self, pool: keyshortcut.ThreadPoolExecutor = None) -> None:
+    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
         super().__init__(
             StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
             StoppableSomewhat.StrategyError.print_error,

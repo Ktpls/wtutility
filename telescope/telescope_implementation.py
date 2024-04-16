@@ -69,28 +69,47 @@ def gettelescopeview():
     return view
 
 
-class MTI:
-    def __init__(self):
+class MTI(StoppableThread):
+
+    def __init__(self, pool: ThreadPoolExecutor = None):
+        super
         mtiSize = 5
         # uimask = cv.imread(r"asset\opdar\UIMASK.png", cv.IMREAD_GRAYSCALE)
         uimask = None
         self.mtif = MtiFilter(
             mtiSize,
             filter=interpolate.interp1d(
-                [0, 0.4, 0.6, 1],
+                [0, 0.2, 0.8, 1],
                 [0, 0, 1, 1],
                 kind="linear",
                 assume_sorted=True,
             ),
         )
         self.me = MotionEstimator(uimask, subsamplerate=0.1)
+        self.ss = screenshoter(0)
+        self.ones = np.ones(np.flip(self.ss.res), np.uint8)
+        self.buf = None
+        super().__init__(
+            StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
+            StoppableSomewhat.StrategyError.print_error,
+            pool,
+        )
 
     def reset(self):
         self.mtif.mtiQueue.clear()
         self.me.lastScreen = None
 
+    def getResult(self):
+        ret = self.ones if self.buf is None else self.buf
+        ret = ret[
+            mtiRect[1] : mtiRect[3],
+            mtiRect[0] : mtiRect[2],
+        ]
+        ret = np.repeat(np.expand_dims(ret, axis=2), 3, axis=2)
+        return ret
+
     def update(self):
-        view = screenshoter(0).shotbgr()
+        view = self.ss.shotbgr()
         viewgray = view[:, :, 2].astype(np.uint8)
         ret = self.me.update(viewgray)
         if ret is None:
@@ -100,6 +119,15 @@ class MTI:
         view = np.clip(view.astype(np.float32) / 255, 0, 1)
         result = self.mtif.update(view, mo)
         if result is None:
-            return np.ones_like(viewgray)
+            return None
         else:
             return (result * 255).astype(np.uint8)
+
+    def foo(self):
+        self.reset()
+        fpsm = FpsManager(mtiFps)
+        while True:
+            fpsm.WaitUntilNextFrame()
+            if self.timeToStop():
+                break
+            self.buf = self.update()
