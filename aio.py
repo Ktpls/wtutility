@@ -131,7 +131,9 @@ def main():
             view = np.repeat(np.expand_dims(view, axis=2), 3, axis=2)
             app.hud.writecontent(np.flip(telescope.mtiRect[:2]), view)
 
-        app.Hotkey("SwitchTelescope", win32con.VK_F9)(lambda: mtiSwitch.switch())
+        app.Hotkey("SwitchTelescope", [win32con.VK_RCONTROL, win32con.VK_F12])(
+            lambda: mtiSwitch.switch()
+        )
 
     # key shortcuts
     if usingkeyshortcut:

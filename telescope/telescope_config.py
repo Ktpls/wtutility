@@ -6,10 +6,9 @@ transformationapplied = [
     "detail",
 ]
 telescopepos = (100, 100)
-mtiRadius = 100
 mtiRect = [
-    1920 // 2 - mtiRadius,
-    1080 // 2 - mtiRadius,
-    1920 // 2 + mtiRadius,
-    1080 // 2 + mtiRadius,
+    1920 // 2 - 100,
+    1080 // 2 - 100,
+    1920 // 2 + 100,
+    1080 // 2 + 100,
 ]
