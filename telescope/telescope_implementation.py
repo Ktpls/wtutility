@@ -1,5 +1,6 @@
 from utilitypack import *
 from .telescope_config import *
+import shared.globalsys as globalsys
 
 sizelen = np.array(sizelen)
 availtransformation = {}
@@ -8,16 +9,13 @@ sizezoom = np.array(sizezoom)
 
 
 def transformation_zoom(view):
-    zoomrate = sizezoom.astype('float') / view.shape[:2]
+    zoomrate = sizezoom.astype("float") / view.shape[:2]
     zoommat = np.array([[zoomrate[1], 0, 0], [0, zoomrate[0], 0]])
-    view = cv.warpAffine(view,
-                         zoommat,
-                         np.flip(sizezoom),
-                         flags=cv.INTER_NEAREST)
+    view = cv.warpAffine(view, zoommat, np.flip(sizezoom), flags=cv.INTER_NEAREST)
     return view
 
 
-availtransformation['zoom'] = transformation_zoom
+availtransformation["zoom"] = transformation_zoom
 
 
 def transformation_fisheye(view):
@@ -29,13 +27,13 @@ def transformation_fisheye(view):
     COOR += 1
     COOR *= 0.5
     COOR *= (np.array(view.shape[:2]) - 1).reshape([2, 1, 1])
-    COOR = np.round(COOR).astype('int')
+    COOR = np.round(COOR).astype("int")
     view = view[COOR[0], COOR[1]]
 
     return view
 
 
-availtransformation['fisheye'] = transformation_fisheye
+availtransformation["fisheye"] = transformation_fisheye
 
 
 def transformation_detailenh(view):
@@ -51,21 +49,63 @@ def transformation_detailenh(view):
     return view
 
 
-availtransformation['detail'] = transformation_detailenh
+availtransformation["detail"] = transformation_detailenh
 
 
 def gettelescopeview():
     # view of len
-    scr = screenshoter(0).shotbgr().astype('float')
+    scr = screenshoter(0).shotbgr().astype("float")
     sizescr = np.array(scr.shape[:2])
-    lt = (sizescr * 0.5 - sizelen * 0.5).astype('int')
-    rd = (sizescr * 0.5 + sizelen * 0.5).astype('int')
-    view = scr[lt[0]:rd[0], lt[1]:rd[1], :]
+    lt = (sizescr * 0.5 - sizelen * 0.5).astype("int")
+    rd = (sizescr * 0.5 + sizelen * 0.5).astype("int")
+    view = scr[lt[0] : rd[0], lt[1] : rd[1], :]
 
     for t in transformationapplied:
         view = availtransformation[t](view)
-    view = view.astype('int')
+    view = view.astype("int")
     # in case of totally black place in view
     # although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
     view[view < 1] = 1
     return view
+
+
+@Singleton
+class MTI:
+    def __init__(self):
+        mtiSize = 5
+        # uimask = cv.imread(r"asset\opdar\UIMASK.png", cv.IMREAD_GRAYSCALE)
+        uimask = None
+        self.mtif = MtiFilter(
+            mtiSize,
+            filter=interpolate.interp1d(
+                [0, 0.2, 0.2, 1],
+                [0, 0, 1, 1],
+                kind="linear",
+                assume_sorted=True,
+            ),
+        )
+        self.me = MotionEstimator(uimask, subsamplerate=0.2)
+
+    def reset(self):
+        self.mtif.mtiQueue.clear()
+        self.me.lastScreen = None
+
+    def update(self):
+        view = screenshoter(0).shotbgr()[:, :, 2].astype(np.uint8)
+        ret = self.me.update(view)
+        if ret is None:
+            mo = np.array(
+                [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                ],
+                np.float32,
+            )
+        else:
+            _, mo = ret
+        view = np.clip(view.astype(np.float32) / 255, 0, 1)
+        result = self.mtif.update(view, mo)
+        if result is None:
+            return np.ones_like(view)
+        else:
+            return (result * 255).astype(np.uint8)

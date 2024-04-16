@@ -1,5 +1,5 @@
 from utilref import *
-from globalsys.globalsys import *
+from shared.globalsys import *
 
 
 fmroot = r"C:\file\code\notByMe\War-Thunder-Datamine-master\aces.vromfs.bin_u\gamedata\flightmodels\fm"

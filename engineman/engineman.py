@@ -3,7 +3,7 @@ import keyshortcut.keyshortcut as keyshortcut
 from .engineConfigInclude import *
 from .engineConfig import *
 from .engineman_config import *
-from globalsys.globalsys import *
+from shared.globalsys import *
 
 
 @Singleton

@@ -3,7 +3,7 @@ from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
-from globalsys.globalsys import *
+from shared.globalsys import *
 
 
 def signName2Path(name):

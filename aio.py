@@ -5,9 +5,7 @@ from utilitypack.util_app import *
 from aio_config import *
 import functools
 import keyshortcut.keyshortcut as keyshortcut
-import globalsys.globalsys as globalsys
-
-telescopepos = (100, 100)
+import shared.globalsys as globalsys
 
 
 def main():
@@ -106,18 +104,34 @@ def main():
         print("telescope activated")
         import telescope.telescope as telescope
 
-        tele = telescope.telescope()
+        teleSwitch = Switch()
 
         @app.Business()
         def telemain():
-            scope = tele.mainlooplogic()
-            if scope is None:
+            if not teleSwitch():
                 return
-            app.hud.writecontent(np.flip(telescopepos), scope)
+            scope = telescope.gettelescopeview()
+            app.hud.writecontent(np.flip(telescope.telescopepos), scope)
 
-        @app.Hotkey("SwitchTelescope", win32con.VK_F12)
-        def switchtele():
-            tele.enabled = not tele.enabled
+        app.Hotkey("SwitchTelescope", win32con.VK_F12)(lambda: teleSwitch.switch())
+
+        mtiIns = telescope.MTI()
+
+        mtiSwitch = Switch(onSetOn=lambda: mtiIns.reset())
+
+        @app.Business()
+        def mtiMain():
+            if not mtiSwitch():
+                return
+            view = mtiIns.update()
+            view = view[
+                telescope.mtiRect[1] : telescope.mtiRect[3],
+                telescope.mtiRect[0] : telescope.mtiRect[2],
+            ]
+            view = np.repeat(np.expand_dims(view, axis=2), 3, axis=2)
+            app.hud.writecontent(np.flip(telescope.mtiRect[:2]), view)
+
+        app.Hotkey("SwitchTelescope", win32con.VK_F9)(lambda: mtiSwitch.switch())
 
     # key shortcuts
     if usingkeyshortcut:
