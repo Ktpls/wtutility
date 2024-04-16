@@ -90,8 +90,9 @@ class MTI:
         self.me.lastScreen = None
 
     def update(self):
-        view = screenshoter(0).shotbgr()[:, :, 2].astype(np.uint8)
-        ret = self.me.update(view)
+        view = screenshoter(0).shotbgr()
+        viewgray = view[:, :, 2].astype(np.uint8)
+        ret = self.me.update(viewgray)
         if ret is None:
             mo = None
         else:
@@ -99,6 +100,6 @@ class MTI:
         view = np.clip(view.astype(np.float32) / 255, 0, 1)
         result = self.mtif.update(view, mo)
         if result is None:
-            return np.ones_like(view)
+            return np.ones_like(viewgray)
         else:
             return (result * 255).astype(np.uint8)
