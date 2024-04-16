@@ -343,61 +343,6 @@ def GetObjectOnSignal(
     return obj[maxscorecontourid]
 
 
-def cameramotion(m0, m1, mask, subsamplerate=0.2):
-    m0small = cv.resize(
-        m0, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
-    )
-    masksmall = cv.resize(
-        mask, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
-    )
-    prev_pts = cv.goodFeaturesToTrack(
-        m0small,
-        maxCorners=100,
-        qualityLevel=0.001,
-        minDistance=3,
-        blockSize=3,
-        mask=masksmall,
-    )
-    if prev_pts is None:
-        raise Exception("No point to track")
-    # sky=m0small[:int(0.5*m0small.shape[0]),:]
-    # sky_pts = cv.goodFeaturesToTrack(sky,
-    #                                   maxCorners=200,
-    #                                   qualityLevel=0.001,
-    #                                   minDistance=3,
-    #                                   blockSize=3,
-    #                                   mask=masksmall[:int(0.5*masksmall.shape[0]),:])
-    # prev_pts=np.concatenate((prev_pts,sky_pts))
-
-    m1small = cv.resize(
-        m1, None, fx=subsamplerate, fy=subsamplerate, interpolation=cv.INTER_AREA
-    )
-
-    # Calculate optical flow (i.e. track feature points)
-    curr_pts, status, err = cv.calcOpticalFlowPyrLK(m0small, m1small, prev_pts, None)
-
-    # Sanity check
-    assert prev_pts.shape == curr_pts.shape
-
-    # Filter only valid points
-    idx = np.where(status == 1)[0]
-    if idx.size == 0:
-        return curr_pts, [[1, 0, 0], [0, 1, 0]]
-    prev_pts = prev_pts[idx]
-    curr_pts = curr_pts[idx]
-    prev_pts = prev_pts / subsamplerate
-    curr_pts = curr_pts / subsamplerate
-
-    # Find transformation matrix
-    # m = cv.estimateRigidTransform(prev_pts, curr_pts, fullAffine=False)
-    # will only work with OpenCV-3 or less
-    m = cv.estimateAffinePartial2D(prev_pts, curr_pts, False)[0]
-
-    # Extract traslation
-
-    return curr_pts, m
-
-
 from wtdmp.wtdistmeaspy_implementation import (
     SnipScencePreProcess,
     GetCrosshair,
@@ -418,93 +363,6 @@ def GetMilIntervalFromScrShot(m):
         red_mask, crosshair, AdjustByZoomRate(gridSearchWidth_unzoom), log
     )
     return mil
-
-
-class MtiFilter:
-    @dataclasses.dataclass
-    class MtiStorage:
-        img: np.ndarray
-
-        # compared with prev frame
-        cammotion: np.ndarray
-
-    def __init__(self, mtiQueueSize) -> None:
-        """
-        consider storage only the transformed and meaned pic
-        like the dynamic window way. kick the oldest one in queue out, and take its effect out of meaned pic
-        """
-        self.filter = interpolate.interp1d([0, 0.3, 0.75, 1], [1, 1, 0, 0])
-        # fake type notation in order to scam ide type analysis
-        self.mtiQueue: list[MtiFilter.MtiStorage] | AccessibleQueue = AccessibleQueue(
-            mtiQueueSize
-        )
-
-        # try convienient type annotation but wont work
-        # self.mtiQueue: AccessibleQueue.Annotation(
-        #     MtiFilter.MtiStorage
-        # ) = AccessibleQueue(5)
-
-    def update(self, img: np.ndarray, cammotion: np.ndarray):
-        if self.mtiQueue.isEmpty():
-            ret = np.ones_like(img)
-        else:
-            # mit proc
-            def cammotionmat2x3to3x3(cammot: np.ndarray):
-                return np.concatenate(
-                    [
-                        cammot,
-                        [[0, 0, 1]],
-                    ]
-                )
-
-            def cammotionmat3x3to2x3(cammot: np.ndarray):
-                return cammot[:2, :]
-
-            motionSum = cammotionmat2x3to3x3(cammotion)
-            scrsize = img.shape
-            prevScreenAtNowView = []
-            for i in range(len(self.mtiQueue)):
-                # iter from the newest to oldest
-                prevScreenAtNowView.append(
-                    cv.warpAffine(
-                        self.mtiQueue[-i].img,
-                        cammotionmat3x3to2x3(motionSum),  # only x, y, no w
-                        np.flip(scrsize),
-                        borderMode=cv.BORDER_CONSTANT,
-                        borderValue=0,
-                    )
-                )
-                motionSum = (
-                    cammotionmat2x3to3x3(self.mtiQueue[-i].cammotion) @ motionSum
-                )
-            self.mtiQueue.push__pop_if_full(MtiFilter.MtiStorage(img, cammotion))
-            prevsignal = np.array(prevScreenAtNowView)
-            prevsignal = np.average(prevsignal, axis=0)
-            """
-            in case that input is not binary, like a gray dot
-            and it doesnt hurt in this case, that:
-                for the head part of trajectory of moving dot, img_now is 1-ish, so prevsignal is 0-ish
-                for the tail part, img_now is 0-ish, so prevsignal is 1-ish
-                it fits the filter logic
-            """
-            prevsignal = prevsignal / (img + epsilon)
-
-            ret = self.filter(prevsignal)
-        return ret
-
-
-class MotionEstimator:
-    def __init__(self) -> None:
-        self.lastScreen = None
-
-    def update(self, newScreen):
-        newScreen = newScreen[:, :, 2]
-        if self.lastScreen is None:
-            self.lastScreen = newScreen
-            return None
-        return cameramotion(
-            self.lastScreen, newScreen, uimask, camerestablizersubsamplerate
-        )
 
 
 @dataclasses.dataclass
@@ -531,8 +389,8 @@ class tracker:
 
         curr = self.ss.shot().astype("uint8")
         self.lastshottime = time.perf_counter()
-        self.motionEstimator = MotionEstimator()
-        self.motionEstimator.update(curr)
+        self.motionEstimator = MotionEstimator(uimask, camerestablizersubsamplerate)
+        self.motionEstimator.update(curr[:, :, 2])
 
         self.trackbuildinguptimer = 2 * fps
 

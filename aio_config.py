@@ -20,10 +20,11 @@ usingwtdistmeaspy = getByMode(
 usingtelescope = getByMode(
     {GameMode.arb: False, GameMode.garb: True, GameMode.grb: True}
 )
-usingkeyshortcut = True
+usingtelescope=True
+usingkeyshortcut = False
 usingeagleeye = False
 usingglock = False
-usingengineman = True
+usingengineman = False
 
 throwErrorInBus = False
 throwErrorInHotkey = False
