@@ -121,7 +121,6 @@ def main():
 
         @app.Business()
         def mtiMain():
-            # TODO move into seperated thread
             if not mtiSwitch():
                 return
             view = mtiIns.getResult()
