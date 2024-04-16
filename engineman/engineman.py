@@ -209,7 +209,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
 
         def issucc(prev, after):
             GSLogger().logger.debug(
-                f"turnUpIsSucc {self=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
+                f"turnUpIsSucc {self.__class__=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
             )
             return a or b or c
 
@@ -224,7 +224,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
 
         def issucc(prev, after):
             GSLogger().logger.debug(
-                f"turnDownIsSucc {self=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
+                f"turnDownIsSucc {self.__class__=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
             )
             return a or b or c
 
@@ -258,27 +258,37 @@ SwitchManualEngineControl = WtFunctionalKey(
 
 def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
     def enableManEngCtrl_ManAxisCtrl():
+        GSLogger().logger.debug("Solution enableManEngCtrl_ManAxisCtrl doing")
         SwitchManualEngineControl.press()
         PreciseSleep(0.5)
         yourself.switchManualControl()
 
     def disableManEngCtrl_ManAxisCtrl():
+        GSLogger().logger.debug("Solution disableManEngCtrl_ManAxisCtrl doing")
         yourself.switchManualControl()
         PreciseSleep(0.5)
         SwitchManualEngineControl.press()
 
+    def switchAxisManualControl():
+        GSLogger().logger.debug("Solution switchAxisManualControl doing")
+        yourself.switchManualControl()
+
+    def switchManualEngineControl():
+        GSLogger().logger.debug("Solution switchManualEngineControl doing")
+        SwitchManualEngineControl.press()
+
     return [
         Solution(
-            toEnable=lambda: yourself.switchManualControl(),
-            toDisable=lambda: yourself.switchManualControl(),
+            toEnable=switchAxisManualControl,
+            toDisable=switchAxisManualControl,
         ),
         Solution(
             toEnable=enableManEngCtrl_ManAxisCtrl,
             toDisable=disableManEngCtrl_ManAxisCtrl,
         ),
         Solution(
-            toEnable=lambda: SwitchManualEngineControl.press(),
-            toDisable=lambda: SwitchManualEngineControl.press(),
+            toEnable=switchManualEngineControl,
+            toDisable=switchManualEngineControl,
         ),
     ]
 
@@ -381,9 +391,7 @@ class Supercharger(DiscreteCEAxis):
         super().__init__(
             switchTapPositionKey=WtFunctionalKey(
                 [
-                    win32con.VK_LCONTROL,
-                    win32con.VK_LMENU,
-                    keyshortcut.win32conComp.VK_OEM_MINUS,
+                    keyshortcut.win32conComp.VK_ADD,
                 ]
             ),
             solution=[
@@ -528,6 +536,7 @@ class EngineMan:
                     raise err
                 else:
                     print(err)
+                    GSLogger().logger.error(err)
                     traceback.print_exc()
                     raise err
 
@@ -547,14 +556,16 @@ class EngineMan:
         try:
             planeName = VehicleName().get()
         except AxisUnsupported:
-            pass
+            planeName = None
         self.setService(planeName)
         if self.seviceNowValid():
             if (
                 time.perf_counter() - self.lastCheckTime
                 > self.services[planeName].checkRate
             ):
-                GSLogger().logger.debug(f"engineman service doing checking, {planeName=}")
+                GSLogger().logger.debug(
+                    f"engineman service doing checking, {planeName=}"
+                )
                 self.serviceDoCheck()
 
 

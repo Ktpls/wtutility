@@ -1,5 +1,3 @@
-import os
-import sys
 from utilref import *
 from afm.autofreshmap_implementation import *
 

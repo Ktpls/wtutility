@@ -51,7 +51,7 @@ class Raiden(EngineConfig):
 @HostedEngineConfig(planeName="i_29")
 class I29(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.propPitch.set(1.00)
+        gauges.propPitch.set(0.97)
         gauges.radiator.set(0.60)
         MappingAxis(
             gauges.altitude,
@@ -177,14 +177,14 @@ class TB3(EngineConfig):
 
 
 @HostedEngineConfig(planeName="i-153_m62_zhukovskiy")
-class i153(EngineConfig):
+class I153(EngineConfig):
     def check(self, gauges: Gauges):
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
             [
                 [None, 1],
-                [2100, 2],
+                [1700, 2],
             ],
         )
         MappingAxis(
@@ -200,13 +200,19 @@ class i153(EngineConfig):
 
 
 @HostedEngineConfig(planeName=["i-16_type10"])
-class i16NoPitch(EngineConfig):
+class I16ShvetsovM25(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(1.0)
 
 
 @HostedEngineConfig(planeName=["i-16_type27"])
-class i16WithPitch(i16NoPitch):
+class I16ShvetsovM62(I153):...
+
+
+
+@HostedEngineConfig(planeName=["il_2_37_1943"])
+class Il2(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.9)
-        super().check(gauges)
+        gauges.propPitch.set(1.0)
+        gauges.radiator.set(1.0)
+        gauges.oilRadiator.setToMaxAnyway()
