@@ -189,6 +189,9 @@ class DiscreteCEAxis(ControlableEngineAxis):
         while True:
             DetachedEngineManStopSignal().throwOnIsSet()
             nowVal = self.get()
+            GSLogger().logger.debug(
+                f"DiscreteCEAxis setting {self.__class__=} {nowVal=} {target=}"
+            )
             if nowVal is None:
                 raise AxisUnsupported()
             if nowVal != target:
@@ -209,7 +212,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
 
         def issucc(prev, after):
             GSLogger().logger.debug(
-                f"turnUpIsSucc {self.__class__=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
+                f"ContiniousCEAxis turnUpIsSucc {self.__class__=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
             )
             return a or b or c
 
@@ -224,7 +227,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
 
         def issucc(prev, after):
             GSLogger().logger.debug(
-                f"turnDownIsSucc {self.__class__=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
+                f"ContiniousCEAxis turnDownIsSucc {self.__class__=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
             )
             return a or b or c
 
@@ -423,7 +426,12 @@ class Altitude(ReadOnlyAxis):
             .expectValid()
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
-        return Coalesce(indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
+        state: Port8111.BeanState = (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest)
+            .expectValid()
+        )
+        return Coalesce(state.H.value, indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
 
 
 @Singleton

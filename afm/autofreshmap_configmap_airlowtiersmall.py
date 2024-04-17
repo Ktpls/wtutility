@@ -7,7 +7,8 @@ smalls = [
     r"AirLightVehicle\EssenLightVehicles",
     r"AirLightVehicle\HenanProvinceLightVehicles",
     r"AirLightVehicle\LakeLadogaLightVehicles",
-    r"AirLightVehicle\MozdokLightVehicles",
+    # no bombable af
+    #r"AirLightVehicle\MozdokLightVehicles",
     r"AirLightVehicle\NearEastLightVehicles",
     r"AirLightVehicle\SmolenskLightVehicles",
 ]
