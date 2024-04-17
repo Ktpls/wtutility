@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-import keyshortcut.gameinput as gameinput, keyshortcut.keycodeWinScanCode as keycode
+import keyshortcut.gameinput as gameinput
 from utilitypack.utility import *
 from utilitypack.util_app import *
 from aio_config import *
@@ -18,7 +18,7 @@ def main():
 
         wtdmp = wtdistmeaspy.wtdistmeaspy()
 
-        @app.Hotkey("PlottingScaleLock", [ord("L"), keyshortcut.win32conComp.VK_OEM_3])
+        @app.Hotkey("PlottingScaleLock", HotKey_PlottingScaleLock)
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
@@ -28,7 +28,7 @@ def main():
             else:
                 app.bulletin.putup("plotting scale unlocked")
 
-        @app.Hotkey("DistMeas&Cali", keyshortcut.win32conComp.VK_OEM_3)
+        @app.Hotkey("DistMeas&Cali", HotKey_DistMeasCali)
         @app.AsyncLongScript()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
@@ -38,9 +38,7 @@ def main():
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
 
-        @app.Hotkey(
-            "StartCali", [win32con.VK_CONTROL, keyshortcut.win32conComp.VK_OEM_3]
-        )
+        @app.Hotkey("StartCali", HotKey_StartCali)
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
@@ -50,15 +48,12 @@ def main():
             app.bulletin.putup(f"caliberating to {lastStaged}")
 
         # not used that much. normally just switch out from snip mode
-        # @RegisterHotkey("StopCali", [win32con.VK_SHIFT, keyshortcut.win32conComp.VK_OEM_3])
+        # @RegisterHotkey("StopCali", HotKey_StopCali)
         def stopCali():
             wtdmp.caliOperator.stop()
             app.bulletin.putup(f"cali stopped")
 
-        @app.Hotkey(
-            "SetPlottingScale",
-            [win32con.VK_CONTROL, win32con.VK_MENU, keyshortcut.win32conComp.VK_OEM_3],
-        )
+        @app.Hotkey("SetPlottingScale", HotKey_SetPlottingScale)
         def SetPlottingScale():
             app.bulletin.putup("input plotting scale")
 
@@ -88,10 +83,7 @@ def main():
                 [HotkeyManager.InputSession.InputTypeEnabled.NUMBER],
             )
 
-        @app.Hotkey(
-            "FreshPlottingScale",
-            [ord("L"), ord("K"), keyshortcut.win32conComp.VK_OEM_3],
-        )
+        @app.Hotkey("FreshPlottingScale", HotKey_FreshPlottingScale)
         @app.AsyncLongScript()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp
@@ -104,19 +96,21 @@ def main():
         print("telescope activated")
         import telescope.telescope as telescope
 
-        teleSwitch = Switch()
+        tele = telescope.Telescope(app.threadpool)
+        teleSwitch = Switch(onSetOn=lambda: tele.go(), onSetOff=lambda: tele.stop())
 
         @app.Business()
         def telemain():
             if not teleSwitch():
                 return
-            scope = telescope.gettelescopeview()
+            scope = tele.get()
             app.hud.writecontent(np.flip(telescope.telescopepos), scope)
 
-        app.Hotkey("SwitchTelescope", win32con.VK_F12)(lambda: teleSwitch.switch())
+        app.Hotkey("SwitchTelescope", HotKey_SwitchTelescope)(
+            lambda: teleSwitch.switch()
+        )
 
         mtiIns = telescope.MTI(app.threadpool)
-
         mtiSwitch = Switch(onSetOn=lambda: mtiIns.go(), onSetOff=lambda: mtiIns.stop())
 
         @app.Business()
@@ -126,7 +120,7 @@ def main():
             view = mtiIns.getResult()
             app.hud.writecontent(np.flip(telescope.mtiRect[:2]), view)
 
-        app.Hotkey("SwitchTelescope", [win32con.VK_RCONTROL, win32con.VK_F12])(
+        app.Hotkey("SwitchTelescope", HotKey_SwitchTelescope)(
             lambda: mtiSwitch.switch()
         )
 
@@ -134,24 +128,24 @@ def main():
     if usingkeyshortcut:
         print("keyshortcut activated")
 
-        @app.Hotkey("HoldLeftAndTell", win32con.VK_F10)
+        @app.Hotkey("HoldLeftAndTell", HotKey_HoldLeftAndTell)
         def holdLeftAndTell():
             keyshortcut.holdMouseLeft()
             app.bulletin.putup(BulletinBoard.Poster("LeftHolding", 1))
 
-        @app.Hotkey("HoldCAndTell", win32con.VK_F11)
+        @app.Hotkey("HoldCAndTell", HotKey_HoldCAndTell)
         def holdCAndTell():
             keyshortcut.holdC()
             app.bulletin.putup(BulletinBoard.Poster("CHolding", 1))
 
-        @app.Hotkey("LaunchSeries", [win32con.VK_RCONTROL, ord("K"), ord("O")])
+        @app.Hotkey("LaunchSeries", HotKey_LaunchSeries)
         @app.AsyncLongScript()
         def launchSeriesGo(self: StoppableSomewhat):
             app.bulletin.putup("launching series")
             keyshortcut.launchSeriesGo(self)
             app.bulletin.putup(f"launch done")
 
-        @app.Hotkey("RefreshWifi", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, ord("K")])
+        @app.Hotkey("RefreshWifi", HotKey_RefreshWifi)
         @app.AsyncLongScript()
         def refreshWifi(self: StoppableSomewhat):
             app.bulletin.putup("refreshing wifi")
@@ -163,28 +157,30 @@ def main():
 
         for key, dire, name in [
             [
-                win32con.VK_UP,
+                HotKey_MoveMouse_Direction_Up,
                 keyshortcut.MoveMouseDirection.up,
                 "Up",
             ],
             [
-                win32con.VK_LEFT,
+                HotKey_MoveMouse_Direction_Left,
                 keyshortcut.MoveMouseDirection.left,
                 "Left",
             ],
             [
-                win32con.VK_DOWN,
+                HotKey_MoveMouse_Direction_Down,
                 keyshortcut.MoveMouseDirection.down,
                 "Down",
             ],
             [
-                win32con.VK_RIGHT,
+                HotKey_MoveMouse_Direction_Right,
                 keyshortcut.MoveMouseDirection.right,
                 "Right",
             ],
         ]:
             app.Hotkey(
-                f"MoveMouse{name}", [win32con.VK_CONTROL, key], continiousPress=True
+                f"MoveMouse{name}",
+                ArrayFlatten([HotKey_MoveMouse_AssistKey, key]),
+                continiousPress=True,
             )(functools.partial(keyshortcut.move_mouse, dire))
 
     # eagle eye
@@ -193,7 +189,7 @@ def main():
 
         eedcstate = False
 
-        @app.Hotkey("EagleEyeDataCollector", win32con.VK_F8)
+        @app.Hotkey("EagleEyeDataCollector", HotKey_EagleEyeDataCollector)
         def eedcswitch():
             nonlocal eedcstate
             if eedcstate:
@@ -204,7 +200,7 @@ def main():
                 eedcstate = True
                 app.bulletin.putup(BulletinBoard.Poster("eedc on", 1))
 
-        @app.Hotkey("EagleEyeOnClick", win32con.VK_LBUTTON)
+        @app.Hotkey("EagleEyeOnClick", HotKey_EagleEyeOnClick)
         def eedcOnClickWithSwitch():
             if eedcstate:
                 eagleeye.onClick()
@@ -217,7 +213,7 @@ def main():
 
         gl = glock.GLock()
 
-        @app.Hotkey("Glock", [win32con.VK_RSHIFT, win32con.VK_F9])
+        @app.Hotkey("Glock", HotKey_Glock)
         def glSwitchBusiness():
             if gl.isRunning():
                 app.bulletin.putup(BulletinBoard.Poster("glock stopping"))
@@ -243,14 +239,11 @@ def main():
 
         emSwitch = Switch(onSetOn=on, onSetOff=off)
 
-        @app.Hotkey(
-            "EngineManSwitch",
-            [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10],
-        )
+        @app.Hotkey("EngineManSwitch", HotKey_EngineManSwitch)
         def emSwitchBusiness():
             emSwitch.switch()
 
-    @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
+    @app.Hotkey("Reboot", HotKey_Reboot)
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)

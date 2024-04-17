@@ -9,7 +9,7 @@ sizezoom = np.array(sizezoom)
 
 
 def transformation_zoom(view):
-    zoomrate = sizezoom.astype("float") / view.shape[:2]
+    zoomrate = sizezoom.astype(np.float32) / view.shape[:2]
     zoommat = np.array([[zoomrate[1], 0, 0], [0, zoomrate[0], 0]])
     view = cv.warpAffine(view, zoommat, np.flip(sizezoom), flags=cv.INTER_NEAREST)
     return view
@@ -27,7 +27,8 @@ def transformation_fisheye(view):
     COOR += 1
     COOR *= 0.5
     COOR *= (np.array(view.shape[:2]) - 1).reshape([2, 1, 1])
-    COOR = np.round(COOR).astype("int")
+    COOR = np.round(COOR).astype(np.int32)
+    # consider using cv.remap()
     view = view[COOR[0], COOR[1]]
 
     return view
@@ -52,42 +53,69 @@ def transformation_detailenh(view):
 availtransformation["detail"] = transformation_detailenh
 
 
-def gettelescopeview():
-    # view of len
-    scr = screenshoter(0).shotbgr().astype("float")
-    sizescr = np.array(scr.shape[:2])
-    lt = (sizescr * 0.5 - sizelen * 0.5).astype("int")
-    rd = (sizescr * 0.5 + sizelen * 0.5).astype("int")
-    view = scr[lt[0] : rd[0], lt[1] : rd[1], :]
+class Telescope(StoppableThread):
 
-    for t in transformationapplied:
-        view = availtransformation[t](view)
-    view = view.astype("int")
-    # in case of totally black place in view
-    # although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
-    view[view < 1] = 1
-    return view
+    def __init__(self, pool: ThreadPoolExecutor = None):
+        super().__init__(pool=pool)
+        self.buf = None
+
+    def foo(self):
+        fpsm = FpsManager(mtiFps)
+        while True:
+            fpsm.WaitUntilNextFrame()
+            if self.timeToStop():
+                break
+            self.update()
+
+    def update(self):
+        # view of len
+        scr = screenshoter(0).shotbgr().astype(np.float32)
+        sizescr = np.array(scr.shape[:2])
+        lt = (sizescr * 0.5 - sizelen * 0.5).astype(np.int32)
+        rd = (sizescr * 0.5 + sizelen * 0.5).astype(np.int32)
+        view = scr[lt[0] : rd[0], lt[1] : rd[1], :]
+
+        for t in transformationapplied:
+            view = availtransformation[t](view)
+        view = view.astype(np.int32)
+        # in case of totally black place in view
+        # although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
+        view = np.maximum(1, view)
+        self.buf = view
+
+    def get(self):
+        if self.buf is None:
+            self.update()
+        return self.buf
 
 
 class MTI(StoppableThread):
 
     def __init__(self, pool: ThreadPoolExecutor = None):
-        super
         mtiSize = 5
         # uimask = cv.imread(r"asset\opdar\UIMASK.png", cv.IMREAD_GRAYSCALE)
         uimask = None
+        filterInterpolate = interpolate.interp1d(
+            [0, 0.2, 0.8, 1],
+            [0, 0, 1, 1],
+            kind="linear",
+            assume_sorted=True,
+        )
+
+        def filter(x):
+            ret = filterInterpolate(x)
+            return ret
+
         self.mtif = MtiFilter(
             mtiSize,
-            filter=interpolate.interp1d(
-                [0, 0.2, 0.8, 1],
-                [0, 0, 1, 1],
-                kind="linear",
-                assume_sorted=True,
-            ),
+            filter=filter,
+            camstablize=True,
         )
         self.me = MotionEstimator(uimask, subsamplerate=0.1)
-        self.ss = screenshoter(0)
-        self.ones = np.ones(np.flip(self.ss.res), np.uint8)
+        self.ss = screenshoter()
+        self.ones = np.ones(
+            np.flip(np.array(mtiRect[2:]) - np.array(mtiRect[:2])), np.uint8
+        )
         self.buf = None
         super().__init__(
             StoppableSomewhat.StrategyRunOnRunning.stop_and_rerun,
@@ -101,10 +129,6 @@ class MTI(StoppableThread):
 
     def getResult(self):
         ret = self.ones if self.buf is None else self.buf
-        ret = ret[
-            mtiRect[1] : mtiRect[3],
-            mtiRect[0] : mtiRect[2],
-        ]
         ret = np.repeat(np.expand_dims(ret, axis=2), 3, axis=2)
         return ret
 
@@ -117,7 +141,7 @@ class MTI(StoppableThread):
         else:
             _, mo = ret
         view = np.clip(view.astype(np.float32) / 255, 0, 1)
-        result = self.mtif.update(view, mo)
+        result = self.mtif.update(view, mtiRect, mo)
         if result is None:
             return None
         else:
