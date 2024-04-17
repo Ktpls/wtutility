@@ -120,7 +120,7 @@ def main():
             view = mtiIns.getResult()
             app.hud.writecontent(np.flip(telescope.mtiRect[:2]), view)
 
-        app.Hotkey("SwitchTelescope", HotKey_SwitchTelescope)(
+        app.Hotkey("SwitchTelescopeMti", HotKey_SwitchTelescopeMti)(
             lambda: mtiSwitch.switch()
         )
 

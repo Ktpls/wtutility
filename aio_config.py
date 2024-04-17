@@ -46,7 +46,7 @@ HotKey_SetPlottingScale = [
 ]
 HotKey_FreshPlottingScale = [ord("L"), ord("K"), keyshortcut.win32conComp.VK_OEM_3]
 HotKey_SwitchTelescope = keyshortcut.win32conComp.VK_F12
-HotKey_SwitchTelescope = [
+HotKey_SwitchTelescopeMti = [
     keyshortcut.win32conComp.VK_RCONTROL,
     keyshortcut.win32conComp.VK_F12,
 ]
