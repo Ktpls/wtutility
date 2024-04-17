@@ -60,7 +60,7 @@ class Telescope(StoppableThread):
         self.buf = None
 
     def foo(self):
-        fpsm = FpsManager(mtiFps)
+        fpsm = FpsManager(telescopeFps)
         while True:
             fpsm.WaitUntilNextFrame()
             if self.timeToStop():

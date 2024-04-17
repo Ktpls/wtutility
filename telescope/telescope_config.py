@@ -6,6 +6,7 @@ transformationapplied = [
     "detail",
 ]
 telescopepos = (100, 100)
+telescopeFps=10
 mtiFps=10
 mtiRect = [
     1920 // 2 - 100,
