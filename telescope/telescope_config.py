@@ -7,10 +7,11 @@ transformationapplied = [
 ]
 telescopepos = (100, 100)
 telescopeFps=10
-mtiFps=10
+mtiFps=5
 mtiRect = [
-    1920 // 2 - 100,
-    1080 // 2 - 100,
-    1920 // 2 + 100,
-    1080 // 2 + 100,
+    1920 // 2 - 200,
+    1080 // 2 - 200,
+    1920 // 2 + 200,
+    1080 // 2 + 200,
 ]
+mtiSize = 3
