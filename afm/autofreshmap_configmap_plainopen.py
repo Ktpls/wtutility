@@ -39,6 +39,5 @@ whitelistedmap = [
     "Tunisia",
     "Volokolamsk",
 ]
-
 specialmapdetectors = {
 }

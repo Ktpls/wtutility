@@ -22,7 +22,6 @@ class G55S(EngineConfig):
 class Yak3(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(1.00)
-        gauges.radiator.set(0.25)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -31,13 +30,13 @@ class Yak3(EngineConfig):
                 [2350, 2],
             ],
         )
+        gauges.radiator.set(0.25)
 
 
 @HostedEngineConfig(planeName="j2m5_30mm")
 class Raiden(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
-        gauges.radiator.set(0.35)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -46,13 +45,13 @@ class Raiden(EngineConfig):
                 [2400, 2],
             ],
         )
+        gauges.radiator.set(0.35)
 
 
 @HostedEngineConfig(planeName="i_29")
 class I29(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.97)
-        gauges.radiator.set(0.60)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -61,6 +60,7 @@ class I29(EngineConfig):
                 [3500, 2],
             ],
         )
+        gauges.radiator.set(0.60)
 
 
 @HostedEngineConfig(planeName="p-63a-5_ussr")
@@ -158,6 +158,7 @@ class P51C(EngineConfig):
 @HostedEngineConfig(planeName="hp52_hampden_tbmk1_ussr_utk1")
 class Hampden(EngineConfig):
     def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
         MappingAxis(
             gauges.altitude,
             gauges.supercharger,
@@ -166,7 +167,6 @@ class Hampden(EngineConfig):
                 [2400, 2],
             ],
         )
-        gauges.propPitch.set(0.95)
         gauges.radiator.set(1.0)
 
 

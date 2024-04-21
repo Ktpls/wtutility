@@ -1,3 +1,2 @@
-
 whitelistedmap = []
 specialmapdetectors = {}

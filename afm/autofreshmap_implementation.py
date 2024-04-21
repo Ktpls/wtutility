@@ -1,9 +1,11 @@
-
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
 from shared.globalsys import *
+
+
+MapSize = [648, 648]
 
 
 def signName2Path(name):
@@ -138,7 +140,9 @@ def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = 1 - cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
-    GSLogger().logger.debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
+    GSLogger().logger.debug(
+        f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}"
+    )
     return minloc if minval <= simu else None
 
 
@@ -213,7 +217,7 @@ def mapname2assetpath(mapname):
 
 def cutmap(m):
     pointlt = np.array(standardMapLeftTopPoint)
-    pointrd = pointlt + np.array([648, 648])
+    pointrd = pointlt + np.array(MapSize)
     mm = m[pointlt[1] : pointrd[1], pointlt[0] : pointrd[0]]
     return mm
 
@@ -286,7 +290,7 @@ class MapDetectorImpled(detector, MapDetector):
             if ptype is None:
                 # fall back to all
                 ptype = [k for k in Asset4PointDetection_Template.keys()]
-            ptype=NormalizeIterableOrSingleArgToIterable(ptype)
+            ptype = NormalizeIterableOrSingleArgToIterable(ptype)
             result = [
                 threshedmatchtemplate(
                     mapcut,

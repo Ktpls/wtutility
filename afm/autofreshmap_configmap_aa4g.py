@@ -1,4 +1,3 @@
-
 citymap=[
     'AbandonedFactory',
     'AbandonedTown',
@@ -29,5 +28,3 @@ city_and_plain_combined=[
 ]
 
 whitelistedmap=citymap+city_and_plain_combined
-
-specialmapdetectors={}

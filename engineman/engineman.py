@@ -6,6 +6,10 @@ from .engineman_config import *
 from shared.globalsys import *
 
 
+'''
+enabling engineman in high alt, one reads proper supercharger value with auto engine control on, so wont set it properly
+'''
+
 @Singleton
 class DetachedEngineManStopSignal:
 

@@ -1,4 +1,8 @@
-from .autofreshmap_configmap_airlowtiersmall import whitelistedmap, specialmapdetectors
+from .autofreshmap_configmap_air20 import (
+    whitelistedmap,
+    blacklistedmap,
+    specialmapdetectors,
+)
 from .autofreshmap_config_lenxiaoxin import *
 
 singlechanneleddetection = False

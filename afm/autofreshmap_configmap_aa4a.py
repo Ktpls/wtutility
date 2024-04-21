@@ -1,4 +1,3 @@
-
 clearsky=[
     "Campania",
     "Carpathians",
@@ -28,5 +27,6 @@ verified=[
 small maps enhance plane density
 low buildings, trees, mountains make view clear
 '''
-whitelistedmap = clearsky+verified
+whitelistedmap = clearsky + verified
+blacklistedmap = {}
 specialmapdetectors = {}

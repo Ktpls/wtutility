@@ -32,7 +32,6 @@ highSurvivablity = [
 
 
 whitelistedmap = highSurvivablity
-
 specialmapdetectors = {
     "Sinai": MapDetector(
         map="Sinai",
