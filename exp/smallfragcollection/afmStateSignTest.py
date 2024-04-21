@@ -4,7 +4,7 @@ import os
 print(os.getcwd())
 #open dbglog=True in afm_config.py!!!
 from afm.autofreshmap_implementation import *
-whitelistedmapdetector, stateDetector=loadAssetsNeeded4FreshAMap()
+mapDetector, stateDetector=loadAssetsNeeded4FreshAMap()
 sence=[r"C:\file\code\wtutility\asset\autofreshmap\log\screen\2023-11-05-15-49-02.png"]
 sence={ss:cv.imread(ss) for ss in sence}
 
@@ -13,7 +13,7 @@ for ssnm,ss in sence.items():
     print(f'{ssnm}')
     print('#'*10)
     print(f'testing map on {ssnm}')
-    whitelistedmapdetector['Karelia'].detect(ss)
+    mapDetector['Karelia'].detect(ss)
     for sdnm,sd in stateDetector.items():
         print(f'testing sign {sdnm} on {ssnm}')
         print(f'result={sd.detect(ss)}')

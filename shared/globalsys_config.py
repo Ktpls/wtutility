@@ -4,5 +4,5 @@ DefaultGlobalSysLoggerName="GLOBAL_SYS_LOGGER"
 queueBulletinMaxSize = 0
 loggingFormat = "%(asctime)s - %(levelname)s - %(message)s"
 bulletinLogFormat="%(message)s"
-loggingLevel = logging.INFO
+loggingLevel = logging.DEBUG
 logFilePath='asset/log/'

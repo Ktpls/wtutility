@@ -3,7 +3,7 @@ from keyshortcut.gameinput import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
 from shared.globalsys import *
-
+import matplotlib.pyplot as plt
 
 MapSize = [648, 648]
 
@@ -46,10 +46,10 @@ def assetpath2realpath(ap):
     return os.path.join(afmassetroot, ap)
 
 
-zfoo4matcher = ZFunc(10, 0, 20, 1)
+zfoo4matcher = ZFunc(10 / 255, 0, 20 / 255, 1)
 
 
-class FixedPositionImgMatcher:
+class MapImgComparer:
     """
     used for map detection.
     cuz i need special algorithm that can not be impled in matchtemplate()
@@ -60,6 +60,13 @@ class FixedPositionImgMatcher:
         # all preprocess defined in config done here
         if mask is not None:
             m = m * mask
+
+        m = delBlueRed(m)
+
+        # remove shadow on loading screen map
+        brightness = np.max(m, axis=2, keepdims=True)
+        m = m / (brightness + EPS)
+
         if subsampleddetection:
             # this would set [x,y,1] back to [x,y], so do it first
             m = cv.resize(
@@ -70,15 +77,11 @@ class FixedPositionImgMatcher:
                 interpolation=cv.INTER_AREA,
             )
         if singlechanneleddetection:
-            # cvtColor cant process float output by subsampling
-            m = m.astype("uint8")
-            m = cv.cvtColor(m, cv.COLOR_BGR2GRAY)
-            m = m.reshape(m.shape + tuple([1]))  # in accordance to multi channeled
-        return m.astype("float")  # for matching
+            m = np.average(m, axis=-1, keepdims=True)
+        return m
 
     def __init__(
         self,
-        leftTop: list,
         path: str,
         thresh: float | None = None,
         maskpath: str | None = None,
@@ -87,25 +90,18 @@ class FixedPositionImgMatcher:
         self.path = path
 
         path = assetpath2realpath(path)
-        m = cv.imread(path)
+        m = cv.imread(path).astype(np.float32) / 255
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
-        self.pointlt = np.array(leftTop)
-        self.pointrd = self.pointlt + np.flip(m.shape[:2])
-        self.m = FixedPositionImgMatcher.imagepreprocess(m)
+        self.m = MapImgComparer.imagepreprocess(m)
         self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
         if maskpath is not None:
             m = assetpath2realpath(maskpath)
             m = cv.imread(m)
-            self.mask = m
+            self.mask = (m != 0).astype(np.float32)
         else:
             self.mask = None
-
-    def cutroi(self, m):
-        return m[
-            self.pointlt[1] : self.pointrd[1], self.pointlt[0] : self.pointrd[0], :
-        ]
 
     """
     channel can NOT be ignored in mscr.shape, that is like [x,y,c], where c can be 1
@@ -113,27 +109,16 @@ class FixedPositionImgMatcher:
     """
 
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
-        mscr = FixedPositionImgMatcher.imagepreprocess(mscr)
-        return zfoo4matcher(np.sqrt(np.square(self.m - mscr).mean(axis=(2,)))).mean(
-            axis=(0, 1)
+        return np.average(
+            zfoo4matcher(np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))),
+            axis=(0, 1),
         )
 
-    def detect(self, mscr, specifiedThresh=None, cutRequired=True):
-        if cutRequired:
-            mscr = self.cutroi(mscr)
+    def detect(self, mscr, specifiedThresh=None):
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
         GSLogger().logger.debug(f"{self.path} detecting: s={s}")
         thresh = specifiedThresh if specifiedThresh is not None else self.thresh
         return s < thresh
-
-    def getsignpointlt(self):
-        return self.pointlt
-
-    def getsignpointrd(self):
-        return self.pointrd
-
-    def getsigncenter(self):
-        return 0.5 * (self.pointlt + self.pointrd)
 
 
 def threshedmatchtemplate(src, temp, mask, simu):
@@ -190,24 +175,33 @@ class signdetector(UnlocatedFullScreenImgMatcher):
         super().__init__(path, thresh, mask)
 
 
+def segmentIconRed(m):
+    return cv.inRange(
+        m, hsv2opencv8bithsv([0, 70, 40]), hsv2opencv8bithsv([10, 100, 100])
+    )
+
+
+def segmentIconBlue(m):
+    return cv.inRange(
+        m, hsv2opencv8bithsv([220, 70, 40]), hsv2opencv8bithsv([230, 100, 100])
+    )
+
+
+def delBlueRed(m):
+    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    redPart = np.expand_dims(segmentIconRed(hsv).astype(np.float32), axis=2) / 255
+    bluePart = np.expand_dims(segmentIconBlue(hsv).astype(np.float32), axis=2) / 255
+    m = m * (1 - bluePart) * (1 - redPart)
+    return m
+
+
 def getMapSpawnCenter(m, spawntype="blue"):
-    def spawnfilter_red(m):
-        return cv.inRange(
-            m, hsv2opencv8bithsv([0, 70, 40]), hsv2opencv8bithsv([10, 100, 100])
-        )
-
-    def spawnfilter_blue(m):
-        return cv.inRange(
-            m, hsv2opencv8bithsv([220, 70, 40]), hsv2opencv8bithsv([230, 100, 100])
-        )
-
-    spawnfilter = {"red": spawnfilter_red, "blue": spawnfilter_blue}
-    m = cv.cvtColor(m, cv.COLOR_BGR2HSV)
-    m = spawnfilter[spawntype](m)
-    X = np.arange(m.shape[1])
-    Y = np.arange(m.shape[0])
-    XY = np.meshgrid(X, Y)
-    center = [(C * m).sum() / (m.sum() + 0.01) for C in XY]
+    spawnfilter = {"red": segmentIconRed, "blue": segmentIconBlue}
+    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    m = spawnfilter[spawntype](hsv)
+    X = np.reshape(np.arange(m.shape[1]), [1, -1])
+    Y = np.reshape(np.arange(m.shape[0]), [-1, 1])
+    center = [(C * m).sum() / (m.sum() + EPS) for C in [X, Y]]
     return np.array(center)
 
 
@@ -234,11 +228,13 @@ def zoompointimg(m):
 
 
 Asset4PointDetection_Template = {
-    t: zoompointimg(cv.imread(assetpath2realpath(signName2Path(t))))
+    t: zoompointimg(
+        cv.imread(assetpath2realpath(signName2Path(t))).astype(np.float32) / 255
+    )
     for t in ["A", "B", "C", "redA", "redB", "blueA", "blueB"]
 }
 Asset4PointDetection_Pointmask = zoompointimg(
-    cv.imread(assetpath2realpath(signName2Path("zonemask")))
+    cv.imread(assetpath2realpath(signName2Path("zonemask"))).astype(np.float32) / 255
 )[:, :, 0]
 
 
@@ -253,21 +249,17 @@ class MapDetectorImpled(detector, MapDetector):
             map = NormalizeIterableOrSingleArgToIterable(para.map)
             map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
-                FixedPositionImgMatcher(
-                    standardMapLeftTopPoint, mr, standardMapMatchThreshold, None
-                )
-                for mr in map
+                MapImgComparer(mr, standardMapMatchThreshold, None) for mr in map
             ]
         else:
             self.mtc = []
 
         self.foo = para.foo
 
-    def detect(self, mscr):
-        mapcut = cutmap(mscr)
+    def detect(self, mscr, mscrpreproced):
 
         def detectMapShape(mtcid=0, thresh=None):
-            ret = self.mtc[mtcid].detect(mscr, thresh)
+            ret = self.mtc[mtcid].detect(mscrpreproced, thresh)
             GSLogger().logger.debug(f"MapShapeResult={ret}")
             return ret
 
@@ -277,7 +269,7 @@ class MapDetectorImpled(detector, MapDetector):
             return err
 
         def detectSpawn():
-            center = getMapSpawnCenter(mapcut)
+            center = getMapSpawnCenter(mscr)
             GSLogger().logger.debug(f"spawn={center}")
             return center
 
@@ -293,7 +285,7 @@ class MapDetectorImpled(detector, MapDetector):
             ptype = NormalizeIterableOrSingleArgToIterable(ptype)
             result = [
                 threshedmatchtemplate(
-                    mapcut,
+                    mscr,
                     Asset4PointDetection_Template[t],
                     Asset4PointDetection_Pointmask,
                     detectpointsimilarity,
@@ -346,15 +338,15 @@ def maplist2detectorlist(ml):
     return dl
 
 
-whitelistedmapdetector = None
+mapDetector = None
 stateDetector = None
 
 
 def loadAssetsNeeded4FreshAMap():
-    global whitelistedmapdetector, stateDetector
-    whitelistedmapdetector = maplist2detectorlist(whitelistedmap)
+    global mapDetector, stateDetector
+    mapDetector = maplist2detectorlist(whitelistedmap)
     stateDetector = {k: signdetector(**v) for k, v in stateDetectorInfo.items()}
-    return whitelistedmapdetector, stateDetector
+    return mapDetector, stateDetector
 
 
 def leaveButton():
@@ -387,7 +379,7 @@ class freshAMap(StoppableThread):
 
         # init
         loadAssetsNeeded4FreshAMap()
-        assert stateDetector is not None and whitelistedmapdetector is not None
+        assert stateDetector is not None and mapDetector is not None
         ss = screenshoter(0)
         wifi = WifiRefresher()
 
@@ -412,7 +404,7 @@ class freshAMap(StoppableThread):
                 assert stateDetector is not None
                 if stateDetector["LoadingMap"].detect(scr):
                     nonlocal loadingscreen
-                    loadingscreen = scr
+                    loadingscreen = cutmap(scr).astype(np.float32) / 255
                     return True
                 if any(
                     [
@@ -455,8 +447,9 @@ class freshAMap(StoppableThread):
 
             # determine if map desired
             ret = False
+            loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreenProced)
             # name,detector
-            for n, d in whitelistedmapdetector.items():
+            for n, d in mapDetector.items():
                 # done this by hand to get 2 times faster
                 if d.detect(loadingscreen):
                     GSLogger().logger.debug(f"{n}")
