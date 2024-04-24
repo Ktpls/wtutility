@@ -37,9 +37,3 @@ def main():
         if throwerrinmain:
             raise err
         system("pause")
-
-
-def test():
-    activeWindow(GetWtHwnd())
-    time.sleep(1)
-    KeyPress(win32con.VK_RETURN)

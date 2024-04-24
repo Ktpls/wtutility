@@ -1,45 +1,58 @@
+'''
+// bad for 7.3
+[Operation]GolanHeights
+[Operation]Kamchatka
+[Operation]Pyrenees
+[Operation]City
+[Operation]RockyPillars
+[Operation]BattleForVietnam
+[Operation]Sinai
+[Operation]Moscow
+[AlternateHistory]Spain
+'''
 whitelistedmap = [
-    r"air\[Operation]ElAlamein",
-    r"air\[Operation]KamchatkaEast",
-    r"air\[Operation]LakeLadoga",
-    r"air\[Operation]LadogaWinter1941",
-    r"air\[FrontLine]Ladoga",
-    r"air\[AirBattle]OperationIskra",
-    r"air\[Operation]Smolensk1941",
-    r"air\[Operation]Smolensk1943",
-    r"air\[Operation]Poland",
-    r"air\[Operation]BattleForTheRhine",
     r"air\[AirBattle]France1944",
+    r"air\[AirBattle]HurtgenSecondBattle",
+    r"air\[AirBattle]Moscow1941",
+    r"air\[AirBattle]OperationIskra",
+    r"air\[AlternateHistory]BerlinSummer1945",
+    r"air\[AlternateHistory]KrymskSummer1945",
+    r"air\[Event]OperationUranus",
+    r"air\[FrontLine]Korsun",
+    r"air\[FrontLine]Ladoga",
+    r"air\[MilitaryExercise]PreparationForLandingOnHokkaido",
+    r"air\[Operation]BattleAtMalta",
+    r"air\[Operation]BattleForBastogne",
+    r"air\[Operation]BattleForTheRhine",
     r"air\[Operation]BattleOfTunisia",
     r"air\[Operation]Berlin",
-    r"air\[AlternateHistory]BerlinSummer1945",
+    r"air\[Operation]BourbonIsland",
     r"air\[Operation]Britain",
     r"air\[Operation]Bulge",
-    r"air\[Operation]BattleForBastogne",
-    r"air\[MilitaryExercise]PreparationForLandingOnHokkaido",
-    r"air\[Operation]Hirtgen",
-    r"air\[AirBattle]HurtgenSecondBattle",
+    r"air\[Operation]ChinaCivilWar1946",
+    r"air\[Operation]DefendingStalingrad",
+    r"air\[Operation]ElAlamein",
+    r"air\[Operation]Hurtgen",
+    r"air\[Operation]KamchatkaEast",
     r"air\[Operation]KhalkhinGol",
     r"air\[Operation]Korea",
-    r"air\[FrontLine]Korsun",
     r"air\[Operation]Korsun",
     r"air\[Operation]Kuban",
-    r"air\[AlternateHistory]KrymskSummer1945",
     r"air\[Operation]Kursk",
+    r"air\[Operation]LadogaWinter1941",
+    r"air\[Operation]LakeLadoga",
     r"air\[Operation]Malta",
-    r"air\[Operation]BattleAtMalta",
     r"air\[Operation]Moscow42ndKilometer",
     r"air\[Operation]MoscowNaro-Fominsk",
     r"air\[Operation]MoscowSerpukhov",
-    r"air\[AirBattle]Moscow1941",
-    r"air\[Operation]RoadToGrozny",
     r"air\[Operation]MozdokWinter1943",
     r"air\[Operation]Norway",
+    r"air\[Operation]Poland",
+    r"air\[Operation]RoadToGrozny",
     r"air\[Operation]Ruhr",
     r"air\[Operation]Sicily",
-    r"air\[Operation]DefendingStalingrad",
-    r"air\[Event]OperationUranus",
-    r"air\[Operation]ChinaCivilWar1946",
+    r"air\[Operation]Smolensk1941",
+    r"air\[Operation]Smolensk1943",
     r"air\[Operation]Zhengzhou",
 ]
 specialmapdetectors = {}

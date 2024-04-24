@@ -15,7 +15,7 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.25
+standardMapMatchThreshold = 0.20
 
 setonwifirecoverthresh = 5
 

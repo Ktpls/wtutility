@@ -221,8 +221,9 @@ def SolveMap_BottomRightSmallMap(
     dbglogsavestep(mgrd)
 
     mgrd = cv.adaptiveThreshold(
-        mgrd, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 5, -5
+        mgrd, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 5, -2
     )
+    # mgrd=(mgrd-regionave(mgrd,[5,5])>2).astype(np.uint8)*255
     dbglogsavestep(mgrd)
 
     gridlinekernellength = 201

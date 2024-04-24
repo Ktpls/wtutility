@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+from utilitypack.util_solid import StoppableSomewhat
 from utilitypack.utility import *
 from keyshortcut.gameinput import *
 from .autofreshmap_config import *
@@ -356,6 +358,11 @@ def leaveButton():
 
 
 class freshAMap(StoppableThread):
+    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+        super().__init__(
+            strategy_error=StoppableSomewhat.StrategyError.print_error, pool=pool
+        )
+
     def foo(self):
         """
         successCond: bool(*foo)(Mat& screen), with return of if detected
@@ -447,11 +454,11 @@ class freshAMap(StoppableThread):
 
             # determine if map desired
             ret = False
-            loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreenProced)
+            loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreen)
             # name,detector
             for n, d in mapDetector.items():
                 # done this by hand to get 2 times faster
-                if d.detect(loadingscreen):
+                if d.detect(loadingscreen, loadingscreenProced):
                     GSLogger().logger.debug(f"{n}")
                     ret = True
                     break
