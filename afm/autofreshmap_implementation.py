@@ -48,7 +48,7 @@ def assetpath2realpath(ap):
     return os.path.join(afmassetroot, ap)
 
 
-zfoo4matcher = ZFunc(10 / 255, 0, 20 / 255, 1)
+zfoo4matcher = ZFunc(zFuncPoint0, 0, zFuncPoint1, 1)
 
 
 class MapImgComparer:

@@ -1,4 +1,4 @@
-from .autofreshmap_configmap_plain import (
+from .autofreshmap_configmap_air73 import (
     whitelistedmap,
     specialmapdetectors,
 )
@@ -15,7 +15,10 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.20
+standardMapMatchThreshold = 0.2
+
+zFuncPoint0 = 8 / 255
+zFuncPoint1 = 15 / 255
 
 setonwifirecoverthresh = 5
 
