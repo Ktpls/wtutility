@@ -92,7 +92,6 @@ class Telescope(StoppableThread):
 class MTI(StoppableThread):
 
     def __init__(self, pool: ThreadPoolExecutor = None):
-        mtiSize = 5
         # uimask = cv.imread(r"asset\opdar\UIMASK.png", cv.IMREAD_GRAYSCALE)
         uimask = None
         filterInterpolate = interpolate.interp1d(
