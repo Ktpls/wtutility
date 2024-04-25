@@ -1,4 +1,4 @@
-from utilitypack import *
+from utilitypack.utility import *
 from .telescope_config import *
 import shared.globalsys as globalsys
 
