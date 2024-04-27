@@ -1,4 +1,4 @@
-from .autofreshmap_configmap_air73 import (
+from .autofreshmap_configmap_plain import (
     whitelistedmap,
     specialmapdetectors,
 )
@@ -15,7 +15,7 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.2
+standardMapMatchThreshold = 0.3
 
 zFuncPoint0 = 8 / 255
 zFuncPoint1 = 15 / 255
@@ -49,3 +49,6 @@ player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
 
 afmassetroot = "./asset/autofreshmap/"
 logscreenpath = "./asset/autofreshmap/log/screen/"
+
+mapAutoCollection=True
+mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"

@@ -16,7 +16,7 @@ def MapLike2ScreenLike(mapshaped):
 
 
 loadingscreen = cv.imread(
-    r"C:\Users\Kita\Pictures\Screenshots\Screenshot 2024-04-20 194715.png"
+    r"C:\Users\Kita\Pictures\Screenshots\Screenshot 2024-04-27 231601.png"
 )
 mapImg = afmi.cutmap(loadingscreen).astype(np.float32) / 255
 mapImgProced = afmi.MapImgComparer.imagepreprocess(mapImg)

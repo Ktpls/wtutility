@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 
 MapSize = [648, 648]
 
+dataCollector = DataCollector(mapAutoCollectionPath)
+
 
 def signName2Path(name):
     return r"statesign/{}.png".format(name)
@@ -66,8 +68,8 @@ class MapImgComparer:
         m = delBlueRed(m)
 
         # remove shadow on loading screen map
-        brightness = np.max(m, axis=2, keepdims=True)
-        m = m / (brightness + EPS)
+        #brightness = np.max(m, axis=2, keepdims=True)
+        #m = m / (brightness + EPS)
 
         if subsampleddetection:
             # this would set [x,y,1] back to [x,y], so do it first
@@ -411,7 +413,7 @@ class freshAMap(StoppableThread):
                 assert stateDetector is not None
                 if stateDetector["LoadingMap"].detect(scr):
                     nonlocal loadingscreen
-                    loadingscreen = cutmap(scr).astype(np.float32) / 255
+                    loadingscreen = scr
                     return True
                 if any(
                     [
@@ -451,6 +453,9 @@ class freshAMap(StoppableThread):
 
             Rhythms.Notify.play()
             GSLogger().logger.debug("loading map")
+            loadingscreen = cutmap(loadingscreen).astype(np.float32) / 255
+            if mapAutoCollection:
+                dataCollector.save(loadingscreen*255)
 
             # determine if map desired
             ret = False

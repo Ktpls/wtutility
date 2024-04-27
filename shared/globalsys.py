@@ -8,6 +8,7 @@ import logging
 class GSLogger:
 
     def __init__(self):
+        EnsureDirectoryExists(logFilePath)
         # Create a logger
         logger = logging.getLogger(DefaultGlobalSysLoggerName)
         logger.setLevel(loggingLevel)
