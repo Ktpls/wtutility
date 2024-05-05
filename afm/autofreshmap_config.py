@@ -1,7 +1,4 @@
-from .autofreshmap_configmap_plain import (
-    whitelistedmap,
-    specialmapdetectors,
-)
+from . import autofreshmap_configmap_airbig as autofreshmap_configmap
 from .autofreshmap_config_lenxiaoxin import *
 
 singlechanneleddetection = False
@@ -41,6 +38,7 @@ wlanname4netshwlan = [
     "CMCC-303",
     "HUAZHU-Hanting",
 ][0]
+enteredMatchButNotShowingMap_persistedTime = 3
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 
@@ -50,5 +48,5 @@ player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
 afmassetroot = "./asset/autofreshmap/"
 logscreenpath = "./asset/autofreshmap/log/screen/"
 
-mapAutoCollection=True
+mapAutoCollection = True
 mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"

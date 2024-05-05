@@ -117,228 +117,305 @@ def ApplyFixing():
 
 
 # %%
-def afterEffectOnLoadingScreen():
+def GetAfterEffectOnLoadingScreen():
     highQuality = [
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]Bastogne(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]CentralTunisia(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]Cochinchina(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]Counteroffensive(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]CounterstrikeUnderSmolensk(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]Essen(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]HenanProvince(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]LakeLadoga(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]Mozdok(LightVehicles).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\airHighQuality\[Operation]NearEast(LightVehicles).png",
-        ############
-        r"C:\file\code\wtutility\asset\autofreshmap\map\38thParallel.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AbandonedFactory.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AbandonedTown.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AdvanceToTheRhine.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Alaska.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AmericanDesert.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AralSea.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\ArcticPier.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\ArcticPolarBase.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\ArdennesDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\ArdennesDomination#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\AshRiver.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\BattleOfHurtgenForestConquest#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\BattleOfHurtgenForestDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Berlin.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Breslau.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Campania.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\CargoPort.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Carpathians.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\EasternEurope.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\EuropeanProvince.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FieldsOfNormandy.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FieldsOfPoland(winter).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FieldsOfPoland.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Finland.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FireArc.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FrozenPass.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FuldaDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\FuldaDomination#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Japan.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Jungle.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Karelia.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Kurban.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\MaginotLineDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\MaginotLineDomination#1Winter.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\MaginotLineDomination#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\MaginotLineDomination#2Winter.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\MiddleEast.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Mozdok#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Mozdok#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Normandy.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Poland(winter).png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Poland.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\PortNovorossiysk.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\PortNovorossiyskBattle#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\PortNovorossiyskBattle.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Pradesh.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\RedDesert.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SandsOfSinai.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SandsOfTunisia.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SecondBattleOfElAlameinConquest#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SecondBattleOfElAlameinDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SecondBattleOfElAlameinDomination#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Serversk-13.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Sinai.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Spaceport.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Stalingrad.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SunCity.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\SurroundingsOfVolokolamsk.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Sweden.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\TestSite-2271.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Tunisia.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\VietnamDomination#1.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\VietnamDomination#2.png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\Volokolamsk.png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]Bastogne(LightVehicles).Png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]CentralTunisia(LightVehicles).Png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]Cochinchina(LightVehicles).Png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]Counteroffensive(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]CounterstrikeUnderSmolensk(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]Essen(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]HenanProvince(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]LakeLadoga(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]Mozdok(LightVehicles).png",
+        r"asset\autofreshmap\map\airHighQuality\[Operation]NearEast(LightVehicles).png",
     ]
-    reconstructed = [
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Bastogne(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]CentralTunisia(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Cochinchina(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Counteroffensive(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]CounterstrikeUnderSmolensk(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Essen(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]HenanProvince(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]LakeLadoga(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Mozdok(LightVehicles).Png",
-        # r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]NearEast(LightVehicles).Png",
-        ##############################
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AirBattle]France1944.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AirBattle]HurtgenSecondBattle.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AirBattle]Moscow1941.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AirBattle]OperationIskra.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AlternateHistory]Afghanistan.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AlternateHistory]BerlinSummer1945.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AlternateHistory]KrymskSummer1945.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[AlternateHistory]Spain.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Event]OperationUranus.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[FrontLine]Korsun.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[FrontLine]Kuban.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[FrontLine]Kursk.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[FrontLine]Ladoga.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[FrontLine]Mozdok.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[MilitaryExercise]PreparationForLandingOnHokkaido.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Afghanistan.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Bastogne(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleAtMalta.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleForBastogne.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleForSpain.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleForTheRhine.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleForVietnam.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BattleOfTunisia.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Berlin.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]BourbonIsland.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Britain.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Bulge.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]CentralTunisia(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]ChinaCivilWar1946.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]City.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Cochinchina(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Counteroffensive(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]CounterstrikeUnderSmolensk(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]DefendingStalingrad.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]ElAlamein.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Essen(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]GolanHeights(AirSpawns).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]GolanHeights.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Guadalcanal.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]HenanProvince(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Honolulu(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Hurtgen.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]IwoJima.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Kamchatka.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]KamchatkaEast.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]KhalkhinGol.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Korea.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Korsun.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Kuban.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Kursk.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]LadogaWinter1941.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]LaizhouBay.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]LakeLadoga(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]LakeLadoga.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Malta.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Midway.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Moscow.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Moscow42ndKilometer.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]MoscowNaro-Fominsk.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]MoscowSerpukhov.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Mozdok(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]MozdokWinter1943.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]NearEast(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]NewGuinea.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Norway.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Peleliu.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Poland.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]PortMoresby(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Pyrenees.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]RoadToGrozny.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]RockyCanyon.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]RockyPillars.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Ruhr.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Saipan.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Sicily.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Sinai.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Smolensk1941.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Smolensk1943.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]SoutheasternCity.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Spain.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]TheLastBattleOfKhalkhynGol(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Vietnam.Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]WakeIsland(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]YooPassage(LightVehicles).Png",
-        r"C:\file\code\wtutility\asset\autofreshmap\map\air\[Operation]Zhengzhou.Png",
+    unshadowedReconstructed = [
+        r"asset\autofreshmap\map\air\[AirBattle]France1944.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]HurtgenSecondBattle.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]Moscow1941.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]OperationIskra.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]Afghanistan.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]BerlinSummer1945.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]KrymskSummer1945.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]Spain.Png",
+        r"asset\autofreshmap\map\air\[Event]OperationUranus.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Korsun.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Kuban.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Kursk.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Ladoga.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Mozdok.Png",
+        r"asset\autofreshmap\map\air\[MilitaryExercise]PreparationForLandingOnHokkaido.Png",
+        r"asset\autofreshmap\map\air\[Operation]Afghanistan.Png",
+        r"asset\autofreshmap\map\air\[Operation]Bastogne(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleAtMalta.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForBastogne.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForSpain.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForTheRhine.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForVietnam.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleOfTunisia.Png",
+        r"asset\autofreshmap\map\air\[Operation]Berlin.Png",
+        r"asset\autofreshmap\map\air\[Operation]BourbonIsland.Png",
+        r"asset\autofreshmap\map\air\[Operation]Britain.Png",
+        r"asset\autofreshmap\map\air\[Operation]Bulge.Png",
+        r"asset\autofreshmap\map\air\[Operation]CentralTunisia(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]ChinaCivilWar1946.Png",
+        r"asset\autofreshmap\map\air\[Operation]City.Png",
+        r"asset\autofreshmap\map\air\[Operation]Cochinchina(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Counteroffensive(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]CounterstrikeUnderSmolensk(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]DefendingStalingrad.Png",
+        r"asset\autofreshmap\map\air\[Operation]ElAlamein.Png",
+        r"asset\autofreshmap\map\air\[Operation]Essen(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]GolanHeights(AirSpawns).Png",
+        r"asset\autofreshmap\map\air\[Operation]GolanHeights.Png",
+        r"asset\autofreshmap\map\air\[Operation]Guadalcanal.Png",
+        r"asset\autofreshmap\map\air\[Operation]HenanProvince(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Honolulu(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Hurtgen.Png",
+        r"asset\autofreshmap\map\air\[Operation]IwoJima.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kamchatka.Png",
+        r"asset\autofreshmap\map\air\[Operation]KamchatkaEast.Png",
+        r"asset\autofreshmap\map\air\[Operation]KhalkhinGol.Png",
+        r"asset\autofreshmap\map\air\[Operation]Korea.Png",
+        r"asset\autofreshmap\map\air\[Operation]Korsun.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kuban.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kursk.Png",
+        r"asset\autofreshmap\map\air\[Operation]LadogaWinter1941.Png",
+        r"asset\autofreshmap\map\air\[Operation]LaizhouBay.Png",
+        r"asset\autofreshmap\map\air\[Operation]LakeLadoga(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]LakeLadoga.Png",
+        r"asset\autofreshmap\map\air\[Operation]Malta.Png",
+        r"asset\autofreshmap\map\air\[Operation]Midway.Png",
+        r"asset\autofreshmap\map\air\[Operation]Moscow.Png",
+        r"asset\autofreshmap\map\air\[Operation]Moscow42ndKilometer.Png",
+        r"asset\autofreshmap\map\air\[Operation]MoscowNaro-Fominsk.Png",
+        r"asset\autofreshmap\map\air\[Operation]MoscowSerpukhov.Png",
+        r"asset\autofreshmap\map\air\[Operation]Mozdok(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]MozdokWinter1943.Png",
+        r"asset\autofreshmap\map\air\[Operation]NearEast(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]NewGuinea.Png",
+        r"asset\autofreshmap\map\air\[Operation]Norway.Png",
+        r"asset\autofreshmap\map\air\[Operation]Peleliu.Png",
+        r"asset\autofreshmap\map\air\[Operation]Poland.Png",
+        r"asset\autofreshmap\map\air\[Operation]PortMoresby(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Pyrenees.Png",
+        r"asset\autofreshmap\map\air\[Operation]RoadToGrozny.Png",
+        r"asset\autofreshmap\map\air\[Operation]RockyCanyon.Png",
+        r"asset\autofreshmap\map\air\[Operation]RockyPillars.Png",
+        r"asset\autofreshmap\map\air\[Operation]Ruhr.Png",
+        r"asset\autofreshmap\map\air\[Operation]Saipan.Png",
+        r"asset\autofreshmap\map\air\[Operation]Sicily.Png",
+        r"asset\autofreshmap\map\air\[Operation]Sinai.Png",
+        r"asset\autofreshmap\map\air\[Operation]Smolensk1941.Png",
+        r"asset\autofreshmap\map\air\[Operation]Smolensk1943.Png",
+        r"asset\autofreshmap\map\air\[Operation]SoutheasternCity.Png",
+        r"asset\autofreshmap\map\air\[Operation]Spain.Png",
+        r"asset\autofreshmap\map\air\[Operation]TheLastBattleOfKhalkhynGol(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Vietnam.Png",
+        r"asset\autofreshmap\map\air\[Operation]WakeIsland(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]YooPassage(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Zhengzhou.Png",
     ]
 
     def ReadBrightness(m):
         m = cv.imread(m).astype(np.float32) / 255
+        # m = cv.resize(m, None, fx=0.25, fy=0.25, interpolation=cv.INTER_AREA)
         # m = cv.cvtColor(m, cv.COLOR_BGR2RGB)
-        v = np.max(m, axis=2, keepdims=True)
+        v = np.max(m, axis=2)
         return v
 
     highQuality = [ReadBrightness(f) for f in highQuality]
-    reconstructed = [ReadBrightness(f) for f in reconstructed]
-    # V = list()
+    unshadowedReconstructed = [ReadBrightness(f) for f in unshadowedReconstructed]
+
+    V = list()
     AveV = np.zeros(highQuality[0].shape[0:2] + (1,))
     i = 0
-    prog = Progress(len(highQuality) * len(highQuality))
+    deltaNum = len(highQuality) * len(unshadowedReconstructed)
+    prog = Progress(deltaNum)
     for h in range(len(highQuality)):
-        for r in range(len(reconstructed)):
-            # V.append((highQuality[h] - reconstructed[r]))
-            AveV += highQuality[h] - reconstructed[r]
+        for r in range(len(unshadowedReconstructed)):
+            V.append((highQuality[h] - unshadowedReconstructed[r]))
             i += 1
             prog.update(i)
     prog.setFinish()
-    # V = np.array(V)
+    V = np.array(V)
 
-    def procExperimentData(V):
-        def FullSqrt(x):
-            mag = np.abs(x)
-            return np.sign(x) * np.where(mag > 1, mag**0.5, mag)
+    def delOverErroredByImg(V):
+        valid = np.full_like(V, True, dtype=np.bool_)
+        pltshape = [10, 10]
+        mpp = MassivePicturePlot(pltshape)
+        prog = Progress(np.prod(pltshape))
+        for i in range(np.prod(pltshape) - 1):
+            avg = np.mean(V, where=valid, axis=0, keepdims=True)
+            std = np.std(V, where=valid, axis=0, keepdims=True)
+            validNew = np.abs(V - avg) < 2 * std
+            if (valid == validNew).all():
+                break
+            valid = validNew
+            mpp.toNextPlot()
+            plt.imshow(avg[0])
+            prog.update(i)
+        prog.setFinish()
+        avg = np.mean(V, where=valid, axis=0, keepdims=True)
+        mpp.toNextPlot()
+        plt.imshow(avg[0])
 
-        # it = 0
-        # while True:
-        #     AveV = np.average(V, axis=0, keepdims=True)
-        #     DeltaV = V - AveV
-        #     StdV = np.average(DeltaV**2, axis=0, keepdims=True) ** 0.5
-        #     V = AveV + FullSqrt(DeltaV / StdV) * StdV
-        #     it += 1
-        #     if it > 5:
-        #         break
-        return np.average(V.squeeze(0), axis=0, keepdims=True)
+    def ignoreOverErroredPixel(V):
+        avg = np.mean(V, axis=0)
+        std = np.std(V, axis=0)
+        window = [81, 81]
+        stdReg = regionave(std, window)
+        stdExceeds = (std - stdReg) / (stdReg + EPS)
+        stdMask = stdExceeds < 0.1
+        avg = regionave(avg, window, mask=stdMask)
+        NewPyPlotAxis()
+        plt.imshow(avg)
+        # delta brightness to relative brightness
+        base = np.mean(unshadowedReconstructed, axis=0)
+        avg = (base + avg) / (base + EPS)
+        NewPyPlotAxis()
+        plt.imshow(avg)
+        minn = np.min(avg)
+        maxx = np.max(avg)
+        print(f"minn,maxx=[{minn},{maxx}]")
+        avgNorm = (avg - minn) / (maxx - minn) * 255
+        cv.imwrite("avg.png", avgNorm)
 
-    # plt.imshow(np.average(V, axis=0))
-    # AveV = procExperimentData(V)
-    Avev = AveV / i
-    plt.imshow(AveV)
+    def fourierTransform(V):
+        m = np.mean(V, axis=0)
+        h, w = m.shape
+        msize = np.prod(m.shape)
+        flags = cv.DFT_COMPLEX_OUTPUT
+        dft = np.fft.fftshift(cv.dft(m, flags=flags))
+        X = np.arange(w).reshape(1, -1) - w // 2
+        Y = np.arange(h).reshape(-1, 1) - h // 2
+        dist = w // 10
+        dft[np.logical_and(np.abs(X) > dist, np.abs(Y) > dist)] = 0
+        magnitude_spectrum = (cv.magnitude(dft[:, :, 0], dft[:, :, 1])) / msize
+        NewPyPlotAxis(), plt.imshow(magnitude_spectrum)
+        imgback = cv.idft(np.fft.fftshift(dft), flags=flags) / msize
+        NewPyPlotAxis(), plt.imshow(imgback[:, :, 0])
+
+    ignoreOverErroredPixel(V)
 
 
-afterEffectOnLoadingScreen()
+# GetAfterEffectOnLoadingScreen()
+
+
+# %%
+def AddShadowMaskOnReconstructed():
+
+    reconstructed = [
+        r"asset\autofreshmap\map\air\[AirBattle]France1944.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]HurtgenSecondBattle.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]Moscow1941.Png",
+        r"asset\autofreshmap\map\air\[AirBattle]OperationIskra.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]Afghanistan.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]BerlinSummer1945.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]KrymskSummer1945.Png",
+        r"asset\autofreshmap\map\air\[AlternateHistory]Spain.Png",
+        r"asset\autofreshmap\map\air\[Event]OperationUranus.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Korsun.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Kuban.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Kursk.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Ladoga.Png",
+        r"asset\autofreshmap\map\air\[FrontLine]Mozdok.Png",
+        r"asset\autofreshmap\map\air\[MilitaryExercise]PreparationForLandingOnHokkaido.Png",
+        r"asset\autofreshmap\map\air\[Operation]Afghanistan.Png",
+        r"asset\autofreshmap\map\air\[Operation]Bastogne(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleAtMalta.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForBastogne.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForSpain.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForTheRhine.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleForVietnam.Png",
+        r"asset\autofreshmap\map\air\[Operation]BattleOfTunisia.Png",
+        r"asset\autofreshmap\map\air\[Operation]Berlin.Png",
+        r"asset\autofreshmap\map\air\[Operation]BourbonIsland.Png",
+        r"asset\autofreshmap\map\air\[Operation]Britain.Png",
+        r"asset\autofreshmap\map\air\[Operation]Bulge.Png",
+        r"asset\autofreshmap\map\air\[Operation]CentralTunisia(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]ChinaCivilWar1946.Png",
+        r"asset\autofreshmap\map\air\[Operation]City.Png",
+        r"asset\autofreshmap\map\air\[Operation]Cochinchina(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Counteroffensive(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]CounterstrikeUnderSmolensk(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]DefendingStalingrad.Png",
+        r"asset\autofreshmap\map\air\[Operation]ElAlamein.Png",
+        r"asset\autofreshmap\map\air\[Operation]Essen(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]GolanHeights(AirSpawns).Png",
+        r"asset\autofreshmap\map\air\[Operation]GolanHeights.Png",
+        r"asset\autofreshmap\map\air\[Operation]Guadalcanal.Png",
+        r"asset\autofreshmap\map\air\[Operation]HenanProvince(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Honolulu(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Hurtgen.Png",
+        r"asset\autofreshmap\map\air\[Operation]IwoJima.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kamchatka.Png",
+        r"asset\autofreshmap\map\air\[Operation]KamchatkaEast.Png",
+        r"asset\autofreshmap\map\air\[Operation]KhalkhinGol.Png",
+        r"asset\autofreshmap\map\air\[Operation]Korea.Png",
+        r"asset\autofreshmap\map\air\[Operation]Korsun.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kuban.Png",
+        r"asset\autofreshmap\map\air\[Operation]Kursk.Png",
+        r"asset\autofreshmap\map\air\[Operation]LadogaWinter1941.Png",
+        r"asset\autofreshmap\map\air\[Operation]LaizhouBay.Png",
+        r"asset\autofreshmap\map\air\[Operation]LakeLadoga(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]LakeLadoga.Png",
+        r"asset\autofreshmap\map\air\[Operation]Malta.Png",
+        r"asset\autofreshmap\map\air\[Operation]Midway.Png",
+        r"asset\autofreshmap\map\air\[Operation]Moscow.Png",
+        r"asset\autofreshmap\map\air\[Operation]Moscow42ndKilometer.Png",
+        r"asset\autofreshmap\map\air\[Operation]MoscowNaro-Fominsk.Png",
+        r"asset\autofreshmap\map\air\[Operation]MoscowSerpukhov.Png",
+        r"asset\autofreshmap\map\air\[Operation]Mozdok(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]MozdokWinter1943.Png",
+        r"asset\autofreshmap\map\air\[Operation]NearEast(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]NewGuinea.Png",
+        r"asset\autofreshmap\map\air\[Operation]Norway.Png",
+        r"asset\autofreshmap\map\air\[Operation]Peleliu.Png",
+        r"asset\autofreshmap\map\air\[Operation]Poland.Png",
+        r"asset\autofreshmap\map\air\[Operation]PortMoresby(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Pyrenees.Png",
+        r"asset\autofreshmap\map\air\[Operation]RoadToGrozny.Png",
+        r"asset\autofreshmap\map\air\[Operation]RockyCanyon.Png",
+        r"asset\autofreshmap\map\air\[Operation]RockyPillars.Png",
+        r"asset\autofreshmap\map\air\[Operation]Ruhr.Png",
+        r"asset\autofreshmap\map\air\[Operation]Saipan.Png",
+        r"asset\autofreshmap\map\air\[Operation]Sicily.Png",
+        r"asset\autofreshmap\map\air\[Operation]Sinai.Png",
+        r"asset\autofreshmap\map\air\[Operation]Smolensk1941.Png",
+        r"asset\autofreshmap\map\air\[Operation]Smolensk1943.Png",
+        r"asset\autofreshmap\map\air\[Operation]SoutheasternCity.Png",
+        r"asset\autofreshmap\map\air\[Operation]Spain.Png",
+        r"asset\autofreshmap\map\air\[Operation]TheLastBattleOfKhalkhynGol(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Vietnam.Png",
+        r"asset\autofreshmap\map\air\[Operation]WakeIsland(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]YooPassage(LightVehicles).Png",
+        r"asset\autofreshmap\map\air\[Operation]Zhengzhou.Png",
+    ]
+    dstroot = r"asset\autofreshmap\map\airshadowed"
+    EnsureDirectoryExists(dstroot)
+    shadow = r"asset\autofreshmap\statesign\avg_minn,maxx=[0.38048921403451735,1.2050963220176332].png"
+    minn, maxx = [0.38048921403451735, 1.2050963220176332]
+    shadow = (cv.imread(shadow)[:, :, 0:1] / 255) * (maxx - minn) + minn
+
+    for src in reconstructed:
+        dst = os.path.join(dstroot, os.path.basename(src))
+        m = cv.imread(src)
+        m = m * shadow
+        cv.imwrite(dst, m)
+
+#%%
+# AddShadowMaskOnReconstructed()
+
+highQuality = r"asset\autofreshmap\map\airHighQuality\[Operation]Counteroffensive(LightVehicles).png"
+reconstructed = r"asset\autofreshmap\map\airshadowed\[Operation]Counteroffensive(LightVehicles).Png"
+def read(path):
+    return cv.imread(path)[:, :, 0:1].astype(np.float32)/255
+highQuality = read(highQuality)
+reconstructed = read(reconstructed)
+delta=(reconstructed-highQuality)**2
+plt.imshow(delta)

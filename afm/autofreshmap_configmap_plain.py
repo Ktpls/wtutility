@@ -84,11 +84,11 @@ specialmapdetectors = {
         # c point
         foo="ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))",  # not single point at left
     ),
-    "SandsOfSinai": MapDetector(
-        map="SandsOfSinai",
-        # better survivability at upper, less likely to be killed by flankers
-        foo="ret(detectMapShape() and spawnAround([334, 61]))",
-    ),
+    # "SandsOfSinai": MapDetector(
+        # map="SandsOfSinai",
+        # # better survivability at upper, less likely to be killed by flankers
+        # foo="ret(detectMapShape() and spawnAround([334, 61]))",
+    # ),
     "FieldsOfPoland": MapDetector(
         map="FieldsOfPoland",
         foo="ret(detectMapShape())",

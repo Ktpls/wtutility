@@ -16,31 +16,41 @@ def signName2Path(name):
     return r"statesign/{}.png".format(name)
 
 
+class StateSign(enum.Enum):
+    hanger = "hanger"
+    MissionCanceled = "MissionCanceled"
+    LoadingMap = "LoadingMap"
+    OK = "OK"
+    Statistics = "Statistics"
+    WarthunderMark = "WarthunderMark"
+
+
 stateDetectorInfo = {
-    "hanger": {
+    StateSign.hanger: {
         "path": signName2Path("hanger"),
     },
-    "MissionCanceled": {
+    StateSign.MissionCanceled: {
         "path": signName2Path("MissionCanceled"),
     },
-    "LoadingMap": {
+    StateSign.LoadingMap: {
         "path": signName2Path("LoadingMap"),
     },
-    "OK": {"path": signName2Path("OK"), "thresh": 0.195},
-    "Statistics": {"path": signName2Path("Statistics")},
+    StateSign.OK: {"path": signName2Path("OK"), "thresh": 0.195},
+    StateSign.Statistics: {"path": signName2Path("Statistics")},
+    StateSign.WarthunderMark: {"path": signName2Path("WarthunderMark")},
 }
 
 if resolution == "m1920x1080r1920x1080":
     # res1920x1080,uiscale75%
-    standardMapLeftTopPoint = [286, 216]
+    standardMapSection = [286, 216, 934, 864]
     pointtemplatezoomrate = 1.0
 elif resolution == "m1920x1080r1366x768":
     # 1366x768,75%
-    standardMapLeftTopPoint = [294, 221]
+    standardMapSection = [294, 221]  # unupdated to section
     pointtemplatezoomrate = 1.4  # 1920/1366
 elif resolution == "m1920x1080r1280x720":
     # 1280x720,75%
-    standardMapLeftTopPoint = [292, 218]
+    standardMapSection = [292, 218, 934, 861]
     pointtemplatezoomrate = 1.5  # 1920/1280
 else:
     raise NotImplementedError("unknown resolution")
@@ -68,8 +78,8 @@ class MapImgComparer:
         m = delBlueRed(m)
 
         # remove shadow on loading screen map
-        #brightness = np.max(m, axis=2, keepdims=True)
-        #m = m / (brightness + EPS)
+        # brightness = np.max(m, axis=2, keepdims=True)
+        # m = m / (brightness + EPS)
 
         if subsampleddetection:
             # this would set [x,y,1] back to [x,y], so do it first
@@ -214,9 +224,9 @@ def mapname2assetpath(mapname):
 
 
 def cutmap(m):
-    pointlt = np.array(standardMapLeftTopPoint)
-    pointrd = pointlt + np.array(MapSize)
-    mm = m[pointlt[1] : pointrd[1], pointlt[0] : pointrd[0]]
+    x1, y1, x2, y2 = standardMapSection
+    mm = m[y1:y2, x1:x2]
+    mm = cv.resize(mm, MapSize, interpolation=cv.INTER_LINEAR)
     return mm
 
 
@@ -329,17 +339,37 @@ class MapDetectorImpled(detector, MapDetector):
             raise e
 
 
-def maplist2detectorlist(ml):
-    ml = Deduplicate(ml)
-    dl = {
-        m: MapDetectorImpled(
-            specialmapdetectors[m]
-            if m in specialmapdetectors
-            else MapDetector(map=m, foo="ret(detectMapShape())")
-        )
-        for m in ml
+def maplist2detectorlist():
+    try:
+        whitelistedmap = autofreshmap_configmap.whitelistedmap
+    except AttributeError:
+        # not defined
+        whitelistedmap = list()
+    try:
+        blacklistedmap = autofreshmap_configmap.blacklistedmap
+    except AttributeError:
+        blacklistedmap = list()
+    try:
+        specialmapdetectors = autofreshmap_configmap.specialmapdetectors
+    except AttributeError:
+        specialmapdetectors = dict()
+
+    whitelistedmap = Deduplicate(whitelistedmap)
+    detectors = {
+        **{
+            m: MapDetectorImpled(
+                specialmapdetectors[m]
+                if m in specialmapdetectors
+                else MapDetector(map=m, foo="ret(detectMapShape())")
+            )
+            for m in whitelistedmap
+        },
+        **{
+            m: MapDetector(map=m, foo="ret(not detectMapShape())")
+            for m in blacklistedmap
+        },
     }
-    return dl
+    return detectors
 
 
 mapDetector = None
@@ -348,7 +378,7 @@ stateDetector = None
 
 def loadAssetsNeeded4FreshAMap():
     global mapDetector, stateDetector
-    mapDetector = maplist2detectorlist(whitelistedmap)
+    mapDetector = maplist2detectorlist()
     stateDetector = {k: signdetector(**v) for k, v in stateDetectorInfo.items()}
     return mapDetector, stateDetector
 
@@ -409,19 +439,40 @@ class freshAMap(StoppableThread):
 
             Rhythms.Notify.play()
 
+            enteredMatchButNotShowingMap = False
+            embnsmPersistTimer = perf_statistic(False)
+
             def detectLoadingMap(scr):
+                """
+                if detect loading map, go on
+                else if detect WarthunderMark but not showing loading map, keep observing
+                if loading map still undetected after enteredMatchButNotShowingMap_persistedTime, abandon this pass
+                """
                 assert stateDetector is not None
-                if stateDetector["LoadingMap"].detect(scr):
+                if stateDetector[StateSign.LoadingMap].detect(scr):
                     nonlocal loadingscreen
                     loadingscreen = scr
                     return True
+                if (
+                    embnsmPersistTimer.time()
+                    >= enteredMatchButNotShowingMap_persistedTime
+                ):
+                    nonlocal enteredMatchButNotShowingMap
+                    enteredMatchButNotShowingMap = True
+                    return True
+                if stateDetector[StateSign.WarthunderMark].detect(scr):
+                    if not embnsmPersistTimer.isRunning():
+                        embnsmPersistTimer.start()
+                    GSLogger().logger.debug(
+                        f"only WarthunderMark found, persisted {embnsmPersistTimer.time()}"
+                    )
                 if any(
                     [
                         stateDetector[d].detect(scr)
                         for d in [
-                            "hanger",  # for click not succeed
-                            "MissionCanceled",
-                            "OK",
+                            StateSign.hanger,  # for click not succeed
+                            StateSign.MissionCanceled,
+                            StateSign.OK,
                         ]
                     ]
                 ):
@@ -441,8 +492,8 @@ class freshAMap(StoppableThread):
                     [
                         stateDetector[d].detect(scr)
                         for d in [
-                            "hanger",
-                            "MissionCanceled",
+                            StateSign.hanger,
+                            StateSign.MissionCanceled,
                         ]
                     ]
                 ):
@@ -451,29 +502,33 @@ class freshAMap(StoppableThread):
                 Rhythms.Cancel.play()
                 return False
 
-            Rhythms.Notify.play()
-            GSLogger().logger.debug("loading map")
-            loadingscreen = cutmap(loadingscreen).astype(np.float32) / 255
-            if mapAutoCollection:
-                dataCollector.save(loadingscreen*255)
+            if enteredMatchButNotShowingMap:
+                Rhythms.BadNotify.asyncPlay()
+                GSLogger().logger.debug("enteredMatchButNotShowingMap")
+            else:
+                Rhythms.Notify.asyncPlay()
+                GSLogger().logger.debug("loading map")
+                loadingscreen = cutmap(loadingscreen).astype(np.float32) / 255
+                if mapAutoCollection:
+                    dataCollector.save(loadingscreen * 255)
 
-            # determine if map desired
-            ret = False
-            loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreen)
-            # name,detector
-            for n, d in mapDetector.items():
-                # done this by hand to get 2 times faster
-                if d.detect(loadingscreen, loadingscreenProced):
-                    GSLogger().logger.debug(f"{n}")
-                    ret = True
-                    break
+                # determine if map desired
+                ret = False
+                loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreen)
+                # name,detector
+                for n, d in mapDetector.items():
+                    # done this by hand to get 2 times faster
+                    if d.detect(loadingscreen, loadingscreenProced):
+                        GSLogger().logger.debug(f"{n}")
+                        ret = True
+                        break
 
-            GSLogger().logger.debug(str(ret))
-            if ret:
-                # enter game
-                Rhythms.Success.play()
-                GSLogger().logger.debug("good map")
-                return True
+                GSLogger().logger.debug(str(ret))
+                if ret:
+                    # enter game
+                    Rhythms.Success.play()
+                    GSLogger().logger.debug("good map")
+                    return True
 
             # detected banned map
             wifi.setOff()
@@ -483,7 +538,7 @@ class freshAMap(StoppableThread):
             # detect game canceled, which is not in loading map scence
             def detectGameCanceled(scr):
                 assert stateDetector is not None
-                if not stateDetector["LoadingMap"].detect(scr):
+                if not stateDetector[StateSign.WarthunderMark].detect(scr):
                     return True
                 return False
 
@@ -689,7 +744,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
 
         def detectStartMatch(scr):
             assert stateDetector is not None
-            sp = stateDetector["Statistics"].find(scr)
+            sp = stateDetector[StateSign.Statistics].find(scr)
             if sp is not None:
                 moveto(sp)
                 time.sleep(1)
@@ -698,13 +753,13 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 mouse.click(0)
                 time.sleep(1)
                 return True
-            if stateDetector["hanger"].detect(scr) or stateDetector[
-                "MissionCanceled"
+            if stateDetector[StateSign.hanger].detect(scr) or stateDetector[
+                StateSign.MissionCanceled
             ].detect(scr):
                 # piority lower than statistics, so the to battle button on spawn scence wont confuse
                 KeyPress(win32con.VK_RETURN)
                 return False
-            if stateDetector["OK"].detect(scr):
+            if stateDetector[StateSign.OK].detect(scr):
                 KeyPress(win32con.VK_ESCAPE)
                 LongDelay(15)
                 return False
@@ -820,7 +875,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         # exit settlement screen
         def detectMissionCanceled(scr):
             assert stateDetector is not None
-            if stateDetector["MissionCanceled"].detect(scr):
+            if stateDetector[StateSign.MissionCanceled].detect(scr):
                 KeyPress(win32con.VK_ESCAPE)
                 return True
             return False
