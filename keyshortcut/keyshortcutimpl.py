@@ -1,0 +1,44 @@
+from .gameinput import *
+
+from utilitypack import *
+
+
+def holdMouseLeft():
+    mouse.down(0)
+
+
+def holdC():
+    KeyDown(ord("C"))
+
+
+class MoveMouseDirection(enum.Enum):
+    up = 1
+    down = 2
+    left = 3
+    right = 4
+
+
+def move_mouse(Direction: MoveMouseDirection, MoveDelta=1):
+    if Direction == MoveMouseDirection.up:
+        mouse.movr(0, -MoveDelta)
+    elif Direction == MoveMouseDirection.down:
+        mouse.movr(0, MoveDelta)
+    elif Direction == MoveMouseDirection.left:
+        mouse.movr(-MoveDelta, 0)
+    elif Direction == MoveMouseDirection.right:
+        mouse.movr(MoveDelta, 0)
+
+
+def launchSeriesGo(self: StoppableSomewhat):
+
+    interval = 0.1
+    num = 29 + 10
+    KeyDown(win32con.VK_LCONTROL)
+    for i in range(num):
+        if self.timeToStop():
+            break
+        KeyDown(win32con.VK_SPACE)
+        PreciseSleep(0.03)
+        KeyUp(win32con.VK_SPACE)
+        PreciseSleep(interval)
+    KeyUp(win32con.VK_LCONTROL)

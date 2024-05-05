@@ -1,44 +1,63 @@
-from .gameinput import *
-
-from utilitypack import *
+from shared.globalsys import *
 
 
-def holdMouseLeft():
-    mouse.down(0)
+class mKeyshortcut(WtUtilityModule):
 
+    def load(self):
+        from . import keyshortcutimpl as keyshortcutimpl
 
-def holdC():
-    KeyDown(ord("C"))
+        app = self.app
+        @app.Hotkey("HoldLeftAndTell", app.config.HotKey_HoldLeftAndTell)
+        def holdLeftAndTell():
+            keyshortcutimpl.holdMouseLeft()
+            app.bulletin.putup(BulletinBoard.Poster("LeftHolding", 1))
 
+        @app.Hotkey("HoldCAndTell", app.config.HotKey_HoldCAndTell)
+        def holdCAndTell():
+            keyshortcutimpl.holdC()
+            app.bulletin.putup(BulletinBoard.Poster("CHolding", 1))
 
-class MoveMouseDirection(enum.Enum):
-    up = 1
-    down = 2
-    left = 3
-    right = 4
+        @app.Hotkey("LaunchSeries", app.config.HotKey_LaunchSeries)
+        @app.AsyncLongScript()
+        def launchSeriesGo(self: StoppableSomewhat):
+            app.bulletin.putup("launching series")
+            keyshortcutimpl.launchSeriesGo(self)
+            app.bulletin.putup(f"launch done")
 
+        @app.Hotkey("RefreshWifi", app.config.HotKey_RefreshWifi)
+        @app.AsyncLongScript()
+        def refreshWifi(self: StoppableSomewhat):
+            app.bulletin.putup("refreshing wifi")
+            wifi = WifiRefresher()
+            wifi.setOff()
+            time.sleep(1)
+            wifi.setOn()
+            app.bulletin.putup(f"refresh done")
 
-def move_mouse(Direction: MoveMouseDirection, MoveDelta=1):
-    if Direction == MoveMouseDirection.up:
-        mouse.movr(0, -MoveDelta)
-    elif Direction == MoveMouseDirection.down:
-        mouse.movr(0, MoveDelta)
-    elif Direction == MoveMouseDirection.left:
-        mouse.movr(-MoveDelta, 0)
-    elif Direction == MoveMouseDirection.right:
-        mouse.movr(MoveDelta, 0)
-
-
-def launchSeriesGo(self: StoppableSomewhat):
-
-    interval = 0.1
-    num = 29 + 10
-    KeyDown(win32con.VK_LCONTROL)
-    for i in range(num):
-        if self.timeToStop():
-            break
-        KeyDown(win32con.VK_SPACE)
-        PreciseSleep(0.03)
-        KeyUp(win32con.VK_SPACE)
-        PreciseSleep(interval)
-    KeyUp(win32con.VK_LCONTROL)
+        for key, dire, name in [
+            [
+                app.config.HotKey_MoveMouse_Direction_Up,
+                keyshortcutimpl.MoveMouseDirection.up,
+                "Up",
+            ],
+            [
+                app.config.HotKey_MoveMouse_Direction_Left,
+                keyshortcutimpl.MoveMouseDirection.left,
+                "Left",
+            ],
+            [
+                app.config.HotKey_MoveMouse_Direction_Down,
+                keyshortcutimpl.MoveMouseDirection.down,
+                "Down",
+            ],
+            [
+                app.config.HotKey_MoveMouse_Direction_Right,
+                keyshortcutimpl.MoveMouseDirection.right,
+                "Right",
+            ],
+        ]:
+            app.Hotkey(
+                f"MoveMouse{name}",
+                ArrayFlatten([app.config.HotKey_MoveMouse_AssistKey, key]),
+                continiousPress=True,
+            )(functools.partial(keyshortcutimpl.move_mouse, dire))

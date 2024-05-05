@@ -1,4 +1,5 @@
 from utilitypack.util_solid import *
+from utilitypack.util_app import *
 from .globalsys_config import *
 from .queue4Bulletin import *
 import logging
@@ -29,13 +30,13 @@ class GSLogger:
 
 
 class WtUtilityModule:
-    def __init__(self):
+    def __init__(self, app: BulletinApp):
+        self.app=app
+
+    def load(self):
         pass
 
-    def load(*args, **kwargs):
-        pass
-
-    def unload(*args, **kwargs):
+    def unload():
         pass
 
     @staticmethod

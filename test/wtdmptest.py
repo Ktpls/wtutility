@@ -3,7 +3,7 @@ from utilref import *
 import os
 
 print(os.getcwd())
-from wtdmp.wtdistmeaspy_implementation import *
+from wtdmp.wtdistmeaspyimpl import *
 
 scr = cv.imread(
     r"C:\file\code\wtutility\asset\wtdistmeaspy\log\2023-11-04-21-30-55_NormalTrace\unnamed.png"

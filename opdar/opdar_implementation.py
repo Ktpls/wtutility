@@ -343,7 +343,7 @@ def GetObjectOnSignal(
     return obj[maxscorecontourid]
 
 
-from wtdmp.wtdistmeaspy_implementation import (
+from wtdmp.wtdistmeaspyimpl import (
     SnipScencePreProcess,
     GetCrosshair,
     getMilInterval,
