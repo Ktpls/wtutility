@@ -34,8 +34,9 @@ def main():
     if usingengineman:
         print("engineman activated")
         modules.append(engineman.mEngineman(app))
-    for m in modules:
-        m.load()
+
+    futures = [app.threadpool.submit(m.load) for m in modules]
+    [f.result() for f in futures]
 
     @app.Hotkey("Reboot", app.config.HotKey_Reboot)
     def rebootfoo():
