@@ -1,14 +1,15 @@
 from utilitypack.utility import *
-import keyshortcut.keyshortcut as keyshortcut
+from utilitypack.util_winkey import *
 from .engineConfigInclude import *
 from .engineConfig import *
 from .engineman_config import *
 from shared.globalsys import *
 
 
-'''
+"""
 enabling engineman in high alt, one reads proper supercharger value with auto engine control on, so wont set it properly
-'''
+"""
+
 
 @Singleton
 class DetachedEngineManStopSignal:
@@ -97,7 +98,7 @@ class ClassNone:
         return ClassNone.__func_none
 
 
-class WtFunctionalKey(keyshortcut.FunctionalKey):
+class WtFunctionalKey(Keyboard.FunctionalKey):
     def hold(self, holdTime):
         if not WarthunderWindow().isFocus():
             raise AxisUnsupported()
@@ -257,8 +258,8 @@ class ContiniousCEAxis(ControlableEngineAxis):
 
 SwitchManualEngineControl = WtFunctionalKey(
     [
-        keyshortcut.win32conComp.VK_LCONTROL,
-        keyshortcut.win32conComp.VK_OEM_MINUS,
+        win32conComp.VK_LCONTROL,
+        win32conComp.VK_OEM_MINUS,
     ]
 )
 
@@ -304,12 +305,12 @@ def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
 class OilRadiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_OEM_PLUS),
-            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_OEM_MINUS),
+            turnUpKey=WtFunctionalKey(win32conComp.VK_OEM_PLUS),
+            turnDownKey=WtFunctionalKey(win32conComp.VK_OEM_MINUS),
             switchManualControlKey=WtFunctionalKey(
                 [
                     win32con.VK_RMENU,
-                    keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
+                    win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
@@ -347,12 +348,12 @@ class OilRadiator(ContiniousCEAxis):
 class Radiator(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET),
-            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_LEFT_MID_BRACKET),
+            turnUpKey=WtFunctionalKey(win32conComp.VK_RIGHT_MID_BRACKET),
+            turnDownKey=WtFunctionalKey(win32conComp.VK_LEFT_MID_BRACKET),
             switchManualControlKey=WtFunctionalKey(
                 [
                     win32con.VK_RMENU,
-                    keyshortcut.win32conComp.VK_RIGHT_MID_BRACKET,
+                    win32conComp.VK_RIGHT_MID_BRACKET,
                 ]
             ),
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
@@ -373,10 +374,10 @@ class Radiator(ContiniousCEAxis):
 class PropPitch(ContiniousCEAxis):
     def __init__(self):
         super().__init__(
-            turnUpKey=WtFunctionalKey(keyshortcut.win32conComp.VK_QUOTE),
-            turnDownKey=WtFunctionalKey(keyshortcut.win32conComp.VK_SEMICOLON),
+            turnUpKey=WtFunctionalKey(win32conComp.VK_QUOTE),
+            turnDownKey=WtFunctionalKey(win32conComp.VK_SEMICOLON),
             switchManualControlKey=WtFunctionalKey(
-                [win32con.VK_RMENU, keyshortcut.win32conComp.VK_QUOTE]
+                [win32con.VK_RMENU, win32conComp.VK_QUOTE]
             ),
             solution=SolutionOfRadiatorOilRadiatorPropPitch(self),
         )
@@ -398,7 +399,7 @@ class Supercharger(DiscreteCEAxis):
         super().__init__(
             switchTapPositionKey=WtFunctionalKey(
                 [
-                    keyshortcut.win32conComp.VK_ADD,
+                    win32conComp.VK_ADD,
                 ]
             ),
             solution=[
@@ -431,11 +432,11 @@ class Altitude(ReadOnlyAxis):
             .expectToBe(Port8111.BeanIndicatorBase.IndicatorType.air)
         )
         state: Port8111.BeanState = (
-            Port8111Cache()
-            .get(Port8111.QueryType.state, newest)
-            .expectValid()
+            Port8111Cache().get(Port8111.QueryType.state, newest).expectValid()
         )
-        return Coalesce(state.H.value, indi.altitude_hour, indi.altitude_min, indi.altitude_10k)
+        return Coalesce(
+            state.H.value, indi.altitude_hour, indi.altitude_min, indi.altitude_10k
+        )
 
 
 @Singleton

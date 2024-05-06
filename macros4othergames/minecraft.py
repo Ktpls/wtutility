@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from utilref import *
 from utilitypack.util_app import *
+from utilitypack.util_winkey import *
+import keyshortcut.keyshortcutimpl as keyshortcut
 from macroutility import *
 import traceback
 import functools
@@ -14,7 +16,6 @@ def main():
     app = BulletinApp()
 
     print("keyshortcut activated")
-    import keyshortcut.keyshortcut as keyshortcut
 
     hotkeySwitch = Switch(
         onSetOn=lambda: app.bulletin.putup(BulletinBoard.Poster("hkmEnabled")),
@@ -35,7 +36,7 @@ def main():
     @app.Hotkey("HoldLeft", [win32con.VK_CONTROL, win32con.VK_F10])
     @WithHotkeySwitch()
     def holdLeft():
-        keyshortcut.mouse.down(0)
+        mouse.down(0)
         app.bulletin.putup(BulletinBoard.Poster("leftHolding", 1))
 
     @app.Hotkey("HoldW", [win32con.VK_MENU, ord("W")])
@@ -44,9 +45,9 @@ def main():
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
         for i in range(5):
-            keyshortcut.KeyDown(ord("W"))
+            Keyboard.KeyDown(ord("W"))
             time.sleep(0.1)
-        keyshortcut.KeyDown(ord("W"))
+        Keyboard.KeyDown(ord("W"))
         app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
@@ -54,19 +55,19 @@ def main():
     @WithHotkeySwitch()
     def bestJumpOnHorse(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("going", 1))
-        keyshortcut.KeyDown(win32con.VK_SPACE)
+        Keyboard.KeyDown(win32con.VK_SPACE)
         PreciseSleep(0.55)
-        keyshortcut.KeyUp(win32con.VK_SPACE)
+        Keyboard.KeyUp(win32con.VK_SPACE)
 
     @app.Hotkey("TakeOff", [win32con.VK_CONTROL, ord("G")])
     @app.AsyncLongScript()
     @WithHotkeySwitch()
     def takeOff(*arg, **kw) -> None:
-        keyshortcut.KeyPress(win32con.VK_SPACE)
+        Keyboard.KeyPress(win32con.VK_SPACE)
         PreciseSleep(0.25)
-        keyshortcut.KeyPress(win32con.VK_SPACE)
+        Keyboard.KeyPress(win32con.VK_SPACE)
         PreciseSleep(0.05)
-        keyshortcut.mouse.click(1)
+        mouse.click(1)
 
         app.bulletin.putup(BulletinBoard.Poster("takeOff"))
 

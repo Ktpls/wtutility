@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableThread
 from utilitypack.util_wt import *
-import keyshortcut.gameinput as gameinput
+from utilitypack.util_winkey import *
 from .glock_config import *
 
 
@@ -59,12 +59,12 @@ class GPush(StoppableProcess):
                     PreciseSleep(period)
                 elif GPush.isFull(ratio):
                     # key will be realeased until some point that not full
-                    with gameinput.HoldingKey(ord("S")):
+                    with Keyboard.HoldingKey(ord("S")):
                         PreciseSleep(period)
                 else:
                     topush = ratio * period
                     torelax = (1 - ratio) * period
-                    gameinput.KeyHold(ord("S"), topush)
+                    Keyboard.KeyHold(ord("S"), topush)
                     # PreciseSleep(topush)
                     PreciseSleep(torelax)
             else:
@@ -232,5 +232,5 @@ class Puller(StoppableProcess):
         while not self.timeToStop():
             ontime = ratio * period
             offtime = (1 - ratio) * period
-            gameinput.KeyHold(ord("W"), ontime)
+            Keyboard.KeyHold(ord("W"), ontime)
             PreciseSleep(offtime)

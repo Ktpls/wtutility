@@ -1,6 +1,6 @@
 import matplotlib as mpl
 from utilitypack.utility import *
-import keyshortcut.gameinput as gameinput
+from utilitypack.util_winkey import *
 from .wtdistmeaspy_config import *
 import scipy.interpolate
 
@@ -615,7 +615,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
 
 def switchNightMode():
-    gameinput.KeyPress(win32con.VK_F6)
+    Keyboard.KeyPress(win32con.VK_F6)
 
 
 def adjustCaliberation(pidoutput):
@@ -631,23 +631,11 @@ def adjustCaliberation(pidoutput):
 
     # # try if get improvement in the case of no response
     # for k in [win32con.VK_PRIOR, win32con.VK_NEXT]:
-    #     gameinput.KeyPress(k)
+    #     Keyboard.KeyPress(k)
 
-    gameinput.KeyDown(keycode2press)
+    Keyboard.KeyDown(keycode2press)
     PreciseSleep(control)
-    gameinput.KeyUp(keycode2press)
-    return control
-
-
-def adjustCaliberation_PyAutoGUI(pidoutput):
-    keycode2press = "pageup" if pidoutput > 0 else "pagedown"
-
-    control = np.abs(pidoutput)
-    gameinput.pyautogui.keyUp(keycode2press)
-
-    gameinput.pyautogui.keyDown(keycode2press)
-    PreciseSleep(control)
-    gameinput.pyautogui.keyUp(keycode2press)
+    Keyboard.KeyUp(keycode2press)
     return control
 
 

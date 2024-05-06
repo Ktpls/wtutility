@@ -1,5 +1,5 @@
 from utilref import *
-from keyshortcut.gameinput import *
+from utilitypack.util_winkey import *
 from time import sleep
 import traceback
 import win32process
@@ -95,9 +95,9 @@ class KeyPressRepeater(StoppableThread):
 
     def foo(self):
         while self.getRunning():
-            key_down(self.key)
+            Keyboard.KeyDownDelay(self.key)
             time.sleep(0.01)
-            key_up(self.key)
+            Keyboard.KeyUpDelay(self.key)
             time.sleep(self.peroid)
 
     def autoSwitch(self):

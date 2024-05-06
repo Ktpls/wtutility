@@ -65,14 +65,14 @@ class mWtdmp(WtUtilityModule):
                     result = Numinstr(session.content)
                     wtdmp.lastDistMeasResultStaged.plottingscale = result
                     app.bulletin.putup(f"plotting scale locked at {result}")
-                    wtdistmeaspyimpl.gameinput.key_press(win32con.VK_RETURN)
-                    wtdistmeaspyimpl.gameinput.key_press(ord("1"))
+                    wtdistmeaspyimpl.Keyboard.KeyPressDelay(win32con.VK_RETURN)
+                    wtdistmeaspyimpl.Keyboard.KeyPressDelay(ord("1"))
                 elif (
                     session.sessionEndType
                     == HotkeyManager.InputSession.SessionInstance.SessionEndType.CANCEL
                 ):
                     app.bulletin.putup("plotting scale canceled")
-                    wtdistmeaspyimpl.gameinput.key_press(win32con.VK_ESCAPE)
+                    wtdistmeaspyimpl.Keyboard.KeyPressDelay(win32con.VK_ESCAPE)
 
             app.inputSession.IntoSession(
                 SetPlottingScaleLock,

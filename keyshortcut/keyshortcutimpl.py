@@ -1,6 +1,5 @@
-from .gameinput import *
 
-from utilitypack import *
+from utilitypack.util_winkey import *
 
 
 def holdMouseLeft():
@@ -8,7 +7,7 @@ def holdMouseLeft():
 
 
 def holdC():
-    KeyDown(ord("C"))
+    Keyboard.KeyDown(ord("C"))
 
 
 class MoveMouseDirection(enum.Enum):
@@ -33,12 +32,12 @@ def launchSeriesGo(self: StoppableSomewhat):
 
     interval = 0.1
     num = 29 + 10
-    KeyDown(win32con.VK_LCONTROL)
+    Keyboard.KeyDown(win32con.VK_LCONTROL)
     for i in range(num):
         if self.timeToStop():
             break
-        KeyDown(win32con.VK_SPACE)
+        Keyboard.KeyDown(win32con.VK_SPACE)
         PreciseSleep(0.03)
-        KeyUp(win32con.VK_SPACE)
+        Keyboard.KeyUp(win32con.VK_SPACE)
         PreciseSleep(interval)
-    KeyUp(win32con.VK_LCONTROL)
+    Keyboard.KeyUp(win32con.VK_LCONTROL)

@@ -1,4 +1,4 @@
-from utilitypack import *
+from utilitypack.util_ocv import *
 
 from .wtdistmeaspy_config import *
 

@@ -42,24 +42,24 @@ def main():
     # keep rushing
     def KeepRushing():
         Rhythms.Notify()
-        key_down(ord("P"))
+        Keyboard.KeyDownDelay(ord("P"))
 
     hotkeyaction.append(
         HotkeyManager.hotkeytask(key=win32con.VK_F2, foo=KeepRushing))
 
     # keep pressing x, c
 
-    xpress = KeyPressRepeater(ord("X"), 0.2)
+    xpress = Keyboard.KeyPressRepeater(ord("X"), 0.2)
     hotkeyaction.append(
         HotkeyManager.hotkeytask(key=win32con.VK_F3,
                                  foo=functools.partial(
-                                     KeyPressRepeater.autoSwitch, xpress)))
+                                     Keyboard.KeyPressRepeater.autoSwitch, xpress)))
 
-    cpress = KeyPressRepeater(ord("C"), 1)
+    cpress = Keyboard.KeyPressRepeater(ord("C"), 1)
     hotkeyaction.append(
         HotkeyManager.hotkeytask(key=win32con.VK_F4,
                                  foo=functools.partial(
-                                     KeyPressRepeater.autoSwitch, cpress)))
+                                     Keyboard.KeyPressRepeater.autoSwitch, cpress)))
 
     def beepexit():
         win32api.Beep(1000, 300)

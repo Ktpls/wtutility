@@ -1,5 +1,5 @@
 import enum
-import keyshortcut.keyshortcut as keyshortcut
+import utilitypack.util_winkey as winkey
 
 
 class GameMode(enum.Enum):
@@ -33,47 +33,47 @@ aiofps = 10
 
 
 class HotKeyConfig:
-    HotKey_PlottingScaleLock = [ord("L"), keyshortcut.win32conComp.VK_OEM_3]
-    HotKey_DistMeasCali = keyshortcut.win32conComp.VK_OEM_3
+    HotKey_PlottingScaleLock = [ord("L"), winkey.win32conComp.VK_OEM_3]
+    HotKey_DistMeasCali = winkey.win32conComp.VK_OEM_3
     HotKey_StartCali = [
-        keyshortcut.win32conComp.VK_CONTROL,
-        keyshortcut.win32conComp.VK_OEM_3,
+        winkey.win32conComp.VK_CONTROL,
+        winkey.win32conComp.VK_OEM_3,
     ]
-    HotKey_StopCali = [keyshortcut.win32conComp.VK_SHIFT, keyshortcut.win32conComp.VK_OEM_3]
+    HotKey_StopCali = [winkey.win32conComp.VK_SHIFT, winkey.win32conComp.VK_OEM_3]
     HotKey_SetPlottingScale = [
-        keyshortcut.win32conComp.VK_CONTROL,
-        keyshortcut.win32conComp.VK_MENU,
-        keyshortcut.win32conComp.VK_OEM_3,
+        winkey.win32conComp.VK_CONTROL,
+        winkey.win32conComp.VK_MENU,
+        winkey.win32conComp.VK_OEM_3,
     ]
-    HotKey_FreshPlottingScale = [ord("L"), ord("K"), keyshortcut.win32conComp.VK_OEM_3]
-    HotKey_SwitchTelescope = keyshortcut.win32conComp.VK_F12
+    HotKey_FreshPlottingScale = [ord("L"), ord("K"), winkey.win32conComp.VK_OEM_3]
+    HotKey_SwitchTelescope = winkey.win32conComp.VK_F12
     HotKey_SwitchTelescopeMti = [
-        keyshortcut.win32conComp.VK_RCONTROL,
-        keyshortcut.win32conComp.VK_F12,
+        winkey.win32conComp.VK_RCONTROL,
+        winkey.win32conComp.VK_F12,
     ]
-    HotKey_HoldLeftAndTell = keyshortcut.win32conComp.VK_F10
-    HotKey_MoveMouse_Direction_Up = keyshortcut.win32conComp.VK_UP
-    HotKey_MoveMouse_Direction_Left = keyshortcut.win32conComp.VK_LEFT
-    HotKey_MoveMouse_Direction_Down = keyshortcut.win32conComp.VK_DOWN
-    HotKey_MoveMouse_Direction_Right = keyshortcut.win32conComp.VK_RIGHT
-    HotKey_MoveMouse_AssistKey = keyshortcut.win32conComp.VK_CONTROL
-    HotKey_HoldCAndTell = keyshortcut.win32conComp.VK_F11
-    HotKey_LaunchSeries = [keyshortcut.win32conComp.VK_RCONTROL, ord("K"), ord("O")]
+    HotKey_HoldLeftAndTell = winkey.win32conComp.VK_F10
+    HotKey_MoveMouse_Direction_Up = winkey.win32conComp.VK_UP
+    HotKey_MoveMouse_Direction_Left = winkey.win32conComp.VK_LEFT
+    HotKey_MoveMouse_Direction_Down = winkey.win32conComp.VK_DOWN
+    HotKey_MoveMouse_Direction_Right = winkey.win32conComp.VK_RIGHT
+    HotKey_MoveMouse_AssistKey = winkey.win32conComp.VK_CONTROL
+    HotKey_HoldCAndTell = winkey.win32conComp.VK_F11
+    HotKey_LaunchSeries = [winkey.win32conComp.VK_RCONTROL, ord("K"), ord("O")]
     HotKey_RefreshWifi = [
-        keyshortcut.win32conComp.VK_RCONTROL,
-        keyshortcut.win32conComp.VK_RSHIFT,
+        winkey.win32conComp.VK_RCONTROL,
+        winkey.win32conComp.VK_RSHIFT,
         ord("K"),
     ]
-    HotKey_EagleEyeDataCollector = keyshortcut.win32conComp.VK_F8
-    HotKey_EagleEyeOnClick = keyshortcut.win32conComp.VK_LBUTTON
-    HotKey_Glock = [keyshortcut.win32conComp.VK_RSHIFT, keyshortcut.win32conComp.VK_F9]
+    HotKey_EagleEyeDataCollector = winkey.win32conComp.VK_F8
+    HotKey_EagleEyeOnClick = winkey.win32conComp.VK_LBUTTON
+    HotKey_Glock = [winkey.win32conComp.VK_RSHIFT, winkey.win32conComp.VK_F9]
     HotKey_EngineManSwitch = [
-        keyshortcut.win32conComp.VK_RCONTROL,
-        keyshortcut.win32conComp.VK_RSHIFT,
-        keyshortcut.win32conComp.VK_F10,
+        winkey.win32conComp.VK_RCONTROL,
+        winkey.win32conComp.VK_RSHIFT,
+        winkey.win32conComp.VK_F10,
     ]
     HotKey_Reboot = [
-        keyshortcut.win32conComp.VK_CONTROL,
-        keyshortcut.win32conComp.VK_SHIFT,
-        keyshortcut.win32conComp.VK_F12,
+        winkey.win32conComp.VK_CONTROL,
+        winkey.win32conComp.VK_SHIFT,
+        winkey.win32conComp.VK_F12,
     ]

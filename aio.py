@@ -15,25 +15,25 @@ def main():
     # wtdistmeas
     if usingwtdistmeaspy:
         print("wtdistmeaspy activated")
-        modules.append(wtdistmeaspy.mWtdmp())
+        modules.append(wtdistmeaspy.mWtdmp(app))
 
     # telescope
     if usingtelescope:
         print("telescope activated")
-        modules.append(telescope.mTelescope())
+        modules.append(telescope.mTelescope(app))
 
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        modules.append(keyshortcut.mKeyshortcut())
+        modules.append(keyshortcut.mKeyshortcut(app))
 
     if usingglock:
         print("glock activated")
-        modules.append(glock.mGlock())
+        modules.append(glock.mGlock(app))
 
     if usingengineman:
         print("engineman activated")
-        modules.append(engineman.mEngineman())
+        modules.append(engineman.mEngineman(app))
     for m in modules:
         m.load()
 
@@ -42,6 +42,8 @@ def main():
         app.hud.stop()
         bootAsAdmin(__file__)
         Rhythms.Reboot.play()
+        futures = [app.threadpool.submit(m.unload) for m in modules]
+        [f.result() for f in futures]
         sys.exit()
 
     @app.Business()

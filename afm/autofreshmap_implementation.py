@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableSomewhat
 from utilitypack.utility import *
-from keyshortcut.gameinput import *
+from utilitypack.util_winkey import *
 from .autofreshmap_config import *
 from .autofreshmap_configmap_importref import *
 from shared.globalsys import *
@@ -476,7 +476,7 @@ class freshAMap(StoppableThread):
                         ]
                     ]
                 ):
-                    KeyPress(win32con.VK_RETURN)
+                    Keyboard.KeyPress(win32con.VK_RETURN)
                     return False
                 return False
 
@@ -498,7 +498,7 @@ class freshAMap(StoppableThread):
                     ]
                 ):
                     # clear matching state
-                    KeyPress(win32con.VK_ESCAPE)
+                    Keyboard.KeyPress(win32con.VK_ESCAPE)
                 Rhythms.Cancel.play()
                 return False
 
@@ -757,10 +757,10 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
                 StateSign.MissionCanceled
             ].detect(scr):
                 # piority lower than statistics, so the to battle button on spawn scence wont confuse
-                KeyPress(win32con.VK_RETURN)
+                Keyboard.KeyPress(win32con.VK_RETURN)
                 return False
             if stateDetector[StateSign.OK].detect(scr):
-                KeyPress(win32con.VK_ESCAPE)
+                Keyboard.KeyPress(win32con.VK_ESCAPE)
                 LongDelay(15)
                 return False
             return False
@@ -843,30 +843,30 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         KEY_OP_INTERVAL = 0.3
         # bad
         # exit statistics
-        KeyPress(win32con.VK_ESCAPE)
+        Keyboard.KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         # to menu
-        KeyPress(win32con.VK_ESCAPE)
+        Keyboard.KeyPress(win32con.VK_ESCAPE)
         time.sleep(KEY_OP_INTERVAL)
 
         moveto((0, 0))
 
         # select return to hanger
         for i in range(5):
-            KeyPress(win32con.VK_DOWN)
+            Keyboard.KeyPress(win32con.VK_DOWN)
             time.sleep(KEY_OP_INTERVAL)
 
         # click it
-        KeyPress(win32con.VK_RETURN)
+        Keyboard.KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         # select yes
-        KeyPress(win32con.VK_LEFT)
+        Keyboard.KeyPress(win32con.VK_LEFT)
         time.sleep(KEY_OP_INTERVAL)
 
         # click
-        KeyPress(win32con.VK_RETURN)
+        Keyboard.KeyPress(win32con.VK_RETURN)
         time.sleep(KEY_OP_INTERVAL)
 
         moveMouseAway()
@@ -876,7 +876,7 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         def detectMissionCanceled(scr):
             assert stateDetector is not None
             if stateDetector[StateSign.MissionCanceled].detect(scr):
-                KeyPress(win32con.VK_ESCAPE)
+                Keyboard.KeyPress(win32con.VK_ESCAPE)
                 return True
             return False
 
