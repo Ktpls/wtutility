@@ -131,7 +131,7 @@ class MapImgComparer:
     def detect(self, mscr, specifiedThresh=None):
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
         GSLogger().logger.debug(f"{self.path} detecting: s={s}")
-        thresh = specifiedThresh if specifiedThresh is not None else self.thresh
+        thresh = Coalesce(specifiedThresh, self.thresh)
         return s < thresh
 
 
@@ -165,7 +165,7 @@ class UnlocatedFullScreenImgMatcher:
             self.mask = None
 
     def find(self, mscr, specifiedThresh=None):
-        thresh = specifiedThresh if specifiedThresh is not None else self.thresh
+        thresh = Coalesce(specifiedThresh, self.thresh)
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
         GSLogger().logger.debug(
             f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
