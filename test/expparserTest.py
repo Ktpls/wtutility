@@ -54,6 +54,7 @@ def unitTest():
     exp: list[TestUnit] = [
         TestUnit(r"CStr(1)", "1.0"),
         TestUnit(r"1,2,3", "[1.0, 2.0, 3.0]"),
+        TestUnit(r"2/2/2", "0.5"),
         TestUnit(r"sin(pi/2)+2^2*2+--1", "10.0"),
         TestUnit(r"eq(1+0.1,1)", "False"),
         TestUnit(r"eq(1+0.1,1,0.2)", "True"),
@@ -72,7 +73,8 @@ def unitTest():
         TestUnit(r"OptionalFunc(1,,)", "1.0"),
         TestUnit(r"OptionalFunc(,1,)", TestUnit.ExpectedException()),
         TestUnit(r"((1,1),(2,2),(1,),1)", "[[1.0, 1.0], [2.0, 2.0], [1.0, None], 1.0]"),
-        TestUnit(r'''
+        TestUnit(
+            r"""
                  //comment one
                  1
                  /*
@@ -80,7 +82,9 @@ def unitTest():
                  two
                  */
                  +/*inline comment*/1
-                 ''', "2.0"),
+                 """,
+            "2.0",
+        ),
     ]
 
     def splitline():
