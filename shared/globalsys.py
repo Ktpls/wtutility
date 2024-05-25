@@ -28,10 +28,27 @@ class GSLogger:
 
         self.logger = logger
 
+    @EasyWrapper
+    @staticmethod
+    def ExceptionLogged(f, execType=Exception):
+        execType = NormalizeIterableOrSingleArgToIterable(execType)
+
+        @functools.wraps(f)
+        def f2(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except BaseException as err:
+                for e in execType:
+                    if isinstance(err, e):
+                        GSLogger().logger.exception(err)
+                        break
+                raise err
+        return f2
+
 
 class WtUtilityModule:
     def __init__(self, app: BulletinApp):
-        self.app=app
+        self.app = app
 
     def load(self):
         pass

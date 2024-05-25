@@ -1,2 +1,2 @@
 print_ctrl_ratio = False
-glim = 5
+glim = 4

@@ -63,7 +63,7 @@ class I29(EngineConfig):
         gauges.radiator.set(0.60)
 
 
-@HostedEngineConfig(planeName="p-63a-5_ussr")
+@HostedEngineConfig(planeName=["p-63a-5_ussr","p-63a-10"])
 class P63A5(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(0.4)
@@ -147,7 +147,7 @@ class M82Fn(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-@HostedEngineConfig(planeName="p-51d-20-na_j26")
+@HostedEngineConfig(planeName=["p-51d-20-na_j26","p-51c-10-nt"])
 class P51C(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
@@ -216,3 +216,4 @@ class Il2(EngineConfig):
         gauges.propPitch.set(1.0)
         gauges.radiator.set(1.0)
         gauges.oilRadiator.setToMaxAnyway()
+

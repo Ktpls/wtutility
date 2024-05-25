@@ -13,7 +13,7 @@ def main():
     """
     simplified from wt aio
     """
-    app = BulletinApp()
+    app = BulletinApp(fps=2)
 
     print("keyshortcut activated")
 
@@ -44,8 +44,7 @@ def main():
     @WithHotkeySwitch()
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
-        for i in range(5):
-            Keyboard.KeyDown(ord("W"))
+        for i in range(3):
             time.sleep(0.1)
         Keyboard.KeyDown(ord("W"))
         app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
