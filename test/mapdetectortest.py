@@ -5,9 +5,11 @@ afmi.loadAssetsNeeded4FreshAMap()
 
 
 loadingscreen = cv.imread(
-    r"C:\Users\Kita\Pictures\Screenshots\Screenshot 2024-05-08 234924.png"
+    r"C:\prog\wtutility\output\autofreshmap\mapAutoCollection\6YEFYW8Y4X.png"
 )
-mapImg = afmi.cutmap(loadingscreen).astype(np.float32) / 255
+# mapImg = afmi.cutmap(loadingscreen)
+mapImg = loadingscreen
+mapImg = mapImg.astype(np.float32) / 255
 mapImgProced = afmi.MapImgComparer.imagepreprocess(mapImg)
 matched = False
 # name,detector

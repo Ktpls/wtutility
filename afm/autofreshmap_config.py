@@ -1,4 +1,4 @@
-from . import autofreshmap_configmap_plain as autofreshmap_configmap
+from . import autofreshmap_configmap_air73 as autofreshmap_configmap
 from .autofreshmap_config_lenxiaoxin import *
 
 singlechanneleddetection = False
@@ -12,10 +12,10 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.3
+standardMapMatchThreshold = 0.33
 
-zFuncPoint0 = 8 / 255
-zFuncPoint1 = 15 / 255
+zFuncPoint0 = 12 / 255
+zFuncPoint1 = 25 / 255
 
 setonwifirecoverthresh = 5
 
