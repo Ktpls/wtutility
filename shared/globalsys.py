@@ -53,7 +53,7 @@ class WtUtilityModule:
     def load(self):
         pass
 
-    def unload():
+    def unload(self):
         pass
 
     @staticmethod

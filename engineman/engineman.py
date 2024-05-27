@@ -27,3 +27,6 @@ class mEngineman(WtUtilityModule):
         @app.Hotkey("EngineManSwitch", app.config.HotKey_EngineManSwitch)
         def emSwitchBusiness():
             emSwitch.switch()
+    def unload(self):
+        if self.em:
+            self.em.stop()

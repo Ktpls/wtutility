@@ -1,11 +1,6 @@
 from utilitypack.util_app import *
 from aio_config import *
 import shared.globalsys as globalsys
-from engineman import engineman
-from glock import glock
-from keyshortcut import keyshortcut
-from telescope import telescope
-from wtdmp import wtdistmeaspy
 
 
 def main():
@@ -15,25 +10,35 @@ def main():
     # wtdistmeas
     if usingwtdistmeaspy:
         print("wtdistmeaspy activated")
-        modules.append(wtdistmeaspy.mWtdmp(app))
+        from wtdmp.wtdistmeaspy import mWtdmp
+
+        modules.append(mWtdmp(app))
 
     # telescope
     if usingtelescope:
         print("telescope activated")
-        modules.append(telescope.mTelescope(app))
+        from telescope.telescope import mTelescope
+
+        modules.append(mTelescope(app))
 
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
-        modules.append(keyshortcut.mKeyshortcut(app))
+        from keyshortcut.keyshortcut import mKeyshortcut
+
+        modules.append(mKeyshortcut(app))
 
     if usingglock:
         print("glock activated")
-        modules.append(glock.mGlock(app))
+        from glock.glock import mGlock
+
+        modules.append(mGlock(app))
 
     if usingengineman:
         print("engineman activated")
-        modules.append(engineman.mEngineman(app))
+        from engineman.engineman import mEngineman
+
+        modules.append(mEngineman(app))
 
     futures = [app.threadpool.submit(m.load) for m in modules]
     [f.result() for f in futures]

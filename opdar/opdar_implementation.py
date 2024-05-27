@@ -533,10 +533,10 @@ class tracker:
             ponshot=ponshot,
             pomega=pomega,
             plastinthisframe=plastinthisframe,
-            wingspan=wingspan if wingspan is not None else 1,
+            wingspan=Coalesce(wingspan, 1),
             cm=cm,
             trackingpoints=trackingpoints,
-            planemap=planemap if planemap is not None else np.zeros([1, 1]),
+            planemap=Coalesce(planemap, np.zeros([1, 1])),
             pul=pul,
             thetabypix=thetabypix,
         )

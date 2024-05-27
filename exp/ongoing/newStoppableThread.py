@@ -38,9 +38,7 @@ class StoppableThread2(StoppableSomewhat):
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
         self.stopsignal = threading.Event()
-        self.pool: ThreadPoolExecutor = (
-            pool if pool is not None else ThreadPoolExecutor()
-        )
+        self.pool: ThreadPoolExecutor = Coalesce(pool, ThreadPoolExecutor())
         self.future = None
         self.state = StoppableThreadState.stopped
 
@@ -77,9 +75,9 @@ class StoppableThread2(StoppableSomewhat):
             if not, can never know which overwritten foo should be called
             check if self.stopsignal when any place to break
             """
-            ret=None
+            ret = None
             try:
-                ret= self.foo(*arg, **kw)
+                ret = self.foo(*arg, **kw)
             except Exception as e:
                 if self.strategy_error == StoppableThread.StrategyError.raise_error:
                     raise e
@@ -87,7 +85,7 @@ class StoppableThread2(StoppableSomewhat):
                     traceback.print_exc()
                 elif self.strategy_error == StoppableThread.StrategyError.ignore:
                     pass
-            self.state=StoppableThreadState.stopped
+            self.state = StoppableThreadState.stopped
             self.stopsignal.clear()
             return ret
 
@@ -105,7 +103,7 @@ class StoppableThread2(StoppableSomewhat):
     def ensureStopped(self):
         if self.future is not None:
             self.future.result()
-        self.state=StoppableThreadState.stopped
+        self.state = StoppableThreadState.stopped
 
     def timeToStop(self) -> bool:
         return self.stopsignal.is_set()
