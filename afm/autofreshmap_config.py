@@ -48,7 +48,7 @@ player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
 afmassetroot = "./asset/autofreshmap/"
 logscreenpath = "./asset/autofreshmap/log/screen/"
 
-mapAutoCollection = True
+mapAutoCollection = False
 mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"
 
 # going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697
