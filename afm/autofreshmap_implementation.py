@@ -63,7 +63,7 @@ def assetpath2realpath(ap):
 zfoo4matcher = ZFunc(zFuncPoint0, 0, zFuncPoint1, 1)
 
 
-class MapImgComparer:
+class MapImgComparator:
     """
     used for map detection.
     cuz i need special algorithm that can not be impled in matchtemplate()
@@ -107,7 +107,7 @@ class MapImgComparer:
         m = cv.imread(path).astype(np.float32) / 255
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
-        self.m = MapImgComparer.imagepreprocess(m)
+        self.m = MapImgComparator.imagepreprocess(m)
         self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
         if maskpath is not None:
@@ -123,8 +123,19 @@ class MapImgComparer:
     """
 
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
+        errAbs = np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))
+
+        if useHueErrorTolerence:
+            hue_diff = (
+                cv.cvtColor(mscr, cv.COLOR_BGR2HSV)[:, :, 0]
+                - cv.cvtColor(self.m, cv.COLOR_BGR2HSV)[:, :, 0]
+            )
+            errHue = np.abs((hue_diff + 180) % 360 - 180) / 180
+            err = 0.5 * errAbs + 0.5 * errHue
+        else:
+            err = errAbs
         return np.average(
-            zfoo4matcher(np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))),
+            zfoo4matcher(err),
             axis=(0, 1),
         )
 
@@ -263,7 +274,7 @@ class MapDetectorImpled(detector, MapDetector):
             map = NormalizeIterableOrSingleArgToIterable(para.map)
             map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
-                MapImgComparer(mr, standardMapMatchThreshold, None) for mr in map
+                MapImgComparator(mr, standardMapMatchThreshold, None) for mr in map
             ]
         else:
             self.mtc = []
@@ -514,7 +525,7 @@ class freshAMap(StoppableThread):
 
                 # determine if map desired
                 ret = False
-                loadingscreenProced = MapImgComparer.imagepreprocess(loadingscreen)
+                loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
                 for n, d in mapDetector.items():
                     # done this by hand to get 2 times faster

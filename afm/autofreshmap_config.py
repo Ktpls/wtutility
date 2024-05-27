@@ -12,7 +12,7 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.33
+standardMapMatchThreshold = 0.30
 
 zFuncPoint0 = 12 / 255
 zFuncPoint1 = 25 / 255
@@ -50,3 +50,6 @@ logscreenpath = "./asset/autofreshmap/log/screen/"
 
 mapAutoCollection = True
 mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"
+
+# going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697
+useHueErrorTolerence=True
