@@ -11,19 +11,26 @@ def main():
         exit()
     try:
         i = sys.argv[1]
-        m = cv.imread(i)
+        m = cv.imread(i).astype(np.float32) / 255
         if m.size == 0:
             raise Exception("load img failed in {}".format(i))
 
         # spawn
         for c in ["blue", "red"]:
-            pos = getMapSpawnCenter(m, c).round().astype("int")
-            [print(f"{c} spawn at {nicelyformatarraylike(pos)}")]
-        pointmask = cv.imread(assetpath2realpath(signName2Path("zonemask")))[:, :, 0]
+            pos = getMapSpawnCenter(m, c).round().astype(np.int32)
+            print(f"{c} spawn at {nicelyformatarraylike(pos)}")
+        pointmask = (
+            cv.imread(assetpath2realpath(signName2Path("zonemask")))[:, :, 0].astype(
+                np.float32
+            )
+            / 255
+        )
 
         # zone
         for p in ["A", "B", "C", "redA", "redB", "blueA", "blueB"]:
-            temp = cv.imread(assetpath2realpath(signName2Path(p)))
+            temp = (
+                cv.imread(assetpath2realpath(signName2Path(p))).astype(np.float32) / 255
+            )
             result = threshedmatchtemplate(m, temp, pointmask, detectpointsimilarity)
             if result is None:
                 print(f"{p} point not detected")

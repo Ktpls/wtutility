@@ -1,5 +1,5 @@
-from . import autofreshmap_configmap_air73 as autofreshmap_configmap
-from .autofreshmap_config_lenxiaoxin import *
+from . import autofreshmap_configmap_plain as autofreshmap_configmap
+from .autofreshmap_config_dell import *
 
 singlechanneleddetection = False
 subsampleddetection = True
@@ -12,7 +12,7 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.30
+standardMapMatchThreshold = 0.2
 
 zFuncPoint0 = 12 / 255
 zFuncPoint1 = 25 / 255
@@ -48,7 +48,7 @@ player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
 afmassetroot = "./asset/autofreshmap/"
 logscreenpath = "./asset/autofreshmap/log/screen/"
 
-mapAutoCollection = False
+mapAutoCollection = True
 mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"
 
 # going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697

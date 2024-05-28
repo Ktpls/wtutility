@@ -201,19 +201,26 @@ class signdetector(UnlocatedFullScreenImgMatcher):
 
 
 def segmentIconRed(m):
+    # m in hsv format
+    hueshift = 180
     return cv.inRange(
-        m, hsv2opencv8bithsv([0, 70, 40]), hsv2opencv8bithsv([10, 100, 100])
+        m + np.array([hueshift, 0, 0]).reshape([1, 1, -1]),
+        np.array([hueshift - 10, 0.70, 0.45], np.float32),
+        np.array([hueshift + 10, 1, 1], np.float32),
     )
 
 
 def segmentIconBlue(m):
+    # m in hsv format
     return cv.inRange(
-        m, hsv2opencv8bithsv([220, 70, 40]), hsv2opencv8bithsv([230, 100, 100])
+        m,
+        np.array([220, 0.70, 0.45], np.float32),
+        np.array([230, 1, 1], np.float32),
     )
 
 
 def delBlueRed(m):
-    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    hsv = cv.cvtColor(m, cv.COLOR_BGR2HSV)
     redPart = np.expand_dims(segmentIconRed(hsv).astype(np.float32), axis=2) / 255
     bluePart = np.expand_dims(segmentIconBlue(hsv).astype(np.float32), axis=2) / 255
     m = m * (1 - bluePart) * (1 - redPart)
@@ -222,7 +229,7 @@ def delBlueRed(m):
 
 def getMapSpawnCenter(m, spawntype="blue"):
     spawnfilter = {"red": segmentIconRed, "blue": segmentIconBlue}
-    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    hsv = cv.cvtColor(m, cv.COLOR_BGR2HSV)
     m = spawnfilter[spawntype](hsv)
     X = np.reshape(np.arange(m.shape[1]), [1, -1])
     Y = np.reshape(np.arange(m.shape[0]), [-1, 1])
