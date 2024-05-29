@@ -1,5 +1,5 @@
 from . import autofreshmap_configmap_plain as autofreshmap_configmap
-from .autofreshmap_config_dell import *
+from .autofreshmap_config_lenxiaoxin import *
 
 singlechanneleddetection = False
 subsampleddetection = True
@@ -14,8 +14,8 @@ standardPointSelectorError = 20
 standardMatchThreshold = 0.3
 standardMapMatchThreshold = 0.2
 
-zFuncPoint0 = 12 / 255
-zFuncPoint1 = 25 / 255
+zFuncPoint0 = 8 / 255
+zFuncPoint1 = 15 / 255
 
 setonwifirecoverthresh = 5
 
@@ -52,4 +52,5 @@ mapAutoCollection = True
 mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"
 
 # going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697
-useHueErrorTolerence=True
+useHueErrorTolerence = True
+hueErrorRatio = 0.3

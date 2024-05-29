@@ -131,7 +131,7 @@ class MapImgComparator:
                 - cv.cvtColor(self.m, cv.COLOR_BGR2HSV)[:, :, 0]
             )
             errHue = np.abs((hue_diff + 180) % 360 - 180) / 180
-            err = 0.5 * errAbs + 0.5 * errHue
+            err = (1 - hueErrorRatio) * errAbs + hueErrorRatio * errHue
         else:
             err = errAbs
         return np.average(
