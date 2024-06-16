@@ -10,7 +10,8 @@ runs/
 .idea
 dataset/
 /deprecated
-/asset/autofreshmap/raws
+asset/autofreshmap/raws
 test/wtdmpocrtest/
-asset/wtdistmeaspy/
+asset/collection
+asset/log
 asset/statistics

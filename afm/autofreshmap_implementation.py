@@ -147,7 +147,10 @@ class MapImgComparator:
 
 
 def threshedmatchtemplate(src, temp, mask, simu):
-    matchresult = 1 - cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    matchresult = cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    matchresult = np.where(np.isnan(matchresult), 0, matchresult)
+    matchresult = np.where(np.isinf(matchresult), 0, matchresult)
+    matchresult = 1 - matchresult
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
     GSLogger().logger.debug(
@@ -381,12 +384,15 @@ def maplist2detectorlist():
                 else MapDetector(map=m, foo="ret(detectMapShape())")
             )
             for m in whitelistedmap
-        },
-        **{
-            m: MapDetector(map=m, foo="ret(not detectMapShape())")
-            for m in blacklistedmap
-        },
+        }
     }
+    if len(blacklistedmap) != 0:
+        detectAllMaps = " and ".join(
+            [f"(not detectMapShape(mtcid={i}))" for i in range(len(blacklistedmap))]
+        )
+        detectors["blacklisted"] = MapDetectorImpled(
+            MapDetector(map=blacklistedmap, foo=f"ret({detectAllMaps})")
+        )
     return detectors
 
 

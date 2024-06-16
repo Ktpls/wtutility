@@ -1,5 +1,7 @@
 from utilitypack.utility import rgb2bgr, hsv2rgb
 from .wtdistmeaspy_config_dell import *
+from shared import const as sharedconst
+import os
 
 reflist = [140, 180, 200, 225, 275, 350, 450]
 textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
@@ -37,7 +39,7 @@ caliDbg = False
 caliP = 1
 caliD = 0.05
 caliControlMul = 0.125  # for 30%
-#caliControlMul = 0.27  # for 20%
+# caliControlMul = 0.27  # for 20%
 delayEveryCali = 0.1
 caliTableDetectionZoomRate = 1.0
 milDataErrorReq = 0.1
@@ -49,5 +51,8 @@ nonlinearCaliStart = 0
 collectingSmallMap = True
 
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
-datacoll_smallmappath = r"./asset/wtdistmeaspy/smallMapCollection"
-wtdmplogpath = r"./asset/wtdistmeaspy/log/{}_{}/"
+
+datacoll_smallmappath = os.path.join(
+    sharedconst.collectionPath, "wtdistmeaspy/smallMapCollection"
+)
+wtdmplogpath = os.path.join(sharedconst.collectionPath, "wtdistmeaspy/log/{}_{}")

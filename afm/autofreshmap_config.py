@@ -1,5 +1,7 @@
-from . import autofreshmap_configmap_plain as autofreshmap_configmap
+from . import autofreshmap_configmap_arb73 as autofreshmap_configmap
 from .autofreshmap_config_lenxiaoxin import *
+from shared import const as sharedconst
+import os
 
 singlechanneleddetection = False
 subsampleddetection = True
@@ -12,10 +14,10 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.2
+standardMapMatchThreshold = 0.25
 
-zFuncPoint0 = 8 / 255
-zFuncPoint1 = 15 / 255
+zFuncPoint0 = 10 / 255
+zFuncPoint1 = 17 / 255
 
 setonwifirecoverthresh = 5
 
@@ -46,11 +48,11 @@ musicPath = r"C:\CloudMusic"
 player = r"C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
 
 afmassetroot = "./asset/autofreshmap/"
-logscreenpath = "./asset/autofreshmap/log/screen/"
+logscreenpath = os.path.join(sharedconst.collectionPath, "/afm/log/screen")
 
 mapAutoCollection = True
-mapAutoCollectionPath = "./output/autofreshmap/mapAutoCollection"
+mapAutoCollectionPath = os.path.join(sharedconst.collectionPath, "afm/map")
 
 # going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697
 useHueErrorTolerence = True
-hueErrorRatio = 0.3
+hueErrorRatio = 0.425

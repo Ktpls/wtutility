@@ -1,4 +1,6 @@
-from utilitypack import rgb2bgr, hsv2rgb, np
+from utilitypack.utility import rgb2bgr, hsv2rgb, np
+from shared import const as sharedconst
+import os
 
 
 def getlambfromtarget(how, where, mu=0):
@@ -61,7 +63,7 @@ collectingPlaneSample = True
 collectingPlaneSampleRate = 0.05
 
 uimaskPath = r"./asset/opdar/UIMASK.png"
-datacoll_samplepath = "./output/opdar_plane/"
-datacoll_labelpath = "./output/opdar_plane/"
+datacoll_samplepath = os.path.join(sharedconst.collectionPath, "opdar/plane")
+datacoll_labelpath = os.path.join(sharedconst.collectionPath, "opdar/plane")
 datacoll_sampleFormat="{}.png"
 datacoll_labelFormat="{}_mask_0.png"
