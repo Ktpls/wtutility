@@ -1,0 +1,1 @@
+collectionPath = "./asset/collection"

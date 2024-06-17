@@ -131,7 +131,7 @@ class MapImgComparator:
                 - cv.cvtColor(self.m, cv.COLOR_BGR2HSV)[:, :, 0]
             )
             errHue = np.abs((hue_diff + 180) % 360 - 180) / 180
-            err = 0.5 * errAbs + 0.5 * errHue
+            err = (1 - hueErrorRatio) * errAbs + hueErrorRatio * errHue
         else:
             err = errAbs
         return np.average(
@@ -147,7 +147,10 @@ class MapImgComparator:
 
 
 def threshedmatchtemplate(src, temp, mask, simu):
-    matchresult = 1 - cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    matchresult = cv.matchTemplate(src, temp, cv.TM_CCOEFF_NORMED, mask=mask)
+    matchresult = np.where(np.isnan(matchresult), 0, matchresult)
+    matchresult = np.where(np.isinf(matchresult), 0, matchresult)
+    matchresult = 1 - matchresult
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
     GSLogger().logger.debug(
@@ -201,19 +204,26 @@ class signdetector(UnlocatedFullScreenImgMatcher):
 
 
 def segmentIconRed(m):
+    # m in hsv format
+    hueshift = 180
     return cv.inRange(
-        m, hsv2opencv8bithsv([0, 70, 40]), hsv2opencv8bithsv([10, 100, 100])
+        m + np.array([hueshift, 0, 0]).reshape([1, 1, -1]),
+        np.array([hueshift - 10, 0.70, 0.45], np.float32),
+        np.array([hueshift + 10, 1, 1], np.float32),
     )
 
 
 def segmentIconBlue(m):
+    # m in hsv format
     return cv.inRange(
-        m, hsv2opencv8bithsv([220, 70, 40]), hsv2opencv8bithsv([230, 100, 100])
+        m,
+        np.array([220, 0.70, 0.45], np.float32),
+        np.array([230, 1, 1], np.float32),
     )
 
 
 def delBlueRed(m):
-    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    hsv = cv.cvtColor(m, cv.COLOR_BGR2HSV)
     redPart = np.expand_dims(segmentIconRed(hsv).astype(np.float32), axis=2) / 255
     bluePart = np.expand_dims(segmentIconBlue(hsv).astype(np.float32), axis=2) / 255
     m = m * (1 - bluePart) * (1 - redPart)
@@ -222,7 +232,7 @@ def delBlueRed(m):
 
 def getMapSpawnCenter(m, spawntype="blue"):
     spawnfilter = {"red": segmentIconRed, "blue": segmentIconBlue}
-    hsv = cv.cvtColor((m * 255).astype(np.uint8), cv.COLOR_BGR2HSV)
+    hsv = cv.cvtColor(m, cv.COLOR_BGR2HSV)
     m = spawnfilter[spawntype](hsv)
     X = np.reshape(np.arange(m.shape[1]), [1, -1])
     Y = np.reshape(np.arange(m.shape[0]), [-1, 1])
@@ -374,12 +384,15 @@ def maplist2detectorlist():
                 else MapDetector(map=m, foo="ret(detectMapShape())")
             )
             for m in whitelistedmap
-        },
-        **{
-            m: MapDetector(map=m, foo="ret(not detectMapShape())")
-            for m in blacklistedmap
-        },
+        }
     }
+    if len(blacklistedmap) != 0:
+        detectAllMaps = " and ".join(
+            [f"(not detectMapShape(mtcid={i}))" for i in range(len(blacklistedmap))]
+        )
+        detectors["blacklisted"] = MapDetectorImpled(
+            MapDetector(map=blacklistedmap, foo=f"ret({detectAllMaps})")
+        )
     return detectors
 
 

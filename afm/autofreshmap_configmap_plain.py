@@ -3,13 +3,14 @@ from .autofreshmap_configmap_importref import *
 # friendly for turrentless tank destroyers
 highSurvivablity = [
     "AralSea",
-    #"Berlin",
+    # "Berlin",
     "EasternEurope",
     "EuropeanProvince",
     "FieldsOfNormandy",
     "FieldsOfPoland",
     "Finland",
     #'FireArc',
+    "Flanders",
     "FrozenPass",
     "Karelia",
     "MaginotLineDomination#1",
@@ -25,7 +26,7 @@ highSurvivablity = [
     "SecondBattleOfElAlamein",
     "Tunisia",
     "AshRiver",
-    #"Carpathians",
+    # "Carpathians",
     "Jungle",
     "MiddleEast",
 ]
@@ -85,9 +86,9 @@ specialmapdetectors = {
         foo="ret(detectMapShape() and spawnAround([355,526]) and not singlePoint([178, 308]))",  # not single point at left
     ),
     # "SandsOfSinai": MapDetector(
-        # map="SandsOfSinai",
-        # # better survivability at upper, less likely to be killed by flankers
-        # foo="ret(detectMapShape() and spawnAround([334, 61]))",
+    # map="SandsOfSinai",
+    # # better survivability at upper, less likely to be killed by flankers
+    # foo="ret(detectMapShape() and spawnAround([334, 61]))",
     # ),
     "FieldsOfPoland": MapDetector(
         map="FieldsOfPoland",
@@ -140,5 +141,10 @@ specialmapdetectors = {
         map="MiddleEast",
         # born at lower, better vision around A on mount
         foo="ret(detectMapShape() and spawnAround([508, 346]))",
+    ),
+    "Flanders": MapDetector(
+        map="Flanders",
+        # born at lower, better vision around A on mount
+        foo="ret(detectMapShape() and spawnAround([326, 618]))",
     ),
 }
