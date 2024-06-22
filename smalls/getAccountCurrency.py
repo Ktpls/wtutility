@@ -46,9 +46,8 @@ class TradeGaijinNet:
         return result
 
     def getSellPrice(self, itemName):
-        sells = self.MarketProxyGaijinNetWeb("cln_books_brief", itemName)["response"][
-            "SELL"
-        ]
+        resp = self.MarketProxyGaijinNetWeb("cln_books_brief", itemName)["response"]
+        sells = resp["SELL"]
         if len(sells) == 0:
             return 0
         list.sort(sells, key=lambda x: x[0])
@@ -64,6 +63,7 @@ class MyItem:
 
 
 def main():
+    money = 9.99
     inventory = [
         MyItem("id50230_ct_cv_105hp_sweden", 3),
         MyItem("id50212_bf_109_f_4_italy", 1),
@@ -73,15 +73,16 @@ def main():
         MyItem("id50236_ki_48_ii_otsu_japan", 4),
         MyItem("id50226_b7a2_homare_23_japan", 2),
         MyItem("items_Matilda+Hedgehog+(Britain)", 1),
+        MyItem("id50244_strikemaster_mk_88_great_britain", 4),
     ]
 
-    token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjM4MTQ3NiIsInR5cCI6IkpXVCJ9.eyJhdXRoIjoibG9naW4iLCJjbnRyeSI6IkNOIiwiZXhwIjoxNzE0MzMxNTAzLCJmYWMiOiJkNThjYjE0YTJlYTYzOGFlYjY1MmRmMTBlOTA4ZWMwMGMzZGIyMmEyYzQ5NTA2Y2ZiYmY5YjM5MzRiMTUwMDk3IiwiaWF0IjoxNzExNzM5NTAzLCJpc3MiOiIxIiwia2lkIjoiMzgxNDc2IiwibG5nIjoiZW4iLCJsb2MiOiJhNjNjNmQ1ZjU5N2Y0MTMyODU3YjFjN2Y0ZTI2MWYzODQ0YjYxY2UxN2ExMTAwOWNmMTU0ZDkyYWRmNTQ5ODBjIiwibmljayI6IlNlbGVuYWJ1bm55Iiwic2x0Ijoid3FKRWZpRWQiLCJ0Z3MiOiIyc3RlcCwyc3RlcF90b3RwLGN1c3RvbWVyLGN1c3RvbWVyX3d0LGRpZmZjdXJyLGVtYWlsX2RlbGl2ZXJlZCxlbWFpbF92ZXJpZmllZCxsYW5nX2VuLHBhcnRuZXJfc3RlYW0scGF5X2NueSxwaG9uZV92ZXJpZmllZCxwbGF5ZXJfZWwscGxheWVyX3d0LHNzb19hbGxvd2VkX3Bvc3Qsc3RlYW0sc3RlYW1nZW4sd3RfZW4sd3RfZmlyc3RfbG9naW4sd3RfcXVpel9zdWNjZXNzIiwidWlkIjoiODMzMjI5MDQifQ.gyiTw0cXReFz37H4viWSBC0PP7jEFhXTbHBtiF4yrkE2FqLdkXllLslEMsRI5FmOC5soeDnpBZYqbl4eHtIAV7smsRqBbqrkxjidHRHLHv1_2ehBAKE9wuNaREUtzxZsImFBzxDm1yPrV994X2ZnfqK-Fxy73OEot9fC_cSrwjBjhyYv7kPFf1q_QVwCKejF1Mm6RioOHJLclPtBJoEz2OjarxigtJ0kpYrx13uuQrsXN1seiNa5eF39DoUGQDyQOU2HzecGtMjEPwYJ3nBU-u6cHvEuEfL-gpmdNn_abZaN5f9kOGQfC7C5dB6XGqTPZPcH1QcoPnRcZFW27-SIZg"
+    token = ReadTextFile("smalls/trade.ignored")
     tgn = TradeGaijinNet(token)
     for i in inventory:
         print(i.itemCode)
         i.price = tgn.getSellPrice(i.itemCode)
 
-    total = np.sum([i.price * i.amount for i in inventory]) *0.85 + 101.05+40.01+44.0
+    total = np.sum([i.price * i.amount for i in inventory]) * 0.85 + money
     line = [GetTimeString(), int(time.time()), total]
     line = [str(c) for c in line]
     AppendFile("asset/statistics/inventoryAccount.csv", ",".join(line) + "\n")
