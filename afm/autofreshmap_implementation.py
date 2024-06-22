@@ -125,13 +125,15 @@ class MapImgComparator:
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
         errAbs = np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))
 
-        if useHueErrorTolerence:
-            hue_diff = (
-                cv.cvtColor(mscr, cv.COLOR_BGR2HSV)[:, :, 0]
-                - cv.cvtColor(self.m, cv.COLOR_BGR2HSV)[:, :, 0]
-            )
-            errHue = np.abs((hue_diff + 180) % 360 - 180) / 180
-            err = (1 - hueErrorRatio) * errAbs + hueErrorRatio * errHue
+        if useNonLightnessedErrorTolerence:
+            def toNonLighted(m):
+                return m / (np.mean(np.max(m, axis=2)) + EPS)
+            mscrNonLighted =toNonLighted(mscr)
+            selfMNonLighted = toNonLighted(self.m)
+            errNonLighted = np.sqrt(np.max(np.square(selfMNonLighted - mscrNonLighted), axis=(2,)))
+            err = (
+                1 - NonLightnessedErrorRatio
+            ) * errAbs + NonLightnessedErrorRatio * errNonLighted
         else:
             err = errAbs
         return np.average(

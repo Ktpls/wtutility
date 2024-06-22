@@ -14,7 +14,7 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.25
+standardMapMatchThreshold = 0.35
 
 zFuncPoint0 = 10 / 255
 zFuncPoint1 = 17 / 255
@@ -53,6 +53,6 @@ logscreenpath = os.path.join(sharedconst.collectionPath, "/afm/log/screen")
 mapAutoCollection = True
 mapAutoCollectionPath = os.path.join(sharedconst.collectionPath, "afm/map")
 
-# going better with screen flashing effect at the begining of the map loading screen, but slower like 0.0003451930229053941 to 0.00024105581389956697
-useHueErrorTolerence = True
-hueErrorRatio = 0.425
+# going better with screen flashing effect at the begining of the map loading screen, but slower like 0.005804599961265922 to 0.0026458000065758824
+useNonLightnessedErrorTolerence = True
+NonLightnessedErrorRatio = 0.425
