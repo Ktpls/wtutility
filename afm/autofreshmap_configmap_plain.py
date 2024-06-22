@@ -8,7 +8,7 @@ highSurvivablity = [
     "EuropeanProvince",
     "FieldsOfNormandy",
     "FieldsOfPoland",
-    "Finland",
+    # "Finland",
     #'FireArc',
     "Flanders",
     "FrozenPass",

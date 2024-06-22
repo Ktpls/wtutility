@@ -540,7 +540,9 @@ class freshAMap(StoppableThread):
                 ret = False
                 loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
-                for n, d in mapDetector.items():
+
+                for n in list(mapDetector.keys()).sort():
+                    d = mapDetector.get(n)
                     # done this by hand to get 2 times faster
                     if d.detect(loadingscreen, loadingscreenProced):
                         GSLogger().logger.debug(f"{n}")
