@@ -1,8 +1,8 @@
 blacklistedmap = [
-    r"airshadowed\[Operation]RockyCanyon",
-    r"airshadowed\[Operation]Afghanistan",
-    r"airshadowed\[Operation]GolanHeights(AirSpawns)",
-    r"airshadowed\[Operation]Vietnam",
-    r"airshadowed\[Operation]Spain",
+    r"air\[Operation]RockyCanyon",
+    r"air\[Operation]Afghanistan",
+    r"air\[Operation]GolanHeights(AirSpawns)",
+    r"air\[Operation]Vietnam",
+    r"air\[Operation]Spain",
 ]
 specialmapdetectors = {}
