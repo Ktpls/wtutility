@@ -26,7 +26,7 @@ detectpointsimilarity = 0.1
 minDelayAfterDisconnected = 2
 
 throwerringetdetector = False
-throwerrinmain = False
+throwerrinmain = True
 
 saveScreenShot = False
 saveRate = 0.1

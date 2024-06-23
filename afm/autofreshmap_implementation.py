@@ -421,6 +421,7 @@ class freshAMap(StoppableThread):
             strategy_error=StoppableSomewhat.StrategyError.print_error, pool=pool
         )
 
+    @GSLogger.ExceptionLogged()
     def foo(self):
         """
         successCond: bool(*foo)(Mat& screen), with return of if detected
@@ -543,7 +544,9 @@ class freshAMap(StoppableThread):
                 loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
 
-                for n in list(mapDetector.keys()).sort():
+                sortedMapDetectorKeys = list(mapDetector.keys())
+                sortedMapDetectorKeys.sort()
+                for n in sortedMapDetectorKeys:
                     d = mapDetector.get(n)
                     # done this by hand to get 2 times faster
                     if d.detect(loadingscreen, loadingscreenProced):

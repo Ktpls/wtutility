@@ -7,6 +7,7 @@ from .autofreshmap_implementation import *
 import traceback
 
 
+@GSLogger.ExceptionLogged()
 def main():
     pool = ThreadPoolExecutor()
 
