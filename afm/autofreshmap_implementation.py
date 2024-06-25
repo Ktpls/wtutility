@@ -104,7 +104,8 @@ class MapImgComparator:
         self.path = path
 
         path = assetpath2realpath(path)
-        m = cv.imread(path).astype(np.float32) / 255
+        m = cv.imread(path)
+        m = m.astype(np.float32) / 255
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
         self.m = MapImgComparator.imagepreprocess(m)
