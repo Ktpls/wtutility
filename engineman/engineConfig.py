@@ -147,7 +147,7 @@ class M82Fn(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-@HostedEngineConfig(planeName=["p-51d-20-na_j26","p-51c-10-nt"])
+@HostedEngineConfig(planeName=["p-51d-20-na_j26","p-51c-10-nt","p-51c-10_france"])
 class P51C(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
