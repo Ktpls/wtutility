@@ -25,7 +25,7 @@ class mWtdmp(WtUtilityModule):
                 app.bulletin.putup("plotting scale unlocked")
 
         @app.Hotkey("DistMeas&Cali", app.config.HotKey_DistMeasCali)
-        @app.AsyncLongScript()
+        @app.Async()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
             result = wtdmp.solveMapMainLogic()
@@ -80,7 +80,7 @@ class mWtdmp(WtUtilityModule):
             )
 
         @app.Hotkey("FreshPlottingScale", app.config.HotKey_FreshPlottingScale)
-        @app.AsyncLongScript()
+        @app.Async()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp
             app.bulletin.putup("freshing")

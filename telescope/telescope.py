@@ -13,28 +13,38 @@ class mTelescope(WtUtilityModule):
         app = self.app
 
         tele = telescopeimpl.Telescope(app.threadpool)
-        teleSwitch = Switch(onSetOn=lambda: tele.go(), onSetOff=lambda: tele.stop())
+        regionTele = app.hud.addRegion(fullScrHUD.Region(telescopeimpl.telescopepos))
 
-        @app.Business()
+        def teleSwitchOff():
+            tele.stop()
+            regionTele.content = None
+
+        teleSwitch = Switch(onSetOn=lambda: tele.go(), onSetOff=teleSwitchOff)
+
+        @app.Business(period=1 / telescopeimpl.telescopeFps)
         def telemain():
             if not teleSwitch():
                 return
-            scope = tele.get()
-            app.hud.writecontent(np.flip(telescopeimpl.telescopepos), scope)
+            regionTele.content = tele.get()
 
         app.Hotkey("SwitchTelescope", app.config.HotKey_SwitchTelescope)(
             lambda: teleSwitch.switch()
         )
 
         self.mtiIns = mtiIns = telescopeimpl.MTI(app.threadpool)
-        mtiSwitch = Switch(onSetOn=lambda: mtiIns.go(), onSetOff=lambda: mtiIns.stop())
+        regionMti = app.hud.addRegion(fullScrHUD.Region(telescopeimpl.mtiRect[:2]))
 
-        @app.Business()
+        def teleMtiOff():
+            mtiIns.stop()
+            regionMti.content = None
+
+        mtiSwitch = Switch(onSetOn=lambda: mtiIns.go(), onSetOff=teleMtiOff)
+
+        @app.Business(period=1 / telescopeimpl.mtiFps)
         def mtiMain():
             if not mtiSwitch():
                 return
-            view = mtiIns.getResult()
-            app.hud.writecontent(np.flip(telescopeimpl.mtiRect[:2]), view)
+            regionMti.content = mtiIns.getResult()
 
         app.Hotkey("SwitchTelescopeMti", app.config.HotKey_SwitchTelescopeMti)(
             lambda: mtiSwitch.switch()

@@ -34,7 +34,7 @@ def main():
         return foo
 
     @app.Hotkey("Run", [win32con.VK_MENU, ord("W")])
-    @app.AsyncLongScript()
+    @app.Async()
     @WithHotkeySwitch()
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
