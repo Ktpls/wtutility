@@ -40,7 +40,7 @@ def main():
         app.bulletin.putup(BulletinBoard.Poster("leftHolding", 1))
 
     @app.Hotkey("HoldW", [win32con.VK_MENU, ord("W")])
-    @app.AsyncLongScript()
+    @app.Async()
     @WithHotkeySwitch()
     def holdW(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
@@ -50,7 +50,7 @@ def main():
         app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
-    @app.AsyncLongScript()
+    @app.Async()
     @WithHotkeySwitch()
     def bestJumpOnHorse(*arg, **kw) -> None:
         app.bulletin.putup(BulletinBoard.Poster("going", 1))
@@ -59,7 +59,7 @@ def main():
         Keyboard.KeyUp(win32con.VK_SPACE)
 
     @app.Hotkey("TakeOff", [win32con.VK_CONTROL, ord("G")])
-    @app.AsyncLongScript()
+    @app.Async()
     @WithHotkeySwitch()
     def takeOff(*arg, **kw) -> None:
         Keyboard.KeyPress(win32con.VK_SPACE)

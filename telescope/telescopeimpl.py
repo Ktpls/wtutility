@@ -2,7 +2,7 @@ from utilitypack.utility import *
 from .telescope_config import *
 import shared.globalsys as globalsys
 
-sizelen = np.array(sizelen)
+sizeScope = np.array(sizeScope)
 availtransformation = {}
 
 sizezoom = np.array(sizezoom)
@@ -71,13 +71,13 @@ class Telescope(StoppableThread):
         # view of len
         scr = screenshoter(0).shotbgr().astype(np.float32)
         sizescr = np.array(scr.shape[:2])
-        lt = (sizescr * 0.5 - sizelen * 0.5).astype(np.int32)
-        rd = (sizescr * 0.5 + sizelen * 0.5).astype(np.int32)
+        lt = (sizescr * 0.5 - sizeScope * 0.5).astype(np.int32)
+        rd = (sizescr * 0.5 + sizeScope * 0.5).astype(np.int32)
         view = scr[lt[0] : rd[0], lt[1] : rd[1], :]
 
         for t in transformationapplied:
             view = availtransformation[t](view)
-        view = view.astype(np.int32)
+        view = view.astype(np.uint8)
         # in case of totally black place in view
         # although im doing this by channel so pix like [0,0,1], which is not really black will be [1,1,1]
         view = np.maximum(1, view)
@@ -87,6 +87,16 @@ class Telescope(StoppableThread):
         if self.buf is None:
             self.update()
         return self.buf
+
+    def getBlankScope(self):
+        view = np.zeros([sizeScope[1], sizeScope[0], 3], np.float32)
+        for t in transformationapplied:
+            view = availtransformation[t](view)
+        view = np.zeros_like(view, np.uint8)
+        return view
+
+    def clearBuf(self):
+        self.buf = self.getBlankScope()
 
 
 class MTI(StoppableThread):

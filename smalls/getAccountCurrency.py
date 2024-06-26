@@ -63,16 +63,13 @@ class MyItem:
 
 
 def main():
-    money = 9.99
+    money = 111.11
     inventory = [
         MyItem("id50230_ct_cv_105hp_sweden", 3),
         MyItem("id50212_bf_109_f_4_italy", 1),
         MyItem("items_F2G-1+Super+Corsair+(USA)", 1),
-        MyItem("items_ITP+(M-1)+(USSR)", 1),
-        MyItem("items_Т-10А+(USSR)", 1),
         MyItem("id50236_ki_48_ii_otsu_japan", 4),
         MyItem("id50226_b7a2_homare_23_japan", 2),
-        MyItem("items_Matilda+Hedgehog+(Britain)", 1),
         MyItem("id50244_strikemaster_mk_88_great_britain", 4),
     ]
 

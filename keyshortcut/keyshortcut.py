@@ -18,14 +18,14 @@ class mKeyshortcut(WtUtilityModule):
             app.bulletin.putup(BulletinBoard.Poster("CHolding", 1))
 
         @app.Hotkey("LaunchSeries", app.config.HotKey_LaunchSeries)
-        @app.AsyncLongScript()
+        @app.Async()
         def launchSeriesGo(self: StoppableSomewhat):
             app.bulletin.putup("launching series")
             keyshortcutimpl.launchSeriesGo(self)
             app.bulletin.putup(f"launch done")
 
         @app.Hotkey("RefreshWifi", app.config.HotKey_RefreshWifi)
-        @app.AsyncLongScript()
+        @app.Async()
         def refreshWifi(self: StoppableSomewhat):
             app.bulletin.putup("refreshing wifi")
             wifi = WifiRefresher()
