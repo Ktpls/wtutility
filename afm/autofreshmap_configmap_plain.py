@@ -8,7 +8,7 @@ highSurvivablity = [
     "EuropeanProvince",
     "FieldsOfNormandy",
     "FieldsOfPoland",
-    "Finland",
+    # "Finland",
     #'FireArc',
     "Flanders",
     "FrozenPass",
@@ -99,13 +99,13 @@ specialmapdetectors = {
         # A point
         foo="ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))",
     ),
-    "MaginotLineDomination#1": MapDetector(
-        map=["MaginotLineDomination#1", "MaginotLineDomination#1Winter"],
+    "MaginotLine#1": MapDetector(
+        map=["MaginotLine#1", "MaginotLine#1(Winter)"],
         # born at upper, highland between two spawns
         foo="ret((detectMapShape(mtcid=0) or detectMapShape(mtcid=1)) and spawnAround([290, 65]))",
     ),
-    "MaginotLineDomination#2": MapDetector(
-        map=["MaginotLineDomination#2", "MaginotLineDomination#2Winter"],
+    "MaginotLine#2": MapDetector(
+        map=["MaginotLine#2", "MaginotLine#2(Winter)"],
         foo="ret(detectMapShape(mtcid=0) or detectMapShape(mtcid=1))",
     ),
     "EuropeanProvince": MapDetector(

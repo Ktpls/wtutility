@@ -125,13 +125,15 @@ class MapImgComparator:
     def matchSign_Z_ABSDIFF_NORMED(self, mscr):
         errAbs = np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))
 
-        if useHueErrorTolerence:
-            hue_diff = (
-                cv.cvtColor(mscr, cv.COLOR_BGR2HSV)[:, :, 0]
-                - cv.cvtColor(self.m, cv.COLOR_BGR2HSV)[:, :, 0]
-            )
-            errHue = np.abs((hue_diff + 180) % 360 - 180) / 180
-            err = (1 - hueErrorRatio) * errAbs + hueErrorRatio * errHue
+        if useNonLightnessedErrorTolerence:
+            def toNonLighted(m):
+                return m / (np.mean(np.max(m, axis=2)) + EPS)
+            mscrNonLighted =toNonLighted(mscr)
+            selfMNonLighted = toNonLighted(self.m)
+            errNonLighted = np.sqrt(np.max(np.square(selfMNonLighted - mscrNonLighted), axis=(2,)))
+            err = (
+                1 - NonLightnessedErrorRatio
+            ) * errAbs + NonLightnessedErrorRatio * errNonLighted
         else:
             err = errAbs
         return np.average(
@@ -419,6 +421,7 @@ class freshAMap(StoppableThread):
             strategy_error=StoppableSomewhat.StrategyError.print_error, pool=pool
         )
 
+    @GSLogger.ExceptionLogged()
     def foo(self):
         """
         successCond: bool(*foo)(Mat& screen), with return of if detected
@@ -540,7 +543,11 @@ class freshAMap(StoppableThread):
                 ret = False
                 loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
-                for n, d in mapDetector.items():
+
+                sortedMapDetectorKeys = list(mapDetector.keys())
+                sortedMapDetectorKeys.sort()
+                for n in sortedMapDetectorKeys:
+                    d = mapDetector.get(n)
                     # done this by hand to get 2 times faster
                     if d.detect(loadingscreen, loadingscreenProced):
                         GSLogger().logger.debug(f"{n}")
