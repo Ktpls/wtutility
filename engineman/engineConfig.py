@@ -225,3 +225,52 @@ class Brigand(EngineConfig):
         gauges.radiator.set(1.0)
         gauges.oilRadiator.set(1.0)
 
+
+@HostedEngineConfig(planeName=["hurricane_mk1_late_ep"])
+class HurricaneMk1(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+
+@HostedEngineConfig(planeName=["hurricane_mk1b"])
+class HurricaneMk1B(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.8)
+        gauges.radiator.set(1.0)
+
+
+@HostedEngineConfig(planeName=["typhoon_mk1a"])
+class TyphoonMk1A(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [3700, 2],
+            ],
+        )
+
+
+@HostedEngineConfig(planeName=["mb_5"])
+class MB5(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [2700, 2],
+            ],
+        )
+
+
+@HostedEngineConfig(planeName=["spitfire_mk1"])
+class SpitfireMk1(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.75)
+        gauges.radiator.set(1.0)

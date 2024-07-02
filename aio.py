@@ -4,7 +4,7 @@ import shared.globalsys as globalsys
 
 
 def main():
-    app = BulletinApp(fps=aiofps, config=HotKeyConfig, hudFps=1)
+    app = BulletinApp(fps=aiofps, config=HotKeyConfig, hudFps=10)
     modules: list[globalsys.WtUtilityModule] = list()
 
     # wtdistmeas

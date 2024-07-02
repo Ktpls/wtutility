@@ -3,9 +3,10 @@ import afm.autofreshmap_implementation as afmi
 
 afmi.loadAssetsNeeded4FreshAMap()
 
-# 0.005804599961265922
 def TestOnePicWithAllMapDetectors():
-    loadingscreen = cv.imread(r"C:\Users\Kita\Desktop\LFYVAC8FJ6.png")
+    loadingscreen = cv.imread(
+        r"C:\prog\wtutility\asset\collection\afm\map\5N5A9YQ6ES.png"
+    )
     # mapImg = afmi.cutmap(loadingscreen)
     mapImg = loadingscreen
     mapImg = mapImg.astype(np.float32) / 255

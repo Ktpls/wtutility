@@ -1,7 +1,7 @@
 whitelistedmap = [
     r"air\[Operation]RockyCanyon",
     r"air\[Operation]Afghanistan",
-    r"air\[Operation]GolanHeights(AirSpawns)",
+    #r"air\[Operation]GolanHeights(AirSpawns)",
     r"air\[Operation]Vietnam",
     r"air\[Operation]Spain",
 ]
