@@ -1,5 +1,5 @@
 from . import autofreshmap_configmap_arb73 as autofreshmap_configmap
-from .autofreshmap_config_lenxiaoxin import *
+from .autofreshmap_config_dell import *
 from shared import const as sharedconst
 import os
 

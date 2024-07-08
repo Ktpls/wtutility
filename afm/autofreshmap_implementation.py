@@ -25,6 +25,21 @@ class StateSign(enum.Enum):
     WarthunderMark = "WarthunderMark"
 
 
+if resolution == "m1920x1080r1920x1080":
+    # res1920x1080,uiscale75%
+    standardMapSection = [286, 216, 934, 864]
+    RenderResolutionZoomRate = 1.0
+elif resolution == "m1920x1080r1366x768":
+    # 1366x768,75%
+    standardMapSection = [294, 221]  # unupdated to section
+    RenderResolutionZoomRate = 1.4  # 1920/1366
+elif resolution == "m1920x1080r1280x720":
+    # 1280x720,75%
+    standardMapSection = [292, 218, 934, 861]
+    RenderResolutionZoomRate = 1.5  # 1920/1280
+else:
+    raise NotImplementedError("unknown resolution")
+
 stateDetectorInfo = {
     StateSign.hanger: {
         "path": signName2Path("hanger"),
@@ -37,23 +52,11 @@ stateDetectorInfo = {
     },
     StateSign.OK: {"path": signName2Path("OK"), "thresh": 0.195},
     StateSign.Statistics: {"path": signName2Path("Statistics")},
-    StateSign.WarthunderMark: {"path": signName2Path("WarthunderMark")},
+    StateSign.WarthunderMark: {
+        "path": signName2Path("WarthunderMark"),
+        "zoomRate": RenderResolutionZoomRate,
+    },
 }
-
-if resolution == "m1920x1080r1920x1080":
-    # res1920x1080,uiscale75%
-    standardMapSection = [286, 216, 934, 864]
-    pointtemplatezoomrate = 1.0
-elif resolution == "m1920x1080r1366x768":
-    # 1366x768,75%
-    standardMapSection = [294, 221]  # unupdated to section
-    pointtemplatezoomrate = 1.4  # 1920/1366
-elif resolution == "m1920x1080r1280x720":
-    # 1280x720,75%
-    standardMapSection = [292, 218, 934, 861]
-    pointtemplatezoomrate = 1.5  # 1920/1280
-else:
-    raise NotImplementedError("unknown resolution")
 
 
 def assetpath2realpath(ap):
@@ -127,11 +130,15 @@ class MapImgComparator:
         errAbs = np.sqrt(np.max(np.square(self.m - mscr), axis=(2,)))
 
         if useNonLightnessedErrorTolerence:
+
             def toNonLighted(m):
                 return m / (np.mean(np.max(m, axis=2)) + EPS)
-            mscrNonLighted =toNonLighted(mscr)
+
+            mscrNonLighted = toNonLighted(mscr)
             selfMNonLighted = toNonLighted(self.m)
-            errNonLighted = np.sqrt(np.max(np.square(selfMNonLighted - mscrNonLighted), axis=(2,)))
+            errNonLighted = np.sqrt(
+                np.max(np.square(selfMNonLighted - mscrNonLighted), axis=(2,))
+            )
             err = (
                 1 - NonLightnessedErrorRatio
             ) * errAbs + NonLightnessedErrorRatio * errNonLighted
@@ -163,11 +170,13 @@ def threshedmatchtemplate(src, temp, mask, simu):
 
 
 class UnlocatedFullScreenImgMatcher:
-    def __init__(self, path, thresh=None, mask=None):
+    def __init__(self, path, thresh=None, mask=None, zoomRate=None):
         path = assetpath2realpath(path)
         m = cv.imread(path)
         if m.size == 0:
             raise Exception("loading matcher failed in {}".format(path))
+        if zoomRate is not None:
+            m = cv.resize(m, None, fx=zoomRate, fy=zoomRate)
         self.m = m
         self.thresh = thresh  # optional thresh, for dynamic specified, if needed
 
@@ -202,8 +211,8 @@ class detector:
 
 
 class signdetector(UnlocatedFullScreenImgMatcher):
-    def __init__(self, path, thresh=0.27, mask=None):
-        super().__init__(path, thresh, mask)
+    def __init__(self, path, thresh=0.27, mask=None, zoomRate=None):
+        super().__init__(path, thresh, mask, zoomRate)
 
 
 def segmentIconRed(m):
@@ -256,12 +265,13 @@ def cutmap(m):
 
 def zoompointimg(m):
     mattr = np.array(
-        [[pointtemplatezoomrate, 0, 0], [0, pointtemplatezoomrate, 0]], dtype=np.float32
+        [[RenderResolutionZoomRate, 0, 0], [0, RenderResolutionZoomRate, 0]],
+        dtype=np.float32,
     )
     return cv.warpAffine(
         m,
         mattr,
-        np.round(np.flip(m.shape[:2]) * pointtemplatezoomrate).astype(np.int32),
+        np.round(np.flip(m.shape[:2]) * RenderResolutionZoomRate).astype(np.int32),
     )
 
 
@@ -494,6 +504,8 @@ class freshAMap(StoppableThread):
                     GSLogger().logger.debug(
                         f"only WarthunderMark found, persisted {embnsmPersistTimer.time()}"
                     )
+                else:
+                    embnsmPersistTimer.stop().clear()
                 if any(
                     [
                         stateDetector[d].detect(scr)

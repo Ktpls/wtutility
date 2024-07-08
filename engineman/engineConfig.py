@@ -274,3 +274,18 @@ class SpitfireMk1(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.75)
         gauges.radiator.set(1.0)
+
+
+@HostedEngineConfig(planeName=["spitfire_f24"])
+class SpitfireMk24(EngineConfig):
+    def check(self, gauges: Gauges):
+        gauges.propPitch.set(0.95)
+        gauges.radiator.set(1.0)
+        MappingAxis(
+            gauges.altitude,
+            gauges.supercharger,
+            [
+                [None, 1],
+                [3750, 2],
+            ],
+        )
