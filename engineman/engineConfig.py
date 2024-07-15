@@ -63,7 +63,7 @@ class I29(EngineConfig):
         gauges.radiator.set(0.60)
 
 
-@HostedEngineConfig(planeName=["p-63a-5_ussr","p-63a-10"])
+@HostedEngineConfig(planeName=["p-63a-5_ussr", "p-63a-10"])
 class P63A5(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.radiator.set(0.4)
@@ -147,7 +147,7 @@ class M82Fn(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-@HostedEngineConfig(planeName=["p-51d-20-na_j26","p-51c-10-nt","p-51c-10_france"])
+@HostedEngineConfig(planeName=["p-51d-20-na_j26", "p-51c-10-nt", "p-51c-10_france"])
 class P51C(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
@@ -206,8 +206,7 @@ class I16ShvetsovM25(EngineConfig):
 
 
 @HostedEngineConfig(planeName=["i-16_type27"])
-class I16ShvetsovM62(I153):...
-
+class I16ShvetsovM62(I153): ...
 
 
 @HostedEngineConfig(planeName=["il_2_37_1943"])
@@ -231,6 +230,7 @@ class HurricaneMk1(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(0.95)
         gauges.radiator.set(1.0)
+
 
 @HostedEngineConfig(planeName=["hurricane_mk1b"])
 class HurricaneMk1B(EngineConfig):
@@ -277,15 +277,10 @@ class SpitfireMk1(EngineConfig):
 
 
 @HostedEngineConfig(planeName=["spitfire_f24"])
-class SpitfireMk24(EngineConfig):
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(1.0)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [3750, 2],
-            ],
-        )
+class SpitfireMk24(SimpleEngineConfig):
+    PP = 0.95
+    RAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [3750, 2],
+    ]

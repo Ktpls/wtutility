@@ -36,6 +36,34 @@ class EngineConfig:
     def check(self, gauges: Gauges): ...
 
 
+class SimpleEngineConfig(EngineConfig):
+    PP = None
+    RAD = None
+    ORAD = None
+    ALTSC = None
+    SET_TO_MAX_ANYWAY = property(lambda self: "max")
+
+    def check(self, gauges: Gauges):
+        if self.PP is not None:
+            gauges.propPitch.set(self.PP)
+        if self.RAD is not None:
+            gauges.radiator.set(self.RAD)
+        if self.ORAD is not None:
+            if self.ORAD == self.SET_TO_MAX_ANYWAY:
+                gauges.oilRadiator.setToMaxAnyway()
+            else:
+                gauges.oilRadiator.set(self.ORAD)
+        if self.ALTSC is not None:
+            MappingAxis(
+                gauges.altitude,
+                gauges.supercharger,
+                [
+                    [None, 1],
+                    [3750, 2],
+                ],
+            )
+
+
 @dataclasses.dataclass
 class EngineConfigBean:
     clazz: typing.Callable
