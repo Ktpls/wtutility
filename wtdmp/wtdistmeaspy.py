@@ -14,7 +14,7 @@ class mWtdmp(WtUtilityModule):
 
         app = self.app
 
-        @app.Hotkey("PlottingScaleLock", app.config.HotKey_PlottingScaleLock)
+        @app.Hotkey("PlottingScaleLock", self.keyConfig.HotKey_PlottingScaleLock)
         def SwitchPlottingScaleLock():
             wtdmp.psLocked = not wtdmp.psLocked
             if wtdmp.psLocked:
@@ -24,7 +24,7 @@ class mWtdmp(WtUtilityModule):
             else:
                 app.bulletin.putup("plotting scale unlocked")
 
-        @app.Hotkey("DistMeas&Cali", app.config.HotKey_DistMeasCali)
+        @app.Hotkey("DistMeas&Cali", self.keyConfig.HotKey_DistMeasCali)
         @app.Async()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
@@ -34,7 +34,7 @@ class mWtdmp(WtUtilityModule):
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
 
-        @app.Hotkey("StartCali", app.config.HotKey_StartCali)
+        @app.Hotkey("StartCali", self.keyConfig.HotKey_StartCali)
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
@@ -49,7 +49,7 @@ class mWtdmp(WtUtilityModule):
             wtdmp.caliOperator.stop()
             app.bulletin.putup(f"cali stopped")
 
-        @app.Hotkey("SetPlottingScale", app.config.HotKey_SetPlottingScale)
+        @app.Hotkey("SetPlottingScale", self.keyConfig.HotKey_SetPlottingScale)
         def SetPlottingScale():
             app.bulletin.putup("input plotting scale")
 
@@ -79,7 +79,7 @@ class mWtdmp(WtUtilityModule):
                 [HotkeyManager.InputSession.InputTypeEnabled.NUMBER],
             )
 
-        @app.Hotkey("FreshPlottingScale", app.config.HotKey_FreshPlottingScale)
+        @app.Hotkey("FreshPlottingScale", self.keyConfig.HotKey_FreshPlottingScale)
         @app.Async()
         def freshPlottingScaleGo(self: StoppableSomewhat):
             nonlocal wtdmp

@@ -81,7 +81,7 @@ smalls = [
     r"air\[Operation]Sicily",
     r"air\[Operation]Sinai",
     r"air\[Operation]Smolensk1941",
-    r"air\[Operation]Smolensk1943",
+    r"air\[Operation]Smolensk1943", #G
     r"air\[Operation]SoutheasternCity",
     r"air\[Operation]Spain",
     r"air\[Operation]TheLastBattleOfKhalkhynGol(LightVehicles)",

@@ -4,7 +4,7 @@ import shared.globalsys as globalsys
 
 
 def main():
-    app = BulletinApp(fps=aiofps, config=HotKeyConfig, hudFps=10)
+    app = BulletinApp(fps=aiofps, hudFps=10)
     modules: list[globalsys.WtUtilityModule] = list()
 
     # wtdistmeas
@@ -12,38 +12,38 @@ def main():
         print("wtdistmeaspy activated")
         from wtdmp.wtdistmeaspy import mWtdmp
 
-        modules.append(mWtdmp(app))
+        modules.append(mWtdmp(app, AioHotKeyConfig))
 
     # telescope
     if usingtelescope:
         print("telescope activated")
         from telescope.telescope import mTelescope
 
-        modules.append(mTelescope(app))
+        modules.append(mTelescope(app, AioHotKeyConfig))
 
     # key shortcuts
     if usingkeyshortcut:
         print("keyshortcut activated")
         from keyshortcut.keyshortcut import mKeyshortcut
 
-        modules.append(mKeyshortcut(app))
+        modules.append(mKeyshortcut(app, AioHotKeyConfig))
 
     if usingglock:
         print("glock activated")
         from glock.glock import mGlock
 
-        modules.append(mGlock(app))
+        modules.append(mGlock(app, AioHotKeyConfig))
 
     if usingengineman:
         print("engineman activated")
         from engineman.engineman import mEngineman
 
-        modules.append(mEngineman(app))
+        modules.append(mEngineman(app, AioHotKeyConfig))
 
     futures = [app.threadpool.submit(m.load) for m in modules]
     [f.result() for f in futures]
 
-    @app.Hotkey("Reboot", app.config.HotKey_Reboot)
+    @app.Hotkey("Reboot", AioHotKeyConfig.HotKey_Reboot)
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)

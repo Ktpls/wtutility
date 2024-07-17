@@ -27,7 +27,7 @@ class mTelescope(WtUtilityModule):
                 return
             regionTele.content = tele.get()
 
-        app.Hotkey("SwitchTelescope", app.config.HotKey_SwitchTelescope)(
+        app.Hotkey("SwitchTelescope", self.keyConfig.HotKey_SwitchTelescope)(
             lambda: teleSwitch.switch()
         )
 
@@ -46,7 +46,7 @@ class mTelescope(WtUtilityModule):
                 return
             regionMti.content = mtiIns.getResult()
 
-        app.Hotkey("SwitchTelescopeMti", app.config.HotKey_SwitchTelescopeMti)(
+        app.Hotkey("SwitchTelescopeMti", self.keyConfig.HotKey_SwitchTelescopeMti)(
             lambda: mtiSwitch.switch()
         )
 

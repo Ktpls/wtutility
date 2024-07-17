@@ -14,7 +14,7 @@ class mGlock(WtUtilityModule):
 
         self.gl = gl = glockimpl.GLock()
 
-        @app.Hotkey("Glock", app.config.HotKey_Glock)
+        @app.Hotkey("Glock", self.keyConfig.HotKey_Glock)
         def glSwitchBusiness():
             if gl.isRunning():
                 app.bulletin.putup(BulletinBoard.Poster("glock stopping"))

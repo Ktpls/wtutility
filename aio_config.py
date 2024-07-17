@@ -1,5 +1,6 @@
 import enum
 import utilitypack.util_winkey as winkey
+from shared.globalsys import HotKeyConfig
 
 
 class GameMode(enum.Enum):
@@ -32,7 +33,7 @@ throwErrorInHotkey = False
 aiofps = 10
 
 
-class HotKeyConfig:
+class AioHotKeyConfig(HotKeyConfig):
     HotKey_PlottingScaleLock = [ord("L"), winkey.win32conComp.VK_OEM_3]
     HotKey_DistMeasCali = winkey.win32conComp.VK_OEM_3
     HotKey_StartCali = [
