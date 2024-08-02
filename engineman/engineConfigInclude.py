@@ -36,12 +36,12 @@ class EngineConfig:
     def check(self, gauges: Gauges): ...
 
 
-class SimpleEngineConfig(EngineConfig):
+class EasyEngineConfig(EngineConfig):
     PP = None
     RAD = None
     ORAD = None
     ALTSC = None
-    SET_TO_MAX_ANYWAY = property(lambda self: "max")
+    SET_TO_MAX_ANYWAY = "max"
 
     def check(self, gauges: Gauges):
         if self.PP is not None:
@@ -49,7 +49,7 @@ class SimpleEngineConfig(EngineConfig):
         if self.RAD is not None:
             gauges.radiator.set(self.RAD)
         if self.ORAD is not None:
-            if self.ORAD == self.SET_TO_MAX_ANYWAY:
+            if self.ORAD == EasyEngineConfig.SET_TO_MAX_ANYWAY:
                 gauges.oilRadiator.setToMaxAnyway()
             else:
                 gauges.oilRadiator.set(self.ORAD)

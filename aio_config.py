@@ -20,7 +20,7 @@ usingwtdistmeaspy = getByMode(
     {GameMode.arb: False, GameMode.garb: False, GameMode.grb: True}
 )
 usingtelescope = getByMode(
-    {GameMode.arb: True, GameMode.garb: True, GameMode.grb: True}
+    {GameMode.arb: False, GameMode.garb: True, GameMode.grb: True}
 )
 usingkeyshortcut = True
 usingeagleeye = False

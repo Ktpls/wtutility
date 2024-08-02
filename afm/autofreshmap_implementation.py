@@ -302,8 +302,7 @@ class MapDetectorImpled(detector, MapDetector):
         else:
             self.mtc = []
 
-        self.foo = para.foo
-
+        self.foo = compile(para.foo, "", "exec")
     def detect(self, mscr, mscrpreproced):
 
         def detectMapShape(mtcid=0, thresh=None):

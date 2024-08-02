@@ -150,7 +150,7 @@ class M82Fn(EngineConfig):
 @HostedEngineConfig(planeName=["p-51d-20-na_j26", "p-51c-10-nt", "p-51c-10_france"])
 class P51C(EngineConfig):
     def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
+        gauges.propPitch.set(1.0)
         gauges.radiator.set(1.0)
         gauges.oilRadiator.setToMaxAnyway()
 
@@ -277,10 +277,35 @@ class SpitfireMk1(EngineConfig):
 
 
 @HostedEngineConfig(planeName=["spitfire_f24"])
-class SpitfireMk24(SimpleEngineConfig):
+class SpitfireMk24(EasyEngineConfig):
     PP = 0.95
     RAD = 1.0
     ALTSC = [
         [None, 1],
         [3750, 2],
     ]
+
+
+
+@HostedEngineConfig(planeName=["vg_33"])
+class Vg33(EasyEngineConfig):
+    PP = 0.95
+    RAD = 1.0
+    ORAD=EasyEngineConfig.SET_TO_MAX_ANYWAY
+
+
+
+@HostedEngineConfig(planeName=["d_510"])
+class D510(EasyEngineConfig):
+    RAD = 1.0
+    
+    
+@HostedEngineConfig(planeName=["ki_44_2_hei_china"])
+class Ki44(EasyEngineConfig):
+    PP = 0.95
+    ALTSC = [
+        [None, 1],
+        [2000, 2],
+    ]
+    
+    
