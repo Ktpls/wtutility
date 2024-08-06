@@ -2,10 +2,10 @@ from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableSomewhat
 from utilitypack.utility import *
 from utilitypack.util_winkey import *
-from .autofreshmap_config import *
-from .autofreshmap_configmap_importref import *
 from shared.globalsys import *
 import matplotlib.pyplot as plt
+from .autofreshmap_configmap_importref import *
+from .autofreshmap_config import *
 
 MapSize = [648, 648]
 

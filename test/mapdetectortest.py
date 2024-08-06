@@ -5,11 +5,10 @@ afmi.loadAssetsNeeded4FreshAMap()
 
 
 def TestOnePicWithAllMapDetectors():
-    loadingscreen = cv.imread(
-        r"C:\prog\wtutility\asset\collection\afm\map\5N5A9YQ6ES.png"
+    mapImg = cv.imread(
+        r"C:\Users\KITA\Pictures\Screenshots\Screenshot 2024-08-06 234611.png"
     )
-    # mapImg = afmi.cutmap(loadingscreen)
-    mapImg = loadingscreen
+    mapImg = afmi.cutmap(mapImg)
     mapImg = mapImg.astype(np.float32) / 255
     mapImgProced = afmi.MapImgComparator.imagepreprocess(mapImg)
     matched = False
@@ -43,4 +42,4 @@ def TestOnePicWithStateDetectors():
     print(f"{matched=}")
 
 
-TestOnePicWithStateDetectors()
+TestOnePicWithAllMapDetectors()

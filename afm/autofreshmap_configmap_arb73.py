@@ -23,7 +23,7 @@ whitelistedmap = [
     r"air\[MilitaryExercise]PreparationForLandingOnHokkaido",
     r"air\[Operation]BattleAtMalta",
     r"air\[Operation]BattleForBastogne",
-    r"air\[Operation]BattleForTheRhine",
+    r"airHq\BattleForTheRhine",
     r"air\[Operation]BattleOfTunisia",
     r"air\[Operation]Berlin",
     r"air\[Operation]BourbonIsland",
@@ -54,5 +54,6 @@ whitelistedmap = [
     r"air\[Operation]Smolensk1941",
     r"air\[Operation]Smolensk1943",
     r"air\[Operation]Zhengzhou",
+    r"airHq\OperationUranus",
 ]
 specialmapdetectors = {}

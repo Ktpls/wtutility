@@ -286,20 +286,18 @@ class SpitfireMk24(EasyEngineConfig):
     ]
 
 
-
 @HostedEngineConfig(planeName=["vg_33"])
 class Vg33(EasyEngineConfig):
     PP = 0.95
     RAD = 1.0
-    ORAD=EasyEngineConfig.SET_TO_MAX_ANYWAY
-
+    ORAD = EasyEngineConfig.SET_TO_MAX_ANYWAY
 
 
 @HostedEngineConfig(planeName=["d_510"])
 class D510(EasyEngineConfig):
     RAD = 1.0
-    
-    
+
+
 @HostedEngineConfig(planeName=["ki_44_2_hei_china"])
 class Ki44(EasyEngineConfig):
     PP = 0.95
@@ -307,5 +305,9 @@ class Ki44(EasyEngineConfig):
         [None, 1],
         [2000, 2],
     ]
-    
-    
+
+
+@HostedEngineConfig(planeName=["j9_early"])
+class J9(EasyEngineConfig):
+    PP = 0.95
+    RAD = 0.25
