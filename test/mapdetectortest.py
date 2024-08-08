@@ -1,7 +1,8 @@
 from utilref import *
 import afm.autofreshmap_implementation as afmi
 
-afmi.loadAssetsNeeded4FreshAMap()
+aa = afmi.AfmAsset(afmi.autofreshmap_configmap)
+stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
 
 
 def TestOnePicWithAllMapDetectors():
@@ -14,7 +15,7 @@ def TestOnePicWithAllMapDetectors():
     matched = False
     ps = perf_statistic().start()
     # name, detector
-    for n, d in afmi.mapDetector.items():
+    for n, d in mapDetector.items():
         if d.detect(mapImg, mapImgProced):
             print(f"{n}")
             matched = True
@@ -32,7 +33,7 @@ def TestOnePicWithStateDetectors():
     # mapImg = mapImg.astype(np.float32) / 255
     ps = perf_statistic().start()
     # name, detector
-    for n, d in afmi.stateDetector.items():
+    for n, d in stateDetector.items():
         if d.detect(mapImg):
             print(f"{n}")
             matched = True

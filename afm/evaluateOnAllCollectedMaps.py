@@ -1,7 +1,9 @@
 from utilref import *
 import afm.autofreshmap_implementation as afmi
 
-afmi.loadAssetsNeeded4FreshAMap()
+
+aa = afmi.AfmAsset(afmi.autofreshmap_configmap)
+stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
 
 
 def TryClassifyOneMap(filepath):
@@ -10,7 +12,7 @@ def TryClassifyOneMap(filepath):
     matched = False
     # name,detector
     ps = perf_statistic().start()
-    for n, d in afmi.mapDetector.items():
+    for n, d in mapDetector.items():
         if d.detect(mapImg, mapImgProced):
             print(f"{n}")
             matched = True

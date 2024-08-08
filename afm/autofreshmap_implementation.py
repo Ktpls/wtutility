@@ -29,10 +29,6 @@ if resolution == "m1920x1080r1920x1080":
     # res1920x1080,uiscale75%
     standardMapSection = [286, 216, 934, 864]
     RenderResolutionZoomRate = 1.0
-elif resolution == "m1920x1080r1366x768":
-    # 1366x768,75%
-    standardMapSection = [294, 221]  # unupdated to section
-    RenderResolutionZoomRate = 1.4  # 1920/1366
 elif resolution == "m1920x1080r1280x720":
     # 1280x720,75%
     standardMapSection = [292, 218, 934, 861]
@@ -303,6 +299,7 @@ class MapDetectorImpled(detector, MapDetector):
             self.mtc = []
 
         self.foo = compile(para.foo, "", "exec")
+
     def detect(self, mscr, mscrpreproced):
 
         def detectMapShape(mtcid=0, thresh=None):
@@ -372,51 +369,44 @@ class MapDetectorImpled(detector, MapDetector):
             raise e
 
 
-def maplist2detectorlist():
-    try:
-        whitelistedmap = autofreshmap_configmap.whitelistedmap
-    except AttributeError:
-        # not defined
-        whitelistedmap = list()
-    try:
-        blacklistedmap = autofreshmap_configmap.blacklistedmap
-    except AttributeError:
-        blacklistedmap = list()
-    try:
-        specialmapdetectors = autofreshmap_configmap.specialmapdetectors
-    except AttributeError:
-        specialmapdetectors = dict()
+class AfmAsset:
+    def __init__(self, configModuleLike):
+        try:
+            whitelistedmap = configModuleLike.whitelistedmap
+        except AttributeError:
+            # not defined
+            whitelistedmap = list()
+        try:
+            blacklistedmap = configModuleLike.blacklistedmap
+        except AttributeError:
+            blacklistedmap = list()
+        try:
+            specialmapdetectors = configModuleLike.specialmapdetectors
+        except AttributeError:
+            specialmapdetectors = dict()
 
-    whitelistedmap = Deduplicate(whitelistedmap)
-    detectors = {
-        **{
-            m: MapDetectorImpled(
-                specialmapdetectors[m]
-                if m in specialmapdetectors
-                else MapDetector(map=m, foo="ret(detectMapShape())")
-            )
-            for m in whitelistedmap
+        whitelistedmap = Deduplicate(whitelistedmap)
+        detectors = {
+            **{
+                m: MapDetectorImpled(
+                    specialmapdetectors[m]
+                    if m in specialmapdetectors
+                    else MapDetector(map=m, foo="ret(detectMapShape())")
+                )
+                for m in whitelistedmap
+            }
         }
-    }
-    if len(blacklistedmap) != 0:
-        detectAllMaps = " and ".join(
-            [f"(not detectMapShape(mtcid={i}))" for i in range(len(blacklistedmap))]
-        )
-        detectors["blacklisted"] = MapDetectorImpled(
-            MapDetector(map=blacklistedmap, foo=f"ret({detectAllMaps})")
-        )
-    return detectors
-
-
-mapDetector = None
-stateDetector = None
-
-
-def loadAssetsNeeded4FreshAMap():
-    global mapDetector, stateDetector
-    mapDetector = maplist2detectorlist()
-    stateDetector = {k: signdetector(**v) for k, v in stateDetectorInfo.items()}
-    return mapDetector, stateDetector
+        if len(blacklistedmap) != 0:
+            detectAllMaps = " and ".join(
+                [f"(not detectMapShape(mtcid={i}))" for i in range(len(blacklistedmap))]
+            )
+            detectors["blacklisted"] = MapDetectorImpled(
+                MapDetector(map=blacklistedmap, foo=f"ret({detectAllMaps})")
+            )
+        self.mapDetector = detectors
+        self.stateDetector = {
+            k: signdetector(**v) for k, v in stateDetectorInfo.items()
+        }
 
 
 def leaveButton():
@@ -454,7 +444,8 @@ class freshAMap(StoppableThread):
                 time.sleep(sleeptime)
 
         # init
-        loadAssetsNeeded4FreshAMap()
+        aa = AfmAsset(autofreshmap_configmap)
+        stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
         assert stateDetector is not None and mapDetector is not None
         ss = screenshoter(0)
         wifi = WifiRefresher()
@@ -748,7 +739,8 @@ def FreshBr(BannedVehicleInfoSourceCode, WantedVehicleInfoSourceCode):
         moveto((0, 0))
         mouse.click(0)
 
-    loadAssetsNeeded4FreshAMap()
+    aa = AfmAsset(autofreshmap_configmap)
+    stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
 
     ss = screenshoter(0)
     asg = ApproximateStandardizationGuide(

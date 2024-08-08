@@ -4,7 +4,8 @@ import os
 print(os.getcwd())
 #open dbglog=True in afm_config.py!!!
 from afm.autofreshmap_implementation import *
-mapDetector, stateDetector=loadAssetsNeeded4FreshAMap()
+aa = AfmAsset(autofreshmap_configmap)
+stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
 sence=[r"C:\file\code\wtutility\asset\autofreshmap\log\screen\2023-11-05-15-49-02.png"]
 sence={ss:cv.imread(ss) for ss in sence}
 
