@@ -361,7 +361,7 @@ class MapDetectorImpled(detector, MapDetector):
 
         try:
             exec(self.foo)
-            if ret is None:
+            if retVal is None:
                 raise ValueError("nothing returned")
             return retVal
         except Exception as e:
