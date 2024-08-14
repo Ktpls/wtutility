@@ -3,7 +3,6 @@ from .utilref import *
 
 """
 in game control setting
-
 radiator, oilRadiator, propPitch
     Relative control step = 0%
     Sensitivity = 50%
@@ -11,111 +10,70 @@ radiator, oilRadiator, propPitch
 
 
 @HostedEngineConfig
-class G55S(EngineConfig):
+class G55S(EasyEngineConfig):
     planeName = "g_55s"
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(0.80)
-        gauges.oilRadiator.setToMaxAnyway()
+    PP = 0.95
+    RAD = 0.80
+    OILRAD = EasyEngineConfig.ORAD_MAX
 
 
 @HostedEngineConfig
-class Yak3(EngineConfig):
+class Yak3(EasyEngineConfig):
     planeName = ["yak-3_france", "yak-9t", "yak-3_eremin", "yak-1b"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(1.00)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [2350, 2],
-            ],
-        )
-        gauges.radiator.set(0.25)
+    PP = 1.00
+    RAD = 0.25
+    ALTSC = [[None, 1], [2350, 2]]
 
 
 @HostedEngineConfig
-class Raiden(EngineConfig):
+class Raiden(EasyEngineConfig):
     planeName = "j2m5_30mm"
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [2400, 2],
-            ],
-        )
-        gauges.radiator.set(0.35)
+    PP = 0.95
+    RAD = 0.35
+    ALTSC = [[None, 1], [2400, 2]]
 
 
 @HostedEngineConfig
-class I29(EngineConfig):
+class I29(EasyEngineConfig):
     planeName = "i_29"
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.97)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [3500, 2],
-            ],
-        )
-        gauges.radiator.set(0.60)
+    PP = 0.97
+    RAD = 0.60
+    ALTSC = [[None, 1], [3500, 2]]
 
 
 @HostedEngineConfig
-class P63A5(EngineConfig):
+class P63A5(EasyEngineConfig):
     planeName = ["p-63a-5_ussr", "p-63a-10"]
-
-    def check(self, gauges: Gauges):
-        gauges.radiator.set(0.4)
+    RAD = 0.4
 
 
 @HostedEngineConfig
-class SaabJ21A(EngineConfig):
+class SaabJ21A(EasyEngineConfig):
     planeName = "saab_j21a_1"
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.75)
-        gauges.oilRadiator.set(1.0)
-        gauges.radiator.set(1.0)
+    PP = 0.75
+    RAD = 1.0
+    OILRAD = 1.0
 
 
 @HostedEngineConfig
-class Il8(EngineConfig):
+class Il8(EasyEngineConfig):
     planeName = "il_8_1944"
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(0.5)
+    PP = 0.95
+    RAD = 0.5
 
 
 @HostedEngineConfig
-class Be6(EngineConfig):
+class Be6(EasyEngineConfig):
     planeName = "be_6"
-
-    def check(self, gauges: Gauges):
-        MappingAxis(
-            gauges.altitude,
-            gauges.propPitch,
-            [
-                [None, 0.93],
-                [2000, 1.0],
-            ],
-        )
-        gauges.radiator.set(1.0)
+    ALTSC = [[None, 0.93], [2000, 1.0]]
+    RAD = 1.0
 
 
 @HostedEngineConfig
-class Itp(EngineConfig):
+class Itp(EasyEngineConfig):
     planeName = "itp_m1"
+    RAD = 1.0
+    OILRAD = 1.0
 
     class HeatingLevel(LambdaAxis):
         def __init__(self, gauges: Gauges):
@@ -127,95 +85,75 @@ class Itp(EngineConfig):
                 )
             )
 
-    def check(self, gauges: Gauges):
-        # MappingAxis(
-        # gauges.altitude,
-        # gauges.propPitch,
-        # [
-        # [None, 0.52],
-        # [4000, 0.60],
-        # [6000, 0.65],
-        # ],
-        # )
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.set(1.0)
+    # def check(self, gauges: Gauges):
+    #     MappingAxis(
+    #     gauges.altitude,
+    #     gauges.propPitch,
+    #     [
+    #     [None, 0.52],
+    #     [4000, 0.60],
+    #     [6000, 0.65],
+    #     ],
+    #     )
+    #     super().check()
 
 
 @HostedEngineConfig
-class P47D(EngineConfig):
+class P47D(EasyEngineConfig):
     planeName = "p-47d_ussr"
-
-    def check(self, gauges: Gauges):
-        gauges.radiator.set(0.45)
-        gauges.oilRadiator.set(0.45)
+    RAD = 0.45
+    OILRAD = 0.45
 
 
 @HostedEngineConfig
-class M82Fn(EngineConfig):
+class M82Fn(EasyEngineConfig):
     planeName = ["la-7b-20", "la-5fn", "i_185_m82"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [3000, 2],
-            ],
-        )
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.setToMaxAnyway()
+    PP = 0.95
+    RAD = 1.0
+    OILRAD = EasyEngineConfig.ORAD_MAX
+    ALTSC = [
+        [None, 1],
+        [3000, 2],
+    ]
 
 
 @HostedEngineConfig
-class P51C(EngineConfig):
+class P51C(EasyEngineConfig):
     planeName = ["p-51d-20-na_j26", "p-51c-10-nt", "p-51c-10_france"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(1.0)
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.setToMaxAnyway()
+    PP = 1.0
+    RAD = 1.0
+    OILRAD = EasyEngineConfig.ORAD_MAX
 
 
 @HostedEngineConfig
-class Hampden(EngineConfig):
+class Hampden(EasyEngineConfig):
     planeName = "hp52_hampden_tbmk1_ussr_utk1"
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [2400, 2],
-            ],
-        )
-        gauges.radiator.set(1.0)
+    PP = 0.95
+    RAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [2400, 2],
+    ]
 
 
 @HostedEngineConfig
-class TB3(EngineConfig):
+class TB3(EasyEngineConfig):
     planeName = "tb_3_m17_32"
-
-    def check(self, gauges: Gauges):
-        gauges.radiator.set(1.0)
+    RAD = 1.0
 
 
 @HostedEngineConfig
-class I153(EngineConfig):
+class I153(EasyEngineConfig):
     planeName = "i-153_m62_zhukovskiy"
+    RAD = 1.0
+    OILRAD = EasyEngineConfig.ORAD_MAX
+    ALTSC = [
+        [None, 1],
+        [1700, 2],
+    ]
 
     def check(self, gauges: Gauges):
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [1700, 2],
-            ],
-        )
+        super().check()
         MappingAxis(
             gauges.supercharger,
             gauges.propPitch,
@@ -224,16 +162,12 @@ class I153(EngineConfig):
                 [2, 0.9],
             ],
         )
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.setToMaxAnyway()
 
 
 @HostedEngineConfig
 class I16ShvetsovM25(EngineConfig):
     planeName = ["i-16_type10"]
-
-    def check(self, gauges: Gauges):
-        gauges.radiator.set(1.0)
+    RAD = 1.0
 
 
 @HostedEngineConfig
@@ -242,83 +176,62 @@ class I16ShvetsovM62(I153):
 
 
 @HostedEngineConfig
-class Il2(EngineConfig):
+class Il2(EasyEngineConfig):
     planeName = ["il_2_37_1943"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(1.0)
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.setToMaxAnyway()
+    PP = 1.0
+    RAD = 1.0
+    OILRAD = EasyEngineConfig.ORAD_MAX
 
 
 @HostedEngineConfig
-class Brigand(EngineConfig):
+class Brigand(EasyEngineConfig):
     planeName = ["brigand_b1"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(1.0)
-        gauges.radiator.set(1.0)
-        gauges.oilRadiator.set(1.0)
+    PP = 1.0
+    RAD = 1.0
+    OILRAD = 1.0
 
 
 @HostedEngineConfig
-class HurricaneMk1(EngineConfig):
+class HurricaneMk1(EasyEngineConfig):
     planeName = ["hurricane_mk1_late_ep"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(1.0)
+    PP = 0.95
+    RAD = 1.0
 
 
 @HostedEngineConfig
-class HurricaneMk1B(EngineConfig):
+class HurricaneMk1B(EasyEngineConfig):
     planeName = ["hurricane_mk1b"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.8)
-        gauges.radiator.set(1.0)
+    PP = 0.8
+    RAD = 1.0
 
 
 @HostedEngineConfig
-class TyphoonMk1A(EngineConfig):
+class TyphoonMk1A(EasyEngineConfig):
     planeName = ["typhoon_mk1a"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(1.0)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [3700, 2],
-            ],
-        )
+    PP = 0.95
+    RAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [3700, 2],
+    ]
 
 
 @HostedEngineConfig
-class MB5(EngineConfig):
+class MB5(EasyEngineConfig):
     planeName = ["mb_5"]
-
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.95)
-        gauges.radiator.set(1.0)
-        MappingAxis(
-            gauges.altitude,
-            gauges.supercharger,
-            [
-                [None, 1],
-                [2700, 2],
-            ],
-        )
+    PP = 0.95
+    RAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [2700, 2],
+    ]
 
 
 @HostedEngineConfig
-class SpitfireMk1(EngineConfig):
+class SpitfireMk1(EasyEngineConfig):
     planeName = ["spitfire_mk1"]
-    def check(self, gauges: Gauges):
-        gauges.propPitch.set(0.75)
-        gauges.radiator.set(1.0)
+    PP = 0.75
+    RAD = 1.0
 
 
 @HostedEngineConfig
