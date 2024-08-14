@@ -1,21 +1,23 @@
 from utilref import *
 import afm.autofreshmap_implementation as afmi
 
+
 class SingleMapConfigMimic:
-    def __init__(self, mapp):
+    def __init__(self, mapp: list[str]):
         self.whitelistedmap = mapp
-        
-mapconfig = afmi.autofreshmap_configmap
-# mapconfig = SingleMapConfigMimic("MaginotLine#2")
+
+
+# mapconfig = afmi.autofreshmap_configmap
+mapconfig = SingleMapConfigMimic(
+    [r"air\[Operation]ConsolidationOfPositionsOnSicily(LightVehicles)"]
+)
 aa = afmi.AfmAsset(mapconfig)
 stateDetector, mapDetector = aa.stateDetector, aa.mapDetector
 
 
 def TestOnePicWithAllMapDetectors():
-    mapImg = cv.imread(r"C:\Users\KITA\Pictures\Screenshots\Screenshot 2024-08-06 234611.png")
-    mapImg = afmi.cutmap(mapImg)
-    savemat(mapImg)
-    return
+    mapImg = cv.imread(r"C:\file\code\wtutility\output\Unknown_018.png")
+    # mapImg = afmi.cutmap(mapImg)
     mapImg = mapImg.astype(np.float32) / 255
     mapImgProced = afmi.MapImgComparator.imagepreprocess(mapImg)
     matched = False

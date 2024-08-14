@@ -18,7 +18,7 @@ class G55S(EngineConfig):
         gauges.oilRadiator.setToMaxAnyway()
 
 
-@HostedEngineConfig(planeName=["yak-3_france", "yak-9t", "yak-3_eremin"])
+@HostedEngineConfig(planeName=["yak-3_france", "yak-9t", "yak-3_eremin", "yak-1b"])
 class Yak3(EngineConfig):
     def check(self, gauges: Gauges):
         gauges.propPitch.set(1.00)
@@ -311,3 +311,17 @@ class Ki44(EasyEngineConfig):
 class J9(EasyEngineConfig):
     PP = 0.95
     RAD = 0.25
+
+
+@HostedEngineConfig(planeName=["bf-109e-3_japan"])
+class Bf109E(EasyEngineConfig):
+    RAD = 1.0
+    ORAD = EasyEngineConfig.SET_TO_MAX_ANYWAY
+
+
+
+@HostedEngineConfig(planeName=["a6m2_zero_usa"])
+class A6M(EasyEngineConfig):
+    RAD = 0.3
+    ORAD = 0.3
+    PP = 1.0

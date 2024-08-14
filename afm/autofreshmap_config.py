@@ -1,4 +1,4 @@
-from . import autofreshmap_configmap_arb73 as autofreshmap_configmap
+from . import autofreshmap_configmap_arbarh as autofreshmap_configmap
 from .autofreshmap_config_dell import *
 from shared import const as sharedconst
 import os
@@ -14,10 +14,10 @@ standardSpawnCenterError = 200
 standardPointSelectorError = 20
 
 standardMatchThreshold = 0.3
-standardMapMatchThreshold = 0.35
+standardMapMatchThreshold = 0.34
 
 zFuncPoint0 = 12 / 255
-zFuncPoint1 = 20 / 255
+zFuncPoint1 = 25 / 255
 
 setonwifirecoverthresh = 5
 
