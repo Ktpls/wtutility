@@ -32,6 +32,9 @@ class AxisUnsupported(Exception): ...
 
 
 class EngineConfig:
+    planeName: str | list[str]
+    engineConfigName: str
+    checkRate: float
 
     def check(self, gauges: Gauges): ...
 
@@ -41,7 +44,7 @@ class EasyEngineConfig(EngineConfig):
     RAD = None
     ORAD = None
     ALTSC = None
-    SET_TO_MAX_ANYWAY = "max"
+    ORAD_MAX = "oradmax"
 
     def check(self, gauges: Gauges):
         if self.PP is not None:
@@ -49,7 +52,7 @@ class EasyEngineConfig(EngineConfig):
         if self.RAD is not None:
             gauges.radiator.set(self.RAD)
         if self.ORAD is not None:
-            if self.ORAD == EasyEngineConfig.SET_TO_MAX_ANYWAY:
+            if self.ORAD == EasyEngineConfig.ORAD_MAX:
                 gauges.oilRadiator.setToMaxAnyway()
             else:
                 gauges.oilRadiator.set(self.ORAD)
@@ -57,26 +60,20 @@ class EasyEngineConfig(EngineConfig):
             MappingAxis(
                 gauges.altitude,
                 gauges.supercharger,
-                [
-                    [None, 1],
-                    [3750, 2],
-                ],
+                self.ALTSC,
             )
 
 
 @dataclasses.dataclass
 class EngineConfigBean:
     clazz: typing.Callable
-    planeName: str | list[str]
-    engineConfigName: str
-    checkRate: float
 
 
 class EngineConfigHost:
-    __configs__ = list()
+    __configs__: list[EngineConfig] = list()
 
     @staticmethod
-    def PutConfig(config: EngineConfigBean):
+    def PutConfig(config: EngineConfig):
         EngineConfigHost.__configs__.append(config)
 
     @staticmethod
@@ -84,19 +81,9 @@ class EngineConfigHost:
         return EngineConfigHost.__configs__
 
 
-def HostedEngineConfig(
-    planeName: str | list[str],
-    checkRate: float = 10,
-    engineConfigName: str = "",
-):
-    def toGetLogic(engineConfig: typing.Callable):
-        EngineConfigHost.PutConfig(
-            EngineConfigBean(engineConfig, planeName, engineConfigName, checkRate)
-        )
-        return engineConfig
-
-    return toGetLogic
-
+def HostedEngineConfig(engineConfig):
+    EngineConfigHost.PutConfig(engineConfig)
+    return engineConfig
 
 def MappingAxis(axSrc: Axis, axDest: Axis, mapping: list[tuple[float, float]]):
     """

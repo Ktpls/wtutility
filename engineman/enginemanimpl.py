@@ -499,12 +499,12 @@ class EngineMan:
     serviceClass: typing.Callable = None
     serviceInstance: EngineConfig = None
     lastCheckTime: float = None
-    services: dict[str, EngineConfigBean] = dict()
+    services: dict[str, EngineConfig] = dict()
 
     def __init__(self):
         self.gauges = getGauges()
         for i in EngineConfigHost.GetConfig():
-            service: EngineConfigBean = i
+            service: EngineConfig = i
             service.planeName = NormalizeIterableOrSingleArgToIterable(
                 service.planeName
             )
@@ -522,7 +522,7 @@ class EngineMan:
         if planeName not in self.services:
             return
         self.planeName = planeName
-        self.serviceClass = self.services[planeName].clazz
+        self.serviceClass = self.services[planeName]
         self.serviceInstance = self.serviceClass()
         self.serviceDoCheck()
 
@@ -556,7 +556,7 @@ class EngineMan:
     def setService(self, planeName):
         if self.planeName == planeName or (
             planeName in self.services
-            and self.serviceClass == self.services[planeName].clazz
+            and self.serviceClass == self.services[planeName]
         ):
             pass
         else:
