@@ -34,7 +34,7 @@ class AxisUnsupported(Exception): ...
 class EngineConfig:
     planeName: str | list[str]
     engineConfigName: str
-    checkRate: float
+    checkRate: float = 10
 
     def check(self, gauges: Gauges): ...
 

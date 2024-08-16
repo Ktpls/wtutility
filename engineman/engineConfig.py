@@ -289,3 +289,28 @@ class A6M(EasyEngineConfig):
     RAD = 0.3
     ORAD = 0.3
     PP = 1.0
+
+
+@HostedEngineConfig
+class A6M(EasyEngineConfig):
+    planeName = ["a6m2_zero_usa"]
+    RAD = 0.3
+    ORAD = 0.3
+    PP = 1.0
+@HostedEngineConfig
+class F4U1(EasyEngineConfig):
+    planeName = ["f4u-1a_japan"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX
+    PP = 0.95
+    ALTSC = [
+        [None, 1],
+        [500, 2],
+        [5000, 3],
+    ]
+
+@HostedEngineConfig
+class Bf109F4(EasyEngineConfig):
+    planeName = ["bf-109f-4"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX

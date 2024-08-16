@@ -46,7 +46,7 @@ class AioHotKeyConfig(HotKeyConfig):
         winkey.win32conComp.VK_MENU,
         winkey.win32conComp.VK_OEM_3,
     ]
-    HotKey_FreshPlottingScale = [ord("L"), ord("K"), winkey.win32conComp.VK_OEM_3]
+    HotKey_FreshPlottingScale = [winkey.win32conComp.VK_RSHIFT, ord("L"), winkey.win32conComp.VK_OEM_3]
     HotKey_SwitchTelescope = winkey.win32conComp.VK_F12
     HotKey_SwitchTelescopeMti = [
         winkey.win32conComp.VK_RCONTROL,
