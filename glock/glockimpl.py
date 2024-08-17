@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableThread
 from utilitypack.util_wt import *
 from utilitypack.util_winkey import *

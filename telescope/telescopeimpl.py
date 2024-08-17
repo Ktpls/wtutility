@@ -55,7 +55,7 @@ availtransformation["detail"] = transformation_detailenh
 
 class Telescope(StoppableThread):
 
-    def __init__(self, pool: ThreadPoolExecutor = None):
+    def __init__(self, pool: futures.ThreadPoolExecutor = None):
         super().__init__(pool=pool)
         self.buf = None
 
@@ -101,7 +101,7 @@ class Telescope(StoppableThread):
 
 class MTI(StoppableThread):
 
-    def __init__(self, pool: ThreadPoolExecutor = None):
+    def __init__(self, pool: futures.ThreadPoolExecutor = None):
         # uimask = cv.imread(r"asset\opdar\UIMASK.png", cv.IMREAD_GRAYSCALE)
         uimask = None
         filterInterpolate = interpolate.interp1d(

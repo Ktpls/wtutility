@@ -909,17 +909,17 @@ class wtdistmeaspy:
             return "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
 
         # try 8111
-        ret = Port8111.get(Port8111.QueryType.map_info)
+        ret = Port8111Cache().get(Port8111.QueryType.map_info)
         if ret is not None and ret.valid:
             return SetPs(ret.grid_steps[0])
 
         # try solve map
-        ret = SolveMap_BottomRightSmallMap(
-            cutBottomRightMap(screenshoter().shotbgr()),
-            dontGetPlottingScale=False,
-        )
-        if ret.plottingscale.state.smetype == SMException.SolveMapResultType.NO_ERR:
-            return SetPs(ret.plottingscale.result)
+        # ret = SolveMap_BottomRightSmallMap(
+        #     cutBottomRightMap(screenshoter().shotbgr()),
+        #     dontGetPlottingScale=False,
+        # )
+        # if ret.plottingscale.state.smetype == SMException.SolveMapResultType.NO_ERR:
+        #     return SetPs(ret.plottingscale.result)
 
         # bad
         return "bad fresh"

@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from utilitypack.util_solid import StoppableSomewhat
 from utilitypack.utility import *
 from utilitypack.util_winkey import *
@@ -416,7 +415,7 @@ def leaveButton():
 
 
 class freshAMap(StoppableThread):
-    def __init__(self, pool: ThreadPoolExecutor = None) -> None:
+    def __init__(self, pool: futures.ThreadPoolExecutor = None) -> None:
         super().__init__(
             strategy_error=StoppableSomewhat.StrategyError.print_error, pool=pool
         )

@@ -1,5 +1,4 @@
 from utilref import *
-from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
 
@@ -34,11 +33,11 @@ class StoppableThread2(StoppableSomewhat):
         self,
         strategy_runonrunning: "StoppableSomewhat.StrategyRunOnRunning" = None,
         strategy_error: "StoppableSomewhat.StrategyError" = None,
-        pool: ThreadPoolExecutor = None,
+        pool: futures.ThreadPoolExecutor = None,
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
         self.stopsignal = threading.Event()
-        self.pool: ThreadPoolExecutor = Coalesce(pool, ThreadPoolExecutor())
+        self.pool: futures.ThreadPoolExecutor = Coalesce(pool, futures.ThreadPoolExecutor())
         self.future = None
         self.state = StoppableThreadState.stopped
 
@@ -111,7 +110,7 @@ class StoppableThread2(StoppableSomewhat):
 
 def main():
     t = MyThread()
-    with ThreadPoolExecutor() as executor:
+    with futures.ThreadPoolExecutor() as executor:
         future = executor.submit(t.run)
         # Do some other work here
         time.sleep(5)

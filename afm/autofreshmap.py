@@ -9,7 +9,7 @@ import traceback
 
 @GSLogger.ExceptionLogged()
 def main():
-    pool = ThreadPoolExecutor()
+    pool = futures.ThreadPoolExecutor()
 
     afm = freshAMap(pool=pool)
 

@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from utilref import *
 from utilitypack.util_app import *
 from utilitypack.util_winkey import *
