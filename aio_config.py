@@ -9,7 +9,7 @@ class GameMode(enum.Enum):
     grb = 2
 
 
-gm = GameMode.grb
+gm = GameMode.arb
 
 
 def getByMode(d: dict):
@@ -22,7 +22,7 @@ usingwtdistmeaspy = getByMode(
 usingtelescope = getByMode(
     {GameMode.arb: False, GameMode.garb: True, GameMode.grb: True}
 )
-usingtelescope=False
+#usingtelescope=False
 usingkeyshortcut = True
 usingeagleeye = False
 usingglock = False
