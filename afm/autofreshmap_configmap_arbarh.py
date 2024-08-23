@@ -4,4 +4,7 @@ from .autofreshmap_configmap_importref import *
 blacklistedmap = [
     "air/[AlternateHistory]Afghanistan",
     "air/[AlternateHistory]Spain",
+    "air/[Operation]City",
+    "air/[Operation]Pyrenees",
+    "air/[Operation]SoutheasternCity",
 ]

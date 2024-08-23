@@ -22,8 +22,8 @@ city_and_plain_combined=[
     'BattleOfHurtgenForestConquest#1',
     'BattleOfHurtgenForestDomination#1',
     'Poland',
-    'Serversk-13',
-    'Tunisia',
+    # 'Serversk-13',
+    #'Tunisia',
     'EasternEurope',
 ]
 

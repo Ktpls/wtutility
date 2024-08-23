@@ -105,7 +105,7 @@ def benchMark():
     func = {**expparser.BasicFunctionLib}
     exps = ["1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20"]
     exps = [expparser.compile(e) for e in exps]
-    turnNum = 10_0000
+    turnNum = 100_0000
     pg = Progress(turnNum)
     ps = perf_statistic().start()
     for t in range(turnNum):
@@ -126,4 +126,4 @@ def playground():
     print(result.eval(var, func))
 
 
-unitTest()
+benchMark()

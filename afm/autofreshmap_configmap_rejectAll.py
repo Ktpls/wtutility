@@ -1,2 +1,0 @@
-whitelistedmap = []
-specialmapdetectors = {}

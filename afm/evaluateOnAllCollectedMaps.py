@@ -24,7 +24,7 @@ def TryClassifyOneMap(filepath):
     for n, d in mapDetector.items():
         if d.detect(mapImg, mapImgProced):
             return n
-    return None 
+    return None
 
 
 map2classifyRoot = r"asset\collection\afm\map"
@@ -34,15 +34,11 @@ maps = AllFileIn(map2classifyRoot)
 prog = Progress(len(maps))
 for i, x in enumerate(maps):
     clz = TryClassifyOneMap(x)
-    clzName = "Unknown" if clz is None else (clz.replace("\\", "_"))
-    if clzName not in fileClassIndex:
-        fileClassIndex[clzName] = 0
-    else:
-        fileClassIndex[clzName] += 1
-    index = fileClassIndex[clzName]
-    fileNewPath = os.path.join(classifyResultRoot, f"{clzName}_{index:03d}.png")
+    clzName = make_filename_safe(str(clz))
+    index = fileClassIndex[clzName] = fileClassIndex.get(clzName, 0) + 1
     if clz is None:
-        os.system(f"copy {x} {fileNewPath}")
+        fileNewPath = os.path.join(classifyResultRoot, f"{clzName}_{index:03d}.png")
+        subprocess.run(f"copy {x} {fileNewPath}", shell=True, stdout=subprocess.PIPE)
     prog.update(i)
 print("done")
-print(json.dumps(fileClassIndex, indent=4))
+print(ReprObject(fileClassIndex))
