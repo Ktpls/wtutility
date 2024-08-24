@@ -30,12 +30,13 @@ class mWtdmp(WtUtilityModule):
             app.bulletin.putup("measuring")
             if wtdmp.lastDistMeasResultStaged.plottingscale is None:
                 wtdmp.freshPlottingScale()
+            else:
+                app.threadpool.submit(lambda: wtdmp.freshPlottingScale())
             result = wtdmp.solveMapMainLogic()
             app.bulletin.putup(result.prompt)
             if result.succeed:
                 lastStaged = wtdmp.lastDistMeasResultStaged.result
                 wtdmp.caliOperator.go(lastStaged)
-            psFresh=app.threadpool.submit(lambda :wtdmp.freshPlottingScale())
 
         @app.Hotkey("StartCali", self.keyConfig.HotKey_StartCali)
         def startCali():

@@ -15,6 +15,7 @@ citymap=[
     'SunCity',
     'Sweden',
     'Normandy',
+	'GoldenQuarry',
 ]
 
 city_and_plain_combined=[
