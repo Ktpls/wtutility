@@ -30,7 +30,7 @@ class Raiden(EasyEngineConfig):
     planeName = "j2m5_30mm"
     PP = 0.95
     RAD = 0.35
-    ALTSC = [[None, 1], [2400, 2]]
+    ALTSC = [[None, 1], [2200, 2]]
 
 
 @HostedEngineConfig
@@ -119,7 +119,7 @@ class M82Fn(EasyEngineConfig):
 
 @HostedEngineConfig
 class P51C(EasyEngineConfig):
-    planeName = ["p-51d-20-na_j26", "p-51c-10-nt", "p-51c-10_france"]
+    planeName = ["p-51d-20-na_j26", "p-51c-10-nt", "p-51c-10_france" , "p-51c-11-nt_japan"]
     PP = 1.0
     RAD = 1.0
     OILRAD = EasyEngineConfig.ORAD_MAX
@@ -314,3 +314,13 @@ class Bf109F4(EasyEngineConfig):
     planeName = ["bf-109f-4"]
     RAD = 1.0
     ORAD = EasyEngineConfig.ORAD_MAX
+
+@HostedEngineConfig
+class Ki43(EasyEngineConfig):
+    planeName = ["ki_43_2"]
+    PP = 0.95
+    RAD = 0.3
+    ALTSC = [
+        [None, 1],
+        [3000, 2],
+    ]

@@ -1,4 +1,4 @@
-from . import autofreshmap_configmap_aa4g as autofreshmap_configmap
+from . import autofreshmap_configmap_plain as autofreshmap_configmap
 from .autofreshmap_config_dell import *
 from shared import const as sharedconst
 import os
