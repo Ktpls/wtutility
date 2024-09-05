@@ -16,9 +16,17 @@ def main():
     try:
 
         def stopAfm():
-            afm.stop()
+            afm.mq.put(freshAMap.MessageType.stop)
 
-        hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
+        def acceptMap():
+            afm.mq.put(freshAMap.MessageType.acceptMap)
+
+        hkm = HotkeyManager(
+            [
+                HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm),
+                HotkeyManager.hotkeytask([ord("A"), win32con.VK_F5], acceptMap),
+            ]
+        )
 
         fpsm = FpsManager(5)
         activeWindow(GetWtHwnd())
