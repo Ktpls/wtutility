@@ -440,7 +440,7 @@ class MessagedThread:
     @dataclasses.dataclass
     class Message:
         type: "MessagedThread.MessageType"
-        body: typing.Any
+        body: typing.Any = None
 
     mq: queue.Queue["MessagedThread.Message"] = queue.Queue()
 
@@ -567,7 +567,7 @@ class freshAMap(MessagedThread):
                     ]
                 ):
                     Keyboard.KeyPress(win32con.VK_RETURN)
-                    return KeepDetectingScreen.NextStepAction.finish
+                    return KeepDetectingScreen.NextStepAction.continuee
                 return KeepDetectingScreen.NextStepAction.continuee
 
             KeepDetectingScreen.do(

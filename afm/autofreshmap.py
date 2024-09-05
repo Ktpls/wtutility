@@ -16,10 +16,10 @@ def main():
     try:
 
         def stopAfm():
-            afm.mq.put(freshAMap.MessageType.stop)
+            afm.mq.put(MessagedThread.Message(freshAMap.MessageType.stop))
 
         def acceptMap():
-            afm.mq.put(freshAMap.MessageType.acceptMap)
+            afm.mq.put(MessagedThread.Message(freshAMap.MessageType.acceptMap))
 
         hkm = HotkeyManager(
             [
