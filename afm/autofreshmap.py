@@ -11,7 +11,7 @@ import traceback
 def main():
     pool = futures.ThreadPoolExecutor()
 
-    afm = freshAMap(pool=pool)
+    afm = freshAMap()
 
     try:
 
@@ -23,12 +23,10 @@ def main():
         fpsm = FpsManager(5)
         activeWindow(GetWtHwnd())
         mouse.mov(*(0, 0))
-        afm.go()
+        f = pool.submit(freshAMap.run, afm)
         # main loop
-        while True:
+        while f.running():
             fpsm.WaitUntilNextFrame()
-            if not afm.isRunning():
-                break
             hkm.doAllDecidedKey(hkm.decideAllHotKey(), printonerr=True)
         if waitafterdone:
             os.system("pause")
