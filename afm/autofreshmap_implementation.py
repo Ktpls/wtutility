@@ -414,33 +414,75 @@ def leaveButton():
     moveto([0, 0])
 
 
-class freshAMap(StoppableThread):
-    def __init__(self, pool: futures.ThreadPoolExecutor = None) -> None:
-        super().__init__(
-            strategy_error=StoppableSomewhat.StrategyError.print_error, pool=pool
-        )
+import aenum
+
+
+def ExtendEnum(src):
+    def deco_inner(cls):
+        nonlocal src
+        if (
+            issubclass(src, aenum.Enum)
+            or aenum.stdlib_enums
+            and issubclass(src, aenum.stdlib_enums)
+        ):
+            src = src.__members__.items()
+        for name, value in src:
+            aenum.extend_enum(cls, name, value)
+        return cls
+
+    return deco_inner
+
+
+class MessagedThread:
+    class MessageType(aenum.Enum):
+        stop = 0
+
+    @dataclasses.dataclass
+    class Message:
+        type: "MessagedThread.MessageType"
+        body: typing.Any = None
+
+    mq: queue.Queue["MessagedThread.Message"] = queue.Queue()
+
+    def run(self): ...
+
+
+class freshAMap(MessagedThread):
+    @ExtendEnum(MessagedThread.MessageType)
+    class MessageType(aenum.Enum):
+        acceptMap = 1
+
+    class AFMAborted(BaseException): ...
 
     @GSLogger.ExceptionLogged()
-    def foo(self):
-        """
-        successCond: bool(*foo)(Mat& screen), with return of if detected
-        cancelCond: same but return true if cancel detection
-        ret: true if successCond else false on cancelCond
-        """
+    def run(self):
+        class KeepDetectingScreen:
 
-        def KeepDetecting(
-            successCond: typing.Callable[[np.ndarray], bool],
-            cancelCond: typing.Callable[[np.ndarray], bool] | None = None,
-            sleeptime=0.5,
-        ) -> bool:
-            while True:
-                scr = shot()
-                # respond cancel first
-                if cancelCond and cancelCond(scr):
-                    return False
-                if successCond(scr):
-                    return True
-                time.sleep(sleeptime)
+            class NextStepAction(enum.Enum):
+                finish = 0
+                continuee = 1
+                abort = 2
+
+            @staticmethod
+            def do(
+                successCond: typing.Callable[[np.ndarray], bool],
+                sleeptime=0.5,
+            ) -> bool:
+                """
+                successCond: bool(*foo)(Mat& screen), with return of if detected
+                cancelCond: same but return true if cancel detection
+                ret: true if successCond else false on cancelCond
+                """
+                while True:
+                    scr = shot()
+                    match successCond(scr):
+                        case KeepDetectingScreen.NextStepAction.finish:
+                            return True
+                        case KeepDetectingScreen.NextStepAction.continuee:
+                            pass
+                        case KeepDetectingScreen.NextStepAction.abort:
+                            return False
+                    time.sleep(sleeptime)
 
         # init
         aa = AfmAsset(autofreshmap_configmap)
@@ -476,17 +518,36 @@ class freshAMap(StoppableThread):
                 if loading map still undetected after enteredMatchButNotShowingMap_persistedTime, abandon this pass
                 """
                 assert stateDetector is not None
+                while not self.mq.empty():
+                    match self.mq.get().type:
+                        case freshAMap.MessageType.stop:
+                            # canceled
+                            # press asap
+                            scr = shot()
+                            if not any(
+                                [
+                                    stateDetector[d].detect(scr)
+                                    for d in [
+                                        StateSign.hanger,
+                                        StateSign.MissionCanceled,
+                                    ]
+                                ]
+                            ):
+                                # clear matching state
+                                Keyboard.KeyPress(win32con.VK_ESCAPE)
+                            Rhythms.Cancel.play()
+                            raise freshAMap.AFMAborted()
                 if stateDetector[StateSign.LoadingMap].detect(scr):
                     nonlocal loadingscreen
                     loadingscreen = scr
-                    return True
+                    return KeepDetectingScreen.NextStepAction.finish
                 if (
                     embnsmPersistTimer.time()
                     >= enteredMatchButNotShowingMap_persistedTime
                 ):
                     nonlocal enteredMatchButNotShowingMap
                     enteredMatchButNotShowingMap = True
-                    return True
+                    return KeepDetectingScreen.NextStepAction.finish
                 if stateDetector[StateSign.WarthunderMark].detect(scr):
                     if not embnsmPersistTimer.isRunning():
                         embnsmPersistTimer.start()
@@ -506,30 +567,13 @@ class freshAMap(StoppableThread):
                     ]
                 ):
                     Keyboard.KeyPress(win32con.VK_RETURN)
-                    return False
-                return False
+                    return KeepDetectingScreen.NextStepAction.continuee
+                return KeepDetectingScreen.NextStepAction.continuee
 
-            if not KeepDetecting(
+            KeepDetectingScreen.do(
                 successCond=detectLoadingMap,
-                cancelCond=lambda src: self.timeToStop(),
                 sleeptime=1,
-            ):
-                # canceled
-                # press asap
-                scr = shot()
-                if not any(
-                    [
-                        stateDetector[d].detect(scr)
-                        for d in [
-                            StateSign.hanger,
-                            StateSign.MissionCanceled,
-                        ]
-                    ]
-                ):
-                    # clear matching state
-                    Keyboard.KeyPress(win32con.VK_ESCAPE)
-                Rhythms.Cancel.play()
-                return False
+            )
 
             if enteredMatchButNotShowingMap:
                 Rhythms.BadNotify.asyncPlay()
@@ -541,8 +585,6 @@ class freshAMap(StoppableThread):
                 if mapAutoCollection:
                     dataCollector.save(loadingscreen * 255)
 
-                # determine if map desired
-                ret = False
                 loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
 
@@ -553,46 +595,52 @@ class freshAMap(StoppableThread):
                     # done this by hand to get 2 times faster
                     if d.detect(loadingscreen, loadingscreenProced):
                         GSLogger().logger.debug(f"{n}")
-                        ret = True
-                        break
-
-                GSLogger().logger.debug(str(ret))
-                if ret:
-                    # enter game
-                    Rhythms.Success.play()
-                    GSLogger().logger.debug("good map")
-                    return True
+                        Rhythms.Success.play()
+                        GSLogger().logger.debug("good map")
+                        return True
 
             # detected banned map
             wifi.setOff()
             Rhythms.Notify.play()
             GSLogger().logger.debug("bad map")
 
-            # detect game canceled, which is not in loading map scence
+            # detect game canceled, which is if in hanger
+            gameCanceledPerfStat = perf_statistic(True)
+            shouldStopAfterGameCanceld = False
+
             def detectGameCanceled(scr):
+                while not self.mq.empty():
+                    match self.mq.get().type:
+                        case freshAMap.MessageType.stop:
+                            """
+                            task canceld, do the cleanning
+                            set on wifi after fully exit the game match
+                            """
+                            Rhythms.Cancel.play()
+                            nonlocal shouldStopAfterGameCanceld
+                            shouldStopAfterGameCanceld = True
+                            GSLogger().logger.debug("stop recieved")
+                        case freshAMap.MessageType.acceptMap:
+                            wifi.setOn()
+                            Rhythms.Success.play()
+                            GSLogger().logger.debug("accepted as good map")
+                            raise freshAMap.AFMAborted()
+                # sleep at least some time
+                if gameCanceledPerfStat.time() < minDelayAfterDisconnected:
+                    return KeepDetectingScreen.NextStepAction.continuee
                 assert stateDetector is not None
                 if not stateDetector[StateSign.WarthunderMark].detect(scr):
-                    return True
-                return False
+                    return KeepDetectingScreen.NextStepAction.finish
+                return KeepDetectingScreen.NextStepAction.continuee
 
-            # sleep at least some time
-            time.sleep(minDelayAfterDisconnected)
-            if not KeepDetecting(
+            KeepDetectingScreen.do(
                 successCond=detectGameCanceled,
-                cancelCond=lambda scr: self.timeToStop(),
                 sleeptime=2,
-            ):
-                """
-                task canceld, do the cleanning
-                set on wifi after fully exit the game match
-                """
-                Rhythms.Cancel.play()
-                KeepDetecting(
-                    successCond=detectGameCanceled,
-                    sleeptime=2,
-                )
+            )
+            if shouldStopAfterGameCanceld:
+                GSLogger().logger.debug("stopped afm")
                 wifi.setOn()
-                return False
+                raise freshAMap.AFMAborted()
 
             wifi.setOn()
             Rhythms.Notify.play()

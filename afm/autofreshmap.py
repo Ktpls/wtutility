@@ -11,24 +11,30 @@ import traceback
 def main():
     pool = futures.ThreadPoolExecutor()
 
-    afm = freshAMap(pool=pool)
+    afm = freshAMap()
 
     try:
 
         def stopAfm():
-            afm.stop()
+            afm.mq.put(MessagedThread.Message(freshAMap.MessageType.stop))
 
-        hkm = HotkeyManager([HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm)])
+        def acceptMap():
+            afm.mq.put(MessagedThread.Message(freshAMap.MessageType.acceptMap))
+
+        hkm = HotkeyManager(
+            [
+                HotkeyManager.hotkeytask(win32con.VK_F5, stopAfm),
+                HotkeyManager.hotkeytask([ord("A"), win32con.VK_F5], acceptMap),
+            ]
+        )
 
         fpsm = FpsManager(5)
         activeWindow(GetWtHwnd())
         mouse.mov(*(0, 0))
-        afm.go()
+        f = pool.submit(freshAMap.run, afm)
         # main loop
-        while True:
+        while f.running():
             fpsm.WaitUntilNextFrame()
-            if not afm.isRunning():
-                break
             hkm.doAllDecidedKey(hkm.decideAllHotKey(), printonerr=True)
         if waitafterdone:
             os.system("pause")
