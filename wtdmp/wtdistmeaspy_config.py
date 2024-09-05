@@ -35,7 +35,7 @@ cnnresultthresh = 0.3
 plottingscale_rel_darkness = -2.5
 
 
-caliDbg = False
+caliDbg = True
 caliP = 1
 caliD = 0.05
 caliControlMul = 0.125  # for 30%
