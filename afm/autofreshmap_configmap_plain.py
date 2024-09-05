@@ -45,7 +45,7 @@ specialmapdetectors = {
     "FrozenPass": MapDetector(
         map="FrozenPass",
         # A or B, not single C in village
-        foo="ret(detectMapShape() and spawnAround([474,477]) and (not singlePoint([528, 99])))",
+        foo="ret(detectMapShape() and spawnAround([474,477]) and selectPoint(ppos=[325, 322]))",
     ),
     "EasternEurope": MapDetector(
         map="EasternEurope",

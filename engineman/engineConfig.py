@@ -285,10 +285,14 @@ class Bf109E(EasyEngineConfig):
 
 @HostedEngineConfig
 class A6M(EasyEngineConfig):
-    planeName = ["a6m2_zero_usa"]
+    planeName = ["a6m2_zero_usa", "a6m3_zero"]
     RAD = 0.3
     ORAD = 0.3
     PP = 1.0
+    ALTSC = [
+        [None, 1],
+        [3000, 2],
+    ]
 
 
 @HostedEngineConfig
