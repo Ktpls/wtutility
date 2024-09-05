@@ -12,7 +12,7 @@ highSurvivablity = [
     #'FireArc',
     "Flanders",
     "FrozenPass",
-    "Karelia",
+    #"Karelia",
     "MaginotLine#1",
     "MaginotLine#2",
     "Mozdok#2",
@@ -39,8 +39,8 @@ specialmapdetectors = {
         # B, or C or battle mode at any side
         # ignoring point type
         # have no shelter in battle mode with spawn at bottom
-        #foo="ret(detectMapShape() and not (singlePoint([102, 293]) and spawnAround([244, 542])))",
-        foo="ret(detectMapShape())",
+        foo="ret(detectMapShape() and not (singlePoint([102, 293]) and spawnAround([244, 542])))",
+        #foo="ret(detectMapShape())",
     ),
     "FrozenPass": MapDetector(
         map="FrozenPass",

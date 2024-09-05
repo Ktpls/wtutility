@@ -26,6 +26,7 @@ class mWtdmp(WtUtilityModule):
 
         @app.Hotkey("DistMeas&Cali", self.keyConfig.HotKey_DistMeasCali)
         @app.Async()
+        @GSLogger.ExceptionLogged()
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
             if wtdmp.lastDistMeasResultStaged.plottingscale is None:
@@ -39,6 +40,7 @@ class mWtdmp(WtUtilityModule):
                 wtdmp.caliOperator.go(lastStaged)
 
         @app.Hotkey("StartCali", self.keyConfig.HotKey_StartCali)
+        @GSLogger.ExceptionLogged()
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:
