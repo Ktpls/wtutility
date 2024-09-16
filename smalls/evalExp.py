@@ -3,8 +3,7 @@ import sys
 import traceback
 
 customVar = {
-    "tau": -0.5,
-    "k": 3,
+    "y": 1e9,
 }
 customFunc = {
     "d": lambda x, y: np.sqrt(x**2 + y**2),
@@ -17,7 +16,7 @@ while True:
     if line == "":
         break
     text += line + "\n"
-text = "tau*log(1/(k*tau)+1)"
+text = "(1-6*y)/3"
 try:
     result = expparser.expparse(
         text,

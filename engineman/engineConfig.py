@@ -43,7 +43,7 @@ class I29(EasyEngineConfig):
 
 @HostedEngineConfig
 class P63A5(EasyEngineConfig):
-    planeName = ["p-63a-5_ussr", "p-63a-10"]
+    planeName = ["p-63a-5_ussr", "p-63a-10", "p-63c-5"]
     RAD = 0.4
 
 
@@ -107,7 +107,7 @@ class P47D(EasyEngineConfig):
 
 @HostedEngineConfig
 class M82Fn(EasyEngineConfig):
-    planeName = ["la-7b-20", "la-5fn", "i_185_m82"]
+    planeName = ["	7b-20", "la-5fn", "i_185_m82"]
     PP = 0.95
     RAD = 1.0
     OILRAD = EasyEngineConfig.ORAD_MAX
@@ -241,7 +241,7 @@ class SpitfireMk24(EasyEngineConfig):
     RAD = 1.0
     ALTSC = [
         [None, 1],
-        [3750, 2],
+        [3550, 2],
     ]
 
 
@@ -318,6 +318,12 @@ class Bf109F4(EasyEngineConfig):
     planeName = ["bf-109f-4"]
     RAD = 1.0
     ORAD = EasyEngineConfig.ORAD_MAX
+@HostedEngineConfig
+class FW190A(EasyEngineConfig):
+    planeName = ["fw-190a-1"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX
+
 
 @HostedEngineConfig
 class Ki43(EasyEngineConfig):
@@ -328,3 +334,28 @@ class Ki43(EasyEngineConfig):
         [None, 1],
         [3000, 2],
     ]
+
+@HostedEngineConfig
+class Bv238(EasyEngineConfig):
+    planeName = ["bv-238"]
+    RAD = 1.0
+
+@HostedEngineConfig
+class SpitfireMk5(EasyEngineConfig):
+    planeName = ["spitfire_mk5b"]
+    PP = 0.88
+    RAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [3000, 2],
+    ]
+@HostedEngineConfig
+class Ki61(EasyEngineConfig):
+    planeName = ["ki_61_1a_otsu_usa"]
+    PP = 0.95
+    RAD = 1.0
+    ORAD=EasyEngineConfig.ORAD_MAX
+@HostedEngineConfig
+class Xp55(EasyEngineConfig):
+    planeName = ["xp-55"]
+    RAD = 1.0

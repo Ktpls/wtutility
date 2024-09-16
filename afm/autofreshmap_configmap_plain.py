@@ -3,7 +3,7 @@ from .autofreshmap_configmap_importref import *
 # friendly for turrentless tank destroyers
 highSurvivablity = [
     "AralSea",
-    # "Berlin",
+    "Berlin",
     "EasternEurope",
     "EuropeanProvince",
     "FieldsOfNormandy",
@@ -21,14 +21,14 @@ highSurvivablity = [
     "Pradesh",
     "RedDesert",
     "Sinai",
-    "SandsOfSinai",
+    #"SandsOfSinai",
     "SandsOfTunisia",
     "SecondBattleOfElAlamein",
     "Tunisia",
     "AshRiver",
     # "Carpathians",
     "Jungle",
-    "MiddleEast",
+    #"MiddleEast",
 ]
 
 
