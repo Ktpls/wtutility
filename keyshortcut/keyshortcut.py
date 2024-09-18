@@ -7,6 +7,7 @@ class mKeyshortcut(WtUtilityModule):
         from . import keyshortcutimpl as keyshortcutimpl
 
         app = self.app
+
         @app.Hotkey("HoldLeftAndTell", self.keyConfig.HotKey_HoldLeftAndTell)
         def holdLeftAndTell():
             keyshortcutimpl.holdMouseLeft()
@@ -56,8 +57,8 @@ class mKeyshortcut(WtUtilityModule):
                 "Right",
             ],
         ]:
-            app.Hotkey(
+            app.HotkeyFullFunction(
                 f"MoveMouse{name}",
                 ArrayFlatten([self.keyConfig.HotKey_MoveMouse_AssistKey, key]),
-                continiousPress=True,
-            )(functools.partial(keyshortcutimpl.move_mouse, dire))
+                onKeyPress=functools.partial(keyshortcutimpl.move_mouse, dire)
+            )

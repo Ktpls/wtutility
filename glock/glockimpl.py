@@ -1,4 +1,5 @@
 from utilitypack.util_solid import StoppableThread
+from utilitypack.cold.util_solid import StoppableProcess
 from utilitypack.util_wt import *
 from utilitypack.util_winkey import *
 from .glock_config import *
@@ -233,3 +234,54 @@ class Puller(StoppableProcess):
             offtime = (1 - ratio) * period
             Keyboard.KeyHold(ord("W"), ontime)
             PreciseSleep(offtime)
+
+
+@dataclasses.dataclass
+class Glock2:
+    ratio: float
+    dutyCycle: float = g2_dutyCycle
+    ps: perf_statistic = dataclasses.field(init=False, default_factory=perf_statistic)
+    swEnable: Switch = dataclasses.field(init=False, default=None)
+    swPwm: Switch = dataclasses.field(init=False, default=None)
+    swPush: Switch = dataclasses.field(init=False, default=None)
+    k_glock = [win32conComp.VK_OEM_3]
+
+    def __post_init__(self):
+        self.onTime = self.dutyCycle * self.ratio
+        self.offTime = self.dutyCycle * (1 - self.ratio)
+
+        def pushOn():
+            Keyboard.KeyDown(ord("S"))
+            # print('s down')
+
+        def pushOff():
+            Keyboard.KeyUp(ord("S"))
+            # print('s up')
+
+        self.swPush = Switch(
+            onSetOn=pushOn,
+            onSetOff=pushOff,
+        )
+
+        self.swEnable = Switch()
+        self.swPwm = Switch()
+        self.ps.start()
+
+    def update(self):
+        if self.swPwm():
+            if self.ps.time() >= self.onTime:
+                self.swPwm.off()
+                self.ps.clear().start()
+        else:
+            if self.ps.time() >= self.offTime:
+                self.swPwm.on()
+                self.ps.clear().start()
+        if self.swEnable() and self.swPwm():
+            self.swPush.on()
+        else:
+            self.swPush.off()
+
+    def __del__(self):
+        self.swEnable.off()
+        self.swPwm.off()
+        self.swPush.off()

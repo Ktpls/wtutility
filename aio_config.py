@@ -25,7 +25,7 @@ usingtelescope = getByMode(
 #usingtelescope=False
 usingkeyshortcut = True
 usingeagleeye = False
-usingglock = False
+usingglock = True
 usingengineman = True
 
 throwErrorInBus = False

@@ -40,16 +40,23 @@ def main():
 
         modules.append(mEngineman(app, AioHotKeyConfig))
 
-    futures = [app.threadpool.submit(m.load) for m in modules]
-    [f.result() for f in futures]
+    def loadModule(m: globalsys.WtUtilityModule):
+        try:
+            m.load()
+        except Exception as e:
+            print(f"Module load failed: {m.__class__}")
+            print(traceback.format_exc())
+
+    fut = [app.threadpool.submit(functools.partial(loadModule, m)) for m in modules]
+    futures.wait(fut)
 
     @app.Hotkey("Reboot", AioHotKeyConfig.HotKey_Reboot)
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)
         Rhythms.Reboot.play()
-        futures = [app.threadpool.submit(m.unload) for m in modules]
-        [f.result() for f in futures]
+        fut = [app.threadpool.submit(m.unload) for m in modules]
+        futures.wait(fut)
         sys.exit()
 
     @app.Business()

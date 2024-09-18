@@ -35,7 +35,7 @@ def main():
         # main loop
         while f.running():
             fpsm.WaitUntilNextFrame()
-            hkm.doAllDecidedKey(hkm.decideAllHotKey(), printonerr=True)
+            hkm.dispatchMessage(printonerr=True)
         if waitafterdone:
             os.system("pause")
     except Exception as err:
