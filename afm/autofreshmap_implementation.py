@@ -1,4 +1,5 @@
 from utilitypack.util_solid import StoppableSomewhat
+from utilitypack.cold.util_solid import LongDelay
 from utilitypack.utility import *
 from utilitypack.util_winkey import *
 from shared.globalsys import *
