@@ -1,4 +1,10 @@
 print_ctrl_ratio = False
-glim = 4
-g2_ratio=0.45
-g2_dutyCycle=0.2
+gLimit = 3.0
+g2Ratio = 0.435
+g2DutyCycle = 0.2
+g3DutyCycle = 0.3
+g3RatioMax = 0.7
+g3RatioMin = 0.0
+g3PP = 0.01
+g3PI = 0.05
+g3QueryInterval = 0.01

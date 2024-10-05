@@ -3,243 +3,15 @@ from utilitypack.cold.util_solid import StoppableProcess
 from utilitypack.util_wt import *
 from utilitypack.util_winkey import *
 from .glock_config import *
-
-
-class Reporter:
-    def __init__(self, interval, reportBusiness) -> None:
-        self.t0 = time.perf_counter()
-        self.interval = interval
-        self.reportBusiness = reportBusiness
-
-    def update(self):
-        tnow = time.perf_counter()
-        if tnow - self.t0 > self.interval:
-            self.reportBusiness()
-            self.t0 = tnow
-
-
-class GPush(StoppableProcess):
-    ratio: float
-    disabled = -1
-    full = 2
-
-    @staticmethod
-    def isFull(x):
-        return x > 1
-
-    @staticmethod
-    def isZero(x):
-        return x < 0
-
-    def __init__(
-        self, ratio: multiprocessing.Value, bad8111Exit: multiprocessing.Event
-    ) -> None:
-        self.ratio = ratio
-        self.bad8111Exit = bad8111Exit
-        super().__init__(
-            strategy_runonrunning=StoppableThread.StrategyRunOnRunning.skip_and_return,
-        )
-
-    def foo(self):
-        def report():
-            if not GPush.isZero(ratio):
-                Rhythms.Notify.play()
-            if print_ctrl_ratio:
-                print(f"ratio: {self.ratio.value}")
-
-        reporter = Reporter(5, report)
-        period = 0.025
-        wtWindow = WarthunderWindow()
-        while not self.timeToStop() and not self.bad8111Exit.is_set():
-            ratio = self.ratio.value
-            if wtWindow.isFocus():
-
-                if GPush.isZero(ratio):
-                    # diabled
-                    PreciseSleep(period)
-                elif GPush.isFull(ratio):
-                    # key will be realeased until some point that not full
-                    with Keyboard.HoldingKey(ord("S")):
-                        PreciseSleep(period)
-                else:
-                    topush = ratio * period
-                    torelax = (1 - ratio) * period
-                    Keyboard.KeyHold(ord("S"), topush)
-                    # PreciseSleep(topush)
-                    PreciseSleep(torelax)
-            else:
-                PreciseSleep(period)
-            reporter.update()
-
-
-class SepDerivativer:
-    def __init__(self, val0, t0):
-        self.val0 = val0
-        self.t0 = t0
-
-    def update(self, v, t):
-        ret = (v - self.val0) / (t - self.t0)
-        self.val0 = v
-        self.t0 = t
-        return ret
-
-
-class Sampler(StoppableProcess):
-    def __init__(
-        self,
-        ratio: multiprocessing.Value,
-        bad8111Exit: multiprocessing.Event,
-        lim: float,
-    ) -> None:
-        super().__init__(
-            StoppableThread.StrategyRunOnRunning.skip_and_return,
-            StoppableThread.StrategyError.print_error,
-        )
-        self.ratio = ratio
-        self.bad8111Exit = bad8111Exit
-        self.lim = lim
-
-    def foo(self):
-        GMax = 13
-        pushMax = (self.lim - GMax) * (-0.5) / (GMax - 1)
-        fullPushExceed = (GMax - self.lim) * 0.75
-        controller = PIDController(
-            kp=0.05 * 1 / fullPushExceed,
-            ki=1.0 * 1 / fullPushExceed,
-            kd=0.2 * 1 / fullPushExceed,
-            integralLimitMax=0,
-            integralLimitMin=-fullPushExceed,
-            # analizerMode=True,
-        )
-        # input filter
-        oolfi = OneOrderLinearFilter(0, 0)
-        # control filter
-        oolfc = OneOrderLinearFilter(0, 0)
-        fps = FpsManager(10)
-
-        def calcEnerge(h, tas):
-            return h * 9.8 + 0.5 * tas**2
-
-        state = Port8111.get(Port8111.QueryType.state)
-        if state is None or state.valid is False:
-            energyNow = 0
-        else:
-            energyNow = calcEnerge(state.H.value, state.TAS.value)
-        sepderi = SepDerivativer(energyNow, time.perf_counter())
-        ps4pid = perf_statistic(startnow=True)
-        # dc = []
-        ps4dctime = perf_statistic(startnow=True)
-        while not self.timeToStop():
-            fps.WaitUntilNextFrame(sleepImpl=PreciseSleep)
-            """
-            request.get always return until the last millisecond before time out
-            """
-            state = Port8111.get(Port8111.QueryType.state, timeout=0.1)
-            if state is None or state.valid is False:
-                self.bad8111Exit.set()
-                break
-            # if state.Ny is None:
-            #     breakpoint()
-
-            # sep = sepderi.update(
-            #     calcEnerge(state.H.value, state.TAS.value), time.perf_counter()
-            # )
-            g = state.Ny.value
-            # aoa = state.AoA.value
-
-            index = g
-            index = oolfi.update(index)
-            # allow negative error to clear intergraled error
-            # ctrl, an = controller.update(self.lim - index, ps4pid.time())
-            ctrl = controller.update(self.lim - index, ps4pid.time())
-            ctrl = oolfc.update(ctrl)
-            ps4pid.clear().start()
-            # ctrl in negative, since its pushing.
-            if ctrl < -1:
-                # max pushing rate is 1.
-                self.ratio.value = GPush.full
-            elif ctrl > 0:
-                # and i dont want pulling.
-                self.ratio.value = GPush.disabled
-            else:
-                # smooth controlling
-                self.ratio.value = abs(ctrl)
-        #     dc.append(
-        #         copy.deepcopy(
-        #             (
-        #                 ps4dctime.time(),
-        #                 -index / 10,
-        #                 ctrl,
-        #                 an.partp,
-        #                 an.parti,
-        #                 an.partd,
-        #                 an.error,
-        #                 an.integral,
-        #                 an.derivative,
-        #             )
-        #         )
-        #     )
-        # save_list_to_xls(
-        #     [
-        #         (
-        #             "t",
-        #             "index",
-        #             "ctrl",
-        #             "partP",
-        #             "partI",
-        #             "partD",
-        #             "error",
-        #             "integral",
-        #             "derivative",
-        #         )
-        #     ]
-        #     + dc,
-        #     f"glock_dc_{GetTimeString()}.xlsx",
-        # )
-
-
-class GLock:
-    def __init__(self):
-        self.sharedRatio = multiprocessing.Value("d", 0.0)
-        self.bad8111Exit = multiprocessing.Event()
-        self.pusher: GPush = GPush(ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit)
-        self.sampler: Sampler = Sampler(
-            ratio=self.sharedRatio, bad8111Exit=self.bad8111Exit, lim=glim
-        )
-
-    def setOn(self):
-        self.bad8111Exit.clear()
-        self.pusher.go()
-        self.sampler.go()
-
-    def setOff(self):
-        self.pusher.stop()
-        self.sampler.stop()
-
-    def isRunning(self):
-        return self.pusher.isRunning() and self.sampler.isRunning()
-
-
-class Puller(StoppableProcess):
-    def __init__(self) -> None:
-        super().__init__(
-            strategy_runonrunning=StoppableSomewhat.StrategyRunOnRunning.skip_and_return,
-        )
-
-    def foo(self):
-        ratio = 0.5
-        period = 0.1
-        while not self.timeToStop():
-            ontime = ratio * period
-            offtime = (1 - ratio) * period
-            Keyboard.KeyHold(ord("W"), ontime)
-            PreciseSleep(offtime)
+from shared.globalsys import *
+import queue
+import pandas as pd
 
 
 @dataclasses.dataclass
 class Glock2:
     ratio: float
-    dutyCycle: float = g2_dutyCycle
+    dutyCycle: float = g2DutyCycle
     ps: perf_statistic = dataclasses.field(init=False, default_factory=perf_statistic)
     swEnable: Switch = dataclasses.field(init=False, default=None)
     swPwm: Switch = dataclasses.field(init=False, default=None)
@@ -271,15 +43,131 @@ class Glock2:
         if self.swPwm():
             if self.ps.time() >= self.onTime:
                 self.swPwm.off()
-                self.ps.clear().start()
+                self.ps.start()
         else:
             if self.ps.time() >= self.offTime:
                 self.swPwm.on()
-                self.ps.clear().start()
+                self.ps.start()
         if self.swEnable() and self.swPwm():
             self.swPush.on()
         else:
             self.swPush.off()
+
+    def __del__(self):
+        self.swEnable.off()
+        self.swPwm.off()
+        self.swPush.off()
+
+
+class AnalizeLog:
+    @dataclasses.dataclass
+    class frame:
+        dt: float
+        g: float
+        ratio: float
+
+    def __init__(self):
+        self.data = pd.DataFrame(
+            columns=[n for n in AnalizeLog.frame.__annotations__.keys()]
+        )
+        self.planeName = "M4K"
+
+    def log_data(self, frame: "AnalizeLog.frame"):
+        # 创建一个新的行数据
+        new_row = pd.DataFrame([BeanUtil.toMap(frame)])
+
+        # 将新行追加到DataFrame
+        self.data = pd.concat([self.data, new_row], ignore_index=True)
+
+        # 保存数据到CSV文件
+        self.data.to_csv(f"{self.planeName}.csv", index=False)
+
+
+al = AnalizeLog()
+
+
+@dataclasses.dataclass
+class Glock3:
+    """
+    works for most of planes
+    but mirage 4000 got oscilation
+    """
+
+    ratio: float
+    pool: futures.ThreadPoolExecutor
+    dutyCycle: float = g2DutyCycle
+    tmPwm: SingleSectionedTimer = dataclasses.field(
+        init=False, default_factory=SingleSectionedTimer
+    )
+    tmPid: SingleSectionedTimer = dataclasses.field(
+        init=False, default_factory=SingleSectionedTimer
+    )
+    swEnable: Switch = dataclasses.field(init=False, default=None)
+    swPwm: Switch = dataclasses.field(init=False, default=None)
+    swPush: Switch = dataclasses.field(init=False, default=None)
+    pid: PIDController = dataclasses.field(init=False, default=None)
+    k_glock = [win32conComp.VK_OEM_3]
+    asyncGetRatioRunning: bool = dataclasses.field(init=False, default=False)
+
+    def asyncGetRatio(self):
+        g = Port8111.get(Port8111.QueryType.state).expectValid().Ny.value
+        dt = self.tmPid.get()
+        self.tmPid.start()
+        ratio = self.pid.update(g - gLimit, dt)
+        self.ratio = ratio
+        self.asyncGetRatioRunning = False
+        # al.log_data(AnalizeLog.frame(dt, 0.1 * g, ratio))
+
+    def __post_init__(self):
+        def pushOn():
+            Keyboard.KeyDown(ord("S"))
+
+        def pushOff():
+            Keyboard.KeyUp(ord("S"))
+
+        self.swPush = Switch(
+            onSetOn=pushOn,
+            onSetOff=pushOff,
+        )
+
+        def enable():
+            self.tmPid.start()
+
+        def disable():
+            self.tmPid.clear()
+
+        self.swEnable = Switch(onSetOn=enable, onSetOff=disable)
+        self.swPwm = Switch()
+        self.tmPwm.start()
+
+        self.pid = PIDController(
+            g3PP,
+            g3PI,
+            0,
+            integralLimitMin=g3RatioMin / g3PI,
+            integralLimitMax=g3RatioMax / g3PI,
+        )
+        self.tmPid.start()
+
+    def update(self):
+        if self.swPwm():
+            if self.tmPwm.get() >= self.dutyCycle * self.ratio:
+                self.swPwm.off()
+                self.tmPwm.start()
+        else:
+            if self.tmPwm.get() >= self.dutyCycle * (1 - self.ratio):
+                self.swPwm.on()
+                self.tmPwm.start()
+        if self.swEnable() and self.swPwm():
+            self.swPush.on()
+        else:
+            self.swPush.off()
+        if (
+            self.swEnable()
+            and self.tmPid.get() >= g3QueryInterval
+            and not self.asyncGetRatioRunning
+        ):
+            self.pool.submit(Glock3.asyncGetRatio, self)
 
     def __del__(self):
         self.swEnable.off()

@@ -7,4 +7,5 @@ blacklistedmap = [
     "air/[Operation]City",
     "air/[Operation]Pyrenees",
     "air/[Operation]SoutheasternCity",
+    "air/[Operation]MysteriousValley(AirSpawns)",
 ]

@@ -31,7 +31,7 @@ usingengineman = True
 throwErrorInBus = False
 throwErrorInHotkey = False
 
-aiofps = 10
+aiofps = 30
 
 
 class AioHotKeyConfig(HotKeyConfig):

@@ -2,7 +2,7 @@ from utilitypack.util_app import *
 from aio_config import *
 import shared.globalsys as globalsys
 
-
+@globalsys.GSLogger.ExceptionLogged()
 def main():
     app = BulletinApp(fps=aiofps, hudFps=10)
     modules: list[globalsys.WtUtilityModule] = list()
@@ -59,7 +59,7 @@ def main():
         futures.wait(fut)
         sys.exit()
 
-    @app.Business()
+    @app.Business(globalsys.lowPriorityTaskPeriod)
     def PullBulletinQueueToBulletin():
         msg = globalsys.BulletinQueue().get()
         if msg is not None:
