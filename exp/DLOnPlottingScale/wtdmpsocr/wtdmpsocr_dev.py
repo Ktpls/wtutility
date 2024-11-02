@@ -58,7 +58,7 @@ class labeldataset(Dataset):
     standardshape = [20, 40]  #h,w
 
     @staticmethod
-    def dataEnhance(m,
+    def dataAug(m,
                     t,
                     enh_hairing=True,
                     enh_dropout=True,
@@ -185,7 +185,7 @@ class labeldataset(Dataset):
 
         # shape standardlize included
 
-        img, tmat = labeldataset.dataEnhance(
+        img, tmat = labeldataset.dataAug(
             img,
             t,
             # True,

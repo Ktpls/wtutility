@@ -35,7 +35,7 @@ def main():
         # main loop
         while f.running():
             fpsm.WaitUntilNextFrame()
-            hkm.dispatchMessage(printonerr=True)
+            hkm.dispatchMessage()
         if waitafterdone:
             os.system("pause")
     except Exception as err:

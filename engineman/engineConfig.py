@@ -13,7 +13,7 @@ radiator, oilRadiator, propPitch
 class G55S(EasyEngineConfig):
     planeName = "g_55s"
     PP = 0.95
-    RAD = 0.80
+    RAD = 0.85
     OILRAD = EasyEngineConfig.ORAD_MAX
 
 
@@ -43,7 +43,7 @@ class I29(EasyEngineConfig):
 
 @HostedEngineConfig
 class P63A5(EasyEngineConfig):
-    planeName = ["p-63a-5_ussr", "p-63a-10", "p-63c-5"]
+    planeName = ["p-63a-5_ussr", "p-63a-10", "p-63c-5", "p-63c-5_france"]
     RAD = 0.4
 
 
@@ -158,7 +158,7 @@ class I153(EasyEngineConfig):
     ]
 
     def check(self, gauges: Gauges):
-        super().check()
+        super().check(gauges)
         MappingAxis(
             gauges.supercharger,
             gauges.propPitch,
@@ -301,6 +301,14 @@ class A6M(EasyEngineConfig):
 
 
 @HostedEngineConfig
+class A6M2N(EasyEngineConfig):
+    planeName = ["a6m2_n_zero"]
+    RAD = 0.3
+    ORAD = 0.3
+    PP = 1.0
+
+
+@HostedEngineConfig
 class A6M(EasyEngineConfig):
     planeName = ["a6m2_zero_usa"]
     RAD = 0.3
@@ -382,14 +390,53 @@ class Xp55(EasyEngineConfig):
     planeName = ["xp-55"]
     RAD = 1.0
 
+
 @HostedEngineConfig
 class HurricaneMk4(EasyEngineConfig):
     planeName = ["hurricane_mk4"]
     RAD = 1.0
-    PP=0.95
+    PP = 0.95
     ALTSC = [
         [None, 1],
         [2500, 2],
     ]
 
-	
+
+@HostedEngineConfig
+class Ju288(EasyEngineConfig):
+    planeName = ["ju-288c"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX
+
+
+@HostedEngineConfig
+class Xp50(EasyEngineConfig):
+    planeName = ["xp-50"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX
+
+
+@HostedEngineConfig
+class F2G(EasyEngineConfig):
+    planeName = ["f2g-1"]
+    RAD = 1.0
+    ORAD = EasyEngineConfig.ORAD_MAX
+
+
+@HostedEngineConfig
+class Vb10(EasyEngineConfig):
+    planeName = ["vb_10c1"]
+    PP = 0.95
+    RAD = 0.4
+
+
+@HostedEngineConfig
+class Mb157(EasyEngineConfig):
+    planeName = ["mb_157"]
+    PP = 0.9
+    RAD = 1.0
+    ORAD = 1.0
+    ALTSC = [
+        [None, 1],
+        [2500, 2],
+    ]
