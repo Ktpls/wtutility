@@ -9,93 +9,14 @@ import pandas as pd
 
 
 @dataclasses.dataclass
-class Glock2:
-    ratio: float
-    dutyCycle: float = g2DutyCycle
-    ps: perf_statistic = dataclasses.field(init=False, default_factory=perf_statistic)
-    swEnable: Switch = dataclasses.field(init=False, default=None)
-    swPwm: Switch = dataclasses.field(init=False, default=None)
-    swPush: Switch = dataclasses.field(init=False, default=None)
-    k_glock = [win32conComp.VK_OEM_3]
-
-    def __post_init__(self):
-        self.onTime = self.dutyCycle * self.ratio
-        self.offTime = self.dutyCycle * (1 - self.ratio)
-
-        def pushOn():
-            Keyboard.KeyDown(ord("S"))
-            # print('s down')
-
-        def pushOff():
-            Keyboard.KeyUp(ord("S"))
-            # print('s up')
-
-        self.swPush = Switch(
-            onSetOn=pushOn,
-            onSetOff=pushOff,
-        )
-
-        self.swEnable = Switch()
-        self.swPwm = Switch()
-        self.ps.start()
-
-    def update(self):
-        if self.swPwm():
-            if self.ps.time() >= self.onTime:
-                self.swPwm.off()
-                self.ps.start()
-        else:
-            if self.ps.time() >= self.offTime:
-                self.swPwm.on()
-                self.ps.start()
-        if self.swEnable() and self.swPwm():
-            self.swPush.on()
-        else:
-            self.swPush.off()
-
-    def __del__(self):
-        self.swEnable.off()
-        self.swPwm.off()
-        self.swPush.off()
-
-
-class AnalizeLog:
-    @dataclasses.dataclass
-    class frame:
-        dt: float
-        g: float
-        ratio: float
-
-    def __init__(self):
-        self.data = pd.DataFrame(
-            columns=[n for n in AnalizeLog.frame.__annotations__.keys()]
-        )
-        self.planeName = "M4K"
-
-    def log_data(self, frame: "AnalizeLog.frame"):
-        # 创建一个新的行数据
-        new_row = pd.DataFrame([BeanUtil.toMap(frame)])
-
-        # 将新行追加到DataFrame
-        self.data = pd.concat([self.data, new_row], ignore_index=True)
-
-        # 保存数据到CSV文件
-        self.data.to_csv(f"{self.planeName}.csv", index=False)
-
-
-al = AnalizeLog()
-
-
-@dataclasses.dataclass
-class Glock3:
-    """
-    works for most of planes
-    but mirage 4000 got oscilation
-    """
-
-    ratio: float
+class PwmWithPid:
     pool: futures.ThreadPoolExecutor
-    dutyCycle: float = g2DutyCycle
+    dutyCycle: float
+    pidCycle: float
+    pid: PIDController
+    onPwmOn: typing.Callable[[], None]
+    onPwmOff: typing.Callable[[], None]
+    ratio: float = dataclasses.field(init=False, default=0)
     tmPwm: SingleSectionedTimer = dataclasses.field(
         init=False, default_factory=SingleSectionedTimer
     )
@@ -105,71 +26,137 @@ class Glock3:
     swEnable: Switch = dataclasses.field(init=False, default=None)
     swPwm: Switch = dataclasses.field(init=False, default=None)
     swPush: Switch = dataclasses.field(init=False, default=None)
-    pid: PIDController = dataclasses.field(init=False, default=None)
-    k_glock = [win32conComp.VK_OEM_3]
-    asyncGetRatioRunning: bool = dataclasses.field(init=False, default=False)
+    updateRatioFuture: futures.Future = dataclasses.field(init=False, default=None)
 
-    def asyncGetRatio(self):
-        g = Port8111.get(Port8111.QueryType.state).expectValid().Ny.value
-        dt = self.tmPid.get()
-        self.tmPid.start()
-        ratio = self.pid.update(g - gLimit, dt)
+    def getError(self): ...
+
+    def _asyncUpdateRatio(self):
+        err = self.getError()
+        dt = self.tmPid.getAndRestart()
+        ratio = self.pid.update(err, dt)
         self.ratio = ratio
-        self.asyncGetRatioRunning = False
-        # al.log_data(AnalizeLog.frame(dt, 0.1 * g, ratio))
 
     def __post_init__(self):
-        def pushOn():
-            Keyboard.KeyDown(ord("S"))
-
-        def pushOff():
-            Keyboard.KeyUp(ord("S"))
 
         self.swPush = Switch(
-            onSetOn=pushOn,
-            onSetOff=pushOff,
+            onSetOn=self.onPwmOn,
+            onSetOff=self.onPwmOff,
         )
 
-        def enable():
-            self.tmPid.start()
-
-        def disable():
-            self.tmPid.clear()
-
-        self.swEnable = Switch(onSetOn=enable, onSetOff=disable)
+        self.swEnable = Switch()
         self.swPwm = Switch()
         self.tmPwm.start()
 
-        self.pid = PIDController(
-            g3PP,
-            g3PI,
-            0,
-            integralLimitMin=g3RatioMin / g3PI,
-            integralLimitMax=g3RatioMax / g3PI,
-        )
         self.tmPid.start()
 
     def update(self):
-        if self.swPwm():
-            if self.tmPwm.get() >= self.dutyCycle * self.ratio:
-                self.swPwm.off()
-                self.tmPwm.start()
+        """
+        module control_logic (
+            input wire pidUpdatable,
+            input wire swPwm,
+            input wire swEnable,
+            output reg swPush,
+            output reg pidUpdate
+        );
+            always @(*) begin
+                swPush = swPwm & swEnable;
+                pidUpdate = pidUpdatable & swEnable;
+            end
+        endmodule
+        """
+        pidUpdatable = self.pidUpdatable()
+        self.updatePwm()
+        self.swPush.setTo(self.swPwm() and self.swEnable())
+        pidUpdate = pidUpdatable & self.swEnable()
+
+        if pidUpdate:
+            self.updateRatioFuture = self.pool.submit(self._asyncUpdateRatio)
+
+    def pidUpdatable(self):
+        return self.tmPid.get() >= self.pidCycle and (
+            self.updateRatioFuture is None or not self.updateRatioFuture.running()
+        )
+
+    def updatePwm(self):
+        if abs((self.ratio if self.swPwm() else (1 - self.ratio)) - 1) <= EPS:
+            # full in entire period
+            pass
         else:
-            if self.tmPwm.get() >= self.dutyCycle * (1 - self.ratio):
-                self.swPwm.on()
+            if self.tmPwm.get() >= (
+                self.dutyCycle * (self.ratio if self.swPwm() else (1 - self.ratio))
+            ):
+                self.swPwm.switch()
                 self.tmPwm.start()
-        if self.swEnable() and self.swPwm():
-            self.swPush.on()
-        else:
-            self.swPush.off()
-        if (
-            self.swEnable()
-            and self.tmPid.get() >= g3QueryInterval
-            and not self.asyncGetRatioRunning
-        ):
-            self.pool.submit(Glock3.asyncGetRatio, self)
 
     def __del__(self):
         self.swEnable.off()
         self.swPwm.off()
         self.swPush.off()
+
+
+class Glock(PwmWithPid):
+    k_glock = [win32conComp.VK_OEM_3]
+
+    def __init__(self, pool: futures.ThreadPoolExecutor, dutyCycle: float):
+        super().__init__(
+            pool=pool,
+            dutyCycle=dutyCycle,
+            pidCycle=g3QueryInterval,
+            pid=PIDController(
+                g3PP,
+                g3PI,
+                0,
+                integralLimitMin=g3RatioMin / g3PI,
+                integralLimitMax=g3RatioMax / g3PI,
+            ),
+            onPwmOn=lambda: Keyboard.KeyDown(ord("S")),
+            onPwmOff=lambda: Keyboard.KeyUp(ord("S")),
+        )
+
+    def getError(self):
+        g = (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest=True)
+            .expectValid()
+            .Ny.value
+        )
+        return g - gLimit
+
+
+class AileronTrim:
+    k_autoAileronTrim = [
+        win32conComp.VK_CONTROL,
+        win32conComp.VK_MENU,
+        win32conComp.VK_A,
+    ]
+    k_autoAileronTrim = [
+        win32conComp.VK_CONTROL,
+        win32conComp.VK_MENU,
+        win32conComp.VK_A,
+    ]
+
+    def __init__(self, pool: futures.ThreadPoolExecutor, dutyCycle: float):
+        super().__init__(
+            pool=pool,
+            dutyCycle=dutyCycle,
+            pidCycle=g3QueryInterval,
+            pid=PIDController(
+                g3PP,
+                g3PI,
+                0,
+                integralLimitMin=g3RatioMin / g3PI,
+                integralLimitMax=g3RatioMax / g3PI,
+            ),
+            onPwmOn=lambda: Keyboard.KeyDown(ord("S")),
+            onPwmOff=lambda: Keyboard.KeyUp(ord("S")),
+        )
+        self.swPidUpdate = Switch()
+
+    def getError(self):
+        g = (
+            Port8111Cache()
+            .get(Port8111.QueryType.state, newest=True)
+            .expectValid()
+            .Ny.value
+        )
+        return g - gLimit

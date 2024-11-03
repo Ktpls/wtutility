@@ -1,7 +1,5 @@
 print_ctrl_ratio = False
 gLimit = 3.0
-g2Ratio = 0.435
-g2DutyCycle = 0.2
 g3DutyCycle = 0.35
 g3RatioMax = 0.7
 g3RatioMin = 0.0
