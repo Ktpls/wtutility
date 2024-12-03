@@ -407,6 +407,7 @@ class Ju288(EasyEngineConfig):
     planeName = ["ju-288c"]
     RAD = 1.0
     ORAD = EasyEngineConfig.ORAD_MAX
+    PP = 0.95
 
 
 @HostedEngineConfig

@@ -89,8 +89,6 @@ class PwmWithPid:
                 self.tmPwm.start()
 
     def __del__(self):
-        self.swEnable.off()
-        self.swPwm.off()
         self.swPush.off()
 
 
@@ -124,11 +122,6 @@ class Glock(PwmWithPid):
 
 
 class AileronTrim:
-    k_autoAileronTrim = [
-        win32conComp.VK_CONTROL,
-        win32conComp.VK_MENU,
-        win32conComp.VK_A,
-    ]
     k_autoAileronTrim = [
         win32conComp.VK_CONTROL,
         win32conComp.VK_MENU,

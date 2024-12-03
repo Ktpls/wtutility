@@ -1,10 +1,10 @@
-from utilitypack.utility import rgb2bgr, hsv2rgb
+from utilitypack.utility import ColorTr
 from .wtdistmeaspy_config_dell import *
 from shared import const as sharedconst
 import os
 
 reflist = [140, 180, 200, 225, 275, 350, 450]
-textcolor = 255 * rgb2bgr(hsv2rgb((0, 0, 1)))
+textcolor = 255 * ColorTr.rgb2bgr(ColorTr.hsv2rgb((0, 0, 1)))
 outputpos = (100, 500)
 
 plerrreq = 10

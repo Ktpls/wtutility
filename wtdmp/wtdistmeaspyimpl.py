@@ -1,5 +1,6 @@
 import matplotlib as mpl
 from utilitypack.utility import *
+from utilitypack.cold.util_solid import *
 from utilitypack.util_winkey import *
 from .wtdistmeaspy_config import *
 import scipy.interpolate
