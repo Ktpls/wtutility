@@ -2,7 +2,7 @@ from utilitypack.util_app import *
 from aio_config import *
 import shared.globalsys as globalsys
 
-@globalsys.GSLogger.ExceptionLogged()
+@GSLogger.ExceptionLogged()
 def main():
     app = BulletinApp(fps=aiofps, hudFps=10)
     modules: list[globalsys.WtUtilityModule] = list()

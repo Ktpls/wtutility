@@ -6,43 +6,16 @@ import logging
 
 
 @Singleton
-class GSLogger:
+class GSLoggerBulletin(GSLogger):
 
     def __init__(self):
-        EnsureDirectoryExists(logFilePath)
-        # Create a logger
-        logger = logging.getLogger(DefaultGlobalSysLoggerName)
-        logger.setLevel(loggingLevel)
+        super().__init__()
 
-        # Add the handler to the logger
         bltHdl = BulletinHandler(logging.INFO)
-        fileHdl = logging.FileHandler(
-            os.path.join(logFilePath, f"{datetime.now().strftime('%Y-%m-%d')}.log")
-        )
-        fileHdl.setFormatter(logging.Formatter(loggingFormat))
-        for h in [
-            bltHdl,
-            fileHdl,
-        ]:
-            logger.addHandler(h)
+        super().logger.addHandler(bltHdl)
 
-        self.logger = logger
-
-    @EasyWrapper
-    @staticmethod
-    def ExceptionLogged(f, execType=Exception):
-        execType = tuple(NormalizeIterableOrSingleArgToIterable(execType))
-
-        @functools.wraps(f)
-        def f2(*args, **kwargs):
-            try:
-                return f(*args, **kwargs)
-            except BaseException as err:
-                if isinstance(err, execType):
-                    GSLogger().logger.exception(err)
-                raise err
-
-        return f2
+# extend with bulletin support
+GSLogger = GSLoggerBulletin
 
 
 class HotKeyConfig:
