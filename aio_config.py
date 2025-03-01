@@ -1,41 +1,20 @@
 import enum
+import dataclasses
 import utilitypack.util_winkey as winkey
 from shared.globalsys import HotKeyConfig
 
 
-class GameMode(enum.Enum):
-    arb = 0
-    garb = 1
-    grb = 2
-
-
-gm = GameMode.arb
-
-
-def getByMode(d: dict):
-    return d.get(gm, None)
-
-
-usingwtdistmeaspy = getByMode(
-    {GameMode.arb: False, GameMode.garb: False, GameMode.grb: True}
-)
-usingtelescope = getByMode(
-    {GameMode.arb: False, GameMode.garb: True, GameMode.grb: True}
-)
-usingkeyshortcut = True
-usingeagleeye = False
-usingglock = getByMode(
-    {GameMode.arb: True, GameMode.garb: False, GameMode.grb: False}
-)
-usingengineman = True
-
-throwErrorInBus = False
-throwErrorInHotkey = False
-
-aiofps = 30
-
-
-class AioHotKeyConfig(HotKeyConfig):
+class AioConfigBase(HotKeyConfig):
+    usingwtdistmeaspy = False
+    usingtelescope = False
+    usingkeyshortcut = True
+    usingeagleeye = False
+    usingglock = True
+    usingengineman = True
+    throwErrorInBus = False
+    throwErrorInHotkey = False
+    aiofps = 15
+    hudFps = 10
     HotKey_PlottingScaleLock = [ord("L"), winkey.win32conComp.VK_OEM_3]
     HotKey_DistMeasCali = winkey.win32conComp.VK_OEM_3
     HotKey_StartCali = [
@@ -48,7 +27,11 @@ class AioHotKeyConfig(HotKeyConfig):
         winkey.win32conComp.VK_MENU,
         winkey.win32conComp.VK_OEM_3,
     ]
-    HotKey_FreshPlottingScale = [winkey.win32conComp.VK_RSHIFT, ord("L"), winkey.win32conComp.VK_OEM_3]
+    HotKey_FreshPlottingScale = [
+        winkey.win32conComp.VK_RSHIFT,
+        ord("L"),
+        winkey.win32conComp.VK_OEM_3,
+    ]
     HotKey_SwitchTelescope = winkey.win32conComp.VK_F12
     HotKey_SwitchTelescopeMti = [
         winkey.win32conComp.VK_RCONTROL,
@@ -80,3 +63,20 @@ class AioHotKeyConfig(HotKeyConfig):
         winkey.win32conComp.VK_SHIFT,
         winkey.win32conComp.VK_F12,
     ]
+
+
+class AioConfigArb(AioConfigBase): ...
+
+
+class AioConfigGarb(AioConfigBase):
+    usingtelescope = True
+    usingglock = False
+
+
+class AioConfigGrb(AioConfigBase):
+    usingwtdistmeaspy = True
+    usingtelescope = True
+    usingglock = False
+
+
+AioConfig = AioConfigGrb

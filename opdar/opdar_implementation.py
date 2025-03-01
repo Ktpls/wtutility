@@ -344,7 +344,7 @@ def GetObjectOnSignal(
 
 
 from wtdmp.wtdistmeaspyimpl import (
-    SnipScencePreProcess,
+    DetectHorAndVerLine,
     GetCrosshair,
     getMilInterval,
     AdjustByZoomRate,
@@ -352,12 +352,12 @@ from wtdmp.wtdistmeaspyimpl import (
     BadCaliException,
 )
 
-
+# those are copied from wtdmp, which has been greatly reconstructed while the old copy here has not been updated
 def GetMilIntervalFromScrShot(m):
     dbglogsavestep = lambda m, name=None, method="savemat": None
     log = lambda s: None
     dbg = False
-    red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
+    red_mask = DetectHorAndVerLine(m, dbg, dbglogsavestep, log)
     crosshair = GetCrosshair(red_mask)
     gridlineHor, rangeHor, mil = getMilInterval(
         red_mask, crosshair, AdjustByZoomRate(gridSearchWidth_unzoom), log

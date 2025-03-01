@@ -41,4 +41,4 @@ for i, x in enumerate(maps):
         subprocess.run(f"copy {x} {fileNewPath}", shell=True, stdout=subprocess.PIPE)
     prog.update(i)
 print("done")
-print(ReprObject(fileClassIndex))
+print(pprint.pp(fileClassIndex))

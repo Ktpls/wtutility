@@ -4,41 +4,41 @@ import shared.globalsys as globalsys
 
 @GSLogger.ExceptionLogged()
 def main():
-    app = BulletinApp(fps=aiofps, hudFps=10)
+    app = BulletinApp(fps=AioConfig.aiofps, hudFps=AioConfig.hudFps)
     modules: list[globalsys.WtUtilityModule] = list()
 
     # wtdistmeas
-    if usingwtdistmeaspy:
+    if AioConfig.usingwtdistmeaspy:
         print("wtdistmeaspy activated")
         from wtdmp.wtdistmeaspy import mWtdmp
 
-        modules.append(mWtdmp(app, AioHotKeyConfig))
+        modules.append(mWtdmp(app, AioConfig))
 
     # telescope
-    if usingtelescope:
+    if AioConfig.usingtelescope:
         print("telescope activated")
         from telescope.telescope import mTelescope
 
-        modules.append(mTelescope(app, AioHotKeyConfig))
+        modules.append(mTelescope(app, AioConfig))
 
     # key shortcuts
-    if usingkeyshortcut:
+    if AioConfig.usingkeyshortcut:
         print("keyshortcut activated")
         from keyshortcut.keyshortcut import mKeyshortcut
 
-        modules.append(mKeyshortcut(app, AioHotKeyConfig))
+        modules.append(mKeyshortcut(app, AioConfig))
 
-    if usingglock:
+    if AioConfig.usingglock:
         print("glock activated")
         from glock.glock import mGlock
 
-        modules.append(mGlock(app, AioHotKeyConfig))
+        modules.append(mGlock(app, AioConfig))
 
-    if usingengineman:
+    if AioConfig.usingengineman:
         print("engineman activated")
         from engineman.engineman import mEngineman
 
-        modules.append(mEngineman(app, AioHotKeyConfig))
+        modules.append(mEngineman(app, AioConfig))
 
     def loadModule(m: globalsys.WtUtilityModule):
         try:
@@ -50,7 +50,7 @@ def main():
     fut = [app.threadpool.submit(functools.partial(loadModule, m)) for m in modules]
     futures.wait(fut)
 
-    @app.Hotkey("Reboot", AioHotKeyConfig.HotKey_Reboot)
+    @app.Hotkey("Reboot", AioConfig.HotKey_Reboot)
     def rebootfoo():
         app.hud.stop()
         bootAsAdmin(__file__)

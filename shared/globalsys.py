@@ -14,33 +14,34 @@ class GSLoggerBulletin(GSLogger):
         bltHdl = BulletinHandler(logging.INFO)
         super().logger.addHandler(bltHdl)
 
+
 # extend with bulletin support
 GSLogger = GSLoggerBulletin
 
 
 class HotKeyConfig:
-    HotKey_PlottingScaleLock = None
-    HotKey_DistMeasCali = None
-    HotKey_StartCali = None
-    HotKey_StopCali = None
-    HotKey_SetPlottingScale = None
-    HotKey_FreshPlottingScale = None
-    HotKey_SwitchTelescope = None
-    HotKey_SwitchTelescopeMti = None
-    HotKey_HoldLeftAndTell = None
-    HotKey_MoveMouse_Direction_Up = None
-    HotKey_MoveMouse_Direction_Left = None
-    HotKey_MoveMouse_Direction_Down = None
-    HotKey_MoveMouse_Direction_Right = None
-    HotKey_MoveMouse_AssistKey = None
-    HotKey_HoldCAndTell = None
-    HotKey_LaunchSeries = None
-    HotKey_RefreshWifi = None
-    HotKey_EagleEyeDataCollector = None
-    HotKey_EagleEyeOnClick = None
-    HotKey_Glock = None
-    HotKey_EngineManSwitch = None
-    HotKey_Reboot = None
+    HotKey_PlottingScaleLock: list[int] | int
+    HotKey_DistMeasCali: list[int] | int
+    HotKey_StartCali: list[int] | int
+    HotKey_StopCali: list[int] | int
+    HotKey_SetPlottingScale: list[int] | int
+    HotKey_FreshPlottingScale: list[int] | int
+    HotKey_SwitchTelescope: list[int] | int
+    HotKey_SwitchTelescopeMti: list[int] | int
+    HotKey_HoldLeftAndTell: list[int] | int
+    HotKey_MoveMouse_Direction_Up: list[int] | int
+    HotKey_MoveMouse_Direction_Left: list[int] | int
+    HotKey_MoveMouse_Direction_Down: list[int] | int
+    HotKey_MoveMouse_Direction_Right: list[int] | int
+    HotKey_MoveMouse_AssistKey: list[int] | int
+    HotKey_HoldCAndTell: list[int] | int
+    HotKey_LaunchSeries: list[int] | int
+    HotKey_RefreshWifi: list[int] | int
+    HotKey_EagleEyeDataCollector: list[int] | int
+    HotKey_EagleEyeOnClick: list[int] | int
+    HotKey_Glock: list[int] | int
+    HotKey_EngineManSwitch: list[int] | int
+    HotKey_Reboot: list[int] | int
 
 
 class WtUtilityModule:

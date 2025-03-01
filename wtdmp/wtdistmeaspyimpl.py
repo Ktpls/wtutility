@@ -380,18 +380,23 @@ uimask[uimask <= 0.5] = 0
 
 
 def SetLineKernel():
-    kernelLength = 17
-    kernelHalfWidth = 3
+    kernelLength = 13
+    kernelHalfWidth = 7  # ~= line interval
     lineHalfWidth = 1.5  # could be float, cuz its soft kernel
     alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth, kernelHalfWidth * 2 + 1)
-    kerValAlongWidth = np.exp(-((alongWidth / lineHalfWidth) ** 2))
+
+    # the initial shape, which requires magnitude adjustment for positive and negative parts perspectively
+    kerValAlongWidth = np.clip(1 - np.abs(alongWidth / lineHalfWidth), -1, 1)
+    posPart = np.sum(np.where(kerValAlongWidth >= 0, 1, 0) * kerValAlongWidth)
+    negPart = np.sum(np.where(kerValAlongWidth < 0, 1, 0) * kerValAlongWidth)
     # transfer to m2 to 1 now
-    Transfer0To1ToM1To1 = scipy.interpolate.interp1d(
-        [0, 1 / np.e, 1], [-1, 0, 1], assume_sorted=True
-    )
-    kerValAlongWidth = Transfer0To1ToM1To1(kerValAlongWidth)
+    kerValAlongWidth = scipy.interpolate.interp1d(
+        [-1, 0, 1], [1 / negPart, 0, 1 / posPart], assume_sorted=True
+    )(kerValAlongWidth)
+
+    # stack the kernel along length direction
     # vertical now
-    return (
+    kerValAlongWidth = (
         np.repeat(
             kerValAlongWidth.reshape((1,) + kerValAlongWidth.shape),
             kernelLength,
@@ -399,12 +404,13 @@ def SetLineKernel():
         )
         / kernelLength
     )
+    return kerValAlongWidth
 
 
 LineKernel = SetLineKernel()
 
 
-def SnipScencePreProcess(m, dbg, dbglogsavestep, log):
+def DetectHorAndVerLine(m, dbg, dbglogsavestep, log):
     # Load input image
     input_image = cv.resize(
         m,
@@ -457,21 +463,20 @@ def SnipScencePreProcess(m, dbg, dbglogsavestep, log):
         > lineFilterThresh
     )
     dbglogsavestep(LineFilteredHor2 * 255)
-    LineFiltered = np.logical_or(LineFilteredHor2, LineFilteredVer2)
-    redpart = np.logical_and(LineFiltered, redpart > 0.5).astype(np.float32)
+    LineFilteredVer, LineFilteredHor = LineFilteredVer2, LineFilteredHor2
+    LineFiltered = np.logical_or(LineFilteredVer, LineFilteredHor)
     dbglogsavestep(LineFiltered * 255)
-    dbglogsavestep(redpart * 255)
-    return redpart
+    return LineFilteredVer, LineFilteredHor
 
 
 def AdjustByZoomRate(degenWindow):
     return int(np.round(degenWindow * caliTableDetectionZoomRate))
 
 
-def GetCrosshair(red_mask):
+def GetCrosshair(LineFilteredVer, LineFilteredHor):
     # use distribution to find crosshair
-    distOnX = red_mask.sum(axis=0)
-    distOnY = red_mask.sum(axis=1)
+    distOnX = LineFilteredVer.sum(axis=0)
+    distOnY = LineFilteredHor.sum(axis=1)
     crosshair = [np.argmax(distOnY), np.argmax(distOnX)]
     crosshairSafeThresh = AdjustByZoomRate(300)
     if (
@@ -540,7 +545,7 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
     )
     log("gridlineHorInterval, filtered")
     log(np.ndarray.__repr__(gridlineHorInterval))
-    kickResult = kickOutWrongItemInUniformData(gridlineHorInterval, milDataErrorReq)
+    kickResult = kickOutWrongItemInUniformData(gridlineHorInterval, milDataErrorReq) #uniform kicking method here with the line compensation method of calibration table lines, cuz they are facing the same problem that wants line positions but there could be interference that may be detected as false positive split, that breaks one section into several sections, or false negative split, that merges several sections into one section
     if type(kickResult) is bool and not kickResult:
         # not too bad, just more time on calibrating
         log(
@@ -565,23 +570,79 @@ class BadCaliException(Exception):
         super().__init__(*args)
 
 
-def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
-    red_mask = SnipScencePreProcess(m, dbg, dbglogsavestep, log)
+def RegionAve1D(interval, windowHalfWidth, dontCountPointItself=True):
+    regionAveKernel = np.ones(windowHalfWidth * 2 + 1)
+    if dontCountPointItself:
+        regionAveKernel[windowHalfWidth] = 0
+    regionNeiborNum = np.correlate(np.ones_like(interval), regionAveKernel, "same")
+    regionAve = np.correlate(interval, regionAveKernel, "same") / regionNeiborNum
+    return regionAve
 
-    crosshair = GetCrosshair(red_mask)
+
+def CompensateCalibrationTableMissedLine(tableLines):
+    interval = np.diff(tableLines)
+    """
+    对于interval，
+    使用np的卷积函数，计算出一个数据周围的数据的平均值
+        这里，使用卷积核ones(CompensateCalibrationTableMissedLine_IntervalEstimationRange)
+        先和ones_like(interval)卷积，padding=0，得出周围数据点数量
+        再和interval卷积，padding=0，结果再除以周围数据点数量，得到周围数据的平均值
+    当interval某处的值大于此处周围平均值*1.75倍，将此处的值平分为两个interval
+    """
+
+    regionAve = RegionAve1D(
+        interval,
+        CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth,
+        True,
+    )
+    ret = list()
+    for i in range(len(interval)):
+        if interval[i] > regionAve[i] * 1.75:
+            ret.extend([interval[i] / 2] * 2)
+        else:
+            ret.append(interval[i])
+    interval = np.array(ret)
+
+    # rebuild tableLines from interval
+    # and inference the unshown distance=0 line at -interval[0]
+    tableLine0Pos = tableLines[0]
+    newTableLines = tableLine0Pos + np.concatenate(
+        [[-interval[0], 0], np.cumsum(interval)]
+    )
+    return newTableLines
+
+
+def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
+    LineFilteredVer, LineFilteredHor = DetectHorAndVerLine(m, dbg, dbglogsavestep, log)
+
+    crosshair = GetCrosshair(LineFilteredVer, LineFilteredHor)
+    crosshairY, crosshairX = crosshair
     # get calibration table
     gridSearchWidth = AdjustByZoomRate(gridSearchWidth_unzoom)
     gridlineVer, rangeVer = findGridAroundLine(
-        red_mask, crosshair[1], 1, gridSearchWidth
+        LineFilteredHor, crosshairX, 1, gridSearchWidth
     )
     gridlineVerPos = np.where(gridlineVer)[0]
-    log("gridlineVerPos")
+    log("gridlineVerPos, crosshairHorizontal included")
     log(np.ndarray.__repr__(gridlineVerPos))
+
+    gridlineVerPos = gridlineVerPos[
+        np.abs(gridlineVerPos - crosshairY)
+        > calibration_crosshair_hor_suppression_range
+    ]
+    log("gridlineVerPos, crosshairHorizontal suppressed")
+    log(np.ndarray.__repr__(gridlineVerPos))
+
     if len(gridlineVerPos) == 0:
         # so we are in snip scence, but no cali table found, maybe blocked by gui due to scope shaking
         log("bad gridlineVerPos")
         raise BadCaliException()
+
+    gridlineVerPos = CompensateCalibrationTableMissedLine(gridlineVerPos)
     targetDistance = np.arange(len(gridlineVerPos)) * 200
+    log("gridlineVerPos, compensated")
+    log(np.ndarray.__repr__(gridlineVerPos))
+
     f = scipy.interpolate.interp1d(
         targetDistance,
         gridlineVerPos,
@@ -590,21 +651,21 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
         assume_sorted=True,
     )
     targetpos = f(targetcali)
-    posnow = crosshair[0]
+    posnow = crosshairY
     log(f"targetpos{targetpos}, posnow{posnow}")
 
     # get mil interval
     gridlineHor, rangeHor, mil = getMilInterval(
-        red_mask, crosshair, gridSearchWidth, log
+        LineFilteredVer, crosshair, gridSearchWidth, log
     )
 
     if dbg:
-        rebuildMap = np.zeros_like(red_mask)
+        rebuildMap = np.zeros_like(LineFilteredVer)
         rebuildMap[crosshair[0], :] = 1
         rebuildMap[:, crosshair[1]] = 1
 
         # calibration grid
-        rebuildMap[gridlineVer, rangeVer[0] : rangeVer[1]] = 1
+        rebuildMap[gridlineVerPos.astype(np.int32), rangeVer[0] : rangeVer[1]] = 1
 
         # mil
         rebuildMap[rangeHor[0] : rangeHor[1], gridlineHor] = 1
@@ -620,11 +681,7 @@ def switchNightMode():
 
 
 def adjustCaliberation(pidoutput):
-    keycode2press = (
-        win32con.VK_PRIOR
-        if pidoutput > 0
-        else win32con.VK_NEXT
-    )
+    keycode2press = win32con.VK_PRIOR if pidoutput > 0 else win32con.VK_NEXT
 
     control = np.abs(pidoutput)
     if control < nonlinearCaliStart:
@@ -670,12 +727,13 @@ class LoadCalibrationOperator(StoppableThread):
             def log(s):
                 pass
 
+        iterNum = 0
         while True:
             if self.stopsignal:
                 # forced stop
                 log(self.result)
                 return
-
+            log(f"iter {iterNum}")
             try:
                 # cali err in pixel
                 caliresult = getNowCalibration(
@@ -700,6 +758,7 @@ class LoadCalibrationOperator(StoppableThread):
             # get the real control, but without direction
             control = adjustCaliberation(control)
             time.sleep(delayEveryCali)
+            iterNum += 1
 
 
 @dataclasses.dataclass

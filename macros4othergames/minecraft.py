@@ -38,15 +38,22 @@ def main():
         mouse.down(0)
         app.bulletin.putup(BulletinBoard.Poster("leftHolding", 1))
 
-    @app.Hotkey("HoldW", [win32con.VK_MENU, ord("W")])
-    @app.Async()
-    @WithHotkeySwitch()
-    def holdW(*arg, **kw) -> None:
-        app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
-        for i in range(3):
-            time.sleep(0.1)
-        Keyboard.KeyDown(ord("W"))
-        app.bulletin.putup(BulletinBoard.Poster("wHolding", 1))
+    def BindHotkeyHoldKeyboard(name: str, key: int):
+        @app.Hotkey(name, [win32con.VK_MENU, key])
+        @WithHotkeySwitch()
+        @app.Async()
+        def foo(*_):
+            app.bulletin.putup(BulletinBoard.Poster("waiting", 1))
+            Keyboard.KeyUp(key)
+            for i in range(3):
+                time.sleep(0.1)
+            Keyboard.KeyDown(key)
+            app.bulletin.putup(BulletinBoard.Poster("holding", 1))
+
+        return foo
+
+    BindHotkeyHoldKeyboard("HoldW", ord("W"))
+    BindHotkeyHoldKeyboard("HoldCtrl", win32con.VK_CONTROL)
 
     @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
     @app.Async()
@@ -91,9 +98,13 @@ def main():
             "Right",
         ],
     ]:
-        app.Hotkey(
-            f"MoveMouse{name}", [win32con.VK_CONTROL, key], continiousPress=True
-        )(WithHotkeySwitch()(functools.partial(keyshortcut.move_mouse, dire)))
+        app.HotkeyFullFunction(
+            f"MoveMouse{name}",
+            [win32con.VK_CONTROL, key],
+            onKeyPress=WithHotkeySwitch()(
+                functools.partial(keyshortcut.move_mouse, dire)
+            ),
+        )
 
     @app.Hotkey("Reboot", [win32con.VK_CONTROL, win32con.VK_SHIFT, win32con.VK_F12])
     @WithHotkeySwitch()

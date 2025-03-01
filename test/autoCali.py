@@ -1,11 +1,11 @@
 from utilref import *
-import wtdmp.wtdistmeaspy
+import wtdmp.wtdistmeaspyimpl
 
 activeWindow(GetWtHwnd())
 time.sleep(2)
 Rhythms.Notify.play()
 
-wtdmpv = wtdmp.wtdistmeaspy.wtdistmeaspy()
+wtdmpv = wtdmp.wtdistmeaspyimpl.wtdistmeaspy()
 wtdmpv.caliOperator.go(1200)
 while True:
     if not wtdmpv.caliOperator.isRunning():

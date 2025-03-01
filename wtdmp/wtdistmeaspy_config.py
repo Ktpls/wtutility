@@ -35,21 +35,22 @@ cnnresultthresh = 0.3
 plottingscale_rel_darkness = -2.5
 
 
-caliDbg = True
+# can only cali under zoomed snip mode, cuz sight has been remake and its too hard to detect under normal snip mode
+caliDbg = False
 caliP = 1
 caliD = 0.05
-#caliControlMul = 0.125  # for 30%
+# caliControlMul = 0.125  # for 30%
 caliControlMul = 0.27  # for 20%
 delayEveryCali = 0.1
 caliTableDetectionZoomRate = 1.0
 milDataErrorReq = 0.1
 milGridIntervalMin = 5
 autoCaliErr = 1.5
-lineFilterThresh = 0.5
+lineFilterThresh = 0.1
 nonlinearCaliStart = 0
-
+calibration_crosshair_hor_suppression_range = 3
 collectingSmallMap = True
-
+CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth=2
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
 
 datacoll_smallmappath = os.path.join(
