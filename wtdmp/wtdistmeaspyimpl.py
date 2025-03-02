@@ -222,7 +222,7 @@ def SolveMap_BottomRightSmallMap(
     mym = cv.filter2D(mym * 2 - 1, -1, kernelyellowmark * 2 - 1) / np.prod(
         kernelyellowmark.shape
     )
-    logg(mym, method="savematn")
+    logg(CvNormalize_Copy(mym, 0, 255, cv.NORM_MINMAX))
     ympos = [mym.max(0).argmax(), mym.max(1).argmax()]
     ymerr = mym[ympos[1], ympos[0]]  # not real err. greater is better
     logg("y=(%3d,%3d),ye=%5.3f" % (ympos[0], ympos[1], ymerr))

@@ -9,7 +9,7 @@ class implocr:
         ...
 
     @staticmethod
-    def ocr(ps, dbglogsavestep, log):
+    def ocr(ps, logg):
         # ps in float within 0~1
         ...
 
@@ -20,8 +20,8 @@ class implPassby:
         pass
 
     @staticmethod
-    def ocr(ps, dbglogsavestep, log):
-        log("using implPassby.ocr()")
+    def ocr(ps, logg):
+        logg("using implPassby.ocr()")
         # a possible value so wont trigger secure check
         return 200
 
@@ -32,8 +32,8 @@ class implTesseract(implocr):
         pass
 
     @staticmethod
-    def ocr(black, dbglogsavestep, log):
-        log("using implTesseract.ocr()")
+    def ocr(black, logg):
+        logg("using implTesseract.ocr()")
         import pytesseract.pytesseract as pytesseract
 
         pytesseract.tesseract_cmd = tesseractpath
@@ -41,7 +41,7 @@ class implTesseract(implocr):
         # filter density to remove noise points
         for i in range(2):
             black = densityfilter(black, [5, 5], 3 / 25).astype("float")
-            dbglogsavestep(black * 255)
+            logg(black)
 
         charw, charh = 10, 20
         # filter density in single char region
@@ -55,17 +55,17 @@ class implTesseract(implocr):
         for x in range(len(density)):
             if density[x] < 0.05:
                 black[:, int(x + 0.5 * charw + 0.5)] = 0
-        dbglogsavestep(getDemonstrationImg())
-        dbglogsavestep(black)
+        logg(getDemonstrationImg())
+        logg(black)
 
         plottingscalestr = pytesseract.image_to_string(
             black.astype("uint8"), lang="eng", config="--psm 7"
         )
-        log(f"plottingscalestr={plottingscalestr}")
+        logg(f"plottingscalestr={plottingscalestr}")
 
         plottingscale = Numinstr(plottingscalestr)
         plottingscalestr = str(plottingscale)
-        log(f"plottingscaleToNumToStr={plottingscalestr}")
+        logg(f"plottingscaleToNumToStr={plottingscalestr}")
         if len(plottingscalestr) > 3:
             # got extra characters
             # trim and do it again
@@ -74,7 +74,7 @@ class implTesseract(implocr):
             # but if arrow, or any tank icon blocking the digit chars this would have no way to fix
             plottingscalestr = plottingscalestr[:3]
             plottingscale = Numinstr(plottingscalestr)
-        log(f"plottingscaleFinal={plottingscale}")
+        logg(f"plottingscaleFinal={plottingscale}")
         return plottingscale
 
 
@@ -90,13 +90,13 @@ class implCNN(implocr):
         model = getmodel(modelpath)
 
     @staticmethod
-    def ocr(ps, dbglogsavestep, log):
-        log("using implCNN.ocr()")
+    def ocr(ps, logg):
+        logg("using implCNN.ocr()")
         from exp.DLOnPlottingScale.wtdmpsocr.wtdmpsocr import wtdmpsocr
 
         assert model is not None
         result = wtdmpsocr(ps, model, cnnresultthresh)
-        log(f"resultstr={result}")
+        logg(f"resultstr={result}")
         result = Numinstr(result)
-        log(f"resultnum={result}")
+        logg(f"resultnum={result}")
         return result
