@@ -1,4 +1,4 @@
-crosshair:t=""
+crosshair:t="ReticleLineZero"
 crosshairColor:c=255, 0, 0, 255
 crosshairLightColor:c=255, 36, 0, 255
 crosshairNvColor:c=255, 36, 0, 255
@@ -23,6 +23,6 @@ bulletType{
 
 reticle{
   overridden:b=yes
-  lineWidth:r=0
+  lineWidth:r=2
   fontSize:r=1.3
 }

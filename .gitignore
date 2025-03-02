@@ -15,6 +15,6 @@ asset/autofreshmap/raws
 test/wtdmpocrtest/
 asset/collection
 asset/log
-asset/wtdistmeaspy/
+asset/wtdistmeaspy/log
 asset/statistics
 *.ignored

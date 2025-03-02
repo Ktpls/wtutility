@@ -49,10 +49,11 @@ lineFilterThresh = 0.1
 nonlinearCaliStart = 0
 calibration_crosshair_hor_suppression_range = 3
 collectingSmallMap = True
-CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth=2
-LineDetectorKernelLength = 9
-LineDetectorKernelHalfWidth = 4  # ~= line interval
-LineDetectorLineHalfWidth = 1  # could be float, cuz its soft kernel
+CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth = 2
+LineDetectorKernelLength = 20
+LineDetectorKernelHalfWidth = 3  # ~= line interval
+# could be float, cuz its soft kernel. so actual value is precise, unlike "2*w+1" stuff
+LineDetectorLineHalfWidth = 1.5
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
 
 datacoll_smallmappath = os.path.join(
