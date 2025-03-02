@@ -7,7 +7,7 @@ time.sleep(2)
 Rhythms.Notify.play()
 
 wtdmpv = wtdmp.wtdistmeaspyimpl.wtdistmeaspy()
-wtdmpv.caliOperator.go(1200)
+wtdmpv.caliOperator.go(250)
 while True:
     if not wtdmpv.caliOperator.isRunning():
         break

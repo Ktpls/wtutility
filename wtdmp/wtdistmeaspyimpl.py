@@ -52,7 +52,7 @@ class SmallReportLogger:
                 savemat(
                     img,
                     name=make_filename_safe(
-                        f"[{datetime.now().strftime('%Y-%m-%d,%H,%M,%S')}]{msg}"
+                        f"[{datetime.now().strftime('%Y-%m-%d,%H,%M,%S,%f')}]{msg}"
                     ),
                     path=self.path,
                 )
@@ -439,7 +439,7 @@ def DetectHorAndVerLine(m, logg):
         (np.flip(m.shape[0:2]) * caliTableDetectionZoomRate).astype(np.int32),
         interpolation=cv.INTER_NEAREST,
     )
-    logg(input_image)
+    logg("input_image", input_image)
 
     # Convert input image to HSV color space
     hsv_image = cv.cvtColor(input_image, cv.COLOR_BGR2HSV).astype(np.float32)
@@ -456,18 +456,18 @@ def DetectHorAndVerLine(m, logg):
     lower_red = hsv2opencv8bithsv((0, 35, 60))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     redpart = cv.inRange(hsv_image, lower_red, upper_red) / 255
-    logg(redpart)
+    logg("redpart", redpart)
     #  apply ui mask here
     redpart = redpart * uimask
-    logg(redpart)
+    logg("ui masked", redpart)
 
     LineFilteredVer = cv.filter2D(redpart, -1, LineKernel) > lineFilterThresh
-    logg(LineFilteredVer)
+    logg("LineFilteredVer", LineFilteredVer)
     LineFilteredHor = cv.filter2D(redpart, -1, LineKernel.T) > lineFilterThresh
-    logg(LineFilteredHor)
+    logg("LineFilteredHor", LineFilteredHor)
 
     # do it again to eliminate noise from each other
-    LineFilteredVer2 = (
+    LineFilteredVer_InterinferenceRm = (
         cv.filter2D(
             np.logical_and(redpart, np.logical_not(LineFilteredHor)).astype(np.float32),
             -1,
@@ -475,8 +475,8 @@ def DetectHorAndVerLine(m, logg):
         )
         > lineFilterThresh
     )
-    logg(LineFilteredVer2)
-    LineFilteredHor2 = (
+    logg("LineFilteredVer_InterinferenceRm", LineFilteredVer_InterinferenceRm)
+    LineFilteredHor_InterinferenceRm = (
         cv.filter2D(
             np.logical_and(redpart, np.logical_not(LineFilteredVer)).astype(np.float32),
             -1,
@@ -484,10 +484,11 @@ def DetectHorAndVerLine(m, logg):
         )
         > lineFilterThresh
     )
-    logg(LineFilteredHor2)
-    LineFilteredVer, LineFilteredHor = LineFilteredVer2, LineFilteredHor2
-    LineFiltered = np.logical_or(LineFilteredVer, LineFilteredHor)
-    logg(LineFiltered)
+    logg("LineFilteredHor_InterinferenceRm", LineFilteredHor_InterinferenceRm)
+    LineFilteredVer, LineFilteredHor = (
+        LineFilteredVer_InterinferenceRm,
+        LineFilteredHor_InterinferenceRm,
+    )
     return LineFilteredVer, LineFilteredHor
 
 
@@ -628,11 +629,8 @@ def CompensateCalibrationTableMissedLine(tableLines):
     interval = np.array(ret)
 
     # rebuild tableLines from interval
-    # and inference the unshown distance=0 line at -interval[0]
     tableLine0Pos = tableLines[0]
-    newTableLines = tableLine0Pos + np.concatenate(
-        [[-interval[0], 0], np.cumsum(interval)]
-    )
+    newTableLines = tableLine0Pos + np.concatenate([[0], np.cumsum(interval)])
     return newTableLines
 
 
@@ -643,19 +641,12 @@ def getNowCalibration(m, targetcali, logg: SmallReportLogger):
     crosshairY, crosshairX = crosshair
     # get calibration table
     gridSearchWidth = AdjustByZoomRate(gridSearchWidth_unzoom)
-    LineFilteredHor_CrossHairDepressed = np.copy(LineFilteredHor)
-    LineFilteredHor_CrossHairDepressed[
-        :,
-        crosshairY
-        - calibration_crosshair_hor_suppression_range : crosshairY
-        + calibration_crosshair_hor_suppression_range,
-    ] = 0
-    logg(LineFilteredHor_CrossHairDepressed)
+
     gridlineVer, rangeVer = findGridAroundLine(
-        LineFilteredHor_CrossHairDepressed, crosshairX, 1, gridSearchWidth
+        LineFilteredHor, crosshairX, 1, gridSearchWidth
     )
     gridlineVerPos = np.where(gridlineVer)[0]
-    logg("gridlineVerPos, crosshairHorizontal suppressed")
+    logg("gridlineVerPos")
     logg(np.ndarray.__repr__(gridlineVerPos))
 
     if len(gridlineVerPos) == 0:
@@ -694,7 +685,7 @@ def getNowCalibration(m, targetcali, logg: SmallReportLogger):
 
         # mil
         rebuildMap[rangeHor[0] : rangeHor[1], gridlineHor] = 1
-        logg(rebuildMap)
+        logg("rebuildMap", rebuildMap)
 
     ret = np.array((targetpos, posnow, mil))
     ret /= caliTableDetectionZoomRate

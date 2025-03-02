@@ -47,7 +47,6 @@ milGridIntervalMin = 5
 autoCaliErr = 1.5
 lineFilterThresh = 0.1
 nonlinearCaliStart = 0
-calibration_crosshair_hor_suppression_range = 3
 collectingSmallMap = True
 CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth = 2
 LineDetectorKernelLength = 20
