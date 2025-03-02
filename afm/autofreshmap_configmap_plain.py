@@ -12,7 +12,7 @@ highSurvivablity = [
     #'FireArc',
     "Flanders",
     "FrozenPass",
-    #"Karelia",
+    "Karelia",
     "MaginotLine#1",
     "MaginotLine#2",
     "Mozdok#2",

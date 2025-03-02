@@ -380,16 +380,14 @@ uimask[uimask <= 0.5] = 0
 
 
 def SetLineKernel():
-    kernelLength = 13
-    kernelHalfWidth = 7  # ~= line interval
-    lineHalfWidth = 1.5  # could be float, cuz its soft kernel
-    alongWidth = np.linspace(-kernelHalfWidth, kernelHalfWidth, kernelHalfWidth * 2 + 1)
+    alongWidth = np.linspace(-LineDetectorKernelHalfWidth, LineDetectorKernelHalfWidth, LineDetectorKernelHalfWidth * 2 + 1)
 
     # the initial shape, which requires magnitude adjustment for positive and negative parts perspectively
-    kerValAlongWidth = np.clip(1 - np.abs(alongWidth / lineHalfWidth), -1, 1)
+    kerValAlongWidth = np.clip(1 - np.abs(alongWidth / LineDetectorLineHalfWidth), -1, 1)
+    # do experiment to get pos and neg surface
     posPart = np.sum(np.where(kerValAlongWidth >= 0, 1, 0) * kerValAlongWidth)
     negPart = np.sum(np.where(kerValAlongWidth < 0, 1, 0) * kerValAlongWidth)
-    # transfer to m2 to 1 now
+
     kerValAlongWidth = scipy.interpolate.interp1d(
         [-1, 0, 1], [1 / negPart, 0, 1 / posPart], assume_sorted=True
     )(kerValAlongWidth)
@@ -399,10 +397,10 @@ def SetLineKernel():
     kerValAlongWidth = (
         np.repeat(
             kerValAlongWidth.reshape((1,) + kerValAlongWidth.shape),
-            kernelLength,
+            LineDetectorKernelLength,
             axis=0,
         )
-        / kernelLength
+        / LineDetectorKernelLength
     )
     return kerValAlongWidth
 
@@ -545,7 +543,9 @@ def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
     )
     log("gridlineHorInterval, filtered")
     log(np.ndarray.__repr__(gridlineHorInterval))
-    kickResult = kickOutWrongItemInUniformData(gridlineHorInterval, milDataErrorReq) #uniform kicking method here with the line compensation method of calibration table lines, cuz they are facing the same problem that wants line positions but there could be interference that may be detected as false positive split, that breaks one section into several sections, or false negative split, that merges several sections into one section
+    kickResult = kickOutWrongItemInUniformData(
+        gridlineHorInterval, milDataErrorReq
+    )  # uniform kicking method here with the line compensation method of calibration table lines, cuz they are facing the same problem that wants line positions but there could be interference that may be detected as false positive split, that breaks one section into several sections, or false negative split, that merges several sections into one section
     if type(kickResult) is bool and not kickResult:
         # not too bad, just more time on calibrating
         log(
@@ -969,9 +969,12 @@ class wtdistmeaspy:
             return "OK, ps=%d" % self.lastDistMeasResultStaged.plottingscale
 
         # try 8111
-        ret = Port8111Cache().get(Port8111.QueryType.map_info)
-        if ret is not None and ret.valid:
-            return SetPs(ret.grid_steps[0])
+        try:
+            ret = Port8111Cache().get(Port8111.QueryType.map_info)
+            if ret is not None and ret.expectValid().valid:
+                return SetPs(ret.grid_steps[0])
+        except Port8111.FetchFailure:
+            ...
 
         # try solve map
         # ret = SolveMap_BottomRightSmallMap(

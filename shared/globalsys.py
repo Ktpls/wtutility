@@ -9,10 +9,10 @@ import logging
 class GSLoggerBulletin(GSLogger):
 
     def __init__(self):
-        super().__init__()
+        GSLogger.__init__(self)
 
         bltHdl = BulletinHandler(logging.INFO)
-        super().logger.addHandler(bltHdl)
+        self.logger.addHandler(bltHdl)
 
 
 # extend with bulletin support

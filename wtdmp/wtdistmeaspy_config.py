@@ -35,8 +35,7 @@ cnnresultthresh = 0.3
 plottingscale_rel_darkness = -2.5
 
 
-# can only cali under zoomed snip mode, cuz sight has been remake and its too hard to detect under normal snip mode
-caliDbg = False
+caliDbg = True
 caliP = 1
 caliD = 0.05
 # caliControlMul = 0.125  # for 30%
@@ -51,9 +50,12 @@ nonlinearCaliStart = 0
 calibration_crosshair_hor_suppression_range = 3
 collectingSmallMap = True
 CompensateCalibrationTableMissedLine_IntervalEstimationRangeHalfWidth=2
+LineDetectorKernelLength = 9
+LineDetectorKernelHalfWidth = 4  # ~= line interval
+LineDetectorLineHalfWidth = 1  # could be float, cuz its soft kernel
 yellowmarkpath = r"./asset/wtdistmeaspy/yellowmarkBinary.png"
 
 datacoll_smallmappath = os.path.join(
     sharedconst.collectionPath, "wtdistmeaspy/smallMapCollection"
 )
-wtdmplogpath = os.path.join(sharedconst.collectionPath, "wtdistmeaspy/log/{}_{}")
+wtdmplogpath = "asset/wtdistmeaspy/log/{}_{}"

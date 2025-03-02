@@ -9,7 +9,7 @@ import traceback
 
 @GSLogger.ExceptionLogged()
 def main():
-    pool = futures.ThreadPoolExecutor()
+    pool = UTS_DEFAULT_THREAD_POOL
 
     afm = freshAMap()
 
@@ -33,7 +33,7 @@ def main():
         mouse.mov(*(0, 0))
         f = pool.submit(freshAMap.run, afm)
         # main loop
-        while f.running():
+        while not f.done():
             fpsm.WaitUntilNextFrame()
             hkm.dispatchMessage()
         if waitafterdone:
