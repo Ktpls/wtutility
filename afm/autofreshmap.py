@@ -7,7 +7,7 @@ from .autofreshmap_implementation import *
 import traceback
 
 
-@GSLogger.ExceptionLogged()
+@GSBLogger.ExceptionLogged()
 def main():
     pool = UTS_DEFAULT_THREAD_POOL
 

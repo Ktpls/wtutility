@@ -1,4 +1,5 @@
-from utilref import *
+from shared.globalsys import *
+from utilitypack.util_wt import *
 import wtdmp.wtdistmeaspyimpl
 
 activeWindow(GetWtHwnd())

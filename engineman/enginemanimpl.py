@@ -33,7 +33,7 @@ class DetachedEngineManStopSignal:
         call this on check point in time consuming works
         """
         if self.get():
-            GSLogger().logger.debug("throw On DetachedEngineManStopSignal")
+            GSBLogger().debug("throw On DetachedEngineManStopSignal")
             raise DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException()
 
     @EasyWrapper
@@ -194,7 +194,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
         while True:
             DetachedEngineManStopSignal().throwOnIsSet()
             nowVal = self.get()
-            GSLogger().logger.debug(
+            GSBLogger().debug(
                 f"DiscreteCEAxis setting {self.__class__=} {nowVal=} {target=}"
             )
             if nowVal is None:
@@ -216,7 +216,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
             holdTime = keyPressMiniumHoldingTime
 
         def issucc(prev, after):
-            GSLogger().logger.debug(
+            GSBLogger().debug(
                 f"ContiniousCEAxis turnUpIsSucc {self.__class__=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
             )
             return a or b or c
@@ -231,7 +231,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
             holdTime = keyPressMiniumHoldingTime
 
         def issucc(prev, after):
-            GSLogger().logger.debug(
+            GSBLogger().debug(
                 f"ContiniousCEAxis turnDownIsSucc {self.__class__=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
             )
             return a or b or c
@@ -266,23 +266,23 @@ SwitchManualEngineControl = WtFunctionalKey(
 
 def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
     def enableManEngCtrl_ManAxisCtrl():
-        GSLogger().logger.debug("Solution enableManEngCtrl_ManAxisCtrl doing")
+        GSBLogger().debug("Solution enableManEngCtrl_ManAxisCtrl doing")
         SwitchManualEngineControl.press()
         PreciseSleep(0.5)
         yourself.switchManualControl()
 
     def disableManEngCtrl_ManAxisCtrl():
-        GSLogger().logger.debug("Solution disableManEngCtrl_ManAxisCtrl doing")
+        GSBLogger().debug("Solution disableManEngCtrl_ManAxisCtrl doing")
         yourself.switchManualControl()
         PreciseSleep(0.5)
         SwitchManualEngineControl.press()
 
     def switchAxisManualControl():
-        GSLogger().logger.debug("Solution switchAxisManualControl doing")
+        GSBLogger().debug("Solution switchAxisManualControl doing")
         yourself.switchManualControl()
 
     def switchManualEngineControl():
-        GSLogger().logger.debug("Solution switchManualEngineControl doing")
+        GSBLogger().debug("Solution switchManualEngineControl doing")
         SwitchManualEngineControl.press()
 
     return [
@@ -549,7 +549,7 @@ class EngineMan:
                     raise err
                 else:
                     print(err)
-                    GSLogger().logger.error(err)
+                    GSBLogger().error(err)
                     traceback.print_exc()
                     raise err
 
@@ -576,7 +576,7 @@ class EngineMan:
                 time.perf_counter() - self.lastCheckTime
                 > self.services[planeName].checkRate
             ):
-                GSLogger().logger.debug(
+                GSBLogger().debug(
                     f"engineman service doing checking, {planeName=}"
                 )
                 self.serviceDoCheck()

@@ -6,17 +6,33 @@ import logging
 
 
 @Singleton
-class GSLoggerBulletin(GSLogger):
+class GSBulletinAppLogger(GSLogger):
+    FildDestPath = GSLogger.Handlers.FileHandlerDefaultPath
+    ImageSavePath = FildDestPath
 
     def __init__(self):
-        GSLogger.__init__(self)
+        GSBLogger.__init__(
+            self, [self.Handlers.ConsoleHandler(), self.Handlers.FileHandler()]
+        )
 
         bltHdl = BulletinHandler(logging.INFO)
         self.logger.addHandler(bltHdl)
 
+    def dbg_img(self, img: np.ndarray, msg=None):
+        if self.logger.isEnabledFor(logging.DEBUG):
+            if img.dtype in (np.float32, np.float64):
+                img = img * 255
+            savemat(
+                img,
+                name=make_filename_safe(
+                    f"[{datetime.now().strftime('%Y-%m-%d,%H,%M,%S')}]{msg}.png"
+                ),
+                path=self.ImageSavePath,
+            )
+
 
 # extend with bulletin support
-GSLogger = GSLoggerBulletin
+GSBLogger = GSBulletinAppLogger
 
 
 class HotKeyConfig:

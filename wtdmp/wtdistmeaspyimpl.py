@@ -1,4 +1,4 @@
-import matplotlib as mpl
+from shared.globalsys import *
 from utilitypack.utility import *
 from utilitypack.cold.util_solid import *
 from utilitypack.util_winkey import *
@@ -21,6 +21,43 @@ kernelyellowmark = (
 # screen
 w = 1920
 h = 1080
+
+
+@dataclasses.dataclass
+class SmallReportLogger:
+    path: str
+    enable: bool = True
+    logg: Logger = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        if self.enable:
+            filePath = os.path.join(self.path, "log.log")
+            self.logg = Logger(filePath)
+        else:
+            self.logg = None
+
+    def __call__(self, msg=None, img: np.ndarray = None):
+        if self.enable:
+            if isinstance(msg, np.ndarray) and img is None:
+                # actually calling like: self(some image without msg)
+                img = msg
+                msg = None
+            if img is not None:
+                if img.dtype in (
+                    np.dtype("float32"),
+                    np.dtype("float64"),
+                    np.dtype("bool"),
+                ):
+                    img = (img * 255).astype(np.uint8)
+                savemat(
+                    img,
+                    name=make_filename_safe(
+                        f"[{datetime.now().strftime('%Y-%m-%d,%H,%M,%S')}]{msg}"
+                    ),
+                    path=self.path,
+                )
+            else:
+                self.logg(msg)
 
 
 def kickOutWrongItemInUniformData(l, sqrErrReq):
@@ -106,57 +143,38 @@ class SolveMapResult:
 def SolveMap_BottomRightSmallMap(
     isrc, dbg: bool = False, dbglogpath: str = "", dontGetPlottingScale: bool = False
 ):
-    if dbg:
-
-        def dbglogsavestep(m, name="unnamed", method="savemat"):
-            nonlocal dbglogpath
-            exec("{}(m,path=dbglogpath,name=name)".format(method))
-
-        logg = Logger(os.path.join(dbglogpath, "log.log"))
-
-        def log(s):
-            logg(s)
-
-    else:
-
-        def dbglogsavestep(m, name=None, method="savemat"):
-            pass
-
-        logg = None
-
-        def log(s):
-            pass
+    logg = SmallReportLogger(dbglogpath, enable=dbg)
 
     mcolored = isrc
-    dbglogsavestep(mcolored)
+    logg(mcolored)
 
     mgray = cv.cvtColor(mcolored, cv.COLOR_BGR2GRAY)
-    dbglogsavestep(mgray)
+    logg(mgray)
 
     # find player
 
     mcolorply = cv.cvtColor(mcolored, cv.COLOR_BGR2HSV)
-    dbglogsavestep(mcolorply)
+    logg(mcolorply)
 
     mcolorply = cv.inRange(
         mcolorply, hsv2opencv8bithsv([25, 15, 55]), hsv2opencv8bithsv([65, 60, 256])
     )
-    dbglogsavestep(mcolorply)
+    logg(mcolorply)
 
     mply = cv.adaptiveThreshold(
         mgray, 1, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, -110
     )
-    dbglogsavestep(255 * mply)
+    logg(255 * mply)
 
     mply = mcolorply * mply
-    dbglogsavestep(mply)
+    logg(mply)
 
     def playerfinder_gaussiandensity_method(m):
         b = cv.GaussianBlur(m, [5, 5], None)
-        dbglogsavestep(b)
+        logg(b)
 
         mply = (m * (b > 255 * 7 / 25)).astype("int")
-        dbglogsavestep(mply)
+        logg(mply)
 
         X = np.arange(mply.shape[1])
         Y = np.arange(mply.shape[0])
@@ -169,7 +187,7 @@ def SolveMap_BottomRightSmallMap(
         playererr = (
             ((X - playerpos[0]) ** 2 + (Y - playerpos[1]) ** 2) * mply
         ).sum() / mplysum
-        log("p=(%3d,%3d),pe=%5.3f" % (playerpos[0], playerpos[1], playererr))
+        logg("p=(%3d,%3d),pe=%5.3f" % (playerpos[0], playerpos[1], playererr))
         return True, playerpos, playererr
 
     afterprocessresult = playerfinder_gaussiandensity_method(mply)
@@ -189,7 +207,7 @@ def SolveMap_BottomRightSmallMap(
 
     # find yellow mark
     mcolorym = cv.cvtColor(mcolored, cv.COLOR_BGR2HSV)
-    dbglogsavestep(mcolorym)
+    logg(mcolorym)
 
     mym = (
         cv.inRange(
@@ -199,15 +217,15 @@ def SolveMap_BottomRightSmallMap(
         ).astype(np.float32)
         / 255
     )
-    dbglogsavestep(mym * 255)
+    logg(mym)
 
     mym = cv.filter2D(mym * 2 - 1, -1, kernelyellowmark * 2 - 1) / np.prod(
         kernelyellowmark.shape
     )
-    dbglogsavestep(mym, method="savematn")
+    logg(mym, method="savematn")
     ympos = [mym.max(0).argmax(), mym.max(1).argmax()]
     ymerr = mym[ympos[1], ympos[0]]  # not real err. greater is better
-    log("y=(%3d,%3d),ye=%5.3f" % (ympos[0], ympos[1], ymerr))
+    logg("y=(%3d,%3d),ye=%5.3f" % (ympos[0], ympos[1], ymerr))
 
     if ymerr < ymerrreq:
         # should not use last ym
@@ -219,13 +237,13 @@ def SolveMap_BottomRightSmallMap(
 
     # find grid
     mgrd = 255 - mgray
-    dbglogsavestep(mgrd)
+    logg(mgrd)
 
     mgrd = cv.adaptiveThreshold(
         mgrd, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 5, -2
     )
     # mgrd=(mgrd-regionave(mgrd,[5,5])>2).astype(np.uint8)*255
-    dbglogsavestep(mgrd)
+    logg(mgrd)
 
     gridlinekernellength = 201
     onepixline = np.ones([gridlinekernellength])
@@ -235,14 +253,14 @@ def SolveMap_BottomRightSmallMap(
     kernelrow = kernelrow / gridlinekernellength
 
     mrow = cv.filter2D(mgrd, -1, kernelrow)
-    dbglogsavestep(mrow)
+    logg(mrow)
     drow = mrow.mean(axis=1) / 255
 
     mcol = cv.filter2D(mgrd, -1, kernelrow.T)
-    dbglogsavestep(mcol)
+    logg(mcol)
     dcol = mcol.mean(axis=0) / 255
 
-    dbglogsavestep(
+    logg(
         cv.threshold(
             mcol.astype("float") + mrow.astype("float"), 255, 255, cv.THRESH_TRUNC
         )[1]
@@ -260,12 +278,12 @@ def SolveMap_BottomRightSmallMap(
         [distribution2interval(dcol), distribution2interval(drow)]
     )
 
-    log("all intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
+    logg("all intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
 
     MIN_LINE_INTERVAL = 20
     # filter intervals
     interval = [i for i in interval if i > MIN_LINE_INTERVAL]
-    log("degened intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
+    logg("degened intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
 
     interval = np.array(interval)
     intervaltotalnum = len(interval)
@@ -277,18 +295,18 @@ def SolveMap_BottomRightSmallMap(
         gridstate = SMException(SMException.SolveMapResultType.GD_BAD_INTE)
     else:
         interval, err = kickoutresult
-        log(
+        logg(
             "grid interval samples used %d out of %d, err=%5f\n"
             % (len(interval), intervaltotalnum, err)
         )
 
-        log("used intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
+        logg("used intervals\n%s" % ("\n".join(["%4d" % i for i in interval])))
 
         gridave = interval.mean()
         griderr = interval.var()
         gridstate = SMException(SMException.SolveMapResultType.NO_ERR)
 
-    log("g=%3f,ge=%5f.3f" % (gridave, griderr))
+    logg("g=%3f,ge=%5f.3f" % (gridave, griderr))
 
     # find plotting scale
     if dontGetPlottingScale:
@@ -308,7 +326,7 @@ def SolveMap_BottomRightSmallMap(
         # but 2.5x interval is quite enough
         base = -3 - 1 + plottingscalePosOffset
         mps = np.copy(mcolored[base - 14 : base, -psfindrange:, :])
-        dbglogsavestep(mps)
+        logg(mps)
         # consider cut map in the last step, for using as more region info in detection as possible
 
         # filter absolute color
@@ -316,7 +334,7 @@ def SolveMap_BottomRightSmallMap(
         darkgraypoints = cv.inRange(
             mpshsv, hsv2opencv8bithsv([0, 0, 0]), hsv2opencv8bithsv([360, 56, 40])
         )
-        dbglogsavestep(darkgraypoints)
+        logg(darkgraypoints)
 
         # filter adaptive value(lightness)
         mpsgray = mpshsv[:, :, 2]
@@ -327,20 +345,20 @@ def SolveMap_BottomRightSmallMap(
             255,
             cv.THRESH_BINARY_INV,
         )[1]
-        dbglogsavestep(relblack)
+        logg(relblack)
 
         # be both really black and relatively black
         black = np.logical_and(darkgraypoints, relblack).astype("float")
         # black=np.logical_and(black,relinsat).astype('float')*255
-        dbglogsavestep(black * 255)
+        logg(black)
 
         charw, charh = 10, 20
 
         # padding for ease of recongnization by tesseract, at least in the past
         # but our cnn using data collected from tesseract daily use uses the standard 20x10 char pic
         black = cv.copyMakeBorder(black, 3, 3, 3, 3, cv.BORDER_CONSTANT, value=0)
-        dbglogsavestep(black * 255)
-        plottingscale = ocrimpl.ocr(black, dbglogsavestep, log)
+        logg(black)
+        plottingscale = ocrimpl.ocr(black, logg)
         if (
             plottingscale > plottingscalerequpper
             or plottingscale < plottingscalereqlower
@@ -380,16 +398,22 @@ uimask[uimask <= 0.5] = 0
 
 
 def SetLineKernel():
-    alongWidth = np.linspace(-LineDetectorKernelHalfWidth, LineDetectorKernelHalfWidth, LineDetectorKernelHalfWidth * 2 + 1)
+    alongWidth = np.linspace(
+        -LineDetectorKernelHalfWidth,
+        LineDetectorKernelHalfWidth,
+        LineDetectorKernelHalfWidth * 2 + 1,
+    )
 
     # the initial shape, which requires magnitude adjustment for positive and negative parts perspectively
-    kerValAlongWidth = np.clip(1 - np.abs(alongWidth / LineDetectorLineHalfWidth), -1, 1)
+    kerValAlongWidth = np.clip(
+        1 - np.abs(alongWidth / LineDetectorLineHalfWidth), -1, 1
+    )
     # do experiment to get pos and neg surface
     posPart = np.sum(np.where(kerValAlongWidth >= 0, 1, 0) * kerValAlongWidth)
     negPart = np.sum(np.where(kerValAlongWidth < 0, 1, 0) * kerValAlongWidth)
 
     kerValAlongWidth = scipy.interpolate.interp1d(
-        [-1, 0, 1], [1 / negPart, 0, 1 / posPart], assume_sorted=True
+        [-1, 0, 1], [2 / negPart, 0, 1 / posPart], assume_sorted=True
     )(kerValAlongWidth)
 
     # stack the kernel along length direction
@@ -408,14 +432,14 @@ def SetLineKernel():
 LineKernel = SetLineKernel()
 
 
-def DetectHorAndVerLine(m, dbg, dbglogsavestep, log):
+def DetectHorAndVerLine(m, logg):
     # Load input image
     input_image = cv.resize(
         m,
         (np.flip(m.shape[0:2]) * caliTableDetectionZoomRate).astype(np.int32),
         interpolation=cv.INTER_NEAREST,
     )
-    dbglogsavestep(input_image)
+    logg(input_image)
 
     # Convert input image to HSV color space
     hsv_image = cv.cvtColor(input_image, cv.COLOR_BGR2HSV).astype(np.float32)
@@ -432,15 +456,15 @@ def DetectHorAndVerLine(m, dbg, dbglogsavestep, log):
     lower_red = hsv2opencv8bithsv((0, 35, 60))
     upper_red = hsv2opencv8bithsv((2 * huerange, 100, 100))
     redpart = cv.inRange(hsv_image, lower_red, upper_red) / 255
-    dbglogsavestep(redpart * 255)
+    logg(redpart)
     #  apply ui mask here
     redpart = redpart * uimask
-    dbglogsavestep(redpart * 255)
+    logg(redpart)
 
     LineFilteredVer = cv.filter2D(redpart, -1, LineKernel) > lineFilterThresh
-    dbglogsavestep(LineFilteredVer * 255)
+    logg(LineFilteredVer)
     LineFilteredHor = cv.filter2D(redpart, -1, LineKernel.T) > lineFilterThresh
-    dbglogsavestep(LineFilteredHor * 255)
+    logg(LineFilteredHor)
 
     # do it again to eliminate noise from each other
     LineFilteredVer2 = (
@@ -451,7 +475,7 @@ def DetectHorAndVerLine(m, dbg, dbglogsavestep, log):
         )
         > lineFilterThresh
     )
-    dbglogsavestep(LineFilteredVer2 * 255)
+    logg(LineFilteredVer2)
     LineFilteredHor2 = (
         cv.filter2D(
             np.logical_and(redpart, np.logical_not(LineFilteredVer)).astype(np.float32),
@@ -460,10 +484,10 @@ def DetectHorAndVerLine(m, dbg, dbglogsavestep, log):
         )
         > lineFilterThresh
     )
-    dbglogsavestep(LineFilteredHor2 * 255)
+    logg(LineFilteredHor2)
     LineFilteredVer, LineFilteredHor = LineFilteredVer2, LineFilteredHor2
     LineFiltered = np.logical_or(LineFilteredVer, LineFilteredHor)
-    dbglogsavestep(LineFiltered * 255)
+    logg(LineFiltered)
     return LineFilteredVer, LineFilteredHor
 
 
@@ -529,33 +553,33 @@ def findGridAroundLine(red_mask, pos, axis, gridSearchWidth):
     return line, gridSearchRange  # range just for rebuilding
 
 
-def getMilInterval(red_mask, crosshair, gridSearchWidth, log):
+def getMilInterval(red_mask, crosshair, gridSearchWidth, logg):
     gridlineHor, rangeHor = findGridAroundLine(
         red_mask, crosshair[0], 0, gridSearchWidth
     )
     gridlineHorPos = np.where(gridlineHor)[0]
     gridlineHorInterval = (arrayshift(gridlineHorPos, -1) - gridlineHorPos)[:-1]
-    log("gridlineHorInterval")
-    log(np.ndarray.__repr__(gridlineHorInterval))
+    logg("gridlineHorInterval")
+    logg(np.ndarray.__repr__(gridlineHorInterval))
 
     gridlineHorInterval = np.array(
         [i for i in gridlineHorInterval if i > milGridIntervalMin]
     )
-    log("gridlineHorInterval, filtered")
-    log(np.ndarray.__repr__(gridlineHorInterval))
+    logg("gridlineHorInterval, filtered")
+    logg(np.ndarray.__repr__(gridlineHorInterval))
     kickResult = kickOutWrongItemInUniformData(
         gridlineHorInterval, milDataErrorReq
     )  # uniform kicking method here with the line compensation method of calibration table lines, cuz they are facing the same problem that wants line positions but there could be interference that may be detected as false positive split, that breaks one section into several sections, or false negative split, that merges several sections into one section
     if type(kickResult) is bool and not kickResult:
         # not too bad, just more time on calibrating
-        log(
+        logg(
             "warning, gridlineHorInterval may be too bad to pass milDataErrorReq, check go it"
         )
         raise BadCaliException("BadCaliTableException")
     else:
         gridlineHorInterval, _ = kickResult
-        log("gridlineHorInterval, kicked out")
-        log(np.ndarray.__repr__(gridlineHorInterval))
+        logg("gridlineHorInterval, kicked out")
+        logg(np.ndarray.__repr__(gridlineHorInterval))
 
     # that should be evenly distributed
     mil = gridlineHorInterval.mean()
@@ -612,36 +636,37 @@ def CompensateCalibrationTableMissedLine(tableLines):
     return newTableLines
 
 
-def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
-    LineFilteredVer, LineFilteredHor = DetectHorAndVerLine(m, dbg, dbglogsavestep, log)
+def getNowCalibration(m, targetcali, logg: SmallReportLogger):
+    LineFilteredVer, LineFilteredHor = DetectHorAndVerLine(m, logg)
 
     crosshair = GetCrosshair(LineFilteredVer, LineFilteredHor)
     crosshairY, crosshairX = crosshair
     # get calibration table
     gridSearchWidth = AdjustByZoomRate(gridSearchWidth_unzoom)
+    LineFilteredHor_CrossHairDepressed = np.copy(LineFilteredHor)
+    LineFilteredHor_CrossHairDepressed[
+        :,
+        crosshairY
+        - calibration_crosshair_hor_suppression_range : crosshairY
+        + calibration_crosshair_hor_suppression_range,
+    ] = 0
+    logg(LineFilteredHor_CrossHairDepressed)
     gridlineVer, rangeVer = findGridAroundLine(
-        LineFilteredHor, crosshairX, 1, gridSearchWidth
+        LineFilteredHor_CrossHairDepressed, crosshairX, 1, gridSearchWidth
     )
     gridlineVerPos = np.where(gridlineVer)[0]
-    log("gridlineVerPos, crosshairHorizontal included")
-    log(np.ndarray.__repr__(gridlineVerPos))
-
-    gridlineVerPos = gridlineVerPos[
-        np.abs(gridlineVerPos - crosshairY)
-        > calibration_crosshair_hor_suppression_range
-    ]
-    log("gridlineVerPos, crosshairHorizontal suppressed")
-    log(np.ndarray.__repr__(gridlineVerPos))
+    logg("gridlineVerPos, crosshairHorizontal suppressed")
+    logg(np.ndarray.__repr__(gridlineVerPos))
 
     if len(gridlineVerPos) == 0:
         # so we are in snip scence, but no cali table found, maybe blocked by gui due to scope shaking
-        log("bad gridlineVerPos")
+        logg("bad gridlineVerPos")
         raise BadCaliException()
 
     gridlineVerPos = CompensateCalibrationTableMissedLine(gridlineVerPos)
     targetDistance = np.arange(len(gridlineVerPos)) * 200
-    log("gridlineVerPos, compensated")
-    log(np.ndarray.__repr__(gridlineVerPos))
+    logg("gridlineVerPos, compensated")
+    logg(np.ndarray.__repr__(gridlineVerPos))
 
     f = scipy.interpolate.interp1d(
         targetDistance,
@@ -652,14 +677,14 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
     )
     targetpos = f(targetcali)
     posnow = crosshairY
-    log(f"targetpos{targetpos}, posnow{posnow}")
+    logg(f"targetpos{targetpos}, posnow{posnow}")
 
     # get mil interval
     gridlineHor, rangeHor, mil = getMilInterval(
-        LineFilteredVer, crosshair, gridSearchWidth, log
+        LineFilteredVer, crosshair, gridSearchWidth, logg
     )
 
-    if dbg:
+    if logg.enable:
         rebuildMap = np.zeros_like(LineFilteredVer)
         rebuildMap[crosshair[0], :] = 1
         rebuildMap[:, crosshair[1]] = 1
@@ -669,7 +694,7 @@ def getNowCalibration(m, targetcali, dbg, dbglogsavestep, log):
 
         # mil
         rebuildMap[rangeHor[0] : rangeHor[1], gridlineHor] = 1
-        dbglogsavestep(rebuildMap * 255)
+        logg(rebuildMap)
 
     ret = np.array((targetpos, posnow, mil))
     ret /= caliTableDetectionZoomRate
@@ -698,63 +723,44 @@ def adjustCaliberation(pidoutput):
 
 
 class LoadCalibrationOperator(StoppableThread):
-    def foo(self, targetcali, dbglogpath=None):
+    @GSBLogger.ExceptionLogged()
+    def foo(self, targetcali):
         pid = PIDController(caliP, 0, caliD)
         ss = screenshoter()
-        if caliDbg:
-            if dbglogpath is None:
-                # same as in solve
-                dbglogpath = wtdmplogpath.format(
-                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), "GetCali"
-                )
 
-            def dbglogsavestep(m, name="unnamed", method="savemat"):
-                nonlocal dbglogpath
-                exec("{}(m,path=dbglogpath,name=name)".format(method))
-
-            logg = Logger(os.path.join(dbglogpath, "log.log"))
-
-            def log(s):
-                logg(s)
-
-        else:
-
-            def dbglogsavestep(m, name=None, method="savemat"):
-                pass
-
-            logg = None
-
-            def log(s):
-                pass
+        logg = SmallReportLogger(
+            wtdmplogpath.format(
+                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), "GetCali"
+            ),
+            enable=caliDbg,
+        )
 
         iterNum = 0
         while True:
             if self.stopsignal:
                 # forced stop
-                log(self.result)
+                logg(self.result)
                 return
-            log(f"iter {iterNum}")
+            logg(f"iter {iterNum}")
             try:
                 # cali err in pixel
-                caliresult = getNowCalibration(
-                    ss.shotbgr(), targetcali, caliDbg, dbglogsavestep, log
-                )
+                caliresult = getNowCalibration(ss.shotbgr(), targetcali, logg)
             except BadCaliException:
                 self.result = "BadCaliException"
                 self.stopped = True
-                log(self.result)
+                logg(self.result)
                 return
 
             targetpix, nowpix, mil = caliresult
-            log(f"targetpix{targetpix}, nowpix{nowpix}, mil{mil}")
+            logg(f"targetpix{targetpix}, nowpix{nowpix}, mil{mil}")
             # print(targetpix,nowpix)
             if np.abs(targetpix - nowpix) <= autoCaliErr:
                 self.result = "Great"
                 self.stopped = True
-                log(self.result)
+                logg(self.result)
                 return
             control = pid.update(targetpix - nowpix) * caliControlMul / mil
-            log(f"control {control}")
+            logg(f"control {control}")
             # get the real control, but without direction
             control = adjustCaliberation(control)
             time.sleep(delayEveryCali)
