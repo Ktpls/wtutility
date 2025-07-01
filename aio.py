@@ -48,7 +48,7 @@ def main():
             print(traceback.format_exc())
 
     fut = [app.threadpool.submit(functools.partial(loadModule, m)) for m in modules]
-    futures.wait(fut)
+    concurrent.futures.wait(fut)
 
     @app.Hotkey("Reboot", AioConfig.HotKey_Reboot)
     def rebootfoo():
@@ -56,7 +56,7 @@ def main():
         bootAsAdmin(__file__)
         Rhythms.Reboot.play()
         fut = [app.threadpool.submit(m.unload) for m in modules]
-        futures.wait(fut)
+        concurrent.futures.wait(fut)
         sys.exit()
 
     @app.Business(globalsys.lowPriorityTaskPeriod)

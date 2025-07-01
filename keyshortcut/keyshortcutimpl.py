@@ -1,6 +1,7 @@
 
 from utilitypack.util_winkey import *
-
+from utilitypack.util_solid import *
+import enum
 
 def holdMouseLeft():
     mouse.down(0)

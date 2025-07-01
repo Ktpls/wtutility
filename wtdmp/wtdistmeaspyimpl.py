@@ -413,7 +413,7 @@ def SetLineKernel():
     negPart = np.sum(np.where(kerValAlongWidth < 0, 1, 0) * kerValAlongWidth)
 
     kerValAlongWidth = scipy.interpolate.interp1d(
-        [-1, 0, 1], [2 / negPart, 0, 1 / posPart], assume_sorted=True
+        [-1, 0, 1], [3 / negPart, 0, 1 / posPart], assume_sorted=True
     )(kerValAlongWidth)
 
     # stack the kernel along length direction

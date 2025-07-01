@@ -33,11 +33,11 @@ class StoppableThread2(StoppableSomewhat):
         self,
         strategy_runonrunning: "StoppableSomewhat.StrategyRunOnRunning" = None,
         strategy_error: "StoppableSomewhat.StrategyError" = None,
-        pool: futures.ThreadPoolExecutor = None,
+        pool: concurrent.futures.ThreadPoolExecutor = None,
     ) -> None:
         super().__init__(strategy_runonrunning, strategy_error)
         self.stopsignal = threading.Event()
-        self.pool: futures.ThreadPoolExecutor = Coalesce(pool, futures.ThreadPoolExecutor())
+        self.pool: concurrent.futures.ThreadPoolExecutor = Coalesce(pool, concurrent.futures.ThreadPoolExecutor())
         self.future = None
         self.state = StoppableThreadState.stopped
 
@@ -110,7 +110,7 @@ class StoppableThread2(StoppableSomewhat):
 
 def main():
     t = MyThread()
-    with futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         future = executor.submit(t.run)
         # Do some other work here
         time.sleep(5)

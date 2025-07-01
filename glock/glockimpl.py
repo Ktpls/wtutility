@@ -5,12 +5,11 @@ from utilitypack.util_winkey import *
 from .glock_config import *
 from shared.globalsys import *
 import queue
-import pandas as pd
 
 
 @dataclasses.dataclass
 class PwmWithPid:
-    pool: futures.ThreadPoolExecutor
+    pool: concurrent.futures.ThreadPoolExecutor
     dutyCycle: float
     pidCycle: float
     pid: PIDController
@@ -26,7 +25,9 @@ class PwmWithPid:
     swEnable: Switch = dataclasses.field(init=False, default=None)
     swPwm: Switch = dataclasses.field(init=False, default=None)
     swPush: Switch = dataclasses.field(init=False, default=None)
-    updateRatioFuture: futures.Future = dataclasses.field(init=False, default=None)
+    updateRatioFuture: concurrent.futures.Future = dataclasses.field(
+        init=False, default=None
+    )
 
     def getError(self): ...
 
@@ -50,20 +51,6 @@ class PwmWithPid:
         self.tmPid.start()
 
     def update(self):
-        """
-        module control_logic (
-            input wire pidUpdatable,
-            input wire swPwm,
-            input wire swEnable,
-            output reg swPush,
-            output reg pidUpdate
-        );
-            always @(*) begin
-                swPush = swPwm & swEnable;
-                pidUpdate = pidUpdatable & swEnable;
-            end
-        endmodule
-        """
         pidUpdatable = self.pidUpdatable()
         self.updatePwm()
         self.swPush.setTo(self.swPwm() and self.swEnable())
@@ -95,7 +82,7 @@ class PwmWithPid:
 class Glock(PwmWithPid):
     k_glock = [win32conComp.VK_OEM_3]
 
-    def __init__(self, pool: futures.ThreadPoolExecutor, dutyCycle: float):
+    def __init__(self, pool: concurrent.futures.ThreadPoolExecutor, dutyCycle: float):
         super().__init__(
             pool=pool,
             dutyCycle=dutyCycle,
@@ -128,7 +115,7 @@ class AileronTrim:
         win32conComp.VK_A,
     ]
 
-    def __init__(self, pool: futures.ThreadPoolExecutor, dutyCycle: float):
+    def __init__(self, pool: concurrent.futures.ThreadPoolExecutor, dutyCycle: float):
         super().__init__(
             pool=pool,
             dutyCycle=dutyCycle,

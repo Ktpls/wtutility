@@ -13,7 +13,7 @@ class AioConfigBase(HotKeyConfig):
     usingengineman = True
     throwErrorInBus = False
     throwErrorInHotkey = False
-    aiofps = 15
+    aiofps = 20
     hudFps = 10
     HotKey_PlottingScaleLock = [ord("L"), winkey.win32conComp.VK_OEM_3]
     HotKey_DistMeasCali = winkey.win32conComp.VK_OEM_3
@@ -79,4 +79,5 @@ class AioConfigGrb(AioConfigBase):
     usingglock = False
 
 
-AioConfig = AioConfigGrb
+AioConfig = AioConfigArb
+print(f'Using aio config {AioConfig.__name__}')
