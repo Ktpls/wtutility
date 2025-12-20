@@ -1,4 +1,7 @@
-from utilitypack.utility import *
+from utilitypack.util_solid import *
+from utilitypack.util_np import *
+from utilitypack.util_ocv import *
+from utilitypack.util_windows import *
 from .telescope_config import *
 import shared.globalsys as globalsys
 

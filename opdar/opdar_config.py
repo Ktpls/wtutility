@@ -1,4 +1,4 @@
-from utilitypack.utility import rgb2bgr, hsv2rgb, np
+from utilitypack.util_ocv import rgb2bgr, hsv2rgb, np
 from shared import const as sharedconst
 import os
 

@@ -1,4 +1,6 @@
-from utilitypack.utility import *
+from utilitypack.util_solid import *
+from utilitypack.util_windows import *
+from utilitypack.util_ocv import *
 from utilitypack.util_app import *
 import functools
 import keyshortcut.keyshortcut as keyshortcut

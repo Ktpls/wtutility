@@ -3,6 +3,20 @@ from macroutility import *
 
 app = MacroApp(fps=2)
 
+app.BasicHotkey()
+app.bind_hold_mouse_left()
+app.bhhk.bind_cleanning()
+app.bhhk.bind("W", ord("W"))
+app.bhhk.bind("Ctrl", win32con.VK_CONTROL)
+app.bhhk.bind("Space", win32con.VK_SPACE)
+app.bhhk.bind("Shift", win32con.VK_SHIFT)
+
+@app.Hotkey("HoldRight", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F10])
+@app.WithHotkeySwitch()
+def holdRight():
+    mouse.down(1)
+    app.bulletin.putup(BulletinBoard.Poster("holdRight", 1))
+
 
 @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
 @app.Async()

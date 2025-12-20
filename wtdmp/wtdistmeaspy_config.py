@@ -1,4 +1,4 @@
-from utilitypack.utility import ColorTr
+from utilitypack.util_ocv import ColorTr
 from .wtdistmeaspy_config_dell import *
 from shared import const as sharedconst
 import os

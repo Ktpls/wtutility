@@ -4,6 +4,7 @@ import win32clipboard
 app = MacroApp(fps=2)
 app.BasicHotkey()
 
+
 def Input(c: str):
     def control_key(key: int):
         return Switch(
@@ -23,7 +24,7 @@ class Console:
             Keyboard.KeyPress(win32con.VK_BACK)
         return self
 
-    def __exit__(self,*a,**kw):
+    def __exit__(self, *a, **kw):
         Keyboard.KeyPress(win32con.VK_ESCAPE)
 
     def write(self, cmd: str):
@@ -32,7 +33,8 @@ class Console:
         win32clipboard.SetClipboardText(cmd, win32clipboard.CF_TEXT)
         win32clipboard.CloseClipboard()
         Keyboard.KeyUp(win32con.VK_SHIFT)
-        Keyboard.KeyUp(win32con.VK_CONTROL)
+        Keyboard.KeyUp(win32con.VK_RSHIFT)
+        Keyboard.KeyUp(win32con.VK_LSHIFT)
         with Keyboard.HoldingKey(win32con.VK_CONTROL):
             Keyboard.KeyPress(ord("V"))
         Keyboard.KeyPress(win32con.VK_RETURN)
@@ -52,13 +54,15 @@ def FreshStore(*a, **kw) -> None:
     WriteConsole("ForceMarketUpdate")
     mouse.click(0)
 
-@app.Hotkey("GoHome", [win32con.VK_LCONTROL, ord('H')])
+
+@app.Hotkey("GoHome", [win32con.VK_LCONTROL, ord("H")])
 @app.Async()
 @app.WithHotkeySwitch()
 def FreshStore(*a, **kw) -> None:
     app.bulletin.putup(BulletinBoard.Poster("GoHome"))
-    WriteConsole("goto penelope's")
-    WriteConsole("goto ithaca")
+    with Console() as console:
+        console.write("goto penelope's")
+        console.write("goto ithaca")
 
 
 @app.Hotkey("GeneralF4", [win32con.VK_LCONTROL, win32con.VK_F4])
@@ -72,16 +76,17 @@ def GeneralF4(*a, **kw) -> None:
             console.write("ForceDeployAll ")
             console.write("Nuke")
 
-@app.Hotkey("SurveyPlanet", [win32con.VK_LCONTROL, ord('S')])
+
+@app.Hotkey("SurveyPlanet", [win32con.VK_LCONTROL, ord("S")])
 @app.Async()
 @app.WithHotkeySwitch()
 def SurveyPlanet(*a, **kw) -> None:
     app.bulletin.putup(BulletinBoard.Poster("SurveyPlanet"))
     Keyboard.KeyUp(win32con.VK_CONTROL)
-    Keyboard.KeyPress(ord('1'))
-    Keyboard.KeyPress(ord('G'))
-    Keyboard.KeyPress(ord('G'))
-    Keyboard.KeyPress(ord('Q'))
+    Keyboard.KeyPress(ord("1"))
+    Keyboard.KeyPress(ord("G"))
+    Keyboard.KeyPress(ord("G"))
+    Keyboard.KeyPress(ord("Q"))
     Keyboard.KeyPress(win32con.VK_ESCAPE)
 
 
@@ -93,6 +98,26 @@ clickLeft = MousePressRepeater(0, 0.01)
 def RepClickLeft(*arg, **kw) -> None:
     clickLeft.autoSwitch()
     app.bulletin.putup(BulletinBoard.Poster("RepClick Left"))
+
+
+@app.Hotkey(
+    "Test Endpoint",
+    [win32con.VK_RCONTROL, win32con.VK_RMENU, win32con.VK_RSHIFT, ord("T")],
+)
+@app.WithHotkeySwitch()
+def TestEndpoint(*arg, **kw) -> None:
+    app.bulletin.putup(BulletinBoard.Poster("Test Endpoint"))
+    s = """
+addindustry BOGGLED_STELLAR_REFLECTOR_ARRAY
+addindustry BOGGLED_DOMED_CITIES
+addindustry BOGGLED_ATMOSPHERE_PROCESSOR
+addindustry grounddefenses
+addindustry planetaryshield
+addindustry megaport
+"""
+    with Console() as console:
+        for c in s.splitlines():
+            (c := c.strip()) and console.write(c)
 
 
 app.go()

@@ -1,5 +1,5 @@
 from shared.globalsys import *
-from utilitypack.utility import *
+from utilitypack.util_wt import *
 from utilitypack.cold.util_solid import *
 from utilitypack.util_winkey import *
 from .wtdistmeaspy_config import *

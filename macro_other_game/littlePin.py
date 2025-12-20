@@ -84,7 +84,7 @@ class RegionGifRendering(ImgRenderingBase):
 
 
 # img = np.random.choice(AllFileIn(r"C:\Users\KITA\Pictures\long"))
-img = r"C:\Users\KITA\Downloads\v2-5213a87299cd7e25d1b4327dd1745818_r.gif"
+img = r".\macros4othergames\pinassets\aliceteabag.gif"
 rectltwh = np.array((00, 00, 50, 50))
 app = BulletinApp(fps=5)
 region = app.hud.addRegion(ImgRenderingBase.of(img)(img, rectltwh))

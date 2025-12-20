@@ -168,18 +168,14 @@ class MacroApp(BulletinApp):
                 Keyboard.KeyDown(key)
                 self.app.bulletin.putup(BulletinBoard.Poster(f"holding {name}", 1))
 
-    def BasicHotkey(app):
+    def bind_hold_mouse_left(app):
         @app.Hotkey("HoldLeft", [win32con.VK_RCONTROL, win32con.VK_F10])
         @app.WithHotkeySwitch()
         def holdLeft():
             mouse.down(0)
             app.bulletin.putup(BulletinBoard.Poster("leftHolding", 1))
-        
-        app.bhhk.bind_cleanning()
-        app.bhhk.bind("W", ord("W"))
-        app.bhhk.bind("Ctrl", win32con.VK_CONTROL)
-        app.bhhk.bind("Space", win32con.VK_SPACE)
-        app.bhhk.bind("Shift", win32con.VK_SHIFT)
+
+    def BasicHotkey(app):
 
         for key, dire, name in [
             [

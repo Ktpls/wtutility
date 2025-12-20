@@ -1,4 +1,7 @@
 from utilitypack.util_solid import *
+from utilitypack.util_np import *
+from utilitypack.util_ocv import *
+from utilitypack.util_windows import *
 from utilitypack.util_app import *
 from .globalsys_config import *
 from .queue4Bulletin import *

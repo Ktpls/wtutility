@@ -1,5 +1,5 @@
 from shared.globalsys import *
-
+from utilitypack.util_winkey import *
 
 class mKeyshortcut(WtUtilityModule):
 

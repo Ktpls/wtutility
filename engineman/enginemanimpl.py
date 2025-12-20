@@ -1,4 +1,5 @@
-from utilitypack.utility import *
+from utilitypack.util_solid import *
+from utilitypack.util_wt import *
 from utilitypack.util_winkey import *
 from .engineConfigInclude import *
 from .engineConfig import *
