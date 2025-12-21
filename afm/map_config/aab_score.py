@@ -10,5 +10,5 @@ mapAcceptorParam = MapAcceptorParam(
     specialmapdetectors={
         "WithPoint": MapDetector(foo='ret(selectPoint(ptype="A"))'),
     },
-    onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Reject,
+    onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Accept,
 )

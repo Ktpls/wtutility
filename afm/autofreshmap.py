@@ -10,7 +10,7 @@ from . import autofreshmap_implementation as afmimpl
 import traceback
 import logging
 from shared.globalsys import *
-
+init_root_logger(with_bulletin_handler=False)
 logger = logging.getLogger(__name__)
 
 

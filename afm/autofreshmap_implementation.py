@@ -602,11 +602,7 @@ class freshAMap(MessagedThread):
                 return KeepDetectingScreen.NextStepAction.continuee
 
             def timed_detectLoadingMap(src):
-                perfStat.start()
                 r = detectLoadingMap(src)
-                perfStat.stop()
-                logger.info(f"timed_detectLoadingMap {perfStat.aveTime()=}")
-                perfStat.clear()
                 return r
 
             KeepDetectingScreen.do(
