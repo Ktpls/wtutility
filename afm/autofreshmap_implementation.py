@@ -35,25 +35,38 @@ elif resolution == "m1920x1080r1280x720":
 else:
     raise NotImplementedError("unknown resolution")
 
+
+@dataclasses.dataclass
+class SignDetectorParam:
+    path: str
+    thresh: float = SignDetectorDefaultThresh
+    mask: str = None
+    zoomRate: float = None
+    screenPreproc: typing.Callable[[np.ndarray], np.ndarray] = None
+
+
 stateDetectorInfo = {
-    StateSign.hanger: {
-        "path": signName2Path("hanger"),
-    },
-    StateSign.MissionCanceled: {
-        "path": signName2Path("MissionCanceled"),
-    },
-    StateSign.LoadingMap: {
-        "path": signName2Path("LoadingMap"),
-        "screenPreproc": lambda scr: ccomma(
+    StateSign.hanger: SignDetectorParam(
+        path="hanger",
+    ),
+    StateSign.MissionCanceled: SignDetectorParam(
+        path="MissionCanceled",
+    ),
+    StateSign.LoadingMap: SignDetectorParam(
+        path="LoadingMap",
+        screenPreproc=lambda scr: ccomma(
+            h := scr.shape[0], w := scr.shape[1], scr[: h // 2, w // 2 : w * 3 // 4, :]
+        ),
+    ),
+    StateSign.OK: SignDetectorParam(path="OK", thresh=0.195),
+    StateSign.Statistics: SignDetectorParam(path="Statistics"),
+    StateSign.WarthunderMark: SignDetectorParam(
+        path="WarthunderMark",
+        zoomRate=RenderResolutionZoomRate,
+        screenPreproc=lambda scr: ccomma(
             w := scr.shape[1], scr[:100, w - 200 : w + 200, :]
         ),
-    },
-    StateSign.OK: {"path": signName2Path("OK"), "thresh": 0.195},
-    StateSign.Statistics: {"path": signName2Path("Statistics")},
-    StateSign.WarthunderMark: {
-        "path": signName2Path("WarthunderMark"),
-        "zoomRate": RenderResolutionZoomRate,
-    },
+    ),
 }
 
 
@@ -161,9 +174,7 @@ def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = 1 - matchresult
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
-    GSBLogger().debug(
-        f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}"
-    )
+    GSBLogger().debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
     return minloc if minval <= simu else None
 
 
@@ -217,11 +228,6 @@ class detector:
 
     def detect(self, mscr):
         pass
-
-
-class signdetector(UnlocatedFullScreenImgMatcher):
-    def __init__(self, path, thresh=SignDetectorDefaultThresh, mask=None, zoomRate=None, screenPreproc=None):
-        super().__init__(path, thresh, mask, zoomRate,screenPreproc)
 
 
 def segmentIconRed(m):
@@ -295,15 +301,16 @@ Asset4PointDetection_Pointmask = zoompointimg(
 )[:, :, 0]
 
 
-class MapDetectorImpled(detector, MapDetector):
-    def __init__(self, para: MapDetector):
-        super().__init__(para)
+class MapDetectorImpled(detector):
+    def __init__(self, param: MapDetector):
         """
         the so called path is actually map name, by which mapname2assetpath is needed
         after that assetpath2realpath will be done in matcher
         """
-        if para.map is not None:
-            map = NormalizeIterableOrSingleArgToIterable(para.map)
+        self.map = param.map
+        self.foo = param.foo
+        if self.map is not None:
+            map = NormalizeIterableOrSingleArgToIterable(self.map)
             map = [mapname2assetpath(mr) for mr in map]
             self.mtc = [
                 MapImgComparator(mr, standardMapMatchThreshold, None) for mr in map
@@ -311,7 +318,7 @@ class MapDetectorImpled(detector, MapDetector):
         else:
             self.mtc = []
 
-        self.foo = compile(para.foo, "", "exec")
+        self.foo = compile(self.foo, "", "exec")
 
     def detect(self, mscr, mscrpreproced):
 
@@ -384,19 +391,11 @@ class MapDetectorImpled(detector, MapDetector):
 
 class AfmAsset:
     def __init__(self, configModuleLike):
-        try:
-            whitelistedmap = configModuleLike.whitelistedmap
-        except AttributeError:
-            # not defined
-            whitelistedmap = list()
-        try:
-            blacklistedmap = configModuleLike.blacklistedmap
-        except AttributeError:
-            blacklistedmap = list()
-        try:
-            specialmapdetectors = configModuleLike.specialmapdetectors
-        except AttributeError:
-            specialmapdetectors = dict()
+        whitelistedmap: list[str] = configModuleLike.whitelistedmap
+        blacklistedmap: list[str] = configModuleLike.blacklistedmap
+        specialmapdetectors: dict[str, MapDetector] = (
+            configModuleLike.specialmapdetectors
+        )
 
         whitelistedmap = Deduplicate(whitelistedmap)
         detectors = {
@@ -418,7 +417,14 @@ class AfmAsset:
             )
         self.mapDetector = detectors
         self.stateDetector = {
-            k: signdetector(**v) for k, v in stateDetectorInfo.items()
+            k: UnlocatedFullScreenImgMatcher(
+                path=signName2Path(v.path),
+                thresh=v.thresh,
+                mask=v.mask,
+                zoomRate=v.zoomRate,
+                screenPreproc=v.screenPreproc,
+            )
+            for k, v in stateDetectorInfo.items()
         }
 
 
@@ -518,20 +524,9 @@ class freshAMap(MessagedThread):
                                 Keyboard.KeyPress(win32con.VK_ESCAPE)
                             Rhythms.Cancel.play()
                             raise freshAMap.AFMAborted()
-                ps=perf_statistic(True)
-                loadingmapresult = stateDetector[StateSign.LoadingMap].detect(scr)
-                ps.stop().countcycle()
-                GSLogger().info(f"loading map detection {ps.aveTime()=}")
-                if loadingmapresult:
+                if stateDetector[StateSign.LoadingMap].detect(scr):
                     nonlocal loadingscreen
                     loadingscreen = scr
-                    return KeepDetectingScreen.NextStepAction.finish
-                if (
-                    embnsmPersistTimer.time()
-                    >= enteredMatchButNotShowingMap_persistedTime
-                ):
-                    nonlocal enteredMatchButNotShowingMap
-                    enteredMatchButNotShowingMap = True
                     return KeepDetectingScreen.NextStepAction.finish
                 if stateDetector[StateSign.WarthunderMark].detect(scr):
                     if not embnsmPersistTimer.isRunning():
@@ -541,6 +536,13 @@ class freshAMap(MessagedThread):
                     )
                 else:
                     embnsmPersistTimer.stop().clear()
+                if (
+                    embnsmPersistTimer.time()
+                    >= enteredMatchButNotShowingMap_persistedTime
+                ):
+                    nonlocal enteredMatchButNotShowingMap
+                    enteredMatchButNotShowingMap = True
+                    return KeepDetectingScreen.NextStepAction.finish
                 if any(
                     [
                         stateDetector[d].detect(scr)
