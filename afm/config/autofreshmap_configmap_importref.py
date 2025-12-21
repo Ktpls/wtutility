@@ -1,5 +1,4 @@
-import dataclasses, typing
-
+import dataclasses, typing, enum
 
 
 @dataclasses.dataclass
@@ -9,6 +8,15 @@ class MapDetector:
     foo: str = "ret(detectMapShape())"
 
 
-whitelistedmap = list()
-blacklistedmap = list()
-specialmapdetectors = dict()
+@dataclasses.dataclass
+class MapAcceptorParam:
+    class BehaviorOnNoDetectorHit(enum.Enum):
+        Accept = "Accept"
+        Reject = "Reject"
+
+    specialmapdetectors: dict[str, MapDetector] = dataclasses.field(
+        default_factory=dict
+    )
+    whitelistedmap: list[str] = dataclasses.field(default_factory=list)
+    blacklistedmap: list[str] = dataclasses.field(default_factory=list)
+    onnodetectorhit: BehaviorOnNoDetectorHit = BehaviorOnNoDetectorHit.Reject

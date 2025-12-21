@@ -9,6 +9,7 @@ from .config.autofreshmap_config import *
 MapSize = [648, 648]
 
 dataCollector = DataCollector(mapAutoCollectionPath)
+perfStat = perf_statistic()
 
 
 def signName2Path(name):
@@ -26,10 +27,12 @@ class StateSign(enum.Enum):
 
 if resolution == "m1920x1080r1920x1080":
     # res1920x1080,uiscale75%
+    ScreenResolution = [1080, 1920]
     standardMapSection = [286, 216, 934, 864]
     RenderResolutionZoomRate = 1.0
 elif resolution == "m1920x1080r1280x720":
     # 1280x720,75%
+    ScreenResolution = [1080, 1920]
     standardMapSection = [292, 218, 934, 861]
     RenderResolutionZoomRate = 1.5  # 1920/1280
 else:
@@ -48,24 +51,42 @@ class SignDetectorParam:
 stateDetectorInfo = {
     StateSign.hanger: SignDetectorParam(
         path="hanger",
+        screenPreproc=lambda scr: scr[
+            :100, ScreenResolution[1] // 2 - 200 : ScreenResolution[1] // 2 + 200, :
+        ],
     ),
     StateSign.MissionCanceled: SignDetectorParam(
         path="MissionCanceled",
+        screenPreproc=lambda scr: scr[
+            ScreenResolution[0] * 3 // 4 :,
+            ScreenResolution[1] // 2 - 200 : ScreenResolution[1] // 2 + 200,
+            ::,
+        ],
     ),
     StateSign.LoadingMap: SignDetectorParam(
         path="LoadingMap",
-        screenPreproc=lambda scr: ccomma(
-            h := scr.shape[0], w := scr.shape[1], scr[: h // 2, w // 2 : w * 3 // 4, :]
-        ),
+        screenPreproc=lambda scr: scr[
+            : ScreenResolution[0] // 2,
+            ScreenResolution[1] // 2 : ScreenResolution[1] * 3 // 4,
+            :,
+        ],
     ),
-    StateSign.OK: SignDetectorParam(path="OK", thresh=0.195),
+    StateSign.OK: SignDetectorParam(
+        path="OK",
+        thresh=0.195,
+        screenPreproc=lambda scr: scr[
+            ScreenResolution[0] // 4 : ScreenResolution[1] * 3 // 4,
+            ScreenResolution[1] // 4 : ScreenResolution[1] * 3 // 4,
+            :,
+        ],
+    ),
     StateSign.Statistics: SignDetectorParam(path="Statistics"),
     StateSign.WarthunderMark: SignDetectorParam(
         path="WarthunderMark",
         zoomRate=RenderResolutionZoomRate,
-        screenPreproc=lambda scr: ccomma(
-            w := scr.shape[1], scr[:100, w - 200 : w + 200, :]
-        ),
+        screenPreproc=lambda scr: scr[
+            :100, ScreenResolution[1] // 2 - 200 : ScreenResolution[1] // 2 + 200, :
+        ],
     ),
 }
 
@@ -389,33 +410,53 @@ class MapDetectorImpled(detector):
             raise e
 
 
-class AfmAsset:
-    def __init__(self, configModuleLike):
-        whitelistedmap: list[str] = configModuleLike.whitelistedmap
-        blacklistedmap: list[str] = configModuleLike.blacklistedmap
-        specialmapdetectors: dict[str, MapDetector] = (
-            configModuleLike.specialmapdetectors
+class MapAcceptorImpl:
+    def __init__(self, param: MapAcceptorParam):
+        self.param = param
+        self.whitelistedmap = self._LgetMapDetectorParam(self.param.whitelistedmap)
+        self.blacklistedmap = self._LgetMapDetectorParam(self.param.blacklistedmap)
+
+    def _LgetMapDetectorParam(self, lm: list[str]):
+        return (
+            Stream(lm)
+            .distinct()
+            .to_dict(
+                lambda n: n,
+                lambda n: MapDetectorImpled(
+                    (
+                        self.param.specialmapdetectors[n]
+                        if n in self.param.specialmapdetectors
+                        else MapDetector(map=n, foo="ret(detectMapShape())")
+                    )
+                ),
+            )
         )
 
-        whitelistedmap = Deduplicate(whitelistedmap)
-        detectors = {
-            **{
-                m: MapDetectorImpled(
-                    specialmapdetectors[m]
-                    if m in specialmapdetectors
-                    else MapDetector(map=m, foo="ret(detectMapShape())")
-                )
-                for m in whitelistedmap
-            }
-        }
-        if len(blacklistedmap) != 0:
-            detectAllMaps = " and ".join(
-                [f"(not detectMapShape(mtcid={i}))" for i in range(len(blacklistedmap))]
-            )
-            detectors["blacklisted"] = MapDetectorImpled(
-                MapDetector(map=blacklistedmap, foo=f"ret({detectAllMaps})")
-            )
-        self.mapDetector = detectors
+    def accept(self, mscr):
+        loadingscreenProced = MapImgComparator.imagepreprocess(mscr)
+        for n, det in self.whitelistedmap.items():
+            if det.detect(mscr, loadingscreenProced):
+                GSBLogger().debug(f"good map {n}")
+                return True
+        for n, det in self.blacklistedmap.items():
+            if det.detect(mscr, loadingscreenProced):
+                GSBLogger().debug(f"bad map {n}")
+                return False
+        if (
+            self.param.onnodetectorhit
+            == MapAcceptorParam.BehaviorOnNoDetectorHit.Accept
+        ):
+            GSBLogger().debug(f"accept on no hit")
+            return True
+        else:
+            GSBLogger().debug(f"reject on no hit")
+            return False
+
+
+class AfmAsset:
+    def __init__(self, configModuleLike):
+        mapAcceptorParam: MapAcceptorParam = configModuleLike.mapAcceptorParam
+        self.mapDetector = MapAcceptorImpl(mapAcceptorParam)
         self.stateDetector = {
             k: UnlocatedFullScreenImgMatcher(
                 path=signName2Path(v.path),
@@ -558,8 +599,16 @@ class freshAMap(MessagedThread):
                     return KeepDetectingScreen.NextStepAction.continuee
                 return KeepDetectingScreen.NextStepAction.continuee
 
+            def timed_detectLoadingMap(src):
+                perfStat.start()
+                r = detectLoadingMap(src)
+                perfStat.stop()
+                GSBLogger().info(f"timed_detectLoadingMap {perfStat.aveTime()=}")
+                perfStat.clear()
+                return r
+
             KeepDetectingScreen.do(
-                successCond=detectLoadingMap,
+                successCond=timed_detectLoadingMap,
                 sleeptime=LoadingMapDetectionInterval,
             )
 
@@ -571,24 +620,10 @@ class freshAMap(MessagedThread):
                 GSBLogger().debug("loading map")
                 loadingscreen_u8 = cutmap(loadingscreen)
                 loadingscreen = loadingscreen_u8.astype(np.float32) / 255
-                loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
-                # name,detector
-
-                sortedMapDetectorKeys = list(mapDetector.keys())
-                sortedMapDetectorKeys.sort()
-                found = False
-                for n in sortedMapDetectorKeys:
-                    d = mapDetector.get(n)
-                    # done this by hand to get 2 times faster
-                    if d.detect(loadingscreen, loadingscreenProced):
-                        found = True
-                        break
                 if mapAutoCollection:
                     dataCollector.save(loadingscreen)
-                if found:
-                    GSBLogger().debug(f"{n}")
+                if mapDetector.accept(loadingscreen):
                     Rhythms.Success.play()
-                    GSBLogger().debug("good map")
                     return True
 
             # detected banned map

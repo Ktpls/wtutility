@@ -7,6 +7,7 @@ from .globalsys_config import *
 from .queue4Bulletin import *
 import logging
 
+GSLogger.loggingLevel = loggingLevel
 
 @Singleton
 class GSBulletinAppLogger(GSLogger):
@@ -14,6 +15,7 @@ class GSBulletinAppLogger(GSLogger):
     ImageSavePath = FildDestPath
 
     def __init__(self):
+        self.loggingLevel = loggingLevel
         GSBLogger.__init__(
             self, [self.Handlers.ConsoleHandler(), self.Handlers.FileHandler()]
         )

@@ -34,5 +34,7 @@ smalls = [
     # r"air\[Operation]WakeIsland(LightVehicles)",
     # r"air\[Operation]YooPassage(LightVehicles)",
 ]
-whitelistedmap = smalls
-specialmapdetectors = {}
+
+mapAcceptorParam = MapAcceptorParam(
+    blacklistedmap=smalls
+)

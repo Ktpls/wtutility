@@ -1,12 +1,14 @@
 from .autofreshmap_configmap_importref import *
 
-blacklistedmap = [
-    "air/[Ground Strike]Ruhr",
-    "air/[Ground Strike]Korsun",
-]
 
-specialmapdetectors = {
-    "NotWithPoint": MapDetector(
-        foo='ret(not selectPoint(ptype="A"))'
-    ),
-}
+mapAcceptorParam = MapAcceptorParam(
+    blacklistedmap=[
+        "air/[Ground Strike]Ruhr",
+        "air/[Ground Strike]Korsun",
+        "WithPoint",
+    ],
+    specialmapdetectors={
+        "WithPoint": MapDetector(foo='ret(selectPoint(ptype="A"))'),
+    },
+    onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Reject,
+)

@@ -31,9 +31,9 @@ highSurvivablity = [
     #"MiddleEast",
 ]
 
-
-whitelistedmap = highSurvivablity
-specialmapdetectors = {
+mapAcceptorParam = MapAcceptorParam(
+    whitelistedmap=highSurvivablity,
+    specialmapdetectors={
     "Sinai": MapDetector(
         map="Sinai",
         # B, or C or battle mode at any side
@@ -99,7 +99,7 @@ specialmapdetectors = {
         map="Tunisia",
         # A point
         foo="ret(detectMapShape() and spawnAround([424, 564]) and selectPoint(ppos=[79, 357]))",
-    ),
+            ),
     "MaginotLine#1": MapDetector(
         map=["MaginotLine#1", "MaginotLine#1(Winter)"],
         # born at upper, highland between two spawns
@@ -149,3 +149,4 @@ specialmapdetectors = {
         foo="ret(detectMapShape() and spawnAround([326, 618]))",
     ),
 }
+)

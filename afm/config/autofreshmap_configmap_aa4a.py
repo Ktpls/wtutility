@@ -1,3 +1,4 @@
+from .autofreshmap_configmap_importref import *
 clearsky=[
     "Campania",
     "Carpathians",
@@ -27,6 +28,4 @@ verified=[
 small maps enhance plane density
 low buildings, trees, mountains make view clear
 '''
-whitelistedmap = clearsky + verified
-blacklistedmap = {}
-specialmapdetectors = {}
+mapAcceptorParam=MapAcceptorParam(whitelistedmap=clearsky + verified)

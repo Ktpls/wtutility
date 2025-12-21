@@ -1,3 +1,4 @@
+from .autofreshmap_configmap_importref import *
 citymap=[
     'AbandonedFactory',
     'AbandonedTown',
@@ -29,3 +30,5 @@ city_and_plain_combined=[
 ]
 
 whitelistedmap=citymap+city_and_plain_combined
+
+mapAcceptorParam=MapAcceptorParam(whitelistedmap=citymap+city_and_plain_combined)

@@ -90,5 +90,7 @@ smalls = [
     r"air\[Operation]YooPassage(LightVehicles)",
     r"air\[Operation]Zhengzhou",
 ]
-whitelistedmap = smalls
-specialmapdetectors = {}
+
+mapAcceptorParam = MapAcceptorParam(
+    whitelistedmap=smalls
+)

@@ -30,7 +30,7 @@ throwerrinmain = True
 
 saveScreenShot = False
 saveRate = 0.1
-LoadingMapDetectionInterval = 0.5
+LoadingMapDetectionInterval = 0.01
 DelayAfterClickEnter = 3
 
 
