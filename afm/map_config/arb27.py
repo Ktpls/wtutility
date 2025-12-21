@@ -1,4 +1,4 @@
-from .autofreshmap_configmap_importref import *
+from .map_config_header import *
 
 smalls = [
     r"air\[Operation]Bastogne(LightVehicles)",

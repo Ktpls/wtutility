@@ -1,5 +1,5 @@
-from . import autofreshmap_configmap_aab_score as autofreshmap_configmap
-from .autofreshmap_config_dell import *
+from .map_config import autofreshmap_configmap_aab_score as autofreshmap_configmap
+from .layout_config.dell import resolution
 from shared import const as sharedconst
 import os
 

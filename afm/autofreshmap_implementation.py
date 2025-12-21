@@ -3,8 +3,8 @@ from utilitypack.cold.util_solid import LongDelay
 from utilitypack.util_winkey import *
 from shared.globalsys import *
 import matplotlib.pyplot as plt
-from .config.autofreshmap_configmap_importref import *
-from .config.autofreshmap_config import *
+from .map_config.map_config_header import *
+from .autofreshmap_config import *
 
 MapSize = [648, 648]
 

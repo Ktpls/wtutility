@@ -10,7 +10,7 @@
 [Operation]Moscow
 [AlternateHistory]Spain
 '''
-from .autofreshmap_configmap_importref import *
+from .map_config_header import *
 
 mapAcceptorParam = MapAcceptorParam(
     whitelistedmap=[

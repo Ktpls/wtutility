@@ -1,4 +1,4 @@
-from .autofreshmap_configmap_importref import *
+from .map_config_header import *
 
 # friendly for turrentless tank destroyers
 highSurvivablity = [
