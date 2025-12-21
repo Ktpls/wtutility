@@ -1,3 +1,5 @@
 from .map_config_header import *
 
-mapAcceptorParam = MapAcceptorParam()
+mapAcceptorParam = MapAcceptorParam(
+    onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Reject
+)

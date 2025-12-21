@@ -619,7 +619,7 @@ class freshAMap(MessagedThread):
                 loadingscreen_u8 = cutmap(loadingscreen)
                 loadingscreen = loadingscreen_u8.astype(np.float32) / 255
                 if mapAutoCollection:
-                    dataCollector.save(loadingscreen)
+                    dataCollector.save(loadingscreen_u8)
                 if mapDetector.accept(loadingscreen):
                     Rhythms.Success.play()
                     return True
