@@ -1,32 +1,12 @@
-clearsky=[
-    "Campania",
-    "Carpathians",
-    "EasternEurope",
-    "EuropeanProvince",
-    "FieldsOfNormandy",
-    "FieldsOfPoland",
-    "Finland",
-    "FrozenPass",
-    "Karelia",
-    "MaginotLineDomination#1",
-    "MaginotLineDomination#1Winter",
-    "Mozdok#1",
-    "Mozdok#2",
-    "Normandy",
-    "Poland(winter)",
-    "Poland",
-    "SandsOfSinai",
-    "SecondBattleOfElAlameinConquest#1",
-    "Sinai",
-    "Tunisia",
+from .autofreshmap_configmap_importref import *
+
+blacklistedmap = [
+    "air/[Ground Strike]Ruhr",
+    "air/[Ground Strike]Korsun",
 ]
-verified=[
-    "AbandonedFactory",
-]
-'''
-small maps enhance plane density
-low buildings, trees, mountains make view clear
-'''
-whitelistedmap = clearsky + verified
-blacklistedmap = {}
-specialmapdetectors = {}
+
+specialmapdetectors = {
+    "NotWithPoint": MapDetector(
+        foo='ret(not selectPoint(ptype="A"))'
+    ),
+}

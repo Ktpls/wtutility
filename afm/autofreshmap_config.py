@@ -1,4 +1,4 @@
-from . import autofreshmap_configmap_plain as autofreshmap_configmap
+from . import autofreshmap_configmap_aab_score as autofreshmap_configmap
 from .autofreshmap_config_dell import *
 from shared import const as sharedconst
 import os
@@ -30,6 +30,8 @@ throwerrinmain = True
 
 saveScreenShot = False
 saveRate = 0.1
+LoadingMapDetectionInterval = 0.01
+DelayAfterClickEnter = 3
 
 
 wlanname4netshinterface = "WLAN2"
@@ -56,3 +58,4 @@ mapAutoCollectionPath = os.path.join(sharedconst.collectionPath, "afm/map")
 # going better with screen flashing effect at the begining of the map loading screen, but slower like 0.005804599961265922 to 0.0026458000065758824
 useNonLightnessedErrorTolerence = False
 NonLightnessedErrorRatio = 0.425
+SignDetectorDefaultThresh = 0.27

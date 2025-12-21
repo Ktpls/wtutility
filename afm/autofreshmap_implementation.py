@@ -44,6 +44,9 @@ stateDetectorInfo = {
     },
     StateSign.LoadingMap: {
         "path": signName2Path("LoadingMap"),
+        "screenPreproc": lambda scr: ccomma(
+            w := scr.shape[1], scr[:100, w - 200 : w + 200, :]
+        ),
     },
     StateSign.OK: {"path": signName2Path("OK"), "thresh": 0.195},
     StateSign.Statistics: {"path": signName2Path("Statistics")},
@@ -165,7 +168,15 @@ def threshedmatchtemplate(src, temp, mask, simu):
 
 
 class UnlocatedFullScreenImgMatcher:
-    def __init__(self, path, thresh=None, mask=None, zoomRate=None):
+
+    def __init__(
+        self,
+        path,
+        thresh=None,
+        mask=None,
+        zoomRate=None,
+        screenPreproc: typing.Callable[[np.ndarray], np.ndarray] = None,
+    ):
         path = assetpath2realpath(path)
         m = cv.imread(path)
         if m.size == 0:
@@ -174,6 +185,7 @@ class UnlocatedFullScreenImgMatcher:
             m = cv.resize(m, None, fx=zoomRate, fy=zoomRate)
         self.m = m
         self.thresh = thresh  # optional thresh, for dynamic specified, if needed
+        self.screenPreproc = screenPreproc
 
         # for dbg output
         self.path = path
@@ -187,6 +199,8 @@ class UnlocatedFullScreenImgMatcher:
 
     def find(self, mscr, specifiedThresh=None):
         thresh = Coalesce(specifiedThresh, self.thresh)
+        if self.screenPreproc:
+            mscr = self.screenPreproc(mscr)
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
         GSBLogger().debug(
             f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
@@ -206,8 +220,8 @@ class detector:
 
 
 class signdetector(UnlocatedFullScreenImgMatcher):
-    def __init__(self, path, thresh=0.27, mask=None, zoomRate=None):
-        super().__init__(path, thresh, mask, zoomRate)
+    def __init__(self, path, thresh=SignDetectorDefaultThresh, mask=None, zoomRate=None, screenPreproc=None):
+        super().__init__(path, thresh, mask, zoomRate,screenPreproc)
 
 
 def segmentIconRed(m):
@@ -414,7 +428,6 @@ def leaveButton():
     moveto([0, 0])
 
 
-
 class freshAMap(MessagedThread):
     @ExtendEnum(MessagedThread.MessageType)
     class MessageType(aenum.Enum):
@@ -505,7 +518,11 @@ class freshAMap(MessagedThread):
                                 Keyboard.KeyPress(win32con.VK_ESCAPE)
                             Rhythms.Cancel.play()
                             raise freshAMap.AFMAborted()
-                if stateDetector[StateSign.LoadingMap].detect(scr):
+                ps=perf_statistic(True)
+                loadingmapresult = stateDetector[StateSign.LoadingMap].detect(scr)
+                ps.stop().countcycle()
+                GSLogger().info(f"loading map detection {ps.aveTime()=}")
+                if loadingmapresult:
                     nonlocal loadingscreen
                     loadingscreen = scr
                     return KeepDetectingScreen.NextStepAction.finish
@@ -535,12 +552,13 @@ class freshAMap(MessagedThread):
                     ]
                 ):
                     Keyboard.KeyPress(win32con.VK_RETURN)
+                    time.sleep(DelayAfterClickEnter)
                     return KeepDetectingScreen.NextStepAction.continuee
                 return KeepDetectingScreen.NextStepAction.continuee
 
             KeepDetectingScreen.do(
                 successCond=detectLoadingMap,
-                sleeptime=1,
+                sleeptime=LoadingMapDetectionInterval,
             )
 
             if enteredMatchButNotShowingMap:
@@ -549,23 +567,27 @@ class freshAMap(MessagedThread):
             else:
                 Rhythms.Notify.asyncPlay()
                 GSBLogger().debug("loading map")
-                loadingscreen = cutmap(loadingscreen).astype(np.float32) / 255
-                if mapAutoCollection:
-                    dataCollector.save(loadingscreen * 255)
-
+                loadingscreen_u8 = cutmap(loadingscreen)
+                loadingscreen = loadingscreen_u8.astype(np.float32) / 255
                 loadingscreenProced = MapImgComparator.imagepreprocess(loadingscreen)
                 # name,detector
 
                 sortedMapDetectorKeys = list(mapDetector.keys())
                 sortedMapDetectorKeys.sort()
+                found = False
                 for n in sortedMapDetectorKeys:
                     d = mapDetector.get(n)
                     # done this by hand to get 2 times faster
                     if d.detect(loadingscreen, loadingscreenProced):
-                        GSBLogger().debug(f"{n}")
-                        Rhythms.Success.play()
-                        GSBLogger().debug("good map")
-                        return True
+                        found = True
+                        break
+                if mapAutoCollection:
+                    dataCollector.save(loadingscreen)
+                if found:
+                    GSBLogger().debug(f"{n}")
+                    Rhythms.Success.play()
+                    GSBLogger().debug("good map")
+                    return True
 
             # detected banned map
             wifi.setOff()
