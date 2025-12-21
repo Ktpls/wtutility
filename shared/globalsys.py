@@ -55,7 +55,7 @@ class HotKeyConfig:
     HotKey_MoveMouse_AssistKey: list[int] | int
     HotKey_HoldCAndTell: list[int] | int
     HotKey_LaunchSeries: list[int] | int
-    HotKey_RefreshWifi: list[int] | int
+    HotKey_SwitchWifi: list[int] | int
     HotKey_EagleEyeDataCollector: list[int] | int
     HotKey_EagleEyeOnClick: list[int] | int
     HotKey_Glock: list[int] | int

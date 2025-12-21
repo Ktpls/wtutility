@@ -1,12 +1,15 @@
 from shared.globalsys import *
 from utilitypack.util_winkey import *
 
+
 class mKeyshortcut(WtUtilityModule):
 
     def load(self):
         from . import keyshortcutimpl as keyshortcutimpl
 
         app = self.app
+        self.wifi = keyshortcutimpl.StatefulWifiRefresher()
+        selfmodule = self
 
         @app.Hotkey("HoldLeftAndTell", self.keyConfig.HotKey_HoldLeftAndTell)
         def holdLeftAndTell():
@@ -25,15 +28,15 @@ class mKeyshortcut(WtUtilityModule):
             keyshortcutimpl.launchSeriesGo(self)
             app.bulletin.putup(f"launch done")
 
-        @app.Hotkey("RefreshWifi", self.keyConfig.HotKey_RefreshWifi)
+        @app.Hotkey("SwitchWifi", self.keyConfig.HotKey_SwitchWifi)
         @app.Async()
-        def refreshWifi(self: StoppableSomewhat):
-            app.bulletin.putup("refreshing wifi")
-            wifi = WifiRefresher()
-            wifi.setOff()
-            time.sleep(1)
-            wifi.setOn()
-            app.bulletin.putup(f"refresh done")
+        def switchWifi(selfthread: StoppableSomewhat):
+            if self.wifi.value:
+                app.bulletin.putup("turn off wifi")
+                self.wifi.off()
+            else:
+                app.bulletin.putup("turn on wifi")
+                self.wifi.on()
 
         for key, dire, name in [
             [
@@ -60,5 +63,5 @@ class mKeyshortcut(WtUtilityModule):
             app.HotkeyFullFunction(
                 f"MoveMouse{name}",
                 ArrayFlatten([self.keyConfig.HotKey_MoveMouse_AssistKey, key]),
-                onKeyPress=functools.partial(keyshortcutimpl.move_mouse, dire)
+                onKeyPress=functools.partial(keyshortcutimpl.move_mouse, dire),
             )

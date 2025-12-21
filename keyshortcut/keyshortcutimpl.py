@@ -1,7 +1,8 @@
-
 from utilitypack.util_winkey import *
+from utilitypack.util_windows import *
 from utilitypack.util_solid import *
 import enum
+
 
 def holdMouseLeft():
     mouse.down(0)
@@ -42,3 +43,17 @@ def launchSeriesGo(self: StoppableSomewhat):
         Keyboard.KeyUp(win32con.VK_SPACE)
         PreciseSleep(interval)
     Keyboard.KeyUp(win32con.VK_LCONTROL)
+
+
+class StatefulWifiRefresher(WifiRefresher, Switch):
+    def __init__(self):
+        WifiRefresher.__init__(self)
+        Switch.__init__(
+            self, onSetOn=self._onSetOn, onSetOff=self._onSetOff, value=True
+        )
+
+    def _onSetOn(self):
+        WifiRefresher.setOn(self)
+
+    def _onSetOff(self):
+        WifiRefresher.setOff(self)

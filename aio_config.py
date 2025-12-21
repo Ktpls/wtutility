@@ -45,7 +45,7 @@ class AioConfigBase(HotKeyConfig):
     HotKey_MoveMouse_AssistKey = winkey.win32conComp.VK_CONTROL
     HotKey_HoldCAndTell = winkey.win32conComp.VK_F11
     HotKey_LaunchSeries = [winkey.win32conComp.VK_RCONTROL, ord("K"), ord("O")]
-    HotKey_RefreshWifi = [
+    HotKey_SwitchWifi = [
         winkey.win32conComp.VK_RCONTROL,
         winkey.win32conComp.VK_RSHIFT,
         ord("K"),

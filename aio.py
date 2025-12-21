@@ -1,4 +1,5 @@
 from utilitypack.util_app import *
+from utilitypack.util_windows import *
 from aio_config import *
 import shared.globalsys as globalsys
 
@@ -69,4 +70,5 @@ def main():
 
 
 if __name__ == "__main__":
+    setadmin(__file__)
     main()
