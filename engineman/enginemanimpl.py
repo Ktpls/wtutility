@@ -10,6 +10,7 @@ from shared.globalsys import *
 """
 enabling engineman in high alt, one reads proper supercharger value with auto engine control on, so wont set it properly
 """
+logger = logging.getLogger(__name__)
 
 
 @Singleton
@@ -34,7 +35,7 @@ class DetachedEngineManStopSignal:
         call this on check point in time consuming works
         """
         if self.get():
-            GSBLogger().debug("throw On DetachedEngineManStopSignal")
+            logger.debug("throw On DetachedEngineManStopSignal")
             raise DetachedEngineManStopSignal.DetachedEngineManStopSignalCalledException()
 
     @EasyWrapper
@@ -195,7 +196,7 @@ class DiscreteCEAxis(ControlableEngineAxis):
         while True:
             DetachedEngineManStopSignal().throwOnIsSet()
             nowVal = self.get()
-            GSBLogger().debug(
+            logger.debug(
                 f"DiscreteCEAxis setting {self.__class__=} {nowVal=} {target=}"
             )
             if nowVal is None:
@@ -217,7 +218,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
             holdTime = keyPressMiniumHoldingTime
 
         def issucc(prev, after):
-            GSBLogger().debug(
+            logger.debug(
                 f"ContiniousCEAxis turnUpIsSucc {self.__class__=} {(a:=(after > prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMax))=}"
             )
             return a or b or c
@@ -232,7 +233,7 @@ class ContiniousCEAxis(ControlableEngineAxis):
             holdTime = keyPressMiniumHoldingTime
 
         def issucc(prev, after):
-            GSBLogger().debug(
+            logger.debug(
                 f"ContiniousCEAxis turnDownIsSucc {self.__class__=}, {(a:=(after < prev))=} {(b:=holdTime <= continousCeAxisMinSensitivity)=} {(c:=FloatEq(prev, self.valMin))=}"
             )
             return a or b or c
@@ -267,23 +268,23 @@ SwitchManualEngineControl = WtFunctionalKey(
 
 def SolutionOfRadiatorOilRadiatorPropPitch(yourself: ContiniousCEAxis):
     def enableManEngCtrl_ManAxisCtrl():
-        GSBLogger().debug("Solution enableManEngCtrl_ManAxisCtrl doing")
+        logger.debug("Solution enableManEngCtrl_ManAxisCtrl doing")
         SwitchManualEngineControl.press()
         PreciseSleep(0.5)
         yourself.switchManualControl()
 
     def disableManEngCtrl_ManAxisCtrl():
-        GSBLogger().debug("Solution disableManEngCtrl_ManAxisCtrl doing")
+        logger.debug("Solution disableManEngCtrl_ManAxisCtrl doing")
         yourself.switchManualControl()
         PreciseSleep(0.5)
         SwitchManualEngineControl.press()
 
     def switchAxisManualControl():
-        GSBLogger().debug("Solution switchAxisManualControl doing")
+        logger.debug("Solution switchAxisManualControl doing")
         yourself.switchManualControl()
 
     def switchManualEngineControl():
-        GSBLogger().debug("Solution switchManualEngineControl doing")
+        logger.debug("Solution switchManualEngineControl doing")
         SwitchManualEngineControl.press()
 
     return [
@@ -550,14 +551,13 @@ class EngineMan:
                     raise err
                 else:
                     print(err)
-                    GSBLogger().error(err)
+                    logger.error(err)
                     traceback.print_exc()
                     raise err
 
     def setService(self, planeName):
         if self.planeName == planeName or (
-            planeName in self.services
-            and self.serviceClass == self.services[planeName]
+            planeName in self.services and self.serviceClass == self.services[planeName]
         ):
             pass
         else:
@@ -577,9 +577,7 @@ class EngineMan:
                 time.perf_counter() - self.lastCheckTime
                 > self.services[planeName].checkRate
             ):
-                GSBLogger().debug(
-                    f"engineman service doing checking, {planeName=}"
-                )
+                logger.debug(f"engineman service doing checking, {planeName=}")
                 self.serviceDoCheck()
 
 

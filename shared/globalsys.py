@@ -7,37 +7,46 @@ from .globalsys_config import *
 from .queue4Bulletin import *
 import logging
 
-GSLogger.loggingLevel = loggingLevel
 
-@Singleton
-class GSBulletinAppLogger(GSLogger):
-    FildDestPath = GSLogger.Handlers.FileHandlerDefaultPath
-    ImageSavePath = FildDestPath
+def init_root_logger(with_bulletin_handler=False):
+    root_logger = logging.getLogger()
+    root_logger.setLevel(loggingLevel)
+    format = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
-    def __init__(self):
-        self.loggingLevel = loggingLevel
-        GSBLogger.__init__(
-            self, [self.Handlers.ConsoleHandler(), self.Handlers.FileHandler()]
-        )
+    h = logging.StreamHandler()
+    h.setFormatter(format)
+    root_logger.addHandler(h)
 
-        bltHdl = BulletinHandler(logging.INFO)
-        self.logger.addHandler(bltHdl)
+    EnsureDirectoryExists(logFilePath)
+    h = logging.FileHandler(
+        os.path.join(
+            logFilePath, f"{datetime.datetime.now().strftime('%Y-%m-%d')}.log"
+        ),
+        encoding="utf-8",
+    )
+    h.setFormatter(format)
+    root_logger.addHandler(h)
 
-    def dbg_img(self, img: np.ndarray, msg=None):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            if img.dtype in (np.float32, np.float64):
-                img = img * 255
-            savemat(
-                img,
-                name=make_filename_safe(
-                    f"[{datetime.now().strftime('%Y-%m-%d,%H,%M,%S')}]{msg}.png"
-                ),
-                path=self.ImageSavePath,
-            )
+    if with_bulletin_handler:
+        h = BulletinHandler(logging.INFO)
+        root_logger.addHandler(h)
 
 
-# extend with bulletin support
-GSBLogger = GSBulletinAppLogger
+@EasyWrapper
+@staticmethod
+def ExceptionLogged(f, logger: logging.Logger, execType=Exception):
+    execType = tuple(NormalizeIterableOrSingleArgToIterable(execType))
+
+    @functools.wraps(f)
+    def f2(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except BaseException as err:
+            if isinstance(err, execType):
+                logger.error(f"{err}\n{traceback.format_exc()}")
+            raise err
+
+    return f2
 
 
 class HotKeyConfig:

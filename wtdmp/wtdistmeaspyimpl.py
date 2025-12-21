@@ -5,6 +5,7 @@ from utilitypack.util_winkey import *
 from .wtdistmeaspy_config import *
 import scipy.interpolate
 
+logger = logging.getLogger(__name__)
 if ocrimpltype == "tes":
     from .wtdistmeaspy_ocrimpl import implTesseract as ocrimpl
 elif ocrimpltype == "cnn":
@@ -714,7 +715,7 @@ def adjustCaliberation(pidoutput):
 
 
 class LoadCalibrationOperator(StoppableThread):
-    @GSBLogger.ExceptionLogged()
+    @ExceptionLogged(logger=logger)
     def foo(self, targetcali):
         pid = PIDController(caliP, 0, caliD)
         ss = screenshoter()

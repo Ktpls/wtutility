@@ -22,8 +22,8 @@ class BulletinQueue(queue.Queue):
 
 
 class BulletinHandler(logging.Handler):
-    def __init__(self, level):
-        super().__init__(level)
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
         self.setFormatter(logging.Formatter(bulletinLogFormat))
 
     def emit(self, record):

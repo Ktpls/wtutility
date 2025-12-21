@@ -1,5 +1,7 @@
 from shared.globalsys import *
 
+logger = logging.getLogger(__name__)
+
 
 class mWtdmp(WtUtilityModule):
     def __init__(self, *args, **kwargs):
@@ -26,7 +28,7 @@ class mWtdmp(WtUtilityModule):
 
         @app.Hotkey("DistMeas&Cali", self.keyConfig.HotKey_DistMeasCali)
         @app.Async()
-        @GSBLogger.ExceptionLogged()
+        @ExceptionLogged(logger=logger)
         def GoMeasureAndCali(self: StoppableSomewhat):
             app.bulletin.putup("measuring")
             if wtdmp.lastDistMeasResultStaged.plottingscale is None:
@@ -40,7 +42,7 @@ class mWtdmp(WtUtilityModule):
                 wtdmp.caliOperator.go(lastStaged)
 
         @app.Hotkey("StartCali", self.keyConfig.HotKey_StartCali)
-        @GSBLogger.ExceptionLogged()
+        @ExceptionLogged(logger=logger)
         def startCali():
             lastStaged = wtdmp.lastDistMeasResultStaged.result
             if lastStaged is None:

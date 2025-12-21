@@ -2,8 +2,12 @@ from utilitypack.util_app import *
 from utilitypack.util_windows import *
 from aio_config import *
 import shared.globalsys as globalsys
+import logging
 
-@globalsys.GSBLogger.ExceptionLogged()
+logger = logging.getLogger(__name__)
+
+
+@globalsys.ExceptionLogged(logger=logger)
 def main():
     app = BulletinApp(fps=AioConfig.aiofps, hudFps=AioConfig.hudFps)
     modules: list[globalsys.WtUtilityModule] = list()
@@ -71,4 +75,5 @@ def main():
 
 if __name__ == "__main__":
     setadmin(__file__)
+    globalsys.init_root_logger(with_bulletin_handler=True)
     main()

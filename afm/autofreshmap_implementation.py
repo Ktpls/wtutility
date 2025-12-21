@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from .map_config.map_config_header import *
 from .autofreshmap_config import *
 
+logger = logging.getLogger(__name__)
+
 MapSize = [648, 648]
 
 dataCollector = DataCollector(mapAutoCollectionPath)
@@ -183,7 +185,7 @@ class MapImgComparator:
 
     def detect(self, mscr, specifiedThresh=None):
         s = self.matchSign_Z_ABSDIFF_NORMED(mscr)
-        GSBLogger().debug(f"{self.path} detecting: s={s}")
+        logger.debug(f"{self.path} detecting: s={s}")
         thresh = Coalesce(specifiedThresh, self.thresh)
         return s < thresh
 
@@ -195,7 +197,7 @@ def threshedmatchtemplate(src, temp, mask, simu):
     matchresult = 1 - matchresult
     minval, maxval, minloc, maxloc = cv.minMaxLoc(matchresult)
     # print(minval)
-    GSBLogger().debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
+    logger.debug(f"threshedmatchtemplate(): minval={minval}, simuthresh={simu}")
     return minloc if minval <= simu else None
 
 
@@ -234,7 +236,7 @@ class UnlocatedFullScreenImgMatcher:
         if self.screenPreproc:
             mscr = self.screenPreproc(mscr)
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
-        GSBLogger().debug(
+        logger.debug(
             f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
         )
         return ret
@@ -345,17 +347,17 @@ class MapDetectorImpled(detector):
 
         def detectMapShape(mtcid=0, thresh=None):
             ret = self.mtc[mtcid].detect(mscrpreproced, thresh)
-            GSBLogger().debug(f"MapShapeResult={ret}")
+            logger.debug(f"MapShapeResult={ret}")
             return ret
 
         def distance(a, b):
             err = np.sqrt(((a - b) ** 2).sum())
-            GSBLogger().debug(f"dist={err}")
+            logger.debug(f"dist={err}")
             return err
 
         def detectSpawn():
             center = getMapSpawnCenter(mscr)
-            GSBLogger().debug(f"spawn={center}")
+            logger.debug(f"spawn={center}")
             return center
 
         def spawnAround(point, err=None):
@@ -436,20 +438,20 @@ class MapAcceptorImpl:
         loadingscreenProced = MapImgComparator.imagepreprocess(mscr)
         for n, det in self.whitelistedmap.items():
             if det.detect(mscr, loadingscreenProced):
-                GSBLogger().debug(f"good map {n}")
+                logger.debug(f"good map {n}")
                 return True
         for n, det in self.blacklistedmap.items():
             if det.detect(mscr, loadingscreenProced):
-                GSBLogger().debug(f"bad map {n}")
+                logger.debug(f"bad map {n}")
                 return False
         if (
             self.param.onnodetectorhit
             == MapAcceptorParam.BehaviorOnNoDetectorHit.Accept
         ):
-            GSBLogger().debug(f"accept on no hit")
+            logger.debug(f"accept on no hit")
             return True
         else:
-            GSBLogger().debug(f"reject on no hit")
+            logger.debug(f"reject on no hit")
             return False
 
 
@@ -482,7 +484,7 @@ class freshAMap(MessagedThread):
 
     class AFMAborted(BaseException): ...
 
-    @GSBLogger.ExceptionLogged()
+    @ExceptionLogged(logger=logger)
     def run(self):
         class KeepDetectingScreen:
 
@@ -527,12 +529,12 @@ class freshAMap(MessagedThread):
             return ss.shotbgr()
 
         while True:
-            GSBLogger().debug("try matching")
+            logger.debug("try matching")
 
             # detect loading map
             loadingscreen = None
 
-            GSBLogger().debug(str("detecting loading map"))
+            logger.debug(str("detecting loading map"))
 
             Rhythms.Notify.play()
 
@@ -572,7 +574,7 @@ class freshAMap(MessagedThread):
                 if stateDetector[StateSign.WarthunderMark].detect(scr):
                     if not embnsmPersistTimer.isRunning():
                         embnsmPersistTimer.start()
-                    GSBLogger().debug(
+                    logger.debug(
                         f"only WarthunderMark found, persisted {embnsmPersistTimer.time()}"
                     )
                 else:
@@ -603,7 +605,7 @@ class freshAMap(MessagedThread):
                 perfStat.start()
                 r = detectLoadingMap(src)
                 perfStat.stop()
-                GSBLogger().info(f"timed_detectLoadingMap {perfStat.aveTime()=}")
+                logger.info(f"timed_detectLoadingMap {perfStat.aveTime()=}")
                 perfStat.clear()
                 return r
 
@@ -614,10 +616,10 @@ class freshAMap(MessagedThread):
 
             if enteredMatchButNotShowingMap:
                 Rhythms.BadNotify.asyncPlay()
-                GSBLogger().debug("enteredMatchButNotShowingMap")
+                logger.debug("enteredMatchButNotShowingMap")
             else:
                 Rhythms.Notify.asyncPlay()
-                GSBLogger().debug("loading map")
+                logger.debug("loading map")
                 loadingscreen_u8 = cutmap(loadingscreen)
                 loadingscreen = loadingscreen_u8.astype(np.float32) / 255
                 if mapAutoCollection:
@@ -629,7 +631,7 @@ class freshAMap(MessagedThread):
             # detected banned map
             wifi.setOff()
             Rhythms.Notify.play()
-            GSBLogger().debug("bad map")
+            logger.debug("bad map")
 
             # detect game canceled, which is if in hanger
             gameCanceledPerfStat = perf_statistic(True)
@@ -646,11 +648,11 @@ class freshAMap(MessagedThread):
                             Rhythms.Cancel.play()
                             nonlocal shouldStopAfterGameCanceld
                             shouldStopAfterGameCanceld = True
-                            GSBLogger().debug("stop recieved")
+                            logger.debug("stop recieved")
                         case freshAMap.MessageType.acceptMap:
                             wifi.setOn()
                             Rhythms.Success.play()
-                            GSBLogger().debug("accepted as good map")
+                            logger.debug("accepted as good map")
                             raise freshAMap.AFMAborted()
                 # sleep at least some time
                 if gameCanceledPerfStat.time() < minDelayAfterDisconnected:
@@ -665,13 +667,13 @@ class freshAMap(MessagedThread):
                 sleeptime=2,
             )
             if shouldStopAfterGameCanceld:
-                GSBLogger().debug("stopped afm")
+                logger.debug("stopped afm")
                 wifi.setOn()
                 raise freshAMap.AFMAborted()
 
             wifi.setOn()
             Rhythms.Notify.play()
-            GSBLogger().debug("canceled")
+            logger.debug("canceled")
             # for not enter game too soon after wifi on
             wifonitime = time.time()
             SleepUntil(lambda: time.time() - wifonitime > setonwifirecoverthresh, 1)
