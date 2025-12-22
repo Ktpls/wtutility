@@ -8,7 +8,7 @@ mapAcceptorParam = MapAcceptorParam(
         "WithPoint",
     ],
     specialmapdetectors={
-        "WithPoint": MapDetector(foo='ret(selectPoint(ptype="A"))'),
+        "WithPoint": MapDetector(foo='ret(selectPoint(ptype="roundA") or selectPoint(ptype="A"))'),
     },
     onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Accept,
 )

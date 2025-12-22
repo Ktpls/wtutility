@@ -236,9 +236,7 @@ class UnlocatedFullScreenImgMatcher:
         if self.screenPreproc:
             mscr = self.screenPreproc(mscr)
         ret = threshedmatchtemplate(mscr, self.m, self.mask, thresh)
-        logger.debug(
-            f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}"
-        )
+        logger.debug(f"{self.path} UnlocatedFullScreenImgMatcher detecting, ret={ret}")
         return ret
 
     def detect(self, mscr, specifiedThresh=None):
@@ -313,15 +311,40 @@ def zoompointimg(m):
     )
 
 
-Asset4PointDetection_Template = {
-    t: zoompointimg(
-        cv.imread(assetpath2realpath(signName2Path(t))).astype(np.float32) / 255
-    )
-    for t in ["A", "B", "C", "redA", "redB", "blueA", "blueB"]
+class ZoneDetectorMask:
+    def __init__(self, mask_name: str):
+        self.mask = zoompointimg(
+            cv.imread(assetpath2realpath(signName2Path(mask_name))).astype(np.float32)
+            / 255
+        )[:, :, 0]
+
+
+class ZoneDetector:
+    def __init__(self, map_name: str, mask: ZoneDetectorMask):
+        self.map_name = map_name
+        self.template = zoompointimg(
+            cv.imread(assetpath2realpath(signName2Path(map_name))).astype(np.float32)
+            / 255
+        )
+        self.mask = mask
+
+
+Asset4PointDetection_Pointmask = ZoneDetectorMask("zonemask")
+Asset4PointDetection_RoundPointMask = ZoneDetectorMask("roundZoneMask")
+
+_SetAsset4PointDetection_Template: set[ZoneDetector] = {
+    ZoneDetector(map_name="A", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="B", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="C", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="redA", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="redB", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="blueA", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="blueB", mask=Asset4PointDetection_Pointmask),
+    ZoneDetector(map_name="roundA", mask=Asset4PointDetection_RoundPointMask),
 }
-Asset4PointDetection_Pointmask = zoompointimg(
-    cv.imread(assetpath2realpath(signName2Path("zonemask"))).astype(np.float32) / 255
-)[:, :, 0]
+Asset4PointDetection_Template: dict[str, ZoneDetector] = Stream(
+    _SetAsset4PointDetection_Template
+).to_dict(lambda d: d.map_name, lambda d: d)
 
 
 class MapDetectorImpled(detector):
@@ -373,8 +396,8 @@ class MapDetectorImpled(detector):
             result = [
                 threshedmatchtemplate(
                     mscr,
-                    Asset4PointDetection_Template[t],
-                    Asset4PointDetection_Pointmask,
+                    Asset4PointDetection_Template[t].template,
+                    Asset4PointDetection_Template[t].mask.mask,
                     detectpointsimilarity,
                 )
                 for t in ptype
