@@ -500,6 +500,49 @@ def leaveButton():
     moveto([0, 0])
 
 
+@dataclasses.dataclass
+class BlackWhiteListExecutor:
+    class Trinary:
+        pos = 1
+        neg = -1
+        zero = 0
+
+    black_list: list[typing.Callable[[], bool]]
+    white_list: list[typing.Callable[[], bool]]
+    pool: concurrent.futures.ThreadPoolExecutor
+
+    def __call__(self):
+        black_wrapper = lambda func: lambda: (
+            BlackWhiteListExecutor.Trinary.neg
+            if func()
+            else BlackWhiteListExecutor.Trinary.zero
+        )
+        white_wrapper = lambda func: lambda: (
+            BlackWhiteListExecutor.Trinary.pos
+            if func()
+            else BlackWhiteListExecutor.Trinary.zero
+        )
+        lfuture = [
+            *(self.pool.submit(black_wrapper(func)) for func in self.black_list),
+            *(self.pool.submit(white_wrapper(func)) for func in self.white_list),
+        ]
+        while lfuture:
+            done, not_done = concurrent.futures.wait(
+                lfuture, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                try:
+                    if (r := future.result()) != BlackWhiteListExecutor.Trinary.zero:
+                        # 取消所有剩余任务
+                        for f in not_done:
+                            f.cancel()
+                        return True if r else False
+                except Exception:
+                    pass
+                lfuture.remove(future)
+        return False
+
+
 class freshAMap(MessagedThread):
     @ExtendEnum(MessagedThread.MessageType)
     class MessageType(aenum.Enum):
