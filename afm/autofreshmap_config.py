@@ -42,7 +42,7 @@ wlanname4netshwlan = [
     "CMCC-303",
     "HUAZHU-Hanting",
 ][0]
-enteredMatchButNotShowingMap_persistedTime = 3
+enteredMatchButNotShowingMap_persistedTime = 2
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 
