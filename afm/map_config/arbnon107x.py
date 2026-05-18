@@ -9,5 +9,6 @@ mapAcceptorParam = MapAcceptorParam(
         r"air\[Operation]Spain",
         r"air\[Operation]MysteriousValley(AirSpawns)",
         #r"airHq\[Operation]GolanHeights",
-    ]
+    ],
+    onnodetectorhit=MapAcceptorParam.BehaviorOnNoDetectorHit.Accept
 )

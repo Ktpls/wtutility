@@ -136,7 +136,7 @@ class MacroApp(BulletinApp):
         self.hotkeySwitch = Switch(
             onSetOn=lambda: self.bulletin.putup(BulletinBoard.Poster("hkmEnabled")),
             onSetOff=lambda: self.bulletin.putup(BulletinBoard.Poster("hkmDisabled")),
-            initial=True,
+            value=True,
         )
         self.bhhk = self.BindHotkeyHoldKeyboard(self)
 

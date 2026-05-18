@@ -17,6 +17,12 @@ def holdRight():
     mouse.down(1)
     app.bulletin.putup(BulletinBoard.Poster("holdRight", 1))
 
+@app.Hotkey("LeftLoop", [win32con.VK_RCONTROL, win32con.VK_RSHIFT, win32con.VK_F9])
+@app.WithHotkeySwitch()
+def LeftLoop():
+    mouse.down(1)
+    app.bulletin.putup(BulletinBoard.Poster("holdRight", 1))
+
 
 @app.Hotkey("JumpHorse", [win32con.VK_CONTROL, ord("J")])
 @app.Async()

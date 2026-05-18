@@ -348,11 +348,12 @@ Asset4PointDetection_Template: dict[str, ZoneDetector] = Stream(
 
 
 class MapDetectorImpled(detector):
-    def __init__(self, param: MapDetector):
+    def __init__(self, name: str, param: MapDetector):
         """
         the so called path is actually map name, by which mapname2assetpath is needed
         after that assetpath2realpath will be done in matcher
         """
+        self.name = name
         self.map = param.map
         self.foo = param.foo
         if self.map is not None:
@@ -426,13 +427,25 @@ class MapDetectorImpled(detector):
             retVal = val
 
         try:
-            exec(self.foo)
+            exec(
+                self.foo,
+                globals={
+                    "ret": ret,
+                    "detectMapShape": detectMapShape,
+                    "distance": distance,
+                    "detectSpawn": detectSpawn,
+                    "spawnAround": spawnAround,
+                    "selectPoint": selectPoint,
+                    "singlePoint": singlePoint,
+                    "selectBattleMode": selectBattleMode,
+                },
+            )
             if retVal is None:
                 raise ValueError("nothing returned")
             return retVal
         except Exception as e:
-            traceback.print_exc()
-            raise e
+            logger.error(f"{e}\n{traceback.format_exc()}")
+            raise
 
 
 class MapAcceptorImpl:
@@ -448,11 +461,12 @@ class MapAcceptorImpl:
             .to_dict(
                 lambda n: n,
                 lambda n: MapDetectorImpled(
-                    (
+                    name=n,
+                    param=(
                         self.param.specialmapdetectors[n]
                         if n in self.param.specialmapdetectors
                         else MapDetector(map=n, foo="ret(detectMapShape())")
-                    )
+                    ),
                 ),
             )
         )
@@ -477,6 +491,65 @@ class MapAcceptorImpl:
             logger.debug(f"reject on no hit")
             return False
 
+    def parallel_accept(self, mscr):
+        loadingscreenProced = MapImgComparator.imagepreprocess(mscr)
+
+        pool = concurrent.futures.ThreadPoolExecutor()
+
+        def det_wrap_with_blackwhite(det: MapDetectorImpled, retOnHit: bool):
+            def new_f():
+                if det.detect(mscr, loadingscreenProced):
+                    if retOnHit == True:
+                        logger.debug(f"good map {det.name}")
+                    else:
+                        logger.debug(f"bad map {det.name}")
+                    return retOnHit
+                else:
+                    None
+
+            return new_f
+
+        lfuture = [
+            *(
+                pool.submit(det_wrap_with_blackwhite(det, True))
+                for det in self.whitelistedmap.values()
+            ),
+            *(
+                pool.submit(det_wrap_with_blackwhite(det, False))
+                for det in self.blacklistedmap.values()
+            ),
+        ]
+        return_val = None
+        while lfuture:
+            done, not_done = concurrent.futures.wait(
+                lfuture, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                try:
+                    if (r := future.result()) != None:
+                        # 取消所有剩余任务
+                        for f in not_done:
+                            f.cancel()
+                        return_val = True if r else False
+                except Exception:
+                    pass
+                lfuture.remove(future)
+            if return_val != None:
+                break
+        pool.shutdown(wait=False, cancel_futures=True)
+        if return_val != None:
+            return return_val
+        else:
+            if (
+                self.param.onnodetectorhit
+                == MapAcceptorParam.BehaviorOnNoDetectorHit.Accept
+            ):
+                logger.debug(f"accept on no hit")
+                return True
+            else:
+                logger.debug(f"reject on no hit")
+                return False
+
 
 class AfmAsset:
     def __init__(self, configModuleLike):
@@ -498,49 +571,6 @@ def leaveButton():
     time.sleep(1)
     # move after click for not blocking next time detection
     moveto([0, 0])
-
-
-@dataclasses.dataclass
-class BlackWhiteListExecutor:
-    class Trinary:
-        pos = 1
-        neg = -1
-        zero = 0
-
-    black_list: list[typing.Callable[[], bool]]
-    white_list: list[typing.Callable[[], bool]]
-    pool: concurrent.futures.ThreadPoolExecutor
-
-    def __call__(self):
-        black_wrapper = lambda func: lambda: (
-            BlackWhiteListExecutor.Trinary.neg
-            if func()
-            else BlackWhiteListExecutor.Trinary.zero
-        )
-        white_wrapper = lambda func: lambda: (
-            BlackWhiteListExecutor.Trinary.pos
-            if func()
-            else BlackWhiteListExecutor.Trinary.zero
-        )
-        lfuture = [
-            *(self.pool.submit(black_wrapper(func)) for func in self.black_list),
-            *(self.pool.submit(white_wrapper(func)) for func in self.white_list),
-        ]
-        while lfuture:
-            done, not_done = concurrent.futures.wait(
-                lfuture, return_when=concurrent.futures.FIRST_COMPLETED
-            )
-            for future in done:
-                try:
-                    if (r := future.result()) != BlackWhiteListExecutor.Trinary.zero:
-                        # 取消所有剩余任务
-                        for f in not_done:
-                            f.cancel()
-                        return True if r else False
-                except Exception:
-                    pass
-                lfuture.remove(future)
-        return False
 
 
 class freshAMap(MessagedThread):
@@ -686,7 +716,7 @@ class freshAMap(MessagedThread):
                 loadingscreen = loadingscreen_u8.astype(np.float32) / 255
                 if mapAutoCollection:
                     dataCollector.save(loadingscreen_u8)
-                if mapDetector.accept(loadingscreen):
+                if mapDetector.parallel_accept(loadingscreen):
                     Rhythms.Success.play()
                     return True
 

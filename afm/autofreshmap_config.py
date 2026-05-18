@@ -1,4 +1,5 @@
-from .map_config import aab_score as autofreshmap_configmap
+#from .map_config import arbnon107x as autofreshmap_configmap
+from .map_config import arb73 as autofreshmap_configmap
 from .layout_config.dell import resolution
 from shared import const as sharedconst
 import os
@@ -42,7 +43,7 @@ wlanname4netshwlan = [
     "CMCC-303",
     "HUAZHU-Hanting",
 ][0]
-enteredMatchButNotShowingMap_persistedTime = 2
+enteredMatchButNotShowingMap_persistedTime = 1.75
 
 AFM_FRESHBR_VEHICLE_LIST_TIMEOUT = 50
 
